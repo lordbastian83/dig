@@ -139,9 +139,10 @@ a { color: var(--text-primary); }
   border: 1px solid var(--border); border-radius: 12px;
   font-size: 13px;
 }
-.key-row label { color: var(--text-secondary); font-weight: 600; }
+.key-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 220px; }
+.key-row label { color: var(--text-secondary); font-weight: 600; font-size: 12px; }
 .key-row input {
-  flex: 1 1 220px; min-width: 180px;
+  min-width: 180px;
   padding: 8px 12px; border-radius: 8px;
   background: var(--surface-2); color: var(--text-primary);
   border: 1px solid var(--border); font: inherit;

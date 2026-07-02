@@ -51,10 +51,16 @@
     <div class="asset-tabs" id="asset-tabs" role="tablist" aria-label="Asset"></div>
 
     <div class="key-row" id="key-row" hidden>
-      <label for="td-key">Twelve Data API key</label>
-      <input id="td-key" type="password" placeholder="free key from twelvedata.com" autocomplete="off" spellcheck="false">
-      <button id="td-key-save" type="button">Save</button>
-      <span class="key-note">Gold, US30 and GBP/USD load via <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">Twelve Data</a> (free tier works). The key is stored only in this browser and sent only to Twelve Data. Without one, these markets show labeled demo data.</span>
+      <div class="key-field">
+        <label for="fmp-key">FMP API key</label>
+        <input id="fmp-key" type="password" placeholder="key from financialmodelingprep.com" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="key-field">
+        <label for="td-key">Twelve Data API key (optional)</label>
+        <input id="td-key" type="password" placeholder="free key from twelvedata.com" autocomplete="off" spellcheck="false">
+      </div>
+      <button id="keys-save" type="button">Save</button>
+      <span class="key-note">Gold, US30 and GBP/USD load via <a href="https://financialmodelingprep.com" target="_blank" rel="noopener">Financial Modeling Prep</a> or <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">Twelve Data</a> — paste whichever key you have (FMP is tried first). Keys are stored only in this browser and sent only to the data provider. Without one, these markets show labeled demo data.</span>
     </div>
 
     <div class="tiles" id="tiles">
@@ -133,7 +139,7 @@
     <div class="method-grid">
       <div class="method-card">
         <h3><span class="step-num">1</span>Trend cross</h3>
-        <p>A candidate forms when the 20-period EMA crosses the 50-period EMA on the 4-hour chart. Cross up → long candidate; cross down → short candidate.</p>
+        <p>A candidate forms when the 20-period EMA crosses the 50-period EMA on the 4-hour chart. Cross up → long candidate; cross down → short candidate. The signal candle itself must close in the cross's direction.</p>
       </div>
       <div class="method-card">
         <h3><span class="step-num">2</span>Regime gates</h3>
@@ -141,7 +147,7 @@
       </div>
       <div class="method-card">
         <h3><span class="step-num">3</span>Momentum &amp; volume</h3>
-        <p>RSI 14 must confirm without being exhausted: 45–70 for longs, 30–55 for shorts. Volume above its 20-period average raises confidence. Stops sit 1.5 × ATR 14 from entry, targets 2 × ATR.</p>
+        <p>RSI 14 must confirm without being exhausted: 45–70 for longs, 30–55 for shorts. Volume above its 20-period average raises confidence. Stops sit 1.5 × ATR 14 from entry, targets 2 × ATR — and once price moves 1 × ATR in favor, the stop moves to breakeven.</p>
       </div>
       <div class="method-card">
         <h3><span class="step-num">4</span>4-hour entry window</h3>

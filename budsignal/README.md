@@ -11,9 +11,10 @@ no accounts.
   readouts. Asset tabs: BTC, ETH, SOL, XRP, Gold (XAU/USD), US30 (Dow Jones),
   GBP/USD (cable).
 - **Signal engine** — long/short signals from a fixed, published rule set:
-  EMA 20/50 cross, gated by the 200-EMA higher-timeframe trend and an
-  ADX ≥ 20 chop filter, RSI band filter, ATR-scaled stop (1.5×) and target
-  (2×), one-candle (4-hour) entry window.
+  EMA 20/50 cross (signal candle must close with the cross), gated by the
+  200-EMA higher-timeframe trend and an ADX ≥ 20 chop filter, RSI band filter,
+  ATR-scaled stop (1.5×) and target (2×) with a move to breakeven after 1×ATR
+  of favorable movement, one-candle (4-hour) entry window.
 - **Honest track record** — the same rules are replayed over the loaded history
   in the browser on every visit, so the win rate and signal table are computed,
   never curated. An unfiltered EMA-cross baseline is computed over the same
@@ -24,11 +25,12 @@ no accounts.
 All fetches happen client-side:
 
 - **Crypto** — Binance (4h klines) → Coinbase Exchange fallback. No key needed.
-- **Gold / US30 / GBP/USD** — [Twelve Data](https://twelvedata.com) `time_series`
-  API. Needs a free API key, entered in the dashboard and stored only in the
-  browser's localStorage. Note: the free tier covers FX and metals; index data
-  (`DJI`) may require a paid plan — if a symbol is rejected, the app falls back
-  to demo data and says so.
+- **Gold / US30 / GBP/USD** — [Financial Modeling Prep](https://financialmodelingprep.com)
+  (`historical-chart/4hour`, symbols XAUUSD / ^DJI / GBPUSD) tried first, then
+  [Twelve Data](https://twelvedata.com) `time_series` as a fallback. Paste
+  whichever API key you have in the dashboard; keys are stored only in the
+  browser's localStorage and sent only to the data provider. If a symbol is
+  rejected by your plan, the app falls back to demo data and says so.
 - **Fallback** — an embedded deterministic demo dataset (clearly labeled) so
   the app still demonstrates itself offline.
 

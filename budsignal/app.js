@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const CANDLE_LIMIT = 500;      // 4h candles ≈ 83 days
+  const CANDLE_LIMIT = 1000;     // 4h candles ≈ 166 days (Binance/TD max permitting)
   const EMA_FAST = 20;
   const EMA_SLOW = 50;
   const EMA_TREND = 200;         // higher-timeframe trend filter
@@ -16,21 +16,23 @@
   const VOL_LEN = 20;
   const STOP_ATR = 1.5;          // stop distance in ATRs
   const TARGET_ATR = 2.0;        // target distance in ATRs
+  const BE_TRIGGER_ATR = 1.0;    // favorable excursion that moves the stop to breakeven
   const EVAL_CANDLES = 6;        // outcome window: 6 × 4h = 24h
   const VISIBLE = 120;           // candles drawn on the chart
 
-  // kind 'crypto' loads keyless from Binance/Coinbase; kind 'td' (metals,
-  // indices, FX) loads from Twelve Data and needs the user's free API key.
+  // kind 'crypto' loads keyless from Binance/Coinbase; kind 'market' (metals,
+  // indices, FX) loads from FMP or Twelve Data with the user's own API key.
   const ASSETS = {
     BTC:    { kind: 'crypto', tab: 'BTC',     pair: 'BTC / USD',        binance: 'BTCUSDT',  coinbase: 'BTC-USD',  demoPrice: 64000, demoSeed: 42 },
     ETH:    { kind: 'crypto', tab: 'ETH',     pair: 'ETH / USD',        binance: 'ETHUSDT',  coinbase: 'ETH-USD',  demoPrice: 3400,  demoSeed: 7 },
     SOL:    { kind: 'crypto', tab: 'SOL',     pair: 'SOL / USD',        binance: 'SOLUSDT',  coinbase: 'SOL-USD',  demoPrice: 150,   demoSeed: 19 },
     XRP:    { kind: 'crypto', tab: 'XRP',     pair: 'XRP / USD',        binance: 'XRPUSDT',  coinbase: 'XRP-USD',  demoPrice: 2.2,   demoSeed: 3 },
-    GOLD:   { kind: 'td',     tab: 'GOLD',    pair: 'XAU / USD · Gold', td: 'XAU/USD',       demoPrice: 2700,  demoSeed: 5 },
-    US30:   { kind: 'td',     tab: 'US30',    pair: 'US30 · Dow Jones', td: 'DJI',           demoPrice: 44000, demoSeed: 13 },
-    GBPUSD: { kind: 'td',     tab: 'GBP/USD', pair: 'GBP / USD · Cable', td: 'GBP/USD',      demoPrice: 1.27,  demoSeed: 21 },
+    GOLD:   { kind: 'market', tab: 'GOLD',    pair: 'XAU / USD · Gold',  fmp: 'XAUUSD', td: 'XAU/USD', demoPrice: 2700,  demoSeed: 5 },
+    US30:   { kind: 'market', tab: 'US30',    pair: 'US30 · Dow Jones',  fmp: '^DJI',   td: 'DJI',     demoPrice: 44000, demoSeed: 13 },
+    GBPUSD: { kind: 'market', tab: 'GBP/USD', pair: 'GBP / USD · Cable', fmp: 'GBPUSD', td: 'GBP/USD', demoPrice: 1.27,  demoSeed: 21 },
   };
 
+  const FMP_KEY_STORE = 'budsignal-fmp-key';
   const TD_KEY_STORE = 'budsignal-td-key';
 
   let currentAsset = localStorage.getItem('budsignal-asset');
@@ -60,17 +62,19 @@
   async function fetchCandles(asset) {
     const cfg = ASSETS[asset];
 
-    if (cfg.kind === 'td') {
-      const key = localStorage.getItem(TD_KEY_STORE);
-      if (key) {
-        try { return await fetchTwelveData(cfg, key); } catch (e) { /* fall through */ }
-        return {
-          source: 'demo data (Twelve Data request failed — check your API key and plan; figures are illustrative only)',
-          candles: demoCandles(cfg.demoPrice, cfg.demoSeed),
-        };
+    if (cfg.kind === 'market') {
+      const fmpKey = localStorage.getItem(FMP_KEY_STORE);
+      const tdKey = localStorage.getItem(TD_KEY_STORE);
+      if (fmpKey) {
+        try { return await fetchFmp(cfg, fmpKey); } catch (e) { /* fall through */ }
+      }
+      if (tdKey) {
+        try { return await fetchTwelveData(cfg, tdKey); } catch (e) { /* fall through */ }
       }
       return {
-        source: 'demo data — add a free Twelve Data API key above to load live prices',
+        source: fmpKey || tdKey
+          ? 'demo data (data-provider request failed — check your API key and plan; figures are illustrative only)'
+          : 'demo data — add an FMP or Twelve Data API key above to load live prices',
         candles: demoCandles(cfg.demoPrice, cfg.demoSeed),
       };
     }
@@ -105,6 +109,26 @@
       source: 'demo data (exchange APIs unreachable — figures are illustrative only)',
       candles: demoCandles(cfg.demoPrice, cfg.demoSeed),
     };
+  }
+
+  // FMP intraday chart: array of {date, open, high, low, close, volume},
+  // newest-first, timestamps in exchange time (close enough for 4h bars).
+  async function fetchFmp(cfg, key) {
+    const now = new Date();
+    const from = new Date(now.getTime() - 170 * 86400000);
+    const day = (x) => x.toISOString().slice(0, 10);
+    const url = `https://financialmodelingprep.com/api/v3/historical-chart/4hour/${encodeURIComponent(cfg.fmp)}` +
+      `?from=${day(from)}&to=${day(now)}&apikey=${encodeURIComponent(key)}`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    if (!Array.isArray(j) || !j.length) throw new Error((j && j['Error Message']) || 'no data');
+    const candles = j.map((v) => ({
+      t: Date.parse(v.date.replace(' ', 'T') + 'Z'),
+      o: +v.open, h: +v.high, l: +v.low, c: +v.close,
+      v: v.volume != null ? +v.volume : 0,
+    })).reverse().slice(-CANDLE_LIMIT);
+    return { source: `FMP (${cfg.fmp}, live)`, candles };
   }
 
   // Twelve Data time_series: values[] newest-first; FX/index rows may omit volume.
@@ -276,6 +300,10 @@
         if (side === 'short' && candles[i].c >= trend) continue;
         // Gate 2: skip chop — EMA crosses whipsaw when trend strength is low.
         if (ind.adx[i] == null || ind.adx[i] < ADX_MIN) continue;
+        // Gate 3: the signal candle itself must close with the cross, so a
+        // cross produced by a candle already reversing doesn't fire.
+        if (side === 'long' && candles[i].c <= candles[i].o) continue;
+        if (side === 'short' && candles[i].c >= candles[i].o) continue;
       }
 
       const entry = candles[i].c;
@@ -291,20 +319,29 @@
       const rsiCentered = 1 - Math.abs(ind.rsi[i] - mid) / ((band[1] - band[0]) / 2);
       const confidence = Math.round(55 + (volConfirm ? 20 : 0) + rsiCentered * 25);
 
-      signals.push({ i, t: candles[i].t, side, entry, stop, target, confidence, ...scoreOutcome(candles, i, side, entry, stop, target) });
+      signals.push({ i, t: candles[i].t, side, entry, stop, target, confidence, ...scoreOutcome(candles, i, side, entry, stop, target, a) });
     }
     return signals;
   }
 
   // Walk forward up to EVAL_CANDLES; first touch of stop or target wins.
-  // Within a single candle that spans both, assume the stop hit first (conservative).
-  function scoreOutcome(candles, i, side, entry, stop, target) {
+  // Within a single candle that spans both, assume the stop hit first
+  // (conservative). Once price has moved BE_TRIGGER_ATR in favor, the stop
+  // moves to breakeven from the NEXT candle on — cutting full-size losses on
+  // trades that worked first and then reversed.
+  function scoreOutcome(candles, i, side, entry, stop, target, a) {
     const dir = side === 'long' ? 1 : -1;
+    let beArmed = false;
     for (let j = i + 1; j <= i + EVAL_CANDLES && j < candles.length; j++) {
       const hitStop = dir === 1 ? candles[j].l <= stop : candles[j].h >= stop;
       const hitTarget = dir === 1 ? candles[j].h >= target : candles[j].l <= target;
-      if (hitStop) return { outcome: 'loss', exit: stop, movePct: (dir * (stop - entry) / entry) * 100 };
+      if (hitStop) {
+        if (beArmed) return { outcome: 'be', exit: stop, movePct: 0 };
+        return { outcome: 'loss', exit: stop, movePct: (dir * (stop - entry) / entry) * 100 };
+      }
       if (hitTarget) return { outcome: 'win', exit: target, movePct: (dir * (target - entry) / entry) * 100 };
+      const excursion = dir === 1 ? candles[j].h - entry : entry - candles[j].l;
+      if (!beArmed && excursion >= BE_TRIGGER_ATR * a) { beArmed = true; stop = entry; }
     }
     const last = Math.min(i + EVAL_CANDLES, candles.length - 1);
     if (last - i < EVAL_CANDLES) {
@@ -516,16 +553,18 @@
       });
     });
 
-    // The API-key row only concerns Twelve Data assets.
+    // The API-key row only concerns non-crypto (FMP / Twelve Data) assets.
     const keyRow = $('key-row');
-    keyRow.hidden = ASSETS[currentAsset].kind !== 'td';
+    keyRow.hidden = ASSETS[currentAsset].kind !== 'market';
     if (!keyRow.dataset.bound) {
       keyRow.dataset.bound = '1';
+      $('fmp-key').value = localStorage.getItem(FMP_KEY_STORE) || '';
       $('td-key').value = localStorage.getItem(TD_KEY_STORE) || '';
-      $('td-key-save').addEventListener('click', () => {
-        const v = $('td-key').value.trim();
-        if (v) localStorage.setItem(TD_KEY_STORE, v);
-        else localStorage.removeItem(TD_KEY_STORE);
+      $('keys-save').addEventListener('click', () => {
+        const fmp = $('fmp-key').value.trim();
+        const td = $('td-key').value.trim();
+        if (fmp) localStorage.setItem(FMP_KEY_STORE, fmp); else localStorage.removeItem(FMP_KEY_STORE);
+        if (td) localStorage.setItem(TD_KEY_STORE, td); else localStorage.removeItem(TD_KEY_STORE);
         refresh();
       });
     }
@@ -634,6 +673,7 @@
       const outcome =
         s.outcome === 'win' ? '<span class="outcome win">✓ Target hit</span>' :
         s.outcome === 'loss' ? '<span class="outcome loss">✕ Stopped out</span>' :
+        s.outcome === 'be' ? '<span class="outcome flat">◇ Breakeven stop</span>' :
         s.outcome === 'open' ? '<span class="outcome flat">● Open</span>' :
         '<span class="outcome flat">◦ Expired at market</span>';
       const moveCls = s.movePct >= 0 ? 'move-pos' : 'move-neg';
