@@ -113,6 +113,48 @@ a { color: var(--text-primary); }
 
 .section-sub { max-width: 680px; margin-top: -4px; margin-bottom: 28px; color: var(--text-muted); }
 
+/* ---------- asset tabs ---------- */
+
+.asset-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+
+.asset-tab {
+  padding: 8px 18px; border-radius: 999px;
+  background: var(--surface-1); color: var(--text-secondary);
+  border: 1px solid var(--border);
+  font: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+}
+.asset-tab:hover { color: var(--text-primary); }
+.asset-tab.active {
+  background: var(--text-primary); color: var(--page);
+  border-color: var(--text-primary);
+}
+
+/* ---------- data key row ---------- */
+
+.key-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin-top: 14px; padding: 14px 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 12px;
+  font-size: 13px;
+}
+.key-row label { color: var(--text-secondary); font-weight: 600; }
+.key-row input {
+  flex: 1 1 220px; min-width: 180px;
+  padding: 8px 12px; border-radius: 8px;
+  background: var(--surface-2); color: var(--text-primary);
+  border: 1px solid var(--border); font: inherit;
+}
+.key-row input:focus { outline: 1px solid var(--text-muted); }
+.key-row button {
+  padding: 8px 18px; border-radius: 8px; border: none;
+  background: var(--text-primary); color: var(--page);
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.key-note { flex-basis: 100%; color: var(--text-muted); font-size: 12.5px; }
+.key-note a { color: var(--text-secondary); }
+
 /* ---------- stat tiles ---------- */
 
 .tiles {

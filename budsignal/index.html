@@ -27,16 +27,16 @@
 
   <!-- ============ Hero ============ -->
   <section class="hero">
-    <p class="hero-kicker">Bitcoin swing signals · 4-hour timeframe</p>
+    <p class="hero-kicker">Crypto swing signals · 4-hour timeframe</p>
     <h1>Trading signals computed<br>in the open.</h1>
     <p class="hero-sub">
-      BudSignal generates long and short Bitcoin entries from a fixed, published rule set —
-      EMA trend crosses confirmed by momentum and volume. Every signal, and the track record
-      behind it, is recomputed live from public market data right here in your browser.
-      Nothing is hand-picked.
+      BudSignal generates long and short entries across crypto, gold, indices and FX from a
+      fixed, published rule set — EMA trend crosses gated by higher-timeframe trend, trend
+      strength, and momentum. Every signal, and the track record behind it, is recomputed
+      live from public market data right here in your browser. Nothing is hand-picked.
     </p>
     <div class="hero-price" aria-live="polite">
-      <span class="hero-price-label">BTC / USD</span>
+      <span class="hero-price-label" id="hero-symbol">BTC / USD</span>
       <span class="hero-price-value" id="hero-price">—</span>
       <span class="hero-price-delta" id="hero-delta"></span>
     </div>
@@ -47,6 +47,15 @@
   <!-- ============ Dashboard ============ -->
   <section id="dashboard" class="section">
     <h2>Live dashboard</h2>
+
+    <div class="asset-tabs" id="asset-tabs" role="tablist" aria-label="Asset"></div>
+
+    <div class="key-row" id="key-row" hidden>
+      <label for="td-key">Twelve Data API key</label>
+      <input id="td-key" type="password" placeholder="free key from twelvedata.com" autocomplete="off" spellcheck="false">
+      <button id="td-key-save" type="button">Save</button>
+      <span class="key-note">Gold, US30 and GBP/USD load via <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">Twelve Data</a> (free tier works). The key is stored only in this browser and sent only to Twelve Data. Without one, these markets show labeled demo data.</span>
+    </div>
 
     <div class="tiles" id="tiles">
       <div class="tile">
@@ -73,7 +82,7 @@
 
     <div class="chart-card">
       <div class="chart-head">
-        <h3>BTC / USD · 4h candles</h3>
+        <h3 id="chart-title">BTC / USD · 4h candles</h3>
         <div class="legend" aria-label="Chart legend">
           <span class="legend-item"><span class="key key-up"></span>Up candle</span>
           <span class="legend-item"><span class="key key-down"></span>Down candle</span>
@@ -88,8 +97,10 @@
       </div>
       <div class="indicator-row" id="indicators">
         <span>RSI 14 <strong id="ind-rsi">—</strong></span>
+        <span>ADX 14 <strong id="ind-adx">—</strong></span>
         <span>EMA 20 <strong id="ind-ema20">—</strong></span>
         <span>EMA 50 <strong id="ind-ema50">—</strong></span>
+        <span>EMA 200 <strong id="ind-ema200">—</strong></span>
         <span>ATR 14 <strong id="ind-atr">—</strong></span>
         <span>Volume vs 20-avg <strong id="ind-vol">—</strong></span>
       </div>
@@ -125,12 +136,12 @@
         <p>A candidate forms when the 20-period EMA crosses the 50-period EMA on the 4-hour chart. Cross up → long candidate; cross down → short candidate.</p>
       </div>
       <div class="method-card">
-        <h3><span class="step-num">2</span>Momentum filter</h3>
-        <p>RSI 14 must confirm without being exhausted: between 45 and 70 for longs, between 30 and 55 for shorts. Crosses outside these bands are discarded.</p>
+        <h3><span class="step-num">2</span>Regime gates</h3>
+        <p>Longs are only taken above the 200-period EMA and shorts only below it, and ADX 14 must read 20 or higher — EMA crosses whipsaw in chop, so low-trend-strength markets produce no signals at all.</p>
       </div>
       <div class="method-card">
-        <h3><span class="step-num">3</span>Volume &amp; sizing</h3>
-        <p>Volume above its 20-period average raises confidence. Stops sit 1.5 × ATR 14 from entry and targets 2 × ATR, so risk scales with current volatility.</p>
+        <h3><span class="step-num">3</span>Momentum &amp; volume</h3>
+        <p>RSI 14 must confirm without being exhausted: 45–70 for longs, 30–55 for shorts. Volume above its 20-period average raises confidence. Stops sit 1.5 × ATR 14 from entry, targets 2 × ATR.</p>
       </div>
       <div class="method-card">
         <h3><span class="step-num">4</span>4-hour entry window</h3>

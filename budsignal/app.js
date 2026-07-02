@@ -1,4 +1,4 @@
-/* BudSignal — rules-based BTC signal dashboard.
+/* BudSignal — rules-based crypto signal dashboard.
    Everything is computed client-side from public candle data; the rule set
    here is the same one described in the "How signals work" section. */
 
@@ -8,13 +8,33 @@
   const CANDLE_LIMIT = 500;      // 4h candles ≈ 83 days
   const EMA_FAST = 20;
   const EMA_SLOW = 50;
+  const EMA_TREND = 200;         // higher-timeframe trend filter
   const RSI_LEN = 14;
   const ATR_LEN = 14;
+  const ADX_LEN = 14;
+  const ADX_MIN = 20;            // below this the market is chop — no signals
   const VOL_LEN = 20;
   const STOP_ATR = 1.5;          // stop distance in ATRs
   const TARGET_ATR = 2.0;        // target distance in ATRs
   const EVAL_CANDLES = 6;        // outcome window: 6 × 4h = 24h
   const VISIBLE = 120;           // candles drawn on the chart
+
+  // kind 'crypto' loads keyless from Binance/Coinbase; kind 'td' (metals,
+  // indices, FX) loads from Twelve Data and needs the user's free API key.
+  const ASSETS = {
+    BTC:    { kind: 'crypto', tab: 'BTC',     pair: 'BTC / USD',        binance: 'BTCUSDT',  coinbase: 'BTC-USD',  demoPrice: 64000, demoSeed: 42 },
+    ETH:    { kind: 'crypto', tab: 'ETH',     pair: 'ETH / USD',        binance: 'ETHUSDT',  coinbase: 'ETH-USD',  demoPrice: 3400,  demoSeed: 7 },
+    SOL:    { kind: 'crypto', tab: 'SOL',     pair: 'SOL / USD',        binance: 'SOLUSDT',  coinbase: 'SOL-USD',  demoPrice: 150,   demoSeed: 19 },
+    XRP:    { kind: 'crypto', tab: 'XRP',     pair: 'XRP / USD',        binance: 'XRPUSDT',  coinbase: 'XRP-USD',  demoPrice: 2.2,   demoSeed: 3 },
+    GOLD:   { kind: 'td',     tab: 'GOLD',    pair: 'XAU / USD · Gold', td: 'XAU/USD',       demoPrice: 2700,  demoSeed: 5 },
+    US30:   { kind: 'td',     tab: 'US30',    pair: 'US30 · Dow Jones', td: 'DJI',           demoPrice: 44000, demoSeed: 13 },
+    GBPUSD: { kind: 'td',     tab: 'GBP/USD', pair: 'GBP / USD · Cable', td: 'GBP/USD',      demoPrice: 1.27,  demoSeed: 21 },
+  };
+
+  const TD_KEY_STORE = 'budsignal-td-key';
+
+  let currentAsset = localStorage.getItem('budsignal-asset');
+  if (!ASSETS[currentAsset]) currentAsset = 'BTC';
 
   const COLORS = {
     up: '#0ca30c', down: '#d03b3b',
@@ -27,6 +47,8 @@
 
   const fmtUsd = (v, digits = 0) =>
     v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  // Adaptive decimals so sub-dollar assets (XRP, DOGE, ADA) stay readable.
+  const fmtPrice = (v) => fmtUsd(v, v >= 1000 ? 0 : v >= 10 ? 2 : 4);
   const fmtPct = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
   const fmtTime = (t) => {
     const d = new Date(t);
@@ -35,16 +57,33 @@
 
   /* ---------------- data ---------------- */
 
-  async function fetchCandles() {
+  async function fetchCandles(asset) {
+    const cfg = ASSETS[asset];
+
+    if (cfg.kind === 'td') {
+      const key = localStorage.getItem(TD_KEY_STORE);
+      if (key) {
+        try { return await fetchTwelveData(cfg, key); } catch (e) { /* fall through */ }
+        return {
+          source: 'demo data (Twelve Data request failed — check your API key and plan; figures are illustrative only)',
+          candles: demoCandles(cfg.demoPrice, cfg.demoSeed),
+        };
+      }
+      return {
+        source: 'demo data — add a free Twelve Data API key above to load live prices',
+        candles: demoCandles(cfg.demoPrice, cfg.demoSeed),
+      };
+    }
+
     // Binance kline row: [openTime, open, high, low, close, volume, ...]
     try {
       const r = await fetch(
-        `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=4h&limit=${CANDLE_LIMIT}`,
+        `https://api.binance.com/api/v3/klines?symbol=${cfg.binance}&interval=4h&limit=${CANDLE_LIMIT}`,
         { signal: AbortSignal.timeout(8000) });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const rows = await r.json();
       return {
-        source: 'Binance (BTC/USDT, live)',
+        source: `Binance (${asset}/USDT, live)`,
         candles: rows.map((k) => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] })),
       };
     } catch (e) { /* fall through */ }
@@ -52,22 +91,40 @@
     // Coinbase Exchange row: [time, low, high, open, close, volume], newest first, max 300
     try {
       const r = await fetch(
-        'https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=14400',
+        `https://api.exchange.coinbase.com/products/${cfg.coinbase}/candles?granularity=14400`,
         { signal: AbortSignal.timeout(8000) });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const rows = await r.json();
       return {
-        source: 'Coinbase (BTC/USD, live)',
+        source: `Coinbase (${asset}/USD, live)`,
         candles: rows.reverse().map((k) => ({ t: k[0] * 1000, o: k[3], h: k[2], l: k[1], c: k[4], v: k[5] })),
       };
     } catch (e) { /* fall through */ }
 
-    return { source: 'demo data (exchange APIs unreachable — figures are illustrative only)', candles: demoCandles() };
+    return {
+      source: 'demo data (exchange APIs unreachable — figures are illustrative only)',
+      candles: demoCandles(cfg.demoPrice, cfg.demoSeed),
+    };
+  }
+
+  // Twelve Data time_series: values[] newest-first; FX/index rows may omit volume.
+  async function fetchTwelveData(cfg, key) {
+    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(cfg.td)}` +
+      `&interval=4h&outputsize=${CANDLE_LIMIT}&apikey=${encodeURIComponent(key)}`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    if (j.status === 'error' || !Array.isArray(j.values)) throw new Error(j.message || 'no data');
+    const candles = j.values.map((v) => ({
+      t: Date.parse(v.datetime.includes(' ') ? v.datetime.replace(' ', 'T') + 'Z' : v.datetime + 'T00:00:00Z'),
+      o: +v.open, h: +v.high, l: +v.low, c: +v.close,
+      v: v.volume != null ? +v.volume : 0,
+    })).reverse();
+    return { source: `Twelve Data (${cfg.td}, live)`, candles };
   }
 
   // Deterministic random walk so the page still demonstrates itself offline.
-  function demoCandles() {
-    let seed = 42;
+  function demoCandles(basePrice, seed) {
     const rand = () => {
       seed = (seed * 1103515245 + 12345) & 0x7fffffff;
       return seed / 0x7fffffff;
@@ -75,7 +132,7 @@
     const out = [];
     const FOUR_H = 4 * 3600 * 1000;
     let t = Date.now() - CANDLE_LIMIT * FOUR_H;
-    let price = 64000;
+    let price = basePrice;
     let drift = 0;
     for (let i = 0; i < CANDLE_LIMIT; i++) {
       if (i % 40 === 0) drift = (rand() - 0.5) * 0.004;
@@ -143,6 +200,43 @@
     return out;
   }
 
+  // Wilder's ADX — trend-strength gate; low ADX means chop, where EMA crosses whipsaw.
+  function adx(candles, len) {
+    const out = new Array(candles.length).fill(null);
+    let trS = 0, pS = 0, mS = 0;
+    let dxSum = 0, dxCount = 0, prevAdx = null;
+    for (let i = 1; i < candles.length; i++) {
+      const tr = Math.max(
+        candles[i].h - candles[i].l,
+        Math.abs(candles[i].h - candles[i - 1].c),
+        Math.abs(candles[i].l - candles[i - 1].c));
+      const up = candles[i].h - candles[i - 1].h;
+      const dn = candles[i - 1].l - candles[i].l;
+      const pdm = up > dn && up > 0 ? up : 0;
+      const mdm = dn > up && dn > 0 ? dn : 0;
+      if (i <= len) {
+        trS += tr; pS += pdm; mS += mdm;
+        if (i < len) continue;
+      } else {
+        trS = trS - trS / len + tr;
+        pS = pS - pS / len + pdm;
+        mS = mS - mS / len + mdm;
+      }
+      if (trS === 0) continue;
+      const pdi = (100 * pS) / trS;
+      const mdi = (100 * mS) / trS;
+      const dx = pdi + mdi === 0 ? 0 : (100 * Math.abs(pdi - mdi)) / (pdi + mdi);
+      if (prevAdx == null) {
+        dxSum += dx; dxCount++;
+        if (dxCount === len) { prevAdx = dxSum / len; out[i] = prevAdx; }
+      } else {
+        prevAdx = (prevAdx * (len - 1) + dx) / len;
+        out[i] = prevAdx;
+      }
+    }
+    return out;
+  }
+
   function sma(values, len) {
     const out = new Array(values.length).fill(null);
     let sum = 0;
@@ -156,9 +250,15 @@
 
   /* ---------------- signal engine ---------------- */
 
-  function computeSignals(candles, ind) {
+  // `filtered` = the shipped rule set (trend + ADX gates). `filtered: false`
+  // is the raw EMA-cross baseline, computed only so the dashboard can show
+  // what the filters are worth over the same span of history.
+  function computeSignals(candles, ind, filtered) {
     const signals = [];
-    for (let i = 1; i < candles.length; i++) {
+    // Both variants start where every indicator is defined, so the
+    // filtered-vs-baseline comparison covers an identical span.
+    const warmup = Math.min(candles.length - 1, EMA_TREND);
+    for (let i = warmup; i < candles.length; i++) {
       const f0 = ind.emaFast[i - 1], s0 = ind.emaSlow[i - 1];
       const f1 = ind.emaFast[i], s1 = ind.emaSlow[i];
       if (f0 == null || s0 == null || ind.rsi[i] == null || ind.atr[i] == null) continue;
@@ -167,6 +267,16 @@
       if (f0 <= s0 && f1 > s1 && ind.rsi[i] >= 45 && ind.rsi[i] <= 70) side = 'long';
       if (f0 >= s0 && f1 < s1 && ind.rsi[i] >= 30 && ind.rsi[i] <= 55) side = 'short';
       if (!side) continue;
+
+      if (filtered) {
+        // Gate 1: trade only with the higher-timeframe trend (200 EMA side).
+        const trend = ind.emaTrend[i];
+        if (trend == null) continue;
+        if (side === 'long' && candles[i].c <= trend) continue;
+        if (side === 'short' && candles[i].c >= trend) continue;
+        // Gate 2: skip chop — EMA crosses whipsaw when trend strength is low.
+        if (ind.adx[i] == null || ind.adx[i] < ADX_MIN) continue;
+      }
 
       const entry = candles[i].c;
       const a = ind.atr[i];
@@ -205,12 +315,17 @@
     return { outcome: 'flat', exit, movePct: (dir * (exit - entry) / entry) * 100 };
   }
 
+  const closedOf = (signals) => signals.filter((s) => s.outcome !== 'open');
+  const favorableRate = (closed) =>
+    closed.length ? (closed.filter((s) => s.movePct > 0).length / closed.length) * 100 : null;
+
   /* ---------------- chart ---------------- */
 
   const chart = {
     canvas: null, ctx: null, dpr: 1,
     candles: [], ind: null, signals: [],
     view: null, // { start, plot geometry } — rebuilt on each draw
+    listenersBound: false,
   };
 
   function setupChart(candles, ind, signals) {
@@ -220,13 +335,17 @@
     chart.ind = ind;
     chart.signals = signals;
     drawChart();
-    window.addEventListener('resize', drawChart);
-    chart.canvas.addEventListener('mousemove', onChartHover);
-    chart.canvas.addEventListener('mouseleave', hideTooltip);
+    if (!chart.listenersBound) {
+      window.addEventListener('resize', () => drawChart());
+      chart.canvas.addEventListener('mousemove', onChartHover);
+      chart.canvas.addEventListener('mouseleave', hideTooltip);
+      chart.listenersBound = true;
+    }
   }
 
   function drawChart(hoverIdx = null) {
     const { canvas, ctx, candles, ind, signals } = chart;
+    if (!candles.length) return;
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     if (canvas.width !== Math.round(rect.width * dpr)) {
@@ -239,7 +358,7 @@
 
     const start = Math.max(0, candles.length - VISIBLE);
     const view = candles.slice(start);
-    const padR = 64, padT = 12, padB = 26, padL = 6;
+    const padR = 72, padT = 12, padB = 26, padL = 6;
     const plotW = W - padL - padR, plotH = H - padT - padB;
 
     let lo = Infinity, hi = -Infinity;
@@ -262,7 +381,7 @@
       ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(W - padR, yy); ctx.stroke();
       ctx.fillStyle = COLORS.muted;
       ctx.textAlign = 'left';
-      ctx.fillText(fmtUsd(p), W - padR + 8, yy);
+      ctx.fillText(fmtPrice(p), W - padR + 8, yy);
     }
 
     // time axis: one label roughly every 24 candles
@@ -361,14 +480,14 @@
     const tt = $('tooltip');
     tt.innerHTML = `
       <div class="tt-time">${fmtTime(c.t)} UTC</div>
-      <div class="tt-row"><span>Open</span><span>${fmtUsd(c.o)}</span></div>
-      <div class="tt-row"><span>High</span><span>${fmtUsd(c.h)}</span></div>
-      <div class="tt-row"><span>Low</span><span>${fmtUsd(c.l)}</span></div>
-      <div class="tt-row"><span>Close</span><span>${fmtUsd(c.c)}</span></div>
-      <div class="tt-row"><span>Volume</span><span>${fmtUsd(c.v)}</span></div>
-      ${chart.ind.emaFast[idx] != null ? `<div class="tt-row"><span>EMA 20</span><span>${fmtUsd(chart.ind.emaFast[idx])}</span></div>` : ''}
-      ${chart.ind.emaSlow[idx] != null ? `<div class="tt-row"><span>EMA 50</span><span>${fmtUsd(chart.ind.emaSlow[idx])}</span></div>` : ''}
-      ${sig ? `<div class="tt-signal ${sig.side}">${sig.side === 'long' ? '▲ LONG' : '▼ SHORT'} signal · entry ${fmtUsd(sig.entry)}</div>` : ''}`;
+      <div class="tt-row"><span>Open</span><span>${fmtPrice(c.o)}</span></div>
+      <div class="tt-row"><span>High</span><span>${fmtPrice(c.h)}</span></div>
+      <div class="tt-row"><span>Low</span><span>${fmtPrice(c.l)}</span></div>
+      <div class="tt-row"><span>Close</span><span>${fmtPrice(c.c)}</span></div>
+      ${c.v ? `<div class="tt-row"><span>Volume</span><span>${fmtUsd(c.v)}</span></div>` : ''}
+      ${chart.ind.emaFast[idx] != null ? `<div class="tt-row"><span>EMA 20</span><span>${fmtPrice(chart.ind.emaFast[idx])}</span></div>` : ''}
+      ${chart.ind.emaSlow[idx] != null ? `<div class="tt-row"><span>EMA 50</span><span>${fmtPrice(chart.ind.emaSlow[idx])}</span></div>` : ''}
+      ${sig ? `<div class="tt-signal ${sig.side}">${sig.side === 'long' ? '▲ LONG' : '▼ SHORT'} signal · entry ${fmtPrice(sig.entry)}</div>` : ''}`;
     tt.hidden = false;
     const ttw = tt.offsetWidth;
     const px = chart.view.x(idx);
@@ -383,40 +502,77 @@
 
   /* ---------------- page rendering ---------------- */
 
-  function renderTiles(candles, ind, signals) {
-    const closed = signals.filter((s) => s.outcome === 'win' || s.outcome === 'loss' || s.outcome === 'flat');
-    const favorable = closed.filter((s) => s.movePct > 0);
-    const days = Math.round((candles[candles.length - 1].t - candles[0].t) / 86400000);
+  function renderAssetTabs() {
+    const wrap = $('asset-tabs');
+    wrap.innerHTML = Object.entries(ASSETS).map(([a, cfg]) =>
+      `<button class="asset-tab${a === currentAsset ? ' active' : ''}" role="tab"
+        aria-selected="${a === currentAsset}" data-asset="${a}">${cfg.tab}</button>`).join('');
+    wrap.querySelectorAll('button').forEach((b) => {
+      b.addEventListener('click', () => {
+        if (b.dataset.asset === currentAsset) return;
+        currentAsset = b.dataset.asset;
+        localStorage.setItem('budsignal-asset', currentAsset);
+        refresh();
+      });
+    });
 
-    const wr = closed.length ? (favorable.length / closed.length) * 100 : null;
-    const wrEl = $('tile-winrate');
-    wrEl.textContent = wr == null ? 'n/a' : `${wr.toFixed(0)}%`;
+    // The API-key row only concerns Twelve Data assets.
+    const keyRow = $('key-row');
+    keyRow.hidden = ASSETS[currentAsset].kind !== 'td';
+    if (!keyRow.dataset.bound) {
+      keyRow.dataset.bound = '1';
+      $('td-key').value = localStorage.getItem(TD_KEY_STORE) || '';
+      $('td-key-save').addEventListener('click', () => {
+        const v = $('td-key').value.trim();
+        if (v) localStorage.setItem(TD_KEY_STORE, v);
+        else localStorage.removeItem(TD_KEY_STORE);
+        refresh();
+      });
+    }
+  }
+
+  function renderTiles(candles, ind, signals, baseline) {
+    const closed = closedOf(signals);
+    const favorable = closed.filter((s) => s.movePct > 0);
+    const warmupIdx = Math.min(candles.length - 1, EMA_TREND);
+    const days = Math.round((candles[candles.length - 1].t - candles[warmupIdx].t) / 86400000);
+
+    const wr = favorableRate(closed);
+    $('tile-winrate').textContent = wr == null ? 'n/a' : `${wr.toFixed(0)}%`;
     $('tile-winrate-note').textContent = closed.length
       ? `${favorable.length} of ${closed.length} closed signals ended favorable`
       : 'no closed signals in loaded history';
 
     $('tile-signals').textContent = String(signals.length);
-    $('tile-signals-note').textContent = `over the last ${days} days of 4h candles`;
+    $('tile-signals-note').textContent =
+      `over ${days} days · unfiltered baseline fired ${baseline.length}`;
 
     const avg = closed.length ? closed.reduce((a, s) => a + s.movePct, 0) / closed.length : null;
     const avgEl = $('tile-avgmove');
     avgEl.textContent = avg == null ? 'n/a' : fmtPct(avg);
+    avgEl.classList.remove('pos', 'neg');
     if (avg != null) avgEl.classList.add(avg >= 0 ? 'pos' : 'neg');
 
     const i = candles.length - 1;
     const bull = ind.emaFast[i] != null && ind.emaSlow[i] != null && ind.emaFast[i] > ind.emaSlow[i];
+    const trending = ind.adx[i] != null && ind.adx[i] >= ADX_MIN;
     const regimeEl = $('tile-regime');
-    regimeEl.textContent = bull ? 'Uptrend' : 'Downtrend';
-    regimeEl.classList.add(bull ? 'pos' : 'neg');
-    $('tile-regime-note').textContent = bull ? 'EMA 20 above EMA 50' : 'EMA 20 below EMA 50';
+    regimeEl.textContent = trending ? (bull ? 'Uptrend' : 'Downtrend') : 'Chop';
+    regimeEl.classList.remove('pos', 'neg');
+    if (trending) regimeEl.classList.add(bull ? 'pos' : 'neg');
+    $('tile-regime-note').textContent = trending
+      ? `${bull ? 'EMA 20 above EMA 50' : 'EMA 20 below EMA 50'} · ADX ${ind.adx[i].toFixed(0)}`
+      : `ADX ${ind.adx[i] != null ? ind.adx[i].toFixed(0) : '—'} < ${ADX_MIN} — signals gated off`;
   }
 
   function renderIndicators(candles, ind) {
     const i = candles.length - 1;
     $('ind-rsi').textContent = ind.rsi[i] != null ? ind.rsi[i].toFixed(1) : '—';
-    $('ind-ema20').textContent = ind.emaFast[i] != null ? `$${fmtUsd(ind.emaFast[i])}` : '—';
-    $('ind-ema50').textContent = ind.emaSlow[i] != null ? `$${fmtUsd(ind.emaSlow[i])}` : '—';
-    $('ind-atr').textContent = ind.atr[i] != null ? `$${fmtUsd(ind.atr[i])}` : '—';
+    $('ind-adx').textContent = ind.adx[i] != null ? ind.adx[i].toFixed(1) : '—';
+    $('ind-ema20').textContent = ind.emaFast[i] != null ? `$${fmtPrice(ind.emaFast[i])}` : '—';
+    $('ind-ema50').textContent = ind.emaSlow[i] != null ? `$${fmtPrice(ind.emaSlow[i])}` : '—';
+    $('ind-ema200').textContent = ind.emaTrend[i] != null ? `$${fmtPrice(ind.emaTrend[i])}` : '—';
+    $('ind-atr').textContent = ind.atr[i] != null ? `$${fmtPrice(ind.atr[i])}` : '—';
     const volRatio = ind.volSma[i] ? candles[i].v / ind.volSma[i] : null;
     $('ind-vol').textContent = volRatio ? `${(volRatio * 100).toFixed(0)}%` : '—';
   }
@@ -433,13 +589,13 @@
       const s = active[active.length - 1];
       badge.className = `signal-badge ${s.side}`;
       badge.textContent = s.side === 'long' ? '▲ LONG' : '▼ SHORT';
-      $('signal-when').textContent = `fired ${fmtTime(s.t)} UTC`;
+      $('signal-when').textContent = `${currentAsset} · fired ${fmtTime(s.t)} UTC`;
       copy.textContent = s.side === 'long'
-        ? 'EMA 20 crossed above EMA 50 with momentum confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.'
-        : 'EMA 20 crossed below EMA 50 with momentum confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.';
-      $('lvl-entry').textContent = `$${fmtUsd(s.entry)}`;
-      $('lvl-stop').textContent = `$${fmtUsd(s.stop)}`;
-      $('lvl-target').textContent = `$${fmtUsd(s.target)}`;
+        ? 'EMA 20 crossed above EMA 50 with the higher-timeframe trend, trend strength, and momentum all confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.'
+        : 'EMA 20 crossed below EMA 50 with the higher-timeframe trend, trend strength, and momentum all confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.';
+      $('lvl-entry').textContent = `$${fmtPrice(s.entry)}`;
+      $('lvl-stop').textContent = `$${fmtPrice(s.stop)}`;
+      $('lvl-target').textContent = `$${fmtPrice(s.target)}`;
       const remaining = Math.max(0, s.t + FOUR_H - Date.now());
       $('lvl-window').textContent = remaining > 0
         ? `${Math.floor(remaining / 3600000)}h ${Math.floor((remaining % 3600000) / 60000)}m left`
@@ -449,19 +605,29 @@
     } else {
       badge.className = 'signal-badge neutral';
       badge.textContent = '— NO SIGNAL';
-      $('signal-when').textContent = `as of ${fmtTime(last.t)} UTC`;
+      $('signal-when').textContent = `${currentAsset} · as of ${fmtTime(last.t)} UTC`;
       const lastSig = signals[signals.length - 1];
       copy.textContent = lastSig
-        ? `Conditions don't currently line up — the rule set is flat and waiting. The most recent signal was a ${lastSig.side.toUpperCase()} on ${fmtTime(lastSig.t)} UTC (see the track record below).`
-        : 'Conditions don\'t currently line up — the rule set is flat and waiting. No signals fired in the loaded history.';
+        ? `Conditions don't currently line up on ${currentAsset} — the rule set is flat and waiting. The most recent signal was a ${lastSig.side.toUpperCase()} on ${fmtTime(lastSig.t)} UTC (see the track record below).`
+        : `Conditions don't currently line up on ${currentAsset} — the rule set is flat and waiting. No signals passed the filters in the loaded history.`;
       levels.hidden = true;
     }
   }
 
-  function renderTrackRecord(signals) {
+  function renderTrackRecord(signals, baseline) {
+    // Filters are only worth shipping if they measurably beat the raw cross —
+    // so the comparison is computed and shown, not asserted.
+    const wrF = favorableRate(closedOf(signals));
+    const wrB = favorableRate(closedOf(baseline));
+    $('track-sub').textContent =
+      `Every ${currentAsset} signal the rule set produced over the loaded history — recomputed from raw candles on each page load, so it cannot be curated.` +
+      (wrF != null && wrB != null
+        ? ` Filtered rules: ${wrF.toFixed(0)}% favorable (${closedOf(signals).length} closed) vs ${wrB.toFixed(0)}% for the unfiltered EMA-cross baseline (${closedOf(baseline).length} closed) over the same span.`
+        : '');
+
     const body = $('record-body');
     if (!signals.length) {
-      body.innerHTML = '<tr><td colspan="6" class="table-empty">The rule set produced no signals over the loaded history.</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" class="table-empty">No signals passed the filters over the loaded history.</td></tr>';
       return;
     }
     const rows = [...signals].reverse().map((s) => {
@@ -474,8 +640,8 @@
       return `<tr>
         <td>${fmtTime(s.t)}</td>
         <td><span class="side-badge ${s.side}">${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}</span></td>
-        <td class="num">$${fmtUsd(s.entry)}</td>
-        <td class="num">${s.exit != null ? '$' + fmtUsd(s.exit) : '—'}</td>
+        <td class="num">$${fmtPrice(s.entry)}</td>
+        <td class="num">${s.exit != null ? '$' + fmtPrice(s.exit) : '—'}</td>
         <td>${outcome}</td>
         <td class="num ${moveCls}">${fmtPct(s.movePct)}</td>
       </tr>`;
@@ -488,7 +654,8 @@
     // 24h ago = 6 candles back on the 4h chart
     const ref = candles[Math.max(0, candles.length - 7)];
     const delta = ((last.c - ref.c) / ref.c) * 100;
-    $('hero-price').textContent = `$${fmtUsd(last.c)}`;
+    $('hero-symbol').textContent = ASSETS[currentAsset].pair;
+    $('hero-price').textContent = `$${fmtPrice(last.c)}`;
     const dEl = $('hero-delta');
     dEl.textContent = `${fmtPct(delta)} · 24h`;
     dEl.className = `hero-price-delta ${delta >= 0 ? 'pos' : 'neg'}`;
@@ -497,7 +664,11 @@
   /* ---------------- boot ---------------- */
 
   async function refresh() {
-    const { source, candles } = await fetchCandles();
+    renderAssetTabs();
+    $('chart-title').textContent = `${ASSETS[currentAsset].pair} · 4h candles`;
+    const asset = currentAsset;
+    const { source, candles } = await fetchCandles(asset);
+    if (asset !== currentAsset) return; // user switched assets mid-fetch
     $('data-source').textContent = source;
     if (candles.length < EMA_SLOW + 5) return;
 
@@ -505,17 +676,20 @@
     const ind = {
       emaFast: ema(closes, EMA_FAST),
       emaSlow: ema(closes, EMA_SLOW),
+      emaTrend: ema(closes, EMA_TREND),
       rsi: rsi(closes, RSI_LEN),
       atr: atr(candles, ATR_LEN),
+      adx: adx(candles, ADX_LEN),
       volSma: sma(candles.map((c) => c.v), VOL_LEN),
     };
-    const signals = computeSignals(candles, ind);
+    const signals = computeSignals(candles, ind, true);
+    const baseline = computeSignals(candles, ind, false);
 
     renderHero(candles);
-    renderTiles(candles, ind, signals);
+    renderTiles(candles, ind, signals, baseline);
     renderIndicators(candles, ind);
     renderCurrentSignal(candles, ind, signals);
-    renderTrackRecord(signals);
+    renderTrackRecord(signals, baseline);
     setupChart(candles, ind, signals);
   }
 
