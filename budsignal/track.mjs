@@ -56,7 +56,9 @@ async function main() {
           entry: s.entry, stop: s.stop, target: s.target,
           confidence: s.confidence, adx: s.adx, rsi: s.rsiAt, volConfirm: s.volConfirm,
           outcome: s.outcome, movePct: Math.round(s.movePct * 100) / 100,
-          recorded: bootstrap ? 'backfill' : 'live',
+          // 'live' must mean recorded as it fired — historical signals pulled
+          // in when a market is first added (or on bootstrap) are backfill
+          recorded: bootstrap || Date.now() - s.t > 2 * E.CFG.CANDLE_MS ? 'backfill' : 'live',
         };
         ledger.records.push(rec);
         byKey.set(key, rec);
