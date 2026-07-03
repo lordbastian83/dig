@@ -40,21 +40,37 @@ async function fetchKraken(pairCode) {
   return j.result[key].map((k) => ({ t: k[0] * 1000, o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[6] }));
 }
 
+// FMP: keys issued after the 2025 API revamp only work on /stable/ endpoints
+// (legacy /api/v3/ returns 403 for them), while old keys are the reverse — so
+// try stable first and fall back to v3.
+export async function fmpChart(symbol, fromT, toT, fmpKey) {
+  const day = (x) => new Date(x).toISOString().slice(0, 10);
+  const range = `from=${day(fromT)}&to=${day(toT)}&apikey=${encodeURIComponent(fmpKey)}`;
+  const urls = [
+    `https://financialmodelingprep.com/stable/historical-chart/4hour?symbol=${encodeURIComponent(symbol)}&${range}`,
+    `https://financialmodelingprep.com/api/v3/historical-chart/4hour/${encodeURIComponent(symbol)}?${range}`,
+  ];
+  const errors = [];
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      if (!Array.isArray(j)) throw new Error((j && (j['Error Message'] || j.message)) || 'no data');
+      return j.map((v) => ({
+        t: Date.parse(v.date.replace(' ', 'T') + 'Z'),
+        o: +v.open, h: +v.high, l: +v.low, c: +v.close,
+        v: v.volume != null ? +v.volume : 0,
+      })).sort((a, b) => a.t - b.t);
+    } catch (e) { errors.push(e.message); }
+  }
+  throw new Error(`FMP ${symbol}: ${errors.join(' | ')}`);
+}
+
 async function fetchFmp(symbol, fmpKey) {
-  const now = new Date();
-  const from = new Date(now.getTime() - 170 * 86400000);
-  const day = (x) => x.toISOString().slice(0, 10);
-  const url = `https://financialmodelingprep.com/api/v3/historical-chart/4hour/${encodeURIComponent(symbol)}` +
-    `?from=${day(from)}&to=${day(now)}&apikey=${encodeURIComponent(fmpKey)}`;
-  const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
-  if (!r.ok) throw new Error(`FMP HTTP ${r.status}`);
-  const j = await r.json();
-  if (!Array.isArray(j) || !j.length) throw new Error((j && j['Error Message']) || 'FMP: no data');
-  return j.map((v) => ({
-    t: Date.parse(v.date.replace(' ', 'T') + 'Z'),
-    o: +v.open, h: +v.high, l: +v.low, c: +v.close,
-    v: v.volume != null ? +v.volume : 0,
-  })).reverse().slice(-CANDLE_LIMIT);
+  const candles = await fmpChart(symbol, Date.now() - 170 * 86400000, Date.now(), fmpKey);
+  if (!candles.length) throw new Error(`FMP ${symbol}: empty`);
+  return candles.slice(-CANDLE_LIMIT);
 }
 
 export async function fetchCandles(asset, fmpKey) {

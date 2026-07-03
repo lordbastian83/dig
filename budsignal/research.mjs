@@ -13,7 +13,7 @@
      REPORT_FILE  output path (default research-report.md) */
 
 import './engine.js';
-import { ASSETS, demoCandles } from './feeds.mjs';
+import { ASSETS, demoCandles, fmpChart } from './feeds.mjs';
 import { writeFileSync } from 'node:fs';
 
 const E = globalThis.BudSignalEngine;
@@ -25,19 +25,7 @@ const REPORT_FILE = process.env.REPORT_FILE || 'research-report.md';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const day = (t) => new Date(t).toISOString().slice(0, 10);
 
-async function fetchChunk(symbol, fromT, toT) {
-  const url = `https://financialmodelingprep.com/api/v3/historical-chart/4hour/${encodeURIComponent(symbol)}` +
-    `?from=${day(fromT)}&to=${day(toT)}&apikey=${encodeURIComponent(FMP_KEY)}`;
-  const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
-  if (!r.ok) throw new Error(`FMP HTTP ${r.status}`);
-  const j = await r.json();
-  if (!Array.isArray(j)) throw new Error((j && j['Error Message']) || 'no data');
-  return j.map((v) => ({
-    t: Date.parse(v.date.replace(' ', 'T') + 'Z'),
-    o: +v.open, h: +v.high, l: +v.low, c: +v.close,
-    v: v.volume != null ? +v.volume : 0,
-  }));
-}
+const fetchChunk = (symbol, fromT, toT) => fmpChart(symbol, fromT, toT, FMP_KEY);
 
 async function fetchHistory(symbol) {
   const byT = new Map();
