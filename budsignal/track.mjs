@@ -35,7 +35,7 @@ function loadLedger() {
 async function main() {
   const ledger = loadLedger();
   const bootstrap = ledger.records.length === 0;
-  const byKey = new Map(ledger.records.map((r) => [`${r.asset}:${r.t}`, r]));
+  const byKey = new Map(ledger.records.map((r) => [`${r.asset}:${r.t}:${r.strategy || 'cross'}`, r]));
   let added = 0, resolved = 0;
 
   const histories = {};
@@ -55,15 +55,15 @@ async function main() {
     const closed = E.closedPrefix(candles, Date.now());
     if (closed.length < E.CFG.EMA_TREND + 10) { console.log(`${asset}: only ${closed.length} closed candles — skipping`); continue; }
     const ind = E.computeIndicators(closed);
-    const signals = E.computeSignals(closed, ind, true);
+    const signals = [...E.computeSignals(closed, ind, true), ...E.computeBreakoutStream(closed, ind)];
 
     for (const s of signals) {
-      const key = `${asset}:${s.t}`;
+      const key = `${asset}:${s.t}:${s.strategy || 'cross'}`;
       const existing = byKey.get(key);
       if (!existing) {
         enrichSignal(asset, s, ctx);
         const rec = {
-          asset, t: s.t, side: s.side,
+          asset, t: s.t, side: s.side, strategy: s.strategy || 'cross',
           entry: s.entry, stop: s.stop, target: s.target,
           confidence: s.confidence, adx: s.adx, rsi: s.rsiAt, volConfirm: s.volConfirm,
           fundRate: s.fundRate ?? null, fundPctl: s.fundPctl ?? null, fng: s.fng ?? null,
