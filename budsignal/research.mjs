@@ -139,6 +139,75 @@ async function main() {
     return `- **${label}**: train ${tr == null ? 'n/a' : tr ? 'better' : 'worse'}, validate ${va == null ? 'n/a' : va ? 'better' : 'worse'} → ${mark}`;
   };
 
+  // ---- Alternative entry families, same walk-forward split ----
+  {
+    const alt = {
+      breakoutFixed: { train: [], validate: [] },
+      breakoutTrail: { train: [], validate: [] },
+      fundingFixed: { train: [], validate: [] },
+      fundingTrail: { train: [], validate: [] },
+    };
+    for (const [asset] of Object.entries(ASSETS)) {
+      const candles = histories[asset];
+      if (!candles || candles.length < 800) continue;
+      const ind = E.computeIndicators(candles);
+      const splitT = candles[Math.floor(candles.length * 0.7)].t;
+      const period = (s) => (s.t < splitT ? 'train' : 'validate');
+
+      // Donchian breakout
+      for (const s of E.closedOf(E.computeBreakoutSignals(candles, ind))) {
+        alt.breakoutFixed[period(s)].push(s.movePct);
+        const tr = E.trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
+        if (tr.closed) alt.breakoutTrail[period(s)].push(tr.movePct);
+      }
+
+      // Funding-extreme mean reversion (crypto with funding history only):
+      // crowd maximally long (>=90th pctl of trailing 30d fundings) -> short,
+      // maximally short (<=10th) -> long
+      const rates = ctx?.funding?.[asset];
+      if (rates && rates.length > 200) {
+        let last = -Infinity;
+        for (let i = 210; i < candles.length; i++) {
+          const a = ind.atr[i];
+          if (!a) continue;
+          let k = rates.length - 1;
+          while (k >= 0 && rates[k].t > candles[i].t) k--;
+          if (k < 90) continue;
+          const win = rates.slice(k - 90, k + 1).map((r) => r.rate);
+          const pctl = win.filter((v) => v <= rates[k].rate).length / win.length;
+          let side = null;
+          if (pctl >= 0.9) side = 'short';
+          else if (pctl <= 0.1) side = 'long';
+          if (!side || i - last <= 18) continue;
+          last = i;
+          const dir = side === 'long' ? 1 : -1;
+          const entry = candles[i].c;
+          const out = E.scoreOutcome(candles, i, side, entry, entry - dir * 1.5 * a, entry + dir * 2 * a, a);
+          const s = { i, t: candles[i].t, side, entry };
+          if (out.outcome !== 'open') alt.fundingFixed[period(s)].push(out.movePct);
+          const tr = E.trailingScore(candles, i, side, entry, a);
+          if (tr.closed) alt.fundingTrail[period(s)].push(tr.movePct);
+        }
+      }
+    }
+    const altVerdict = (key) => {
+      const tr = stats(alt[key].train), va = stats(alt[key].validate);
+      return tr && va && tr.avg > 0 && va.avg > 0 ? '✅ positive in BOTH periods' : '❌ no out-of-sample edge';
+    };
+    lines.push(
+      '## Alternative entry families (pooled)',
+      '',
+      '| Strategy | Train | Validate | Verdict |',
+      '|---|---|---|---|',
+      `| Donchian-55 breakout, fixed exits | ${fmtStats(stats(alt.breakoutFixed.train))} | ${fmtStats(stats(alt.breakoutFixed.validate))} | ${altVerdict('breakoutFixed')} |`,
+      `| Donchian-55 breakout, trailing exits | ${fmtStats(stats(alt.breakoutTrail.train))} | ${fmtStats(stats(alt.breakoutTrail.validate))} | ${altVerdict('breakoutTrail')} |`,
+      `| Funding-extreme mean reversion, fixed | ${fmtStats(stats(alt.fundingFixed.train))} | ${fmtStats(stats(alt.fundingFixed.validate))} | ${altVerdict('fundingFixed')} |`,
+      `| Funding-extreme mean reversion, trailing | ${fmtStats(stats(alt.fundingTrail.train))} | ${fmtStats(stats(alt.fundingTrail.validate))} | ${altVerdict('fundingTrail')} |`,
+      '',
+    );
+    console.log('alternative entry families evaluated');
+  }
+
   // ---- ML meta-labeling: train on train-period baseline signals, judge on validate ----
   let mlPassed = false;
   if (mlRows.train.length >= 100 && mlRows.validate.length >= 30) {
