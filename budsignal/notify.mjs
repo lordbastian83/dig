@@ -123,6 +123,43 @@ function composeDigest(records) {
   ].filter(Boolean).join('\n');
 }
 
+// Daily heartbeat: proof-of-life plus "what's brewing" — for each market,
+// how far the EMA-20/50 pair is from crossing (in ATRs) and which gates
+// would still block a signal if it crossed right now.
+async function composeHeartbeat() {
+  const near = [];
+  let fired = 0, scanned = 0;
+  for (const asset of Object.keys(ASSETS)) {
+    let candles;
+    try { candles = await feedFetch(asset, FMP_KEY); } catch (e) { console.log(`${asset}: ${e.message}`); continue; }
+    const closed = E.closedPrefix(candles, Date.now());
+    if (closed.length < E.CFG.EMA_TREND + 10) continue;
+    scanned++;
+    const ind = E.computeIndicators(closed);
+    const signals = E.computeSignals(closed, ind, true);
+    fired += signals.filter((s) => Date.now() - s.t <= 86400000).length;
+    const i = closed.length - 1;
+    if (ind.emaFast[i] == null || ind.emaSlow[i] == null || !ind.atr[i]) continue;
+    const gapAtr = Math.abs(ind.emaFast[i] - ind.emaSlow[i]) / ind.atr[i];
+    const dir = ind.emaFast[i] < ind.emaSlow[i] ? 'long' : 'short'; // direction of the prospective cross
+    const blockers = [];
+    if (ind.adx[i] != null && ind.adx[i] < E.CFG.ADX_MIN) blockers.push(`ADX ${ind.adx[i].toFixed(0)} needs ${E.CFG.ADX_MIN}`);
+    if (ind.emaTrend[i] != null) {
+      const trendOk = dir === 'long' ? closed[i].c > ind.emaTrend[i] : closed[i].c < ind.emaTrend[i];
+      if (!trendOk) blockers.push('wrong side of 200-EMA');
+    }
+    near.push({ asset, gapAtr, dir, blockers });
+  }
+  near.sort((a, b) => a.gapAtr - b.gapAtr);
+  const top = near.slice(0, 3).map((n) =>
+    `${n.asset}: ${n.dir === 'long' ? '▲' : '▼'} cross ${n.gapAtr.toFixed(1)} ATR away${n.blockers.length ? ` · ${n.blockers.join(' · ')}` : ' · gates clear'}`);
+  return [
+    `🫀 <b>Daily check</b> — ${scanned} markets scanned, ${fired ? `${fired} signal(s) fired in the last 24h` : 'no setups today'}.`,
+    top.length ? 'Closest to firing:' : '',
+    ...top,
+  ].filter(Boolean).join('\n');
+}
+
 function composeMessage(asset, sig) {
   const cfg = ASSETS[asset];
   const arrow = sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT';
@@ -196,6 +233,17 @@ async function main() {
     saveState(state);
     if (process.env.SEND_TEST === '1') { console.error(msg); process.exit(1); }
     console.log(msg);
+    return;
+  }
+
+  if (process.env.HEARTBEAT === '1') {
+    const text = await composeHeartbeat();
+    if (DRY_RUN) { console.log(`DRY RUN heartbeat:\n${text.replace(/<[^>]+>/g, '')}`); saveState(state); return; }
+    for (const chatId of chats) {
+      await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+    }
+    console.log('heartbeat sent');
+    saveState(state);
     return;
   }
 

@@ -15,10 +15,15 @@ on:
   schedule:
     - cron: '7 */4 * * *'   # signal + resolution alerts, ledger update
     - cron: '15 0 * * 1'    # Monday weekly digest
+    - cron: '15 20 * * *'   # daily heartbeat
   workflow_dispatch:
     inputs:
       test:
         description: 'Send a connectivity test message'
+        type: boolean
+        default: false
+      heartbeat:
+        description: 'Send the daily heartbeat now'
         type: boolean
         default: false
 
@@ -41,7 +46,7 @@ jobs:
           key: budsignal-notify-state-${{ github.run_id }}
           restore-keys: budsignal-notify-state-
       - name: Compute signals and notify
-        if: ${{ github.event.schedule != '15 0 * * 1' }}
+        if: ${{ github.event.schedule != '15 0 * * 1' && github.event.schedule != '15 20 * * *' && !inputs.heartbeat }}
         run: node budsignal/notify.mjs
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -58,8 +63,15 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: Daily heartbeat
+        if: ${{ github.event.schedule == '15 20 * * *' || inputs.heartbeat }}
+        run: HEARTBEAT=1 node budsignal/notify.mjs
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
       - name: Update performance ledger (budsignal-data branch)
-        if: ${{ !inputs.test && github.event.schedule != '15 0 * * 1' }}
+        if: ${{ !inputs.test && !inputs.heartbeat && github.event.schedule != '15 0 * * 1' && github.event.schedule != '15 20 * * *' }}
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         run: |
