@@ -61,7 +61,7 @@ const fmtStats = (s) => s
 
 async function main() {
   const lines = [
-    '# BudSignal walk-forward research',
+    '# LordBastian Signal Generator — walk-forward research',
     '',
     `Generated ${new Date().toISOString()} · ${YEARS}y of 4h candles via FMP · ` +
     'train = first 70% of each market\'s history, validate = last 30% (out-of-sample).',

@@ -115,7 +115,7 @@ function composeDigest(records) {
     .sort((x, y) => y.avg - x.avg);
   const pf = all && (all.pf === Infinity ? '∞' : all.pf.toFixed(2));
   return [
-    '📊 <b>BudSignal weekly digest</b>',
+    '📊 <b>LordBastian signals — weekly digest</b>',
     `This week: ${week.length} signal(s) fired.`,
     all ? `All-time ledger: ${all.n} closed · ${all.favPct.toFixed(0)}% favorable · avg ${all.avg >= 0 ? '+' : ''}${all.avg.toFixed(2)}% · profit factor ${pf}` : 'No closed signals in the ledger yet.',
     ranked.length ? `Best market: ${ranked[0].a} (avg ${ranked[0].avg >= 0 ? '+' : ''}${ranked[0].avg.toFixed(2)}%) · Worst: ${ranked[ranked.length - 1].a} (avg ${ranked[ranked.length - 1].avg >= 0 ? '+' : ''}${ranked[ranked.length - 1].avg.toFixed(2)}%)` : '',
@@ -132,7 +132,7 @@ function composeMessage(asset, sig) {
     `Entry $${fmtPrice(sig.entry)} · Stop $${fmtPrice(sig.stop)} · Target $${fmtPrice(sig.target)}`,
     `Confidence ${sig.confidence}/100 · entry window until ${windowEnd} UTC`,
     `Signal candle closed ${fmtTime(sig.t)} UTC`,
-    `<i>BudSignal is an educational tool — not financial advice.</i>`,
+    `<i>LordBastian Signal Generator — educational tool, not financial advice.</i>`,
   ].join('\n');
 }
 
@@ -216,7 +216,7 @@ async function main() {
     for (const chatId of chats) {
       await tg('sendMessage', {
         chat_id: chatId, parse_mode: 'HTML',
-        text: '✅ <b>BudSignal connected.</b> You will get a message here whenever a signal fires on a closed 4-hour candle.',
+        text: '✅ <b>LordBastian Signal Generator connected.</b> You will get a message here whenever a signal fires on a closed 4-hour candle.',
       });
       console.log(`test message sent to chat ${chatId}`);
     }
