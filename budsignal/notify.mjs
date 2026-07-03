@@ -51,22 +51,32 @@ async function tg(method, body) {
   return j.result;
 }
 
-// A bot cannot message a @username — it needs the numeric chat id, and only
-// for users who have messaged it first. Resolve the id by scanning the bot's
-// recent updates for a private chat from HANDLE, then cache it in state.
-async function resolveChatId(state) {
-  if (process.env.TELEGRAM_CHAT_ID) return process.env.TELEGRAM_CHAT_ID;
-  if (state.chatId) return state.chatId;
-  const updates = await tg('getUpdates', { limit: 100 });
-  for (const u of updates.reverse()) {
-    const chat = u.message?.chat || u.edited_message?.chat;
-    if (chat?.type === 'private' && (chat.username || '').toLowerCase() === HANDLE) {
-      state.chatId = chat.id;
-      console.log(`resolved chat id for @${HANDLE}: ${chat.id}`);
-      return chat.id;
-    }
+// A bot cannot message a @username — it needs numeric chat ids, and only for
+// people who have messaged it first. This is a personal alert bot, so treat
+// every private chat found in the bot's updates as a subscriber (username
+// matching proved fragile: unset usernames or spelling mismatches fail
+// silently). Ids are cached in state so they survive update expiry.
+async function resolveChatIds(state) {
+  state.chats = state.chats || [];
+  if (process.env.TELEGRAM_CHAT_ID && !state.chats.includes(process.env.TELEGRAM_CHAT_ID)) {
+    state.chats.push(process.env.TELEGRAM_CHAT_ID);
   }
-  return null;
+  if (state.chatId && !state.chats.includes(state.chatId)) state.chats.push(state.chatId); // legacy field
+  let updateCount = 0;
+  try {
+    const updates = await tg('getUpdates', { limit: 100 });
+    updateCount = updates.length;
+    for (const u of updates) {
+      const chat = u.message?.chat || u.edited_message?.chat;
+      if (chat?.type === 'private' && !state.chats.includes(chat.id)) {
+        state.chats.push(chat.id);
+        console.log(`subscribed chat ${chat.id} (@${chat.username || 'no-username'})`);
+      }
+    }
+  } catch (e) {
+    console.log(`getUpdates failed: ${e.message}`);
+  }
+  return { chats: state.chats, updateCount };
 }
 
 function composeMessage(asset, sig) {
@@ -131,20 +141,28 @@ async function main() {
   }
 
   const state = loadState();
-  const chatId = await resolveChatId(state);
-  if (!chatId) {
-    console.log(`Could not resolve a chat id: @${HANDLE} has not messaged the bot yet. ` +
-      'Open the bot in Telegram, press Start, then re-run this workflow.');
+  const { chats, updateCount } = await resolveChatIds(state);
+  if (!chats.length) {
+    // getMe proves whether the token itself is valid and names the bot, so
+    // "no chats" is never ambiguous in the logs.
+    let botName = 'unknown';
+    try { botName = (await tg('getMe')).username; } catch (e) { botName = `TOKEN INVALID (${e.message})`; }
+    const msg = `No subscriber chats found. Bot: @${botName}, updates seen: ${updateCount}. ` +
+      'Open the bot in Telegram, press Start / send it a message, then re-run this workflow.';
     saveState(state);
+    if (process.env.SEND_TEST === '1') { console.error(msg); process.exit(1); }
+    console.log(msg);
     return;
   }
 
   if (process.env.SEND_TEST === '1') {
-    await tg('sendMessage', {
-      chat_id: chatId, parse_mode: 'HTML',
-      text: '✅ <b>BudSignal connected.</b> You will get a message here whenever a signal fires on a closed 4-hour candle.',
-    });
-    console.log('test message sent');
+    for (const chatId of chats) {
+      await tg('sendMessage', {
+        chat_id: chatId, parse_mode: 'HTML',
+        text: '✅ <b>BudSignal connected.</b> You will get a message here whenever a signal fires on a closed 4-hour candle.',
+      });
+      console.log(`test message sent to chat ${chatId}`);
+    }
     saveState(state);
     return;
   }
@@ -166,7 +184,9 @@ async function main() {
     if (DRY_RUN) {
       console.log(`DRY RUN — would send for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);
     } else {
-      await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+      for (const chatId of chats) {
+        await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+      }
       console.log(`${asset}: signal notification sent (${sig.side} @ ${fmtTime(sig.t)})`);
     }
     state.notified[asset] = sig.t;
