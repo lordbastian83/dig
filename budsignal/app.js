@@ -1,23 +1,13 @@
-/* BudSignal — rules-based crypto signal dashboard.
-   Everything is computed client-side from public candle data; the rule set
-   here is the same one described in the "How signals work" section. */
+/* BudSignal — page logic: data fetching, rendering, charts. All indicator
+   math and signal rules live in engine.js (shared with the Telegram
+   notifier) so the site and the alerts can never disagree. */
 
 (() => {
   'use strict';
 
-  const CANDLE_LIMIT = 1000;     // 4h candles ≈ 166 days (Binance/TD max permitting)
-  const EMA_FAST = 20;
-  const EMA_SLOW = 50;
-  const EMA_TREND = 200;         // higher-timeframe trend filter
-  const RSI_LEN = 14;
-  const ATR_LEN = 14;
-  const ADX_LEN = 14;
-  const ADX_MIN = 20;            // below this the market is chop — no signals
-  const VOL_LEN = 20;
-  const STOP_ATR = 1.5;          // stop distance in ATRs
-  const TARGET_ATR = 2.0;        // target distance in ATRs
-  const BE_TRIGGER_ATR = 1.0;    // favorable excursion that moves the stop to breakeven
-  const EVAL_CANDLES = 6;        // outcome window: 6 × 4h = 24h
+  const E = globalThis.BudSignalEngine;
+  const CANDLE_MS = E.CFG.CANDLE_MS;
+  const CANDLE_LIMIT = 1000;     // ~166 days of 4h candles
   const VISIBLE = 120;           // candles drawn on the chart
 
   // kind 'crypto' loads keyless from Binance/Coinbase; kind 'market' (metals,
@@ -41,6 +31,7 @@
   const COLORS = {
     up: '#0ca30c', down: '#d03b3b',
     ema20: '#3987e5', ema50: '#c98500',
+    line: '#3987e5', lineWash: 'rgba(57, 135, 229, 0.10)',
     grid: '#2c2c2a', baseline: '#383835',
     muted: '#898781', ink: '#ffffff', surface: '#1a1a19',
   };
@@ -49,13 +40,14 @@
 
   const fmtUsd = (v, digits = 0) =>
     v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-  // Adaptive decimals so sub-dollar assets (XRP, DOGE, ADA) stay readable.
+  // Adaptive decimals so sub-dollar assets (XRP) and FX stay readable.
   const fmtPrice = (v) => fmtUsd(v, v >= 1000 ? 0 : v >= 10 ? 2 : 4);
   const fmtPct = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
   const fmtTime = (t) => {
     const d = new Date(t);
     return d.toISOString().slice(0, 16).replace('T', ' ');
   };
+  const fmtClock = (t) => new Date(t).toISOString().slice(11, 16);
 
   /* ---------------- data ---------------- */
 
@@ -154,8 +146,7 @@
       return seed / 0x7fffffff;
     };
     const out = [];
-    const FOUR_H = 4 * 3600 * 1000;
-    let t = Date.now() - CANDLE_LIMIT * FOUR_H;
+    let t = Date.now() - CANDLE_LIMIT * CANDLE_MS;
     let price = basePrice;
     let drift = 0;
     for (let i = 0; i < CANDLE_LIMIT; i++) {
@@ -168,201 +159,17 @@
       const v = 800 + rand() * 1200;
       out.push({ t, o, h, l, c, v });
       price = c;
-      t += FOUR_H;
+      t += CANDLE_MS;
     }
     return out;
   }
 
-  /* ---------------- indicators ---------------- */
-
-  function ema(values, len) {
-    const out = new Array(values.length).fill(null);
-    const k = 2 / (len + 1);
-    let sum = 0;
-    for (let i = 0; i < values.length; i++) {
-      if (i < len - 1) { sum += values[i]; continue; }
-      if (i === len - 1) { sum += values[i]; out[i] = sum / len; continue; }
-      out[i] = values[i] * k + out[i - 1] * (1 - k);
-    }
-    return out;
-  }
-
-  function rsi(closes, len) {
-    const out = new Array(closes.length).fill(null);
-    let avgGain = 0, avgLoss = 0;
-    for (let i = 1; i < closes.length; i++) {
-      const ch = closes[i] - closes[i - 1];
-      const gain = Math.max(ch, 0), loss = Math.max(-ch, 0);
-      if (i <= len) {
-        avgGain += gain / len;
-        avgLoss += loss / len;
-        if (i === len) out[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
-      } else {
-        avgGain = (avgGain * (len - 1) + gain) / len;
-        avgLoss = (avgLoss * (len - 1) + loss) / len;
-        out[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
-      }
-    }
-    return out;
-  }
-
-  function atr(candles, len) {
-    const out = new Array(candles.length).fill(null);
-    let sum = 0;
-    for (let i = 1; i < candles.length; i++) {
-      const tr = Math.max(
-        candles[i].h - candles[i].l,
-        Math.abs(candles[i].h - candles[i - 1].c),
-        Math.abs(candles[i].l - candles[i - 1].c));
-      if (i <= len) {
-        sum += tr;
-        if (i === len) out[i] = sum / len;
-      } else {
-        out[i] = (out[i - 1] * (len - 1) + tr) / len;
-      }
-    }
-    return out;
-  }
-
-  // Wilder's ADX — trend-strength gate; low ADX means chop, where EMA crosses whipsaw.
-  function adx(candles, len) {
-    const out = new Array(candles.length).fill(null);
-    let trS = 0, pS = 0, mS = 0;
-    let dxSum = 0, dxCount = 0, prevAdx = null;
-    for (let i = 1; i < candles.length; i++) {
-      const tr = Math.max(
-        candles[i].h - candles[i].l,
-        Math.abs(candles[i].h - candles[i - 1].c),
-        Math.abs(candles[i].l - candles[i - 1].c));
-      const up = candles[i].h - candles[i - 1].h;
-      const dn = candles[i - 1].l - candles[i].l;
-      const pdm = up > dn && up > 0 ? up : 0;
-      const mdm = dn > up && dn > 0 ? dn : 0;
-      if (i <= len) {
-        trS += tr; pS += pdm; mS += mdm;
-        if (i < len) continue;
-      } else {
-        trS = trS - trS / len + tr;
-        pS = pS - pS / len + pdm;
-        mS = mS - mS / len + mdm;
-      }
-      if (trS === 0) continue;
-      const pdi = (100 * pS) / trS;
-      const mdi = (100 * mS) / trS;
-      const dx = pdi + mdi === 0 ? 0 : (100 * Math.abs(pdi - mdi)) / (pdi + mdi);
-      if (prevAdx == null) {
-        dxSum += dx; dxCount++;
-        if (dxCount === len) { prevAdx = dxSum / len; out[i] = prevAdx; }
-      } else {
-        prevAdx = (prevAdx * (len - 1) + dx) / len;
-        out[i] = prevAdx;
-      }
-    }
-    return out;
-  }
-
-  function sma(values, len) {
-    const out = new Array(values.length).fill(null);
-    let sum = 0;
-    for (let i = 0; i < values.length; i++) {
-      sum += values[i];
-      if (i >= len) sum -= values[i - len];
-      if (i >= len - 1) out[i] = sum / len;
-    }
-    return out;
-  }
-
-  /* ---------------- signal engine ---------------- */
-
-  // `filtered` = the shipped rule set (trend + ADX gates). `filtered: false`
-  // is the raw EMA-cross baseline, computed only so the dashboard can show
-  // what the filters are worth over the same span of history.
-  function computeSignals(candles, ind, filtered) {
-    const signals = [];
-    // Both variants start where every indicator is defined, so the
-    // filtered-vs-baseline comparison covers an identical span.
-    const warmup = Math.min(candles.length - 1, EMA_TREND);
-    for (let i = warmup; i < candles.length; i++) {
-      const f0 = ind.emaFast[i - 1], s0 = ind.emaSlow[i - 1];
-      const f1 = ind.emaFast[i], s1 = ind.emaSlow[i];
-      if (f0 == null || s0 == null || ind.rsi[i] == null || ind.atr[i] == null) continue;
-
-      let side = null;
-      if (f0 <= s0 && f1 > s1 && ind.rsi[i] >= 45 && ind.rsi[i] <= 70) side = 'long';
-      if (f0 >= s0 && f1 < s1 && ind.rsi[i] >= 30 && ind.rsi[i] <= 55) side = 'short';
-      if (!side) continue;
-
-      if (filtered) {
-        // Gate 1: trade only with the higher-timeframe trend (200 EMA side).
-        const trend = ind.emaTrend[i];
-        if (trend == null) continue;
-        if (side === 'long' && candles[i].c <= trend) continue;
-        if (side === 'short' && candles[i].c >= trend) continue;
-        // Gate 2: skip chop — EMA crosses whipsaw when trend strength is low.
-        if (ind.adx[i] == null || ind.adx[i] < ADX_MIN) continue;
-        // Gate 3: the signal candle itself must close with the cross, so a
-        // cross produced by a candle already reversing doesn't fire.
-        if (side === 'long' && candles[i].c <= candles[i].o) continue;
-        if (side === 'short' && candles[i].c >= candles[i].o) continue;
-      }
-
-      const entry = candles[i].c;
-      const a = ind.atr[i];
-      const dir = side === 'long' ? 1 : -1;
-      const stop = entry - dir * STOP_ATR * a;
-      const target = entry + dir * TARGET_ATR * a;
-
-      // Confidence: volume confirmation + how centered RSI sits in its band.
-      const volConfirm = ind.volSma[i] != null && candles[i].v > ind.volSma[i];
-      const band = side === 'long' ? [45, 70] : [30, 55];
-      const mid = (band[0] + band[1]) / 2;
-      const rsiCentered = 1 - Math.abs(ind.rsi[i] - mid) / ((band[1] - band[0]) / 2);
-      const confidence = Math.round(55 + (volConfirm ? 20 : 0) + rsiCentered * 25);
-
-      signals.push({ i, t: candles[i].t, side, entry, stop, target, confidence, ...scoreOutcome(candles, i, side, entry, stop, target, a) });
-    }
-    return signals;
-  }
-
-  // Walk forward up to EVAL_CANDLES; first touch of stop or target wins.
-  // Within a single candle that spans both, assume the stop hit first
-  // (conservative). Once price has moved BE_TRIGGER_ATR in favor, the stop
-  // moves to breakeven from the NEXT candle on — cutting full-size losses on
-  // trades that worked first and then reversed.
-  function scoreOutcome(candles, i, side, entry, stop, target, a) {
-    const dir = side === 'long' ? 1 : -1;
-    let beArmed = false;
-    for (let j = i + 1; j <= i + EVAL_CANDLES && j < candles.length; j++) {
-      const hitStop = dir === 1 ? candles[j].l <= stop : candles[j].h >= stop;
-      const hitTarget = dir === 1 ? candles[j].h >= target : candles[j].l <= target;
-      if (hitStop) {
-        if (beArmed) return { outcome: 'be', exit: stop, movePct: 0 };
-        return { outcome: 'loss', exit: stop, movePct: (dir * (stop - entry) / entry) * 100 };
-      }
-      if (hitTarget) return { outcome: 'win', exit: target, movePct: (dir * (target - entry) / entry) * 100 };
-      const excursion = dir === 1 ? candles[j].h - entry : entry - candles[j].l;
-      if (!beArmed && excursion >= BE_TRIGGER_ATR * a) { beArmed = true; stop = entry; }
-    }
-    const last = Math.min(i + EVAL_CANDLES, candles.length - 1);
-    if (last - i < EVAL_CANDLES) {
-      // Not enough forward candles yet — signal still open.
-      return { outcome: 'open', exit: null, movePct: (dir * (candles[last].c - entry) / entry) * 100 };
-    }
-    const exit = candles[last].c;
-    return { outcome: 'flat', exit, movePct: (dir * (exit - entry) / entry) * 100 };
-  }
-
-  const closedOf = (signals) => signals.filter((s) => s.outcome !== 'open');
-  const favorableRate = (closed) =>
-    closed.length ? (closed.filter((s) => s.movePct > 0).length / closed.length) * 100 : null;
-
-  /* ---------------- chart ---------------- */
+  /* ---------------- price chart ---------------- */
 
   const chart = {
-    canvas: null, ctx: null, dpr: 1,
+    canvas: null, ctx: null,
     candles: [], ind: null, signals: [],
-    view: null, // { start, plot geometry } — rebuilt on each draw
-    listenersBound: false,
+    view: null, listenersBound: false,
   };
 
   function setupChart(candles, ind, signals) {
@@ -373,7 +180,7 @@
     chart.signals = signals;
     drawChart();
     if (!chart.listenersBound) {
-      window.addEventListener('resize', () => drawChart());
+      window.addEventListener('resize', () => { drawChart(); drawEquity(); });
       chart.canvas.addEventListener('mousemove', onChartHover);
       chart.canvas.addEventListener('mouseleave', hideTooltip);
       chart.listenersBound = true;
@@ -433,6 +240,34 @@
       ctx.fillText(label, cx, H - padB + 8);
     }
 
+    // trade levels for the latest visible signal: entry / stop / target lines
+    // from the signal candle to the right edge, so the setup is readable on
+    // the chart itself. Drawn under the candles.
+    const latest = signals.length ? signals[signals.length - 1] : null;
+    if (latest && latest.i >= start && (latest.outcome === 'open' || candles.length - 1 - latest.i <= E.CFG.EVAL_CANDLES)) {
+      const x0 = x(latest.i);
+      const levels = [
+        { p: latest.target, color: COLORS.up, label: 'Target' },
+        { p: latest.entry, color: COLORS.muted, label: 'Entry' },
+        { p: latest.stop, color: COLORS.down, label: 'Stop' },
+      ];
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      for (const lvl of levels) {
+        if (lvl.p < lo || lvl.p > hi) continue;
+        const yy = y(lvl.p);
+        ctx.strokeStyle = lvl.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(W - padR, yy); ctx.stroke();
+        ctx.fillStyle = COLORS.muted;
+        ctx.fillText(lvl.label, W - padR - 4, yy - 2);
+      }
+      ctx.restore();
+    }
+
     // candles — thin bodies with a surface gap between neighbors
     const slot = plotW / view.length;
     const bodyW = Math.min(24, Math.max(2, Math.floor(slot) - 2));
@@ -449,8 +284,8 @@
     }
 
     // EMA overlays — 2px lines
-    drawLine(ctx, ind.emaFast, start, view.length, x, y, COLORS.ema20);
-    drawLine(ctx, ind.emaSlow, start, view.length, x, y, COLORS.ema50);
+    drawSeries(ctx, chart.ind.emaFast, start, view.length, x, y, COLORS.ema20);
+    drawSeries(ctx, chart.ind.emaSlow, start, view.length, x, y, COLORS.ema50);
 
     // signal markers: triangle beyond the wick, with a surface ring for legibility
     for (const s of signals) {
@@ -480,7 +315,7 @@
     }
   }
 
-  function drawLine(ctx, series, start, n, x, y, color) {
+  function drawSeries(ctx, series, start, n, x, y, color) {
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
@@ -537,6 +372,127 @@
     drawChart();
   }
 
+  /* ---------------- equity curve (cumulative move across closed signals) ---------------- */
+
+  const equity = { canvas: null, points: [], view: null, listenersBound: false };
+
+  function setupEquity(signals) {
+    equity.canvas = $('equity');
+    const closed = E.closedOf(signals);
+    let cum = 0;
+    equity.points = closed.map((s) => {
+      cum += s.movePct;
+      return { t: s.t, side: s.side, move: s.movePct, cum };
+    });
+    const wrap = $('equity-wrap');
+    wrap.hidden = equity.points.length < 2;
+    if (!wrap.hidden) drawEquity();
+    if (!equity.listenersBound && equity.canvas) {
+      equity.canvas.addEventListener('mousemove', onEquityHover);
+      equity.canvas.addEventListener('mouseleave', () => { $('equity-tooltip').hidden = true; drawEquity(); });
+      equity.listenersBound = true;
+    }
+  }
+
+  function drawEquity(hoverIdx = null) {
+    const { canvas, points } = equity;
+    if (!canvas || points.length < 2) return;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(rect.width * dpr)) {
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = rect.width, H = rect.height;
+    ctx.clearRect(0, 0, W, H);
+    const padR = 56, padT = 10, padB = 22, padL = 8;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    let lo = 0, hi = 0;
+    for (const p of points) { lo = Math.min(lo, p.cum); hi = Math.max(hi, p.cum); }
+    const span = (hi - lo) || 1;
+    lo -= span * 0.1; hi += span * 0.1;
+
+    const x = (i) => padL + (i / (points.length - 1)) * plotW;
+    const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * plotH;
+    equity.view = { x, y, padL, padR, plotW, W, H };
+
+    // hairline grid + right axis
+    const step = niceStep((hi - lo) / 4);
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textBaseline = 'middle';
+    for (let p = Math.ceil(lo / step) * step; p <= hi; p += step) {
+      const yy = y(p);
+      ctx.strokeStyle = COLORS.grid;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(W - padR, yy); ctx.stroke();
+      ctx.fillStyle = COLORS.muted;
+      ctx.textAlign = 'left';
+      ctx.fillText(`${p >= 0 ? '+' : ''}${p.toFixed(1)}%`, W - padR + 8, yy);
+    }
+    // zero baseline slightly stronger
+    if (lo < 0 && hi > 0) {
+      ctx.strokeStyle = COLORS.baseline;
+      ctx.beginPath(); ctx.moveTo(padL, y(0)); ctx.lineTo(W - padR, y(0)); ctx.stroke();
+    }
+    // first/last date labels
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = COLORS.muted;
+    ctx.textAlign = 'left';
+    ctx.fillText(fmtTime(points[0].t).slice(0, 10), padL, H - padB + 6);
+    ctx.textAlign = 'right';
+    ctx.fillText(fmtTime(points[points.length - 1].t).slice(0, 10), W - padR, H - padB + 6);
+
+    // area wash + 2px line
+    ctx.beginPath();
+    points.forEach((p, i) => { i ? ctx.lineTo(x(i), y(p.cum)) : ctx.moveTo(x(0), y(p.cum)); });
+    ctx.strokeStyle = COLORS.line;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.lineTo(x(points.length - 1), y(Math.max(lo, 0)));
+    ctx.lineTo(x(0), y(Math.max(lo, 0)));
+    ctx.closePath();
+    ctx.fillStyle = COLORS.lineWash;
+    ctx.fill();
+
+    // markers with a surface ring; hovered point enlarged
+    points.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(x(i), y(p.cum), i === hoverIdx ? 5 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS.line;
+      ctx.strokeStyle = COLORS.surface;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fill();
+    });
+  }
+
+  function onEquityHover(ev) {
+    const v = equity.view;
+    if (!v) return;
+    const rect = equity.canvas.getBoundingClientRect();
+    const mx = ev.clientX - rect.left;
+    const n = equity.points.length;
+    let idx = Math.round(((mx - v.padL) / v.plotW) * (n - 1));
+    idx = Math.max(0, Math.min(n - 1, idx));
+    drawEquity(idx);
+    const p = equity.points[idx];
+    const tt = $('equity-tooltip');
+    tt.innerHTML = `
+      <div class="tt-time">${fmtTime(p.t)} UTC</div>
+      <div class="tt-row"><span>Signal</span><span>${p.side === 'long' ? '▲ LONG' : '▼ SHORT'}</span></div>
+      <div class="tt-row"><span>Move</span><span>${fmtPct(p.move)}</span></div>
+      <div class="tt-row"><span>Cumulative</span><span>${fmtPct(p.cum)}</span></div>`;
+    tt.hidden = false;
+    const ttw = tt.offsetWidth;
+    const px = v.x(idx);
+    tt.style.left = `${px + 12 + ttw > rect.width ? px - ttw - 12 : px + 12}px`;
+    tt.style.top = '8px';
+  }
+
   /* ---------------- page rendering ---------------- */
 
   function renderAssetTabs() {
@@ -571,12 +527,12 @@
   }
 
   function renderTiles(candles, ind, signals, baseline) {
-    const closed = closedOf(signals);
+    const closed = E.closedOf(signals);
     const favorable = closed.filter((s) => s.movePct > 0);
-    const warmupIdx = Math.min(candles.length - 1, EMA_TREND);
+    const warmupIdx = Math.min(candles.length - 1, E.CFG.EMA_TREND);
     const days = Math.round((candles[candles.length - 1].t - candles[warmupIdx].t) / 86400000);
 
-    const wr = favorableRate(closed);
+    const wr = E.favorableRate(closed);
     $('tile-winrate').textContent = wr == null ? 'n/a' : `${wr.toFixed(0)}%`;
     $('tile-winrate-note').textContent = closed.length
       ? `${favorable.length} of ${closed.length} closed signals ended favorable`
@@ -594,14 +550,14 @@
 
     const i = candles.length - 1;
     const bull = ind.emaFast[i] != null && ind.emaSlow[i] != null && ind.emaFast[i] > ind.emaSlow[i];
-    const trending = ind.adx[i] != null && ind.adx[i] >= ADX_MIN;
+    const trending = ind.adx[i] != null && ind.adx[i] >= E.CFG.ADX_MIN;
     const regimeEl = $('tile-regime');
     regimeEl.textContent = trending ? (bull ? 'Uptrend' : 'Downtrend') : 'Chop';
     regimeEl.classList.remove('pos', 'neg');
     if (trending) regimeEl.classList.add(bull ? 'pos' : 'neg');
     $('tile-regime-note').textContent = trending
       ? `${bull ? 'EMA 20 above EMA 50' : 'EMA 20 below EMA 50'} · ADX ${ind.adx[i].toFixed(0)}`
-      : `ADX ${ind.adx[i] != null ? ind.adx[i].toFixed(0) : '—'} < ${ADX_MIN} — signals gated off`;
+      : `ADX ${ind.adx[i] != null ? ind.adx[i].toFixed(0) : '—'} < ${E.CFG.ADX_MIN} — signals gated off`;
   }
 
   function renderIndicators(candles, ind) {
@@ -616,10 +572,20 @@
     $('ind-vol').textContent = volRatio ? `${(volRatio * 100).toFixed(0)}%` : '—';
   }
 
+  // "Next candle" countdown — the moment the next 4h candle closes is the
+  // next moment a signal can fire.
+  let lastCandleT = null;
+  function renderCountdown() {
+    if (lastCandleT == null) return;
+    let next = lastCandleT + CANDLE_MS;
+    while (next <= Date.now()) next += CANDLE_MS;
+    const ms = next - Date.now();
+    $('ind-next').textContent = `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
+  }
+
   function renderCurrentSignal(candles, ind, signals) {
     const last = candles[candles.length - 1];
-    const FOUR_H = 4 * 3600 * 1000;
-    const active = signals.filter((s) => last.t - s.t <= FOUR_H);
+    const active = signals.filter((s) => last.t - s.t <= CANDLE_MS);
     const badge = $('signal-badge');
     const copy = $('signal-copy');
     const levels = $('signal-levels');
@@ -630,12 +596,12 @@
       badge.textContent = s.side === 'long' ? '▲ LONG' : '▼ SHORT';
       $('signal-when').textContent = `${currentAsset} · fired ${fmtTime(s.t)} UTC`;
       copy.textContent = s.side === 'long'
-        ? 'EMA 20 crossed above EMA 50 with the higher-timeframe trend, trend strength, and momentum all confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.'
-        : 'EMA 20 crossed below EMA 50 with the higher-timeframe trend, trend strength, and momentum all confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.';
+        ? 'EMA 20 crossed above EMA 50 with the higher-timeframe trend, trend strength, slope, and momentum all confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.'
+        : 'EMA 20 crossed below EMA 50 with the higher-timeframe trend, trend strength, slope, and momentum all confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.';
       $('lvl-entry').textContent = `$${fmtPrice(s.entry)}`;
       $('lvl-stop').textContent = `$${fmtPrice(s.stop)}`;
       $('lvl-target').textContent = `$${fmtPrice(s.target)}`;
-      const remaining = Math.max(0, s.t + FOUR_H - Date.now());
+      const remaining = Math.max(0, s.t + CANDLE_MS - Date.now());
       $('lvl-window').textContent = remaining > 0
         ? `${Math.floor(remaining / 3600000)}h ${Math.floor((remaining % 3600000) / 60000)}m left`
         : 'expired';
@@ -656,12 +622,12 @@
   function renderTrackRecord(signals, baseline) {
     // Filters are only worth shipping if they measurably beat the raw cross —
     // so the comparison is computed and shown, not asserted.
-    const wrF = favorableRate(closedOf(signals));
-    const wrB = favorableRate(closedOf(baseline));
+    const wrF = E.favorableRate(E.closedOf(signals));
+    const wrB = E.favorableRate(E.closedOf(baseline));
     $('track-sub').textContent =
       `Every ${currentAsset} signal the rule set produced over the loaded history — recomputed from raw candles on each page load, so it cannot be curated.` +
       (wrF != null && wrB != null
-        ? ` Filtered rules: ${wrF.toFixed(0)}% favorable (${closedOf(signals).length} closed) vs ${wrB.toFixed(0)}% for the unfiltered EMA-cross baseline (${closedOf(baseline).length} closed) over the same span.`
+        ? ` Filtered rules: ${wrF.toFixed(0)}% favorable (${E.closedOf(signals).length} closed) vs ${wrB.toFixed(0)}% for the unfiltered EMA-cross baseline (${E.closedOf(baseline).length} closed) over the same span.`
         : '');
 
     const body = $('record-body');
@@ -709,28 +675,27 @@
     const asset = currentAsset;
     const { source, candles } = await fetchCandles(asset);
     if (asset !== currentAsset) return; // user switched assets mid-fetch
-    $('data-source').textContent = source;
-    if (candles.length < EMA_SLOW + 5) return;
+    $('data-source').textContent = `${source} · updated ${fmtClock(Date.now())} UTC`;
+    if (candles.length < E.CFG.EMA_SLOW + 5) return;
 
-    const closes = candles.map((c) => c.c);
-    const ind = {
-      emaFast: ema(closes, EMA_FAST),
-      emaSlow: ema(closes, EMA_SLOW),
-      emaTrend: ema(closes, EMA_TREND),
-      rsi: rsi(closes, RSI_LEN),
-      atr: atr(candles, ATR_LEN),
-      adx: adx(candles, ADX_LEN),
-      volSma: sma(candles.map((c) => c.v), VOL_LEN),
-    };
-    const signals = computeSignals(candles, ind, true);
-    const baseline = computeSignals(candles, ind, false);
+    // Signals are computed on CLOSED candles only, so they never repaint
+    // while a candle is still forming. closedPrefix is a prefix of the full
+    // array, so signal indices stay valid against the full chart.
+    const closedCandles = E.closedPrefix(candles, Date.now());
+    const ind = E.computeIndicators(candles);
+    const closedInd = E.computeIndicators(closedCandles);
+    const signals = E.computeSignals(closedCandles, closedInd, true);
+    const baseline = E.computeSignals(closedCandles, closedInd, false);
+    lastCandleT = candles[candles.length - 1].t;
 
     renderHero(candles);
-    renderTiles(candles, ind, signals, baseline);
+    renderTiles(closedCandles, closedInd, signals, baseline);
     renderIndicators(candles, ind);
-    renderCurrentSignal(candles, ind, signals);
+    renderCountdown();
+    renderCurrentSignal(closedCandles, closedInd, signals);
     renderTrackRecord(signals, baseline);
     setupChart(candles, ind, signals);
+    setupEquity(signals);
   }
 
   // One-time key handoff via URL fragment (#fmpkey=...&tdkey=...): stores the
@@ -746,4 +711,5 @@
 
   refresh();
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
+  setInterval(renderCountdown, 30 * 1000);
 })();
