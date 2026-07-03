@@ -1,8 +1,10 @@
 # LordBastian Signal Generator — walk-forward research
 
-Generated 2026-07-03T20:05:58.573Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
+Generated 2026-07-03T20:20:56.699Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
 
 A variant only counts as an improvement if it beats its comparator in **both** periods — train-only wins are fitted noise.
+
+Enrichment coverage: funding 4/4 · fng 3071 · econ 1018 · usd ok · btc ok
 
 ## BTC / USD
 
@@ -120,10 +122,10 @@ A logistic model trained on the 531 train-period baseline signals (features: sid
 
 | Threshold | Train (kept signals) | Validate (kept signals) |
 |---|---|---|
-| p ≥ 0.5 | 12 · 17% fav · avg -2.78% · PF 0.09 | 4 · 0% fav · avg -1.27% · PF 0.00 |
-| p ≥ 0.55 | 0 signals | 0 signals |
-| p ≥ 0.6 | 0 signals | 0 signals |
-| p ≥ 0.65 | 0 signals | 0 signals |
+| p ≥ 0.5 | 57 · 49% fav · avg -0.09% · PF 0.89 | 38 · 37% fav · avg -0.08% · PF 0.90 |
+| p ≥ 0.55 | 8 · 63% fav · avg -0.45% · PF 0.65 | 20 · 40% fav · avg -0.10% · PF 0.87 |
+| p ≥ 0.6 | 0 signals | 20 · 40% fav · avg -0.10% · PF 0.87 |
+| p ≥ 0.65 | 0 signals | 20 · 40% fav · avg -0.10% · PF 0.87 |
 
 **Verdict: ❌ does not pass out-of-sample** — the model is NOT published or used. Train-period fit did not survive on unseen data.
 
