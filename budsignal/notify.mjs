@@ -18,6 +18,7 @@
 
 import './engine.js';
 import { ASSETS, fetchCandles as feedFetch } from './feeds.mjs';
+import { buildEnrichment, enrichSignal } from './enrich.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const E = globalThis.BudSignalEngine;
@@ -322,6 +323,7 @@ async function main() {
   state.notified = state.notified || {};
   state.pending = state.pending || {};
   const mlModel = await loadMlModel();
+  let enrichCtx = null, enrichTried = false;
   let sent = 0;
   for (const asset of Object.keys(ASSETS)) {
     let candles;
@@ -357,7 +359,14 @@ async function main() {
     const fresh = signals.filter((s) =>
       Date.now() - s.t <= 2 * E.CFG.CANDLE_MS && !state.notified[asset].includes(s.t));
     if (!fresh.length) { console.log(`${asset}: no new signal (last closed candle ${fmtTime(closed[closed.length - 1].t)})`); continue; }
+    if (fresh.length && mlModel && !enrichTried) {
+      enrichTried = true;
+      try {
+        enrichCtx = await buildEnrichment({ fmpKey: FMP_KEY, sinceT: Date.now() - 60 * 86400000, btcCandles: null });
+      } catch (e) { console.log(`enrichment skipped: ${e.message}`); }
+    }
     for (const sig of fresh) {
+      if (enrichCtx) enrichSignal(asset, sig, enrichCtx);
       const text = composeMessage(asset, sig, mlModel);
       if (DRY_RUN) {
         console.log(`DRY RUN — would send for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);

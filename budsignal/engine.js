@@ -279,6 +279,12 @@
       Math.min(sig.volRatio ?? 1, 3),
       Math.max(-5, Math.min(5, sig.trendDist ?? 0)),
       (sig.atrPct ?? 0.02) * 100,
+      // Tier-1 enrichment (enrich.mjs) — neutral defaults when a source is
+      // unavailable, so unenriched signals still score sanely
+      sig.fundPctl ?? 0.5,                                  // funding percentile vs trailing 30d
+      (sig.fng ?? 50) / 100,                                // crypto Fear & Greed
+      Math.min(sig.eventHrs ?? 48, 48) / 48,                // hours to next high-impact USD event
+      Math.max(-5, Math.min(5, sig.ctxTrend ?? 0)),         // cross-asset trend (USD index / BTC)
     ];
   }
 
@@ -317,7 +323,10 @@
       for (let k = 0; k < d; k++) w[k] -= lr * (gw[k] + l2 * w[k]);
       b -= lr * gb;
     }
-    return { weights: w, bias: b, mean, std, features: ['sideLong', 'rsi', 'adx', 'volRatio', 'trendDist', 'atrPct%'] };
+    return {
+      weights: w, bias: b, mean, std,
+      features: ['sideLong', 'rsi', 'adx', 'volRatio', 'trendDist', 'atrPct%', 'fundPctl', 'fng', 'eventHrs', 'ctxTrend'],
+    };
   }
 
   // Signals must only ever be computed on CLOSED candles — a forming candle's

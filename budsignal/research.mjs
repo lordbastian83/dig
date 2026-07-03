@@ -14,6 +14,7 @@
 
 import './engine.js';
 import { ASSETS, demoCandles, fmpChart } from './feeds.mjs';
+import { buildEnrichment, enrichSignal } from './enrich.mjs';
 import { writeFileSync } from 'node:fs';
 
 const E = globalThis.BudSignalEngine;
@@ -73,9 +74,20 @@ async function main() {
   const overall = { train: { F: [], B: [], T: [] }, validate: { F: [], B: [], T: [] } };
   const mlRows = { train: [], validate: [] }; // baseline signals with features, for meta-labeling
 
+  // fetch all histories first so cross-asset context (BTC trend) is available
+  const histories = {};
   for (const [asset, cfg] of Object.entries(ASSETS)) {
     console.log(`fetching ${asset} (${cfg.fmp})...`);
-    const candles = DEMO ? demoCandles(100, asset.length * 7 + 1) : await fetchHistory(cfg.fmp);
+    histories[asset] = DEMO ? demoCandles(100, asset.length * 7 + 1) : await fetchHistory(cfg.fmp);
+  }
+
+  // Tier-1 enrichment: funding, fear&greed, econ calendar, USD/BTC context
+  const sinceT = Date.now() - YEARS * 365 * 86400000;
+  const ctx = DEMO ? null : await buildEnrichment({ fmpKey: FMP_KEY, sinceT, btcCandles: histories.BTC });
+  if (ctx) lines.push(`Enrichment coverage: ${ctx.coverage}`, '');
+
+  for (const [asset, cfg] of Object.entries(ASSETS)) {
+    const candles = histories[asset];
     if (candles.length < 800) {
       lines.push(`## ${cfg.pair}`, '', `Insufficient history (${candles.length} candles) — skipped.`, '');
       console.log(`${asset}: only ${candles.length} candles, skipped`);
@@ -84,6 +96,7 @@ async function main() {
     const ind = E.computeIndicators(candles);
     const filtered = E.closedOf(E.computeSignals(candles, ind, true));
     const baseline = E.closedOf(E.computeSignals(candles, ind, false));
+    for (const s of baseline) enrichSignal(asset, s, ctx);
     const splitT = candles[Math.floor(candles.length * 0.7)].t;
 
     const bucket = {};
