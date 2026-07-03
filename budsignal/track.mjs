@@ -14,6 +14,7 @@
 
 import './engine.js';
 import { ASSETS, fetchCandles, demoCandles } from './feeds.mjs';
+import { buildEnrichment, enrichSignal, snapshotMetrics } from './enrich.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const E = globalThis.BudSignalEngine;
@@ -37,11 +38,20 @@ async function main() {
   const byKey = new Map(ledger.records.map((r) => [`${r.asset}:${r.t}`, r]));
   let added = 0, resolved = 0;
 
+  const histories = {};
   for (const asset of Object.keys(ASSETS)) {
-    let candles;
     try {
-      candles = DEMO ? demoCandles(1000, DEMO_SEEDS[asset]) : await fetchCandles(asset, FMP_KEY);
-    } catch (e) { console.log(`${asset}: ${e.message}`); continue; }
+      histories[asset] = DEMO ? demoCandles(1000, DEMO_SEEDS[asset]) : await fetchCandles(asset, FMP_KEY);
+    } catch (e) { console.log(`${asset}: ${e.message}`); }
+  }
+  // light enrichment window: enough for funding percentile + context EMAs
+  const ctx = DEMO ? null : await buildEnrichment({
+    fmpKey: FMP_KEY, sinceT: Date.now() - 60 * 86400000, btcCandles: histories.BTC || null,
+  });
+
+  for (const asset of Object.keys(ASSETS)) {
+    const candles = histories[asset];
+    if (!candles) continue;
     const closed = E.closedPrefix(candles, Date.now());
     if (closed.length < E.CFG.EMA_TREND + 10) { console.log(`${asset}: only ${closed.length} closed candles — skipping`); continue; }
     const ind = E.computeIndicators(closed);
@@ -51,10 +61,13 @@ async function main() {
       const key = `${asset}:${s.t}`;
       const existing = byKey.get(key);
       if (!existing) {
+        enrichSignal(asset, s, ctx);
         const rec = {
           asset, t: s.t, side: s.side,
           entry: s.entry, stop: s.stop, target: s.target,
           confidence: s.confidence, adx: s.adx, rsi: s.rsiAt, volConfirm: s.volConfirm,
+          fundRate: s.fundRate ?? null, fundPctl: s.fundPctl ?? null, fng: s.fng ?? null,
+          eventHrs: s.eventHrs ?? null, ctxTrend: s.ctxTrend ?? null,
           outcome: s.outcome, movePct: Math.round(s.movePct * 100) / 100,
           // 'live' must mean recorded as it fired — historical signals pulled
           // in when a market is first added (or on bootstrap) are backfill
@@ -81,6 +94,19 @@ async function main() {
   writeFileSync(LEDGER_FILE, JSON.stringify(ledger));
   console.log(`ledger: +${added} new, ${resolved} outcomes resolved, ${ledger.counts.total} total ` +
     `(${ledger.counts.live} live / ${ledger.counts.backfill} backfill)`);
+
+  // metrics recorder: funding / open interest / fear&greed snapshot every run,
+  // so data with shallow public history (esp. OI) accumulates from today
+  const METRICS_FILE = process.env.METRICS_FILE;
+  if (METRICS_FILE && !DEMO) {
+    let metrics;
+    try { metrics = JSON.parse(readFileSync(METRICS_FILE, 'utf8')); } catch { metrics = { rows: [] } }
+    if (!Array.isArray(metrics.rows)) metrics.rows = [];
+    metrics.rows.push(await snapshotMetrics());
+    if (metrics.rows.length > 8760) metrics.rows = metrics.rows.slice(-8760); // ~4y of 4h snapshots
+    writeFileSync(METRICS_FILE, JSON.stringify(metrics));
+    console.log(`metrics: ${metrics.rows.length} snapshots recorded`);
+  }
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

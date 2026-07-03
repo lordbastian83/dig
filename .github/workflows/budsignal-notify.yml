@@ -87,8 +87,13 @@ jobs:
           fi
           git fetch origin budsignal-data
           git show origin/budsignal-data:performance.json > performance.json 2>/dev/null || true
-          LEDGER_FILE=performance.json node budsignal/track.mjs
-          BLOB=$(git hash-object -w performance.json)
-          TREE=$(printf '100644 blob %s\tperformance.json\n' "$BLOB" | git mktree)
-          COMMIT=$(git commit-tree "$TREE" -p "$(git rev-parse origin/budsignal-data)" -m "ledger update $(date -u +%FT%TZ)")
+          git show origin/budsignal-data:market-metrics.json > market-metrics.json 2>/dev/null || true
+          LEDGER_FILE=performance.json METRICS_FILE=market-metrics.json node budsignal/track.mjs
+          PERF_BLOB=$(git hash-object -w performance.json)
+          METRICS_BLOB=$(git hash-object -w market-metrics.json)
+          # preserve every other file on the branch (research report, ML model)
+          { git ls-tree origin/budsignal-data | grep -v -e $'\tperformance.json$' -e $'\tmarket-metrics.json$' || true;
+            printf '100644 blob %s\tperformance.json\n' "$PERF_BLOB";
+            printf '100644 blob %s\tmarket-metrics.json\n' "$METRICS_BLOB"; } | git mktree > /tmp/tree
+          COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "ledger update $(date -u +%FT%TZ)")
           git push origin "$COMMIT:refs/heads/budsignal-data"
