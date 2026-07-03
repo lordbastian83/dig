@@ -13,10 +13,10 @@
   // kind 'crypto' loads keyless from Binance/Coinbase; kind 'market' (metals,
   // indices, FX) loads from FMP or Twelve Data with the user's own API key.
   const ASSETS = {
-    BTC:    { kind: 'crypto', tab: 'BTC',     pair: 'BTC / USD',        binance: 'BTCUSDT',  coinbase: 'BTC-USD',  demoPrice: 64000, demoSeed: 42 },
-    ETH:    { kind: 'crypto', tab: 'ETH',     pair: 'ETH / USD',        binance: 'ETHUSDT',  coinbase: 'ETH-USD',  demoPrice: 3400,  demoSeed: 7 },
-    SOL:    { kind: 'crypto', tab: 'SOL',     pair: 'SOL / USD',        binance: 'SOLUSDT',  coinbase: 'SOL-USD',  demoPrice: 150,   demoSeed: 19 },
-    XRP:    { kind: 'crypto', tab: 'XRP',     pair: 'XRP / USD',        binance: 'XRPUSDT',  coinbase: 'XRP-USD',  demoPrice: 2.2,   demoSeed: 3 },
+    BTC:    { kind: 'crypto', tab: 'BTC',     pair: 'BTC / USD',        binance: 'BTCUSDT',  kraken: 'XBTUSD', fmp: 'BTCUSD', demoPrice: 64000, demoSeed: 42 },
+    ETH:    { kind: 'crypto', tab: 'ETH',     pair: 'ETH / USD',        binance: 'ETHUSDT',  kraken: 'ETHUSD', fmp: 'ETHUSD', demoPrice: 3400,  demoSeed: 7 },
+    SOL:    { kind: 'crypto', tab: 'SOL',     pair: 'SOL / USD',        binance: 'SOLUSDT',  kraken: 'SOLUSD', fmp: 'SOLUSD', demoPrice: 150,   demoSeed: 19 },
+    XRP:    { kind: 'crypto', tab: 'XRP',     pair: 'XRP / USD',        binance: 'XRPUSDT',  kraken: 'XRPUSD', fmp: 'XRPUSD', demoPrice: 2.2,   demoSeed: 3 },
     GOLD:   { kind: 'market', tab: 'GOLD',    pair: 'XAU / USD · Gold',  fmp: 'XAUUSD', td: 'XAU/USD', demoPrice: 2700,  demoSeed: 5 },
     US30:   { kind: 'market', tab: 'US30',    pair: 'US30 · Dow Jones',  fmp: '^DJI',   td: 'DJI',     demoPrice: 44000, demoSeed: 13 },
     GBPUSD: { kind: 'market', tab: 'GBP/USD', pair: 'GBP / USD · Cable', fmp: 'GBPUSD', td: 'GBP/USD', demoPrice: 1.27,  demoSeed: 21 },
@@ -84,18 +84,27 @@
       };
     } catch (e) { /* fall through */ }
 
-    // Coinbase Exchange row: [time, low, high, open, close, volume], newest first, max 300
+    // Kraken: native 4h (240-min) candles, CORS-enabled, not geo-blocked
+    // where Binance is. Row: [t, o, h, l, c, vwap, volume, count].
     try {
       const r = await fetch(
-        `https://api.exchange.coinbase.com/products/${cfg.coinbase}/candles?granularity=14400`,
+        `https://api.kraken.com/0/public/OHLC?pair=${cfg.kraken}&interval=240`,
         { signal: AbortSignal.timeout(8000) });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const rows = await r.json();
+      const j = await r.json();
+      if (j.error?.length) throw new Error(j.error[0]);
+      const key = Object.keys(j.result).find((k) => k !== 'last');
       return {
-        source: `Coinbase (${asset}/USD, live)`,
-        candles: rows.reverse().map((k) => ({ t: k[0] * 1000, o: k[3], h: k[2], l: k[1], c: k[4], v: k[5] })),
+        source: `Kraken (${asset}/USD, live)`,
+        candles: j.result[key].map((k) => ({ t: k[0] * 1000, o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[6] })),
       };
     } catch (e) { /* fall through */ }
+
+    // last chance: FMP also lists major crypto pairs
+    const fmpKey = localStorage.getItem(FMP_KEY_STORE);
+    if (fmpKey) {
+      try { return await fetchFmp(cfg, fmpKey); } catch (e) { /* fall through */ }
+    }
 
     return {
       source: 'demo data (exchange APIs unreachable — figures are illustrative only)',
