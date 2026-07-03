@@ -1,4 +1,4 @@
-# BudSignal
+# LordBastian Signal Generator
 
 A rules-based swing-signal dashboard for crypto, gold, indices and FX, inspired
 by budsignal.io. Static, dependency-free web app — no build step, no backend,
