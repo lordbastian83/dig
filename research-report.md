@@ -1,6 +1,6 @@
 # LordBastian Signal Generator — walk-forward research
 
-Generated 2026-07-03T20:20:56.699Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
+Generated 2026-07-03T20:34:08.548Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
 
 A variant only counts as an improvement if it beats its comparator in **both** periods — train-only wins are fitted noise.
 
@@ -116,16 +116,25 @@ Enrichment coverage: funding 4/4 · fng 3071 · econ 1018 · usd ok · btc ok
 | Unfiltered baseline | 61 · 36% fav · avg +0.20% · PF 1.47 | 27 · 44% fav · avg -0.27% · PF 0.69 |
 | Filtered + trailing exit | 13 · 31% fav · avg -0.09% · PF 0.88 | 4 · 25% fav · avg -0.81% · PF 0.50 |
 
+## Alternative entry families (pooled)
+
+| Strategy | Train | Validate | Verdict |
+|---|---|---|---|
+| Donchian-55 breakout, fixed exits | 905 · 38% fav · avg +0.09% · PF 1.11 | 378 · 39% fav · avg +0.15% · PF 1.22 | ✅ positive in BOTH periods |
+| Donchian-55 breakout, trailing exits | 905 · 38% fav · avg +0.25% · PF 1.28 | 376 · 37% fav · avg +0.40% · PF 1.45 | ✅ positive in BOTH periods |
+| Funding-extreme mean reversion, fixed | 0 signals | 56 · 32% fav · avg -0.17% · PF 0.82 | ❌ no out-of-sample edge |
+| Funding-extreme mean reversion, trailing | 0 signals | 56 · 46% fav · avg +0.30% · PF 1.25 | ❌ no out-of-sample edge |
+
 ## AI meta-label experiment
 
 A logistic model trained on the 531 train-period baseline signals (features: side, RSI, ADX, volume ratio, trend distance, ATR%) predicts the probability a signal ends favorable. Judged on the 263 untouched validate-period signals.
 
 | Threshold | Train (kept signals) | Validate (kept signals) |
 |---|---|---|
-| p ≥ 0.5 | 57 · 49% fav · avg -0.09% · PF 0.89 | 38 · 37% fav · avg -0.08% · PF 0.90 |
-| p ≥ 0.55 | 8 · 63% fav · avg -0.45% · PF 0.65 | 20 · 40% fav · avg -0.10% · PF 0.87 |
-| p ≥ 0.6 | 0 signals | 20 · 40% fav · avg -0.10% · PF 0.87 |
-| p ≥ 0.65 | 0 signals | 20 · 40% fav · avg -0.10% · PF 0.87 |
+| p ≥ 0.5 | 57 · 49% fav · avg -0.09% · PF 0.89 | 38 · 37% fav · avg -0.02% · PF 0.98 |
+| p ≥ 0.55 | 8 · 63% fav · avg -0.45% · PF 0.65 | 21 · 43% fav · avg +0.08% · PF 1.11 |
+| p ≥ 0.6 | 0 signals | 21 · 43% fav · avg +0.08% · PF 1.11 |
+| p ≥ 0.65 | 0 signals | 21 · 43% fav · avg +0.08% · PF 1.11 |
 
 **Verdict: ❌ does not pass out-of-sample** — the model is NOT published or used. Train-period fit did not survive on unseen data.
 
