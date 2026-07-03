@@ -1,0 +1,14 @@
+{
+  "name": "BudSignal",
+  "short_name": "BudSignal",
+  "description": "Rules-based swing-trading signals for crypto, gold, indices and FX. Educational tool — not financial advice.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#0d0d0d",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}

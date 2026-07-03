@@ -17,9 +17,13 @@
     ETH:    { kind: 'crypto', tab: 'ETH',     pair: 'ETH / USD',        binance: 'ETHUSDT',  kraken: 'ETHUSD', fmp: 'ETHUSD', demoPrice: 3400,  demoSeed: 7 },
     SOL:    { kind: 'crypto', tab: 'SOL',     pair: 'SOL / USD',        binance: 'SOLUSDT',  kraken: 'SOLUSD', fmp: 'SOLUSD', demoPrice: 150,   demoSeed: 19 },
     XRP:    { kind: 'crypto', tab: 'XRP',     pair: 'XRP / USD',        binance: 'XRPUSDT',  kraken: 'XRPUSD', fmp: 'XRPUSD', demoPrice: 2.2,   demoSeed: 3 },
-    GOLD:   { kind: 'market', tab: 'GOLD',    pair: 'XAU / USD · Gold',  fmp: 'XAUUSD', td: 'XAU/USD', demoPrice: 2700,  demoSeed: 5 },
-    US30:   { kind: 'market', tab: 'US30',    pair: 'US30 · Dow Jones',  fmp: '^DJI',   td: 'DJI',     demoPrice: 44000, demoSeed: 13 },
-    GBPUSD: { kind: 'market', tab: 'GBP/USD', pair: 'GBP / USD · Cable', fmp: 'GBPUSD', td: 'GBP/USD', demoPrice: 1.27,  demoSeed: 21 },
+    GOLD:   { kind: 'market', tab: 'GOLD',    pair: 'XAU / USD · Gold',   fmp: 'XAUUSD', td: 'XAU/USD', demoPrice: 2700,  demoSeed: 5 },
+    US30:   { kind: 'market', tab: 'US30',    pair: 'US30 · Dow Jones',   fmp: '^DJI',   td: 'DJI',     demoPrice: 44000, demoSeed: 13 },
+    NAS100: { kind: 'market', tab: 'NAS100',  pair: 'NAS100 · Nasdaq 100', fmp: '^NDX',  td: 'NDX',     demoPrice: 21000, demoSeed: 31 },
+    SPX500: { kind: 'market', tab: 'SPX500',  pair: 'SPX500 · S&P 500',   fmp: '^GSPC',  td: 'SPX',     demoPrice: 6000,  demoSeed: 17 },
+    GBPUSD: { kind: 'market', tab: 'GBP/USD', pair: 'GBP / USD · Cable',  fmp: 'GBPUSD', td: 'GBP/USD', demoPrice: 1.27,  demoSeed: 21 },
+    EURUSD: { kind: 'market', tab: 'EUR/USD', pair: 'EUR / USD',          fmp: 'EURUSD', td: 'EUR/USD', demoPrice: 1.08,  demoSeed: 9 },
+    OIL:    { kind: 'market', tab: 'OIL',     pair: 'WTI Crude Oil',      fmp: 'CLUSD',  td: 'WTI/USD', demoPrice: 78,    demoSeed: 25 },
   };
 
   const FMP_KEY_STORE = 'budsignal-fmp-key';
@@ -628,15 +632,20 @@
     }
   }
 
-  function renderTrackRecord(signals, baseline) {
+  function renderTrackRecord(signals, baseline, candles, ind) {
     // Filters are only worth shipping if they measurably beat the raw cross —
-    // so the comparison is computed and shown, not asserted.
+    // so the comparison is computed and shown, not asserted. Same for the
+    // trailing-exit experiment: identical entries, different exit, measured.
     const wrF = E.favorableRate(E.closedOf(signals));
     const wrB = E.favorableRate(E.closedOf(baseline));
+    const trail = E.trailingComparison(candles, ind, signals);
     $('track-sub').textContent =
       `Every ${currentAsset} signal the rule set produced over the loaded history — recomputed from raw candles on each page load, so it cannot be curated.` +
       (wrF != null && wrB != null
         ? ` Filtered rules: ${wrF.toFixed(0)}% favorable (${E.closedOf(signals).length} closed) vs ${wrB.toFixed(0)}% for the unfiltered EMA-cross baseline (${E.closedOf(baseline).length} closed) over the same span.`
+        : '') +
+      (trail
+        ? ` Exit experiment on the same entries: fixed target averaged ${fmtPct(trail.fixed.avg)} per signal vs ${fmtPct(trail.trail.avg)} with a trailing stop (${trail.trail.favPct.toFixed(0)}% favorable, ${trail.trail.n} signals).`
         : '');
 
     const body = $('record-body');
@@ -789,7 +798,7 @@
     renderIndicators(candles, ind);
     renderCountdown();
     renderCurrentSignal(closedCandles, closedInd, signals);
-    renderTrackRecord(signals, baseline);
+    renderTrackRecord(signals, baseline, closedCandles, closedInd);
     setupChart(candles, ind, signals);
     setupEquity(signals);
   }
@@ -803,6 +812,10 @@
     if (p.get('fmpkey')) { localStorage.setItem(FMP_KEY_STORE, p.get('fmpkey')); touched = true; }
     if (p.get('tdkey')) { localStorage.setItem(TD_KEY_STORE, p.get('tdkey')); touched = true; }
     if (touched) history.replaceState(null, '', location.pathname + location.search);
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* PWA optional */ });
   }
 
   refresh();

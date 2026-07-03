@@ -13,7 +13,8 @@ name: BudSignal alerts & performance tracking
 
 on:
   schedule:
-    - cron: '7 */4 * * *'
+    - cron: '7 */4 * * *'   # signal + resolution alerts, ledger update
+    - cron: '15 0 * * 1'    # Monday weekly digest
   workflow_dispatch:
     inputs:
       test:
@@ -40,6 +41,7 @@ jobs:
           key: budsignal-notify-state-${{ github.run_id }}
           restore-keys: budsignal-notify-state-
       - name: Compute signals and notify
+        if: ${{ github.event.schedule != '15 0 * * 1' }}
         run: node budsignal/notify.mjs
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -47,8 +49,17 @@ jobs:
           TELEGRAM_CHAT_HANDLE: 'Lordbastian83'
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
           SEND_TEST: ${{ inputs.test && '1' || '' }}
+      - name: Weekly digest
+        if: ${{ github.event.schedule == '15 0 * * 1' }}
+        run: |
+          git fetch origin budsignal-data 2>/dev/null || true
+          git show origin/budsignal-data:performance.json > performance.json 2>/dev/null || true
+          DIGEST=1 LEDGER_FILE=performance.json node budsignal/notify.mjs
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       - name: Update performance ledger (budsignal-data branch)
-        if: ${{ !inputs.test }}
+        if: ${{ !inputs.test && github.event.schedule != '15 0 * * 1' }}
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         run: |
