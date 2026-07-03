@@ -230,6 +230,37 @@
     return { outcome: 'flat', exit, movePct: (dir * (exit - entry) / entry) * 100 };
   }
 
+  // Alternative entry family: Donchian-channel breakout (turtle-style
+  // momentum). Long when a candle closes above the prior `lookback` highs,
+  // short below the prior lows; wider ATR exits than the cross strategy
+  // because breakouts need room. Evaluated by research.mjs against the same
+  // walk-forward split as everything else.
+  function computeBreakoutSignals(candles, ind, { lookback = 55, stopAtr = 2, targetAtr = 3, cooldown = 10 } = {}) {
+    const signals = [];
+    const lastFire = { long: -Infinity, short: -Infinity };
+    const warmup = Math.max(lookback + 1, CFG.ATR_LEN + 2);
+    for (let i = warmup; i < candles.length; i++) {
+      const a = ind.atr[i];
+      if (!a) continue;
+      let h = -Infinity, l = Infinity;
+      for (let j = i - lookback; j < i; j++) {
+        if (candles[j].h > h) h = candles[j].h;
+        if (candles[j].l < l) l = candles[j].l;
+      }
+      let side = null;
+      if (candles[i].c > h && i - lastFire.long > cooldown) side = 'long';
+      else if (candles[i].c < l && i - lastFire.short > cooldown) side = 'short';
+      if (!side) continue;
+      lastFire[side] = i;
+      const dir = side === 'long' ? 1 : -1;
+      const entry = candles[i].c;
+      const stop = entry - dir * stopAtr * a;
+      const target = entry + dir * targetAtr * a;
+      signals.push({ i, t: candles[i].t, side, entry, stop, target, ...scoreOutcome(candles, i, side, entry, stop, target, a) });
+    }
+    return signals;
+  }
+
   // Experimental exit: same entry, but instead of a fixed 2xATR target the
   // stop trails TRAIL_ATR behind the best price seen (chandelier), letting
   // winners run for up to TRAIL_EVAL candles. Used only for the measured
@@ -345,7 +376,8 @@
 
   globalThis.BudSignalEngine = {
     CFG, ema, rsi, atr, adx, sma,
-    computeIndicators, computeSignals, closedPrefix, closedOf, favorableRate,
+    computeIndicators, computeSignals, computeBreakoutSignals, scoreOutcome,
+    closedPrefix, closedOf, favorableRate,
     trailingScore, trailingComparison,
     mlFeatures, mlScore, mlTrain,
   };
