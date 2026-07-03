@@ -10,11 +10,19 @@ no accounts.
   crosshair tooltip, and signal markers, plus RSI, ADX, ATR, and volume
   readouts. Asset tabs: BTC, ETH, SOL, XRP, Gold (XAU/USD), US30 (Dow Jones),
   GBP/USD (cable).
-- **Signal engine** — long/short signals from a fixed, published rule set:
-  EMA 20/50 cross (signal candle must close with the cross), gated by the
-  200-EMA higher-timeframe trend and an ADX ≥ 20 chop filter, RSI band filter,
-  ATR-scaled stop (1.5×) and target (2×) with a move to breakeven after 1×ATR
-  of favorable movement, one-candle (4-hour) entry window.
+- **Signal engine** (`engine.js`, shared by the site and the Telegram
+  notifier) — long/short signals from a fixed, published rule set: EMA 20/50
+  cross (signal candle must close with the cross), gated by the 200-EMA
+  higher-timeframe trend, an ADX ≥ 20 chop filter, and a 50-EMA slope check;
+  RSI band filter; ATR-scaled stop (1.5×) and target (2×) with a move to
+  breakeven after 1×ATR of favorable movement; one-candle (4-hour) entry
+  window. Signals are computed on closed candles only — they never repaint.
+- **Telegram alerts** — `.github/workflows/budsignal-notify.yml` runs
+  `notify.mjs` a few minutes after each 4h candle closes and messages a
+  Telegram bot chat when a signal fires. Setup: create a bot with @BotFather,
+  press Start on it, and add its token as the `TELEGRAM_BOT_TOKEN` Actions
+  secret (plus `FMP_API_KEY` for the non-crypto markets). The chat id is
+  auto-resolved from the handle configured in the workflow.
 - **Honest track record** — the same rules are replayed over the loaded history
   in the browser on every visit, so the win rate and signal table are computed,
   never curated. An unfiltered EMA-cross baseline is computed over the same

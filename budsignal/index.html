@@ -109,6 +109,7 @@
         <span>EMA 200 <strong id="ind-ema200">—</strong></span>
         <span>ATR 14 <strong id="ind-atr">—</strong></span>
         <span>Volume vs 20-avg <strong id="ind-vol">—</strong></span>
+        <span>Next candle <strong id="ind-next">—</strong></span>
       </div>
     </div>
   </section>
@@ -143,7 +144,7 @@
       </div>
       <div class="method-card">
         <h3><span class="step-num">2</span>Regime gates</h3>
-        <p>Longs are only taken above the 200-period EMA and shorts only below it, and ADX 14 must read 20 or higher — EMA crosses whipsaw in chop, so low-trend-strength markets produce no signals at all.</p>
+        <p>Longs are only taken above the 200-period EMA and shorts only below it; ADX 14 must read 20 or higher (EMA crosses whipsaw in chop); and the 50-EMA itself must already be sloping the trade's way over the last 12 hours.</p>
       </div>
       <div class="method-card">
         <h3><span class="step-num">3</span>Momentum &amp; volume</h3>
@@ -151,7 +152,7 @@
       </div>
       <div class="method-card">
         <h3><span class="step-num">4</span>4-hour entry window</h3>
-        <p>A signal is valid for one candle — four hours from the close that produced it. If unfilled, it expires. Outcomes are scored over the following 24 hours: target, stop, or expiry at market.</p>
+        <p>A signal is valid for one candle — four hours from the close that produced it. If unfilled, it expires. Outcomes are scored over the following 24 hours: target, stop, or expiry at market. Signals are evaluated on closed candles only, so they never repaint mid-candle.</p>
       </div>
     </div>
   </section>
@@ -160,6 +161,14 @@
   <section id="track-record" class="section">
     <h2>Track record</h2>
     <p class="section-sub" id="track-sub">Every signal the rule set produced over the loaded history — recomputed from raw candles on each page load, so it cannot be curated.</p>
+    <div class="equity-card" id="equity-wrap" hidden>
+      <h3>Cumulative move across closed signals</h3>
+      <div class="chart-wrap">
+        <canvas id="equity" aria-label="Cumulative percentage move across closed signals over the loaded history. Per-signal values are in the table below."></canvas>
+        <div class="tooltip" id="equity-tooltip" hidden></div>
+      </div>
+    </div>
+
     <div class="table-wrap">
       <table class="record-table">
         <thead>
@@ -182,6 +191,7 @@
   <p class="footer-meta">© 2026 BudSignal · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
+<script src="engine.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
