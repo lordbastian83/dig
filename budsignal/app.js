@@ -733,6 +733,17 @@
     setupChart(candles, ind, signals);
   }
 
+  // One-time key handoff via URL fragment (#fmpkey=...&tdkey=...): stores the
+  // key locally and strips it from the address bar. Fragments are never sent
+  // to the server, so this is a convenient way to hand a key to your browser.
+  if (location.hash) {
+    const p = new URLSearchParams(location.hash.slice(1));
+    let touched = false;
+    if (p.get('fmpkey')) { localStorage.setItem(FMP_KEY_STORE, p.get('fmpkey')); touched = true; }
+    if (p.get('tdkey')) { localStorage.setItem(TD_KEY_STORE, p.get('tdkey')); touched = true; }
+    if (touched) history.replaceState(null, '', location.pathname + location.search);
+  }
+
   refresh();
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
 })();
