@@ -9,9 +9,13 @@ export const ASSETS = {
   ETH:    { kind: 'crypto', pair: 'ETH / USD',        binance: 'ETHUSDT',  kraken: 'ETHUSD', fmp: 'ETHUSD' },
   SOL:    { kind: 'crypto', pair: 'SOL / USD',        binance: 'SOLUSDT',  kraken: 'SOLUSD', fmp: 'SOLUSD' },
   XRP:    { kind: 'crypto', pair: 'XRP / USD',        binance: 'XRPUSDT',  kraken: 'XRPUSD', fmp: 'XRPUSD' },
-  GOLD:   { kind: 'market', pair: 'XAU / USD · Gold',  fmp: 'XAUUSD' },
-  US30:   { kind: 'market', pair: 'US30 · Dow Jones',  fmp: '^DJI' },
-  GBPUSD: { kind: 'market', pair: 'GBP / USD · Cable', fmp: 'GBPUSD' },
+  GOLD:   { kind: 'market', pair: 'XAU / USD · Gold',   fmp: 'XAUUSD' },
+  US30:   { kind: 'market', pair: 'US30 · Dow Jones',   fmp: '^DJI' },
+  NAS100: { kind: 'market', pair: 'NAS100 · Nasdaq 100', fmp: '^NDX' },
+  SPX500: { kind: 'market', pair: 'SPX500 · S&P 500',   fmp: '^GSPC' },
+  GBPUSD: { kind: 'market', pair: 'GBP / USD · Cable',  fmp: 'GBPUSD' },
+  EURUSD: { kind: 'market', pair: 'EUR / USD',          fmp: 'EURUSD' },
+  OIL:    { kind: 'market', pair: 'WTI Crude Oil',      fmp: 'CLUSD' },
 };
 
 async function fetchBinance(host, symbol) {

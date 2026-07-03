@@ -79,6 +79,50 @@ async function resolveChatIds(state) {
   return { chats: state.chats, updateCount };
 }
 
+function composeResolution(asset, sig) {
+  const cfg = ASSETS[asset];
+  const head =
+    sig.outcome === 'win' ? '🎯 <b>Target hit</b>' :
+    sig.outcome === 'loss' ? '🛑 <b>Stopped out</b>' :
+    sig.outcome === 'be' ? '⚪ <b>Breakeven stop</b>' :
+    '⏱ <b>Expired at market</b>';
+  const move = `${sig.movePct >= 0 ? '+' : ''}${sig.movePct.toFixed(2)}%`;
+  return [
+    `${head} — ${cfg.pair}`,
+    `${sig.side === 'long' ? '▲ LONG' : '▼ SHORT'} from $${fmtPrice(sig.entry)} closed ${sig.exit != null ? `at $${fmtPrice(sig.exit)} ` : ''}(${move})`,
+    `Signal fired ${fmtTime(sig.t)} UTC`,
+  ].join('\n');
+}
+
+function composeDigest(records) {
+  const now = Date.now();
+  const week = records.filter((r) => r.t >= now - 7 * 86400000);
+  const closed = records.filter((r) => r.outcome !== 'open');
+  const stats = (rs) => {
+    const c = rs.filter((r) => r.outcome !== 'open');
+    if (!c.length) return null;
+    const fav = c.filter((r) => r.movePct > 0).length;
+    const gw = c.reduce((a, r) => a + Math.max(r.movePct, 0), 0);
+    const gl = c.reduce((a, r) => a + Math.max(-r.movePct, 0), 0);
+    return { n: c.length, fav, favPct: (fav / c.length) * 100, avg: c.reduce((a, r) => a + r.movePct, 0) / c.length, pf: gl > 0 ? gw / gl : Infinity };
+  };
+  const all = stats(records);
+  const perAsset = {};
+  for (const r of closed) (perAsset[r.asset] = perAsset[r.asset] || []).push(r);
+  const ranked = Object.entries(perAsset)
+    .map(([a, rs]) => ({ a, avg: rs.reduce((x, r) => x + r.movePct, 0) / rs.length, n: rs.length }))
+    .filter((x) => x.n >= 2)
+    .sort((x, y) => y.avg - x.avg);
+  const pf = all && (all.pf === Infinity ? '∞' : all.pf.toFixed(2));
+  return [
+    '📊 <b>BudSignal weekly digest</b>',
+    `This week: ${week.length} signal(s) fired.`,
+    all ? `All-time ledger: ${all.n} closed · ${all.favPct.toFixed(0)}% favorable · avg ${all.avg >= 0 ? '+' : ''}${all.avg.toFixed(2)}% · profit factor ${pf}` : 'No closed signals in the ledger yet.',
+    ranked.length ? `Best market: ${ranked[0].a} (avg ${ranked[0].avg >= 0 ? '+' : ''}${ranked[0].avg.toFixed(2)}%) · Worst: ${ranked[ranked.length - 1].a} (avg ${ranked[ranked.length - 1].avg >= 0 ? '+' : ''}${ranked[ranked.length - 1].avg.toFixed(2)}%)` : '',
+    '<i>Full breakdowns: the Performance section on the site.</i>',
+  ].filter(Boolean).join('\n');
+}
+
 function composeMessage(asset, sig) {
   const cfg = ASSETS[asset];
   const arrow = sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT';
@@ -155,6 +199,19 @@ async function main() {
     return;
   }
 
+  if (process.env.DIGEST === '1') {
+    let records = [];
+    try { records = JSON.parse(readFileSync(process.env.LEDGER_FILE || 'performance.json', 'utf8')).records || []; }
+    catch (e) { console.log('no ledger available for digest'); }
+    const text = composeDigest(records);
+    for (const chatId of chats) {
+      await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+    }
+    console.log('weekly digest sent');
+    saveState(state);
+    return;
+  }
+
   if (process.env.SEND_TEST === '1') {
     for (const chatId of chats) {
       await tg('sendMessage', {
@@ -168,6 +225,7 @@ async function main() {
   }
 
   state.notified = state.notified || {};
+  state.pending = state.pending || {};
   let sent = 0;
   for (const asset of Object.keys(ASSETS)) {
     let candles;
@@ -176,6 +234,24 @@ async function main() {
     if (closed.length < E.CFG.EMA_TREND + 10) { console.log(`${asset}: only ${closed.length} closed candles — skipping`); continue; }
     const ind = E.computeIndicators(closed);
     const signals = E.computeSignals(closed, ind, true);
+
+    // resolution alerts: a signal we announced earlier has now closed out
+    const stillPending = [];
+    for (const pt of state.pending[asset] || []) {
+      const p = signals.find((s) => s.t === pt);
+      if (p && p.outcome === 'open') { stillPending.push(pt); continue; }
+      if (p) {
+        const text = composeResolution(asset, p);
+        if (DRY_RUN) console.log(`DRY RUN — would send resolution for ${asset}: ${text.replace(/<[^>]+>/g, ' ')}`);
+        else {
+          for (const chatId of chats) await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+          console.log(`${asset}: resolution sent (${p.outcome} @ ${fmtTime(p.t)})`);
+        }
+        sent++;
+      }
+    }
+    state.pending[asset] = stillPending;
+
     const last = closed[closed.length - 1];
     const sig = signals.find((s) => s.t === last.t);
     if (!sig) { console.log(`${asset}: no signal on candle ${fmtTime(last.t)}`); continue; }
@@ -190,6 +266,7 @@ async function main() {
       console.log(`${asset}: signal notification sent (${sig.side} @ ${fmtTime(sig.t)})`);
     }
     state.notified[asset] = sig.t;
+    state.pending[asset] = [...(state.pending[asset] || []), sig.t];
     sent++;
   }
   if (!sent) console.log('no new signals this candle');

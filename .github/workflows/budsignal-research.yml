@@ -1,0 +1,48 @@
+name: BudSignal walk-forward research
+
+# Manual research job: pulls multi-year 4h history via FMP, runs the
+# train/validate walk-forward analysis, and commits research-report.md to the
+# budsignal-data branch. Requires the FMP_API_KEY secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Years of history to analyze'
+        default: '3'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: budsignal-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run walk-forward analysis
+        run: node budsignal/research.mjs
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          YEARS: ${{ inputs.years }}
+          REPORT_FILE: research-report.md
+      - name: Commit report to budsignal-data branch
+        run: |
+          set -e
+          git config user.name 'budsignal-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          if ! git ls-remote --exit-code origin budsignal-data >/dev/null 2>&1; then
+            EMPTY_TREE=$(git hash-object -t tree /dev/null)
+            INIT=$(git commit-tree "$EMPTY_TREE" -m 'init ledger')
+            git push origin "$INIT:refs/heads/budsignal-data"
+          fi
+          git fetch origin budsignal-data
+          REPORT_BLOB=$(git hash-object -w research-report.md)
+          { git ls-tree origin/budsignal-data | grep -v $'\tresearch-report.md$' || true;
+            printf '100644 blob %s\tresearch-report.md\n' "$REPORT_BLOB"; } | git mktree > /tmp/tree
+          COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "research report $(date -u +%FT%TZ)")
+          git push origin "$COMMIT:refs/heads/budsignal-data"

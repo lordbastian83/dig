@@ -21,6 +21,8 @@
     TARGET_ATR: 2.0,            // target distance in ATRs
     BE_TRIGGER_ATR: 1.0,        // favorable excursion that moves the stop to breakeven
     EVAL_CANDLES: 6,            // outcome window: 6 x 4h = 24h
+    TRAIL_ATR: 2.0,             // chandelier trailing-stop distance in ATRs
+    TRAIL_EVAL: 18,             // trailing-exit window: 18 x 4h = 3 days
   };
 
   function ema(values, len) {
@@ -225,6 +227,43 @@
     return { outcome: 'flat', exit, movePct: (dir * (exit - entry) / entry) * 100 };
   }
 
+  // Experimental exit: same entry, but instead of a fixed 2xATR target the
+  // stop trails TRAIL_ATR behind the best price seen (chandelier), letting
+  // winners run for up to TRAIL_EVAL candles. Used only for the measured
+  // fixed-vs-trailing comparison — the shipped signal levels stay fixed.
+  function trailingScore(candles, i, side, entry, a) {
+    const dir = side === 'long' ? 1 : -1;
+    let stop = entry - dir * CFG.STOP_ATR * a;
+    let best = entry;
+    for (let j = i + 1; j <= i + CFG.TRAIL_EVAL && j < candles.length; j++) {
+      const hitStop = dir === 1 ? candles[j].l <= stop : candles[j].h >= stop;
+      if (hitStop) return { closed: true, movePct: (dir * (stop - entry) / entry) * 100 };
+      best = dir === 1 ? Math.max(best, candles[j].h) : Math.min(best, candles[j].l);
+      const trailed = best - dir * CFG.TRAIL_ATR * a;
+      if (dir === 1 ? trailed > stop : trailed < stop) stop = trailed;
+    }
+    const last = Math.min(i + CFG.TRAIL_EVAL, candles.length - 1);
+    if (last - i < CFG.TRAIL_EVAL) return { closed: false, movePct: null };
+    return { closed: true, movePct: (dir * (candles[last].c - entry) / entry) * 100 };
+  }
+
+  // Aggregate fixed-vs-trailing comparison over an existing signal list.
+  function trailingComparison(candles, ind, signals) {
+    const rows = [];
+    for (const s of signals) {
+      if (ind.atr[s.i] == null) continue;
+      const t = trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
+      if (t.closed && s.outcome !== 'open') rows.push({ fixed: s.movePct, trail: t.movePct });
+    }
+    if (!rows.length) return null;
+    const agg = (get) => {
+      const v = rows.map(get);
+      const fav = v.filter((x) => x > 0).length;
+      return { n: v.length, favPct: (fav / v.length) * 100, avg: v.reduce((x, y) => x + y, 0) / v.length };
+    };
+    return { fixed: agg((r) => r.fixed), trail: agg((r) => r.trail) };
+  }
+
   // Signals must only ever be computed on CLOSED candles — a forming candle's
   // close changes until it closes, so a signal computed on it could appear
   // and then vanish ("repainting"). Returns the prefix of `candles` whose
@@ -242,5 +281,6 @@
   globalThis.BudSignalEngine = {
     CFG, ema, rsi, atr, adx, sma,
     computeIndicators, computeSignals, closedPrefix, closedOf, favorableRate,
+    trailingScore, trailingComparison,
   };
 })();
