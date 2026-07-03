@@ -17,21 +17,10 @@
                            pipeline, print the composed message, no network */
 
 import './engine.js';
-const E = globalThis.BudSignalEngine;
-
+import { ASSETS, fetchCandles as feedFetch } from './feeds.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const CANDLE_LIMIT = 1000;
-
-const ASSETS = {
-  BTC:    { kind: 'crypto', pair: 'BTC / USD',        binance: 'BTCUSDT',  coinbase: 'BTC-USD' },
-  ETH:    { kind: 'crypto', pair: 'ETH / USD',        binance: 'ETHUSDT',  coinbase: 'ETH-USD' },
-  SOL:    { kind: 'crypto', pair: 'SOL / USD',        binance: 'SOLUSDT',  coinbase: 'SOL-USD' },
-  XRP:    { kind: 'crypto', pair: 'XRP / USD',        binance: 'XRPUSDT',  coinbase: 'XRP-USD' },
-  GOLD:   { kind: 'market', pair: 'XAU / USD · Gold',  fmp: 'XAUUSD' },
-  US30:   { kind: 'market', pair: 'US30 · Dow Jones',  fmp: '^DJI' },
-  GBPUSD: { kind: 'market', pair: 'GBP / USD · Cable', fmp: 'GBPUSD' },
-};
+const E = globalThis.BudSignalEngine;
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const HANDLE = (process.env.TELEGRAM_CHAT_HANDLE || 'Lordbastian83').replace(/^@/, '').toLowerCase();
@@ -78,42 +67,6 @@ async function resolveChatId(state) {
     }
   }
   return null;
-}
-
-async function fetchCandles(asset) {
-  const cfg = ASSETS[asset];
-  if (cfg.kind === 'market') {
-    if (!FMP_KEY) throw new Error('no FMP_API_KEY — skipping');
-    const now = new Date();
-    const from = new Date(now.getTime() - 170 * 86400000);
-    const day = (x) => x.toISOString().slice(0, 10);
-    const url = `https://financialmodelingprep.com/api/v3/historical-chart/4hour/${encodeURIComponent(cfg.fmp)}` +
-      `?from=${day(from)}&to=${day(now)}&apikey=${encodeURIComponent(FMP_KEY)}`;
-    const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    if (!r.ok) throw new Error(`FMP HTTP ${r.status}`);
-    const j = await r.json();
-    if (!Array.isArray(j) || !j.length) throw new Error((j && j['Error Message']) || 'FMP: no data');
-    return j.map((v) => ({
-      t: Date.parse(v.date.replace(' ', 'T') + 'Z'),
-      o: +v.open, h: +v.high, l: +v.low, c: +v.close,
-      v: v.volume != null ? +v.volume : 0,
-    })).reverse().slice(-CANDLE_LIMIT);
-  }
-  try {
-    const r = await fetch(
-      `https://api.binance.com/api/v3/klines?symbol=${cfg.binance}&interval=4h&limit=${CANDLE_LIMIT}`,
-      { signal: AbortSignal.timeout(15000) });
-    if (!r.ok) throw new Error(`Binance HTTP ${r.status}`);
-    const rows = await r.json();
-    return rows.map((k) => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] }));
-  } catch (e) {
-    const r = await fetch(
-      `https://api.exchange.coinbase.com/products/${cfg.coinbase}/candles?granularity=14400`,
-      { signal: AbortSignal.timeout(15000), headers: { 'user-agent': 'budsignal-notify' } });
-    if (!r.ok) throw new Error(`Coinbase HTTP ${r.status}`);
-    const rows = await r.json();
-    return rows.reverse().map((k) => ({ t: k[0] * 1000, o: k[3], h: k[2], l: k[1], c: k[4], v: k[5] }));
-  }
 }
 
 function composeMessage(asset, sig) {
@@ -200,7 +153,7 @@ async function main() {
   let sent = 0;
   for (const asset of Object.keys(ASSETS)) {
     let candles;
-    try { candles = await fetchCandles(asset); } catch (e) { console.log(`${asset}: ${e.message}`); continue; }
+    try { candles = await feedFetch(asset, FMP_KEY); } catch (e) { console.log(`${asset}: ${e.message}`); continue; }
     const closed = E.closedPrefix(candles, Date.now());
     if (closed.length < E.CFG.EMA_TREND + 10) { console.log(`${asset}: only ${closed.length} closed candles — skipping`); continue; }
     const ind = E.computeIndicators(closed);

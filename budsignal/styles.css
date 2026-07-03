@@ -338,6 +338,11 @@ a { color: var(--text-primary); }
 
 .table-empty { text-align: center; color: var(--text-muted); padding: 28px !important; }
 
+/* ---------- performance ---------- */
+
+.perf-table { margin-bottom: 16px; }
+.perf-h3 { margin-top: 26px; font-size: 18px; }
+
 /* ---------- footer ---------- */
 
 .site-footer {

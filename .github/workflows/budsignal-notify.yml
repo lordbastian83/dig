@@ -1,13 +1,15 @@
-name: BudSignal Telegram alerts
+name: BudSignal alerts & performance tracking
 
-# Runs a few minutes after each 4h candle closes (00:00, 04:00, ... UTC) and
-# messages the configured Telegram chat when a signal fired on that candle.
+# Runs a few minutes after each 4h candle closes (00:00, 04:00, ... UTC):
+#  1. messages the configured Telegram chat when a signal fired on that candle
+#  2. updates the append-only performance ledger on the budsignal-data branch,
+#     which the site's "Live performance" section reads
 # Setup (repo Settings -> Secrets and variables -> Actions):
-#   TELEGRAM_BOT_TOKEN  (required) bot token from @BotFather
+#   TELEGRAM_BOT_TOKEN  (required for alerts) bot token from @BotFather
 #   TELEGRAM_CHAT_ID    (optional) numeric chat id; auto-resolved from the
 #                       handle below if omitted — the user must have pressed
 #                       Start on the bot first
-#   FMP_API_KEY         (optional) enables GOLD / US30 / GBPUSD signals
+#   FMP_API_KEY         (optional) enables GOLD / US30 / GBPUSD
 
 on:
   schedule:
@@ -20,7 +22,7 @@ on:
         default: false
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: budsignal-notify
@@ -45,3 +47,23 @@ jobs:
           TELEGRAM_CHAT_HANDLE: 'Lordbastian83'
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
           SEND_TEST: ${{ inputs.test && '1' || '' }}
+      - name: Update performance ledger (budsignal-data branch)
+        if: ${{ !inputs.test }}
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          set -e
+          git config user.name 'budsignal-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          if ! git ls-remote --exit-code origin budsignal-data >/dev/null 2>&1; then
+            EMPTY_TREE=$(git hash-object -t tree /dev/null)
+            INIT=$(git commit-tree "$EMPTY_TREE" -m 'init performance ledger')
+            git push origin "$INIT:refs/heads/budsignal-data"
+          fi
+          git fetch origin budsignal-data
+          git show origin/budsignal-data:performance.json > performance.json 2>/dev/null || true
+          LEDGER_FILE=performance.json node budsignal/track.mjs
+          BLOB=$(git hash-object -w performance.json)
+          TREE=$(printf '100644 blob %s\tperformance.json\n' "$BLOB" | git mktree)
+          COMMIT=$(git commit-tree "$TREE" -p "$(git rev-parse origin/budsignal-data)" -m "ledger update $(date -u +%FT%TZ)")
+          git push origin "$COMMIT:refs/heads/budsignal-data"
