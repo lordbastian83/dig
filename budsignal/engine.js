@@ -189,10 +189,13 @@
       signals.push({
         i, t: candles[i].t, side, entry, stop, target, confidence,
         // feature snapshot at fire time — recorded to the performance ledger
-        // so results can be broken down by regime to find weak spots
+        // (regime breakdowns) and consumed by the ML meta-model
         adx: ind.adx[i] != null ? Math.round(ind.adx[i] * 10) / 10 : null,
         rsiAt: Math.round(ind.rsi[i] * 10) / 10,
         volConfirm,
+        volRatio: ind.volSma[i] ? Math.round((candles[i].v / ind.volSma[i]) * 100) / 100 : null,
+        trendDist: ind.emaTrend[i] != null ? Math.round(((candles[i].c - ind.emaTrend[i]) / a) * 100) / 100 : null,
+        atrPct: Math.round((a / candles[i].c) * 10000) / 10000,
         ...scoreOutcome(candles, i, side, entry, stop, target, a),
       });
     }
@@ -264,6 +267,59 @@
     return { fixed: agg((r) => r.fixed), trail: agg((r) => r.trail) };
   }
 
+  // --- ML meta-model (trained by research.mjs, published as ml-model.json) ---
+  // Predicts the probability a signal ends favorable from its fire-time
+  // features. It classifies signals, it does not predict price.
+
+  function mlFeatures(sig) {
+    return [
+      sig.side === 'long' ? 1 : 0,
+      sig.rsiAt ?? 50,
+      sig.adx ?? 20,
+      Math.min(sig.volRatio ?? 1, 3),
+      Math.max(-5, Math.min(5, sig.trendDist ?? 0)),
+      (sig.atrPct ?? 0.02) * 100,
+    ];
+  }
+
+  function mlScore(sig, model) {
+    const f = mlFeatures(sig);
+    let z = model.bias;
+    for (let k = 0; k < f.length; k++) {
+      z += model.weights[k] * ((f[k] - model.mean[k]) / (model.std[k] || 1));
+    }
+    return 1 / (1 + Math.exp(-z));
+  }
+
+  // Plain logistic regression, batch gradient descent with L2 — small enough
+  // to need no dependencies, transparent enough to publish the weights.
+  function mlTrain(rows, { epochs = 800, lr = 0.1, l2 = 0.01 } = {}) {
+    const X = rows.map((r) => mlFeatures(r.sig));
+    const y = rows.map((r) => (r.label ? 1 : 0));
+    const d = X[0].length, n = X.length;
+    const mean = Array(d).fill(0), std = Array(d).fill(0);
+    for (const x of X) for (let k = 0; k < d; k++) mean[k] += x[k] / n;
+    for (const x of X) for (let k = 0; k < d; k++) std[k] += (x[k] - mean[k]) ** 2 / n;
+    for (let k = 0; k < d; k++) std[k] = Math.sqrt(std[k]) || 1;
+    const Z = X.map((x) => x.map((v, k) => (v - mean[k]) / std[k]));
+    let w = Array(d).fill(0), b = 0;
+    for (let e = 0; e < epochs; e++) {
+      const gw = Array(d).fill(0);
+      let gb = 0;
+      for (let i = 0; i < n; i++) {
+        let z = b;
+        for (let k = 0; k < d; k++) z += w[k] * Z[i][k];
+        const p = 1 / (1 + Math.exp(-z));
+        const err = p - y[i];
+        for (let k = 0; k < d; k++) gw[k] += (err * Z[i][k]) / n;
+        gb += err / n;
+      }
+      for (let k = 0; k < d; k++) w[k] -= lr * (gw[k] + l2 * w[k]);
+      b -= lr * gb;
+    }
+    return { weights: w, bias: b, mean, std, features: ['sideLong', 'rsi', 'adx', 'volRatio', 'trendDist', 'atrPct%'] };
+  }
+
   // Signals must only ever be computed on CLOSED candles — a forming candle's
   // close changes until it closes, so a signal computed on it could appear
   // and then vanish ("repainting"). Returns the prefix of `candles` whose
@@ -282,5 +338,6 @@
     CFG, ema, rsi, atr, adx, sma,
     computeIndicators, computeSignals, closedPrefix, closedOf, favorableRate,
     trailingScore, trailingComparison,
+    mlFeatures, mlScore, mlTrain,
   };
 })();

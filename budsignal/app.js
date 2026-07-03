@@ -628,6 +628,13 @@
         ? `${Math.floor(remaining / 3600000)}h ${Math.floor((remaining % 3600000) / 60000)}m left`
         : 'expired';
       $('lvl-conf').textContent = `${s.confidence}/100`;
+      const aiWrap = $('lvl-ai-wrap');
+      if (mlModel && s.rsiAt != null) {
+        $('lvl-ai').textContent = `${Math.round(E.mlScore(s, mlModel) * 100)}% favorable`;
+        aiWrap.hidden = false;
+      } else {
+        aiWrap.hidden = true;
+      }
       levels.hidden = false;
     } else {
       badge.className = 'signal-badge neutral';
@@ -699,6 +706,17 @@
   // Written by the alert bot every 4h to the budsignal-data branch; rows are
   // recorded when signals fire, so they cannot be retro-fitted.
   const LEDGER_URL = 'https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/performance.json';
+  const ML_MODEL_URL = 'https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/ml-model.json';
+
+  // ML meta-model: published by the research job ONLY if it passed
+  // out-of-sample validation; absence means no model earned its place.
+  let mlModel = null;
+  async function loadMlModel() {
+    try {
+      const r = await fetch(`${ML_MODEL_URL}?v=${Math.floor(Date.now() / 3600000)}`, { signal: AbortSignal.timeout(8000) });
+      if (r.ok) mlModel = await r.json();
+    } catch (e) { /* no model published */ }
+  }
 
   async function loadPerformance() {
     let data = null;
@@ -828,6 +846,7 @@
   }
 
   refresh();
+  loadMlModel().then(() => { if (mlModel) refresh(); }); // re-render with AI score once the model arrives
   loadPerformance();
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
   setInterval(loadPerformance, 30 * 60 * 1000); // ledger updates every 4h

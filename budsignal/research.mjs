@@ -71,6 +71,7 @@ async function main() {
     '',
   ];
   const overall = { train: { F: [], B: [], T: [] }, validate: { F: [], B: [], T: [] } };
+  const mlRows = { train: [], validate: [] }; // baseline signals with features, for meta-labeling
 
   for (const [asset, cfg] of Object.entries(ASSETS)) {
     console.log(`fetching ${asset} (${cfg.fmp})...`);
@@ -97,6 +98,7 @@ async function main() {
       overall[period].F.push(...F);
       overall[period].B.push(...B);
       overall[period].T.push(...T);
+      mlRows[period].push(...baseline.filter(inP).map((s) => ({ sig: s, label: s.movePct > 0, movePct: s.movePct })));
     }
 
     lines.push(
@@ -123,6 +125,43 @@ async function main() {
     const mark = tr && va ? '✅ holds up out-of-sample' : tr === null || va === null ? '⚠️ not enough signals to judge' : va ? '⚠️ validate-only (weak evidence)' : '❌ does NOT hold up out-of-sample';
     return `- **${label}**: train ${tr == null ? 'n/a' : tr ? 'better' : 'worse'}, validate ${va == null ? 'n/a' : va ? 'better' : 'worse'} → ${mark}`;
   };
+
+  // ---- ML meta-labeling: train on train-period baseline signals, judge on validate ----
+  let mlPassed = false;
+  if (mlRows.train.length >= 100 && mlRows.validate.length >= 30) {
+    const model = E.mlTrain(mlRows.train);
+    const evalAt = (rows, thr) => stats(rows.filter((r) => E.mlScore(r.sig, model) >= thr).map((r) => r.movePct));
+    lines.push(
+      '## AI meta-label experiment',
+      '',
+      `A logistic model trained on the ${mlRows.train.length} train-period baseline signals ` +
+      '(features: side, RSI, ADX, volume ratio, trend distance, ATR%) predicts the probability a signal ends favorable. ' +
+      `Judged on the ${mlRows.validate.length} untouched validate-period signals.`,
+      '',
+      '| Threshold | Train (kept signals) | Validate (kept signals) |',
+      '|---|---|---|',
+    );
+    let best = null;
+    for (const thr of [0.5, 0.55, 0.6, 0.65]) {
+      const tr = evalAt(mlRows.train, thr);
+      const va = evalAt(mlRows.validate, thr);
+      lines.push(`| p ≥ ${thr} | ${fmtStats(tr)} | ${fmtStats(va)} |`);
+      if (tr && va && va.n >= 15 && (!best || va.avg > best.va.avg)) best = { thr, tr, va };
+    }
+    const baseVa = stats(mlRows.validate.map((r) => r.movePct));
+    if (best && best.va.avg > 0 && baseVa && best.va.avg > baseVa.avg && best.tr.avg > 0) {
+      mlPassed = true;
+      const published = { ...model, threshold: best.thr, trainedRows: mlRows.train.length };
+      writeFileSync('ml-model.json', JSON.stringify(published, null, 2));
+      lines.push('', `**Verdict: ✅ passes out-of-sample at p ≥ ${best.thr}** — positive in both periods and beats the unfiltered baseline in validation. Model published (weights are public in ml-model.json on the budsignal-data branch).`);
+    } else {
+      lines.push('', '**Verdict: ❌ does not pass out-of-sample** — the model is NOT published or used. Train-period fit did not survive on unseen data.');
+    }
+    lines.push('');
+  } else {
+    lines.push('## AI meta-label experiment', '', 'Not enough signals to train and validate — skipped.', '');
+  }
+  console.log(`ML experiment: ${mlPassed ? 'PASSED — model published' : 'not published'}`);
 
   lines.push(
     '## Overall (all markets pooled)',

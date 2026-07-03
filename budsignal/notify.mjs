@@ -153,24 +153,67 @@ async function composeHeartbeat() {
   near.sort((a, b) => a.gapAtr - b.gapAtr);
   const top = near.slice(0, 3).map((n) =>
     `${n.asset}: ${n.dir === 'long' ? '▲' : '▼'} cross ${n.gapAtr.toFixed(1)} ATR away${n.blockers.length ? ` · ${n.blockers.join(' · ')}` : ' · gates clear'}`);
-  return [
+  const text = [
     `🫀 <b>Daily check</b> — ${scanned} markets scanned, ${fired ? `${fired} signal(s) fired in the last 24h` : 'no setups today'}.`,
     top.length ? 'Closest to firing:' : '',
     ...top,
   ].filter(Boolean).join('\n');
+  return { text, data: { scanned, firedLast24h: fired, markets: near } };
 }
 
-function composeMessage(asset, sig) {
+function composeMessage(asset, sig, mlModel) {
   const cfg = ASSETS[asset];
   const arrow = sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT';
   const windowEnd = fmtTime(sig.t + E.CFG.CANDLE_MS);
   return [
     `${arrow} — <b>${cfg.pair}</b>`,
     `Entry $${fmtPrice(sig.entry)} · Stop $${fmtPrice(sig.stop)} · Target $${fmtPrice(sig.target)}`,
-    `Confidence ${sig.confidence}/100 · entry window until ${windowEnd} UTC`,
+    `Confidence ${sig.confidence}/100` +
+      (mlModel && sig.rsiAt != null ? ` · AI score ${Math.round(E.mlScore(sig, mlModel) * 100)}%` : '') +
+      ` · entry window until ${windowEnd} UTC`,
     `Signal candle closed ${fmtTime(sig.t)} UTC`,
     `<i>LordBastian Signal Generator — educational tool, not financial advice.</i>`,
   ].join('\n');
+}
+
+// Published only when it passed out-of-sample validation; missing file = no model.
+async function loadMlModel() {
+  try {
+    const r = await fetch('https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/ml-model.json',
+      { signal: AbortSignal.timeout(10000) });
+    if (r.ok) return await r.json();
+  } catch (e) { /* fine */ }
+  return null;
+}
+
+// Claude analyst briefing — commentary on regimes and form, never price
+// prediction. Activated by the ANTHROPIC_API_KEY secret; silently absent
+// without it.
+async function claudeBrief(data) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 350,
+        system: 'You are the analyst voice of the LordBastian Signal Generator, a rules-based educational trading-signal app. ' +
+          'Given JSON market data, write a brief daily briefing of at most 110 words in plain text (no markdown, no headers, no bullet lists): ' +
+          'which regimes the markets are in, what is closest to producing a setup and why, and anything notable in recent signal form. ' +
+          'Never predict prices, never recommend trades, never give financial advice — the app appends its own disclaimer. Be concrete and dry, not promotional.',
+        messages: [{ role: 'user', content: JSON.stringify(data) }],
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+    const j = await r.json();
+    if (j.type === 'error') throw new Error(j.error?.message || 'api error');
+    return j.content?.[0]?.text?.trim() || null;
+  } catch (e) {
+    console.log(`claude briefing skipped: ${e.message}`);
+    return null;
+  }
 }
 
 // Deterministic random walk (same generator as the site's demo mode) so the
@@ -237,12 +280,14 @@ async function main() {
   }
 
   if (process.env.HEARTBEAT === '1') {
-    const text = await composeHeartbeat();
+    const hb = await composeHeartbeat();
+    const brief = await claudeBrief({ kind: 'daily heartbeat', ...hb.data });
+    const text = brief ? `${hb.text}\n\n🧠 ${brief}` : hb.text;
     if (DRY_RUN) { console.log(`DRY RUN heartbeat:\n${text.replace(/<[^>]+>/g, '')}`); saveState(state); return; }
     for (const chatId of chats) {
       await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
     }
-    console.log('heartbeat sent');
+    console.log(`heartbeat sent${brief ? ' (with Claude briefing)' : ''}`);
     saveState(state);
     return;
   }
@@ -251,7 +296,9 @@ async function main() {
     let records = [];
     try { records = JSON.parse(readFileSync(process.env.LEDGER_FILE || 'performance.json', 'utf8')).records || []; }
     catch (e) { console.log('no ledger available for digest'); }
-    const text = composeDigest(records);
+    let text = composeDigest(records);
+    const brief = await claudeBrief({ kind: 'weekly digest commentary', records: records.slice(-60) });
+    if (brief) text += `\n\n🧠 ${brief}`;
     for (const chatId of chats) {
       await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
     }
@@ -274,6 +321,7 @@ async function main() {
 
   state.notified = state.notified || {};
   state.pending = state.pending || {};
+  const mlModel = await loadMlModel();
   let sent = 0;
   for (const asset of Object.keys(ASSETS)) {
     let candles;
@@ -310,7 +358,7 @@ async function main() {
       Date.now() - s.t <= 2 * E.CFG.CANDLE_MS && !state.notified[asset].includes(s.t));
     if (!fresh.length) { console.log(`${asset}: no new signal (last closed candle ${fmtTime(closed[closed.length - 1].t)})`); continue; }
     for (const sig of fresh) {
-      const text = composeMessage(asset, sig);
+      const text = composeMessage(asset, sig, mlModel);
       if (DRY_RUN) {
         console.log(`DRY RUN — would send for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);
       } else {

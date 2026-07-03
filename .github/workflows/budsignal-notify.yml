@@ -63,6 +63,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - name: Daily heartbeat
         if: ${{ github.event.schedule == '15 20 * * *' || inputs.heartbeat }}
         run: HEARTBEAT=1 node budsignal/notify.mjs
@@ -70,6 +71,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - name: Update performance ledger (budsignal-data branch)
         if: ${{ !inputs.test && !inputs.heartbeat && github.event.schedule != '15 0 * * 1' && github.event.schedule != '15 20 * * *' }}
         env:
