@@ -252,22 +252,29 @@ async function main() {
     }
     state.pending[asset] = stillPending;
 
-    const last = closed[closed.length - 1];
-    const sig = signals.find((s) => s.t === last.t);
-    if (!sig) { console.log(`${asset}: no signal on candle ${fmtTime(last.t)}`); continue; }
-    if (state.notified[asset] === sig.t) { console.log(`${asset}: already notified for ${fmtTime(sig.t)}`); continue; }
-    const text = composeMessage(asset, sig);
-    if (DRY_RUN) {
-      console.log(`DRY RUN — would send for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);
-    } else {
-      for (const chatId of chats) {
-        await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
-      }
-      console.log(`${asset}: signal notification sent (${sig.side} @ ${fmtTime(sig.t)})`);
+    // GitHub cron can fire hours late, so a strict "signal on the very last
+    // candle" check would silently skip alerts — instead alert any signal
+    // from the last two candles that hasn't been announced yet.
+    if (!Array.isArray(state.notified[asset])) {
+      state.notified[asset] = state.notified[asset] ? [state.notified[asset]] : [];
     }
-    state.notified[asset] = sig.t;
-    state.pending[asset] = [...(state.pending[asset] || []), sig.t];
-    sent++;
+    const fresh = signals.filter((s) =>
+      Date.now() - s.t <= 2 * E.CFG.CANDLE_MS && !state.notified[asset].includes(s.t));
+    if (!fresh.length) { console.log(`${asset}: no new signal (last closed candle ${fmtTime(closed[closed.length - 1].t)})`); continue; }
+    for (const sig of fresh) {
+      const text = composeMessage(asset, sig);
+      if (DRY_RUN) {
+        console.log(`DRY RUN — would send for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);
+      } else {
+        for (const chatId of chats) {
+          await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+        }
+        console.log(`${asset}: signal notification sent (${sig.side} @ ${fmtTime(sig.t)})`);
+      }
+      state.notified[asset].push(sig.t);
+      state.pending[asset] = [...(state.pending[asset] || []), sig.t];
+      sent++;
+    }
   }
   if (!sent) console.log('no new signals this candle');
   saveState(state);
