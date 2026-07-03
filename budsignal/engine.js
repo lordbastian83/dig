@@ -187,7 +187,7 @@
       const confidence = Math.round(55 + (volConfirm ? 20 : 0) + rsiCentered * 25);
 
       signals.push({
-        i, t: candles[i].t, side, entry, stop, target, confidence,
+        i, t: candles[i].t, side, entry, stop, target, confidence, strategy: 'cross',
         // feature snapshot at fire time — recorded to the performance ledger
         // (regime breakdowns) and consumed by the ML meta-model
         adx: ind.adx[i] != null ? Math.round(ind.adx[i] * 10) / 10 : null,
@@ -271,14 +271,37 @@
     let best = entry;
     for (let j = i + 1; j <= i + CFG.TRAIL_EVAL && j < candles.length; j++) {
       const hitStop = dir === 1 ? candles[j].l <= stop : candles[j].h >= stop;
-      if (hitStop) return { closed: true, movePct: (dir * (stop - entry) / entry) * 100 };
+      if (hitStop) return { closed: true, exit: stop, movePct: (dir * (stop - entry) / entry) * 100 };
       best = dir === 1 ? Math.max(best, candles[j].h) : Math.min(best, candles[j].l);
       const trailed = best - dir * CFG.TRAIL_ATR * a;
       if (dir === 1 ? trailed > stop : trailed < stop) stop = trailed;
     }
     const last = Math.min(i + CFG.TRAIL_EVAL, candles.length - 1);
-    if (last - i < CFG.TRAIL_EVAL) return { closed: false, movePct: null };
-    return { closed: true, movePct: (dir * (candles[last].c - entry) / entry) * 100 };
+    if (last - i < CFG.TRAIL_EVAL) return { closed: false, exit: null, movePct: null };
+    return { closed: true, exit: candles[last].c, movePct: (dir * (candles[last].c - entry) / entry) * 100 };
+  }
+
+  // The live breakout stream: Donchian entries scored with their trailing
+  // exit (the variant that passed the walk-forward). Outcome 'trail' when
+  // the trailing stop (or the 3-day window) closed the trade; 'open' until.
+  function computeBreakoutStream(candles, ind) {
+    const sigs = computeBreakoutSignals(candles, ind);
+    for (const s of sigs) {
+      const a = ind.atr[s.i];
+      const dir = s.side === 'long' ? 1 : -1;
+      const tr = trailingScore(candles, s.i, s.side, s.entry, a);
+      s.strategy = 'breakout';
+      s.exitMode = 'trail';
+      s.target = null; // no fixed target — the trailing stop is the exit
+      if (tr.closed) {
+        s.outcome = 'trail'; s.exit = tr.exit; s.movePct = tr.movePct;
+      } else {
+        const last = candles[candles.length - 1];
+        s.outcome = 'open'; s.exit = null;
+        s.movePct = (dir * (last.c - s.entry) / s.entry) * 100;
+      }
+    }
+    return sigs;
   }
 
   // Aggregate fixed-vs-trailing comparison over an existing signal list.
@@ -376,7 +399,7 @@
 
   globalThis.BudSignalEngine = {
     CFG, ema, rsi, atr, adx, sma,
-    computeIndicators, computeSignals, computeBreakoutSignals, scoreOutcome,
+    computeIndicators, computeSignals, computeBreakoutSignals, computeBreakoutStream, scoreOutcome,
     closedPrefix, closedOf, favorableRate,
     trailingScore, trailingComparison,
     mlFeatures, mlScore, mlTrain,

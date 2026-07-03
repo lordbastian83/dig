@@ -194,12 +194,13 @@
     view: null, listenersBound: false,
   };
 
-  function setupChart(candles, ind, signals) {
+  function setupChart(candles, ind, signals, breakout) {
     chart.canvas = $('chart');
     chart.ctx = chart.canvas.getContext('2d');
     chart.candles = candles;
     chart.ind = ind;
     chart.signals = signals;
+    chart.breakout = breakout || [];
     drawChart();
     if (!chart.listenersBound) {
       window.addEventListener('resize', () => { drawChart(); drawEquity(); });
@@ -327,6 +328,23 @@
       ctx.fill();
     }
 
+    // breakout markers: diamonds (shape distinguishes the stream, not color)
+    for (const s of chart.breakout) {
+      if (s.i < start) continue;
+      const cx = x(s.i);
+      const c = candles[s.i];
+      const up = s.side === 'long';
+      const cy = up ? y(c.l) + 16 : y(c.h) - 16;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 6); ctx.lineTo(cx + 5, cy); ctx.lineTo(cx, cy + 6); ctx.lineTo(cx - 5, cy);
+      ctx.closePath();
+      ctx.fillStyle = up ? COLORS.up : COLORS.down;
+      ctx.strokeStyle = COLORS.surface;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fill();
+    }
+
     // crosshair
     if (hoverIdx != null && hoverIdx >= start) {
       const cx = x(hoverIdx);
@@ -370,7 +388,7 @@
     drawChart(idx);
 
     const c = chart.candles[idx];
-    const sig = chart.signals.find((s) => s.i === idx);
+    const sig = chart.signals.find((s) => s.i === idx) || chart.breakout.find((s) => s.i === idx);
     const tt = $('tooltip');
     tt.innerHTML = `
       <div class="tt-time">${fmtTime(c.t)} UTC</div>
@@ -381,7 +399,7 @@
       ${c.v ? `<div class="tt-row"><span>Volume</span><span>${fmtUsd(c.v)}</span></div>` : ''}
       ${chart.ind.emaFast[idx] != null ? `<div class="tt-row"><span>EMA 20</span><span>${fmtPrice(chart.ind.emaFast[idx])}</span></div>` : ''}
       ${chart.ind.emaSlow[idx] != null ? `<div class="tt-row"><span>EMA 50</span><span>${fmtPrice(chart.ind.emaSlow[idx])}</span></div>` : ''}
-      ${sig ? `<div class="tt-signal ${sig.side}">${sig.side === 'long' ? '▲ LONG' : '▼ SHORT'} signal · entry ${fmtPrice(sig.entry)}</div>` : ''}`;
+      ${sig ? `<div class="tt-signal ${sig.side}">${sig.side === 'long' ? '▲ LONG' : '▼ SHORT'} ${sig.strategy === 'breakout' ? 'breakout' : 'signal'} · entry ${fmtPrice(sig.entry)}</div>` : ''}`;
     tt.hidden = false;
     const ttw = tt.offsetWidth;
     const px = chart.view.x(idx);
@@ -548,8 +566,9 @@
     }
   }
 
-  function renderTiles(candles, ind, signals, baseline) {
-    const closed = E.closedOf(signals);
+  function renderTiles(candles, ind, signals, baseline, breakout) {
+    const all = [...signals, ...breakout];
+    const closed = E.closedOf(all);
     const favorable = closed.filter((s) => s.movePct > 0);
     const warmupIdx = Math.min(candles.length - 1, E.CFG.EMA_TREND);
     const days = Math.round((candles[candles.length - 1].t - candles[warmupIdx].t) / 86400000);
@@ -560,9 +579,9 @@
       ? `${favorable.length} of ${closed.length} closed signals ended favorable`
       : 'no closed signals in loaded history';
 
-    $('tile-signals').textContent = String(signals.length);
+    $('tile-signals').textContent = String(all.length);
     $('tile-signals-note').textContent =
-      `over ${days} days · unfiltered baseline fired ${baseline.length}`;
+      `over ${days} days · ${signals.length} cross + ${breakout.length} breakout`;
 
     const avg = closed.length ? closed.reduce((a, s) => a + s.movePct, 0) / closed.length : null;
     const avgEl = $('tile-avgmove');
@@ -605,9 +624,9 @@
     $('ind-next').textContent = `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
   }
 
-  function renderCurrentSignal(candles, ind, signals) {
+  function renderCurrentSignal(candles, ind, signals, breakout) {
     const last = candles[candles.length - 1];
-    const active = signals.filter((s) => last.t - s.t <= CANDLE_MS);
+    const active = [...signals, ...breakout].filter((s) => last.t - s.t <= CANDLE_MS).sort((a, b) => a.t - b.t);
     const badge = $('signal-badge');
     const copy = $('signal-copy');
     const levels = $('signal-levels');
@@ -615,19 +634,23 @@
     if (active.length) {
       const s = active[active.length - 1];
       badge.className = `signal-badge ${s.side}`;
-      badge.textContent = s.side === 'long' ? '▲ LONG' : '▼ SHORT';
+      badge.textContent = `${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}${s.strategy === 'breakout' ? ' · BREAKOUT' : ''}`;
       $('signal-when').textContent = `${currentAsset} · fired ${fmtTime(s.t)} UTC`;
-      copy.textContent = s.side === 'long'
+      copy.textContent = s.strategy === 'breakout'
+        ? (s.side === 'long'
+          ? 'Price closed above its 55-candle high — a momentum breakout. Exit is a 2×ATR trailing stop rather than a fixed target: winners run, losers are cut. The entry window is one 4-hour candle.'
+          : 'Price closed below its 55-candle low — a momentum breakdown. Exit is a 2×ATR trailing stop rather than a fixed target: winners run, losers are cut. The entry window is one 4-hour candle.')
+        : s.side === 'long'
         ? 'EMA 20 crossed above EMA 50 with the higher-timeframe trend, trend strength, slope, and momentum all confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.'
         : 'EMA 20 crossed below EMA 50 with the higher-timeframe trend, trend strength, slope, and momentum all confirming. The entry window is one 4-hour candle from the signal close; after that the setup expires.';
       $('lvl-entry').textContent = `$${fmtPrice(s.entry)}`;
       $('lvl-stop').textContent = `$${fmtPrice(s.stop)}`;
-      $('lvl-target').textContent = `$${fmtPrice(s.target)}`;
+      $('lvl-target').textContent = s.target != null ? `$${fmtPrice(s.target)}` : 'trailing 2×ATR';
       const remaining = Math.max(0, s.t + CANDLE_MS - Date.now());
       $('lvl-window').textContent = remaining > 0
         ? `${Math.floor(remaining / 3600000)}h ${Math.floor((remaining % 3600000) / 60000)}m left`
         : 'expired';
-      $('lvl-conf').textContent = `${s.confidence}/100`;
+      $('lvl-conf').textContent = s.confidence != null ? `${s.confidence}/100` : 'n/a (breakout)';
       const aiWrap = $('lvl-ai-wrap');
       if (mlModel && s.rsiAt != null) {
         $('lvl-ai').textContent = `${Math.round(E.mlScore(s, mlModel) * 100)}% favorable`;
@@ -648,7 +671,7 @@
     }
   }
 
-  function renderTrackRecord(signals, baseline, candles, ind) {
+  function renderTrackRecord(signals, baseline, candles, ind, breakout) {
     // Filters are only worth shipping if they measurably beat the raw cross —
     // so the comparison is computed and shown, not asserted. Same for the
     // trailing-exit experiment: identical entries, different exit, measured.
@@ -665,20 +688,23 @@
         : '');
 
     const body = $('record-body');
-    if (!signals.length) {
-      body.innerHTML = '<tr><td colspan="6" class="table-empty">No signals passed the filters over the loaded history.</td></tr>';
+    const merged = [...signals, ...breakout].sort((a, b) => b.t - a.t);
+    if (!merged.length) {
+      body.innerHTML = '<tr><td colspan="7" class="table-empty">No signals over the loaded history.</td></tr>';
       return;
     }
-    const rows = [...signals].reverse().map((s) => {
+    const rows = merged.map((s) => {
       const outcome =
         s.outcome === 'win' ? '<span class="outcome win">✓ Target hit</span>' :
         s.outcome === 'loss' ? '<span class="outcome loss">✕ Stopped out</span>' :
         s.outcome === 'be' ? '<span class="outcome flat">◇ Breakeven stop</span>' :
+        s.outcome === 'trail' ? `<span class="outcome ${s.movePct >= 0 ? 'win' : 'loss'}">⤳ Trailed out</span>` :
         s.outcome === 'open' ? '<span class="outcome flat">● Open</span>' :
         '<span class="outcome flat">◦ Expired at market</span>';
       const moveCls = s.movePct >= 0 ? 'move-pos' : 'move-neg';
       return `<tr>
         <td>${fmtTime(s.t)}</td>
+        <td>${s.strategy === 'breakout' ? '◆ Breakout' : 'Cross'}</td>
         <td><span class="side-badge ${s.side}">${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}</span></td>
         <td class="num">$${fmtPrice(s.entry)}</td>
         <td class="num">${s.exit != null ? '$' + fmtPrice(s.exit) : '—'}</td>
@@ -784,6 +810,8 @@
       .join('') || '<tr><td colspan="5" class="table-empty">No closed signals yet.</td></tr>';
 
     const segments = [
+      ['Cross entries', (r) => r.strategy !== 'breakout'],
+      ['◆ Breakout entries', (r) => r.strategy === 'breakout'],
       ['▲ Longs', (r) => r.side === 'long'],
       ['▼ Shorts', (r) => r.side === 'short'],
       ['Confidence below 70', (r) => r.confidence < 70],
@@ -818,16 +846,17 @@
     const closedInd = E.computeIndicators(closedCandles);
     const signals = E.computeSignals(closedCandles, closedInd, true);
     const baseline = E.computeSignals(closedCandles, closedInd, false);
+    const breakout = E.computeBreakoutStream(closedCandles, closedInd);
     lastCandleT = candles[candles.length - 1].t;
 
     renderHero(candles);
-    renderTiles(closedCandles, closedInd, signals, baseline);
+    renderTiles(closedCandles, closedInd, signals, baseline, breakout);
     renderIndicators(candles, ind);
     renderCountdown();
-    renderCurrentSignal(closedCandles, closedInd, signals);
-    renderTrackRecord(signals, baseline, closedCandles, closedInd);
-    setupChart(candles, ind, signals);
-    setupEquity(signals);
+    renderCurrentSignal(closedCandles, closedInd, signals, breakout);
+    renderTrackRecord(signals, baseline, closedCandles, closedInd, breakout);
+    setupChart(candles, ind, signals, breakout);
+    setupEquity([...signals, ...breakout].sort((a, b) => a.t - b.t));
   }
 
   // One-time key handoff via URL fragment (#fmpkey=...&tdkey=...): stores the

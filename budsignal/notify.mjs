@@ -86,6 +86,7 @@ function composeResolution(asset, sig) {
     sig.outcome === 'win' ? '🎯 <b>Target hit</b>' :
     sig.outcome === 'loss' ? '🛑 <b>Stopped out</b>' :
     sig.outcome === 'be' ? '⚪ <b>Breakeven stop</b>' :
+    sig.outcome === 'trail' ? `⤳ <b>Trailed out ${sig.movePct >= 0 ? 'in profit' : 'at a loss'}</b>` :
     '⏱ <b>Expired at market</b>';
   const move = `${sig.movePct >= 0 ? '+' : ''}${sig.movePct.toFixed(2)}%`;
   return [
@@ -164,14 +165,17 @@ async function composeHeartbeat() {
 
 function composeMessage(asset, sig, mlModel) {
   const cfg = ASSETS[asset];
-  const arrow = sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT';
+  const bk = sig.strategy === 'breakout';
+  const arrow = `${sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT'}${bk ? ' BREAKOUT' : ''}`;
   const windowEnd = fmtTime(sig.t + E.CFG.CANDLE_MS);
   return [
     `${arrow} — <b>${cfg.pair}</b>`,
-    `Entry $${fmtPrice(sig.entry)} · Stop $${fmtPrice(sig.stop)} · Target $${fmtPrice(sig.target)}`,
-    `Confidence ${sig.confidence}/100` +
-      (mlModel && sig.rsiAt != null ? ` · AI score ${Math.round(E.mlScore(sig, mlModel) * 100)}%` : '') +
-      ` · entry window until ${windowEnd} UTC`,
+    bk
+      ? `Entry $${fmtPrice(sig.entry)} · Initial stop $${fmtPrice(sig.stop)} · Exit: 2×ATR trailing stop (max 3 days)`
+      : `Entry $${fmtPrice(sig.entry)} · Stop $${fmtPrice(sig.stop)} · Target $${fmtPrice(sig.target)}`,
+    (sig.confidence != null ? `Confidence ${sig.confidence}/100 · ` : '') +
+      (mlModel && sig.rsiAt != null ? `AI score ${Math.round(E.mlScore(sig, mlModel) * 100)}% · ` : '') +
+      `entry window until ${windowEnd} UTC`,
     `Signal candle closed ${fmtTime(sig.t)} UTC`,
     `<i>LordBastian Signal Generator — educational tool, not financial advice.</i>`,
   ].join('\n');
@@ -331,13 +335,14 @@ async function main() {
     const closed = E.closedPrefix(candles, Date.now());
     if (closed.length < E.CFG.EMA_TREND + 10) { console.log(`${asset}: only ${closed.length} closed candles — skipping`); continue; }
     const ind = E.computeIndicators(closed);
-    const signals = E.computeSignals(closed, ind, true);
+    const signals = [...E.computeSignals(closed, ind, true), ...E.computeBreakoutStream(closed, ind)];
 
     // resolution alerts: a signal we announced earlier has now closed out
     const stillPending = [];
     for (const pt of state.pending[asset] || []) {
-      const p = signals.find((s) => s.t === pt);
-      if (p && p.outcome === 'open') { stillPending.push(pt); continue; }
+      const [ptT, ptStrat] = Array.isArray(pt) ? pt : [pt, 'cross'];
+      const p = signals.find((s) => s.t === ptT && (s.strategy || 'cross') === ptStrat);
+      if (p && p.outcome === 'open') { stillPending.push([ptT, ptStrat]); continue; }
       if (p) {
         const text = composeResolution(asset, p);
         if (DRY_RUN) console.log(`DRY RUN — would send resolution for ${asset}: ${text.replace(/<[^>]+>/g, ' ')}`);
@@ -356,8 +361,9 @@ async function main() {
     if (!Array.isArray(state.notified[asset])) {
       state.notified[asset] = state.notified[asset] ? [state.notified[asset]] : [];
     }
+    const key = (s) => `${s.t}:${s.strategy || 'cross'}`;
     const fresh = signals.filter((s) =>
-      Date.now() - s.t <= 2 * E.CFG.CANDLE_MS && !state.notified[asset].includes(s.t));
+      Date.now() - s.t <= 2 * E.CFG.CANDLE_MS && !state.notified[asset].includes(key(s)));
     if (!fresh.length) { console.log(`${asset}: no new signal (last closed candle ${fmtTime(closed[closed.length - 1].t)})`); continue; }
     if (fresh.length && mlModel && !enrichTried) {
       enrichTried = true;
@@ -376,8 +382,8 @@ async function main() {
         }
         console.log(`${asset}: signal notification sent (${sig.side} @ ${fmtTime(sig.t)})`);
       }
-      state.notified[asset].push(sig.t);
-      state.pending[asset] = [...(state.pending[asset] || []), sig.t];
+      state.notified[asset].push(key(sig));
+      state.pending[asset] = [...(state.pending[asset] || []), [sig.t, sig.strategy || 'cross']];
       sent++;
     }
   }

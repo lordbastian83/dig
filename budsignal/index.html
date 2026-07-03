@@ -101,7 +101,8 @@
           <span class="legend-item"><span class="key key-down"></span>Down candle</span>
           <span class="legend-item"><span class="key key-line key-ema20"></span>EMA 20</span>
           <span class="legend-item"><span class="key key-line key-ema50"></span>EMA 50</span>
-          <span class="legend-item"><span class="key-glyph">▲▼</span>Signal</span>
+          <span class="legend-item"><span class="key-glyph">▲▼</span>Cross signal</span>
+          <span class="legend-item"><span class="key-glyph">◆</span>Breakout</span>
         </div>
       </div>
       <div class="chart-wrap">
@@ -159,6 +160,10 @@
         <p>RSI 14 must confirm without being exhausted: 45–70 for longs, 30–55 for shorts. Volume above its 20-period average raises confidence. Stops sit 1.5 × ATR 14 from entry, targets 2 × ATR — and once price moves 1 × ATR in favor, the stop moves to breakeven.</p>
       </div>
       <div class="method-card">
+        <h3><span class="step-num">◆</span>Breakout stream</h3>
+        <p>A second, independent strategy: long when price closes above its 55-candle high, short below its 55-candle low, exiting on a 2×ATR trailing stop (no fixed target, max 3 days). The only rule set here that stayed profitable out-of-sample across 3 years — see the research report.</p>
+      </div>
+      <div class="method-card">
         <h3><span class="step-num">4</span>4-hour entry window</h3>
         <p>A signal is valid for one candle — four hours from the close that produced it. If unfilled, it expires. Outcomes are scored over the following 24 hours: target, stop, or expiry at market. Signals are evaluated on closed candles only, so they never repaint mid-candle.</p>
       </div>
@@ -180,10 +185,10 @@
     <div class="table-wrap">
       <table class="record-table">
         <thead>
-          <tr><th>Signal time (UTC)</th><th>Side</th><th class="num">Entry</th><th class="num">Exit</th><th>Outcome</th><th class="num">Move</th></tr>
+          <tr><th>Signal time (UTC)</th><th>Strategy</th><th>Side</th><th class="num">Entry</th><th class="num">Exit</th><th>Outcome</th><th class="num">Move</th></tr>
         </thead>
         <tbody id="record-body">
-          <tr><td colspan="6" class="table-empty">Loading…</td></tr>
+          <tr><td colspan="7" class="table-empty">Loading…</td></tr>
         </tbody>
       </table>
     </div>
