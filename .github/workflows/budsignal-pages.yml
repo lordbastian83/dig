@@ -1,11 +1,11 @@
 name: Deploy BudSignal to GitHub Pages
 
-# Publishes budsignal/ to the gh-pages branch. The repo's Actions token is
-# not allowed to create a Pages site via the Pages API (configure-pages
-# enablement fails with "Resource not accessible by integration"), so this
-# uses the classic branch-based flow instead: GitHub serves the site from
-# gh-pages once Pages is on (Settings -> Pages -> Deploy from a branch ->
-# gh-pages, one-time if it doesn't enable automatically).
+# Two jobs so the site deploys whichever Pages source is configured in
+# Settings -> Pages:
+#   - deploy-actions serves it when Source = "GitHub Actions"
+#   - deploy-branch publishes gh-pages, which serves it when
+#     Source = "Deploy from a branch"
+# The job matching the other mode fails or is ignored harmlessly.
 
 on:
   push:
@@ -17,13 +17,30 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: budsignal-pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  deploy-actions:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: budsignal
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy-branch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
