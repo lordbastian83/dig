@@ -184,7 +184,15 @@
       const rsiCentered = 1 - Math.abs(ind.rsi[i] - mid) / ((band[1] - band[0]) / 2);
       const confidence = Math.round(55 + (volConfirm ? 20 : 0) + rsiCentered * 25);
 
-      signals.push({ i, t: candles[i].t, side, entry, stop, target, confidence, ...scoreOutcome(candles, i, side, entry, stop, target, a) });
+      signals.push({
+        i, t: candles[i].t, side, entry, stop, target, confidence,
+        // feature snapshot at fire time — recorded to the performance ledger
+        // so results can be broken down by regime to find weak spots
+        adx: ind.adx[i] != null ? Math.round(ind.adx[i] * 10) / 10 : null,
+        rsiAt: Math.round(ind.rsi[i] * 10) / 10,
+        volConfirm,
+        ...scoreOutcome(candles, i, side, entry, stop, target, a),
+      });
     }
     return signals;
   }

@@ -667,6 +667,93 @@
     dEl.className = `hero-price-delta ${delta >= 0 ? 'pos' : 'neg'}`;
   }
 
+  /* ---------------- live performance (signal ledger) ---------------- */
+
+  // Written by the alert bot every 4h to the budsignal-data branch; rows are
+  // recorded when signals fire, so they cannot be retro-fitted.
+  const LEDGER_URL = 'https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/performance.json';
+
+  async function loadPerformance() {
+    let data = null;
+    try {
+      const r = await fetch(`${LEDGER_URL}?v=${Math.floor(Date.now() / 600000)}`, { signal: AbortSignal.timeout(8000) });
+      if (r.ok) data = await r.json();
+    } catch (e) { /* fall through */ }
+    if (!data) {
+      try {
+        const r = await fetch('performance.json', { signal: AbortSignal.timeout(4000) });
+        if (r.ok) data = await r.json();
+      } catch (e) { /* fall through */ }
+    }
+    renderPerformance(data);
+  }
+
+  function segmentStats(recs) {
+    const closed = recs.filter((r) => r.outcome !== 'open');
+    if (!closed.length) return { n: 0 };
+    const fav = closed.filter((r) => r.movePct > 0);
+    const grossWin = closed.reduce((a, r) => a + Math.max(r.movePct, 0), 0);
+    const grossLoss = closed.reduce((a, r) => a + Math.max(-r.movePct, 0), 0);
+    return {
+      n: closed.length,
+      favPct: (fav.length / closed.length) * 100,
+      avg: closed.reduce((a, r) => a + r.movePct, 0) / closed.length,
+      pf: grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? Infinity : null),
+    };
+  }
+
+  const fmtPf = (pf) => pf == null ? 'n/a' : pf === Infinity ? '∞' : pf.toFixed(2);
+
+  function renderPerformance(data) {
+    const sub = $('perf-sub');
+    const content = $('perf-content');
+    if (!data || !Array.isArray(data.records) || !data.records.length) {
+      sub.textContent = 'No ledger data yet. The alert bot records every signal as it fires (starting with a one-time backfill on its first run) — results will appear here after its next 4-hour check.';
+      content.hidden = true;
+      return;
+    }
+    const recs = data.records;
+    const all = segmentStats(recs);
+    sub.textContent =
+      `Recorded by the alert bot as signals fire and stored in an append-only ledger — unlike the recomputed track record above, these rows cannot be retro-fitted. ` +
+      `${data.counts?.live ?? 0} recorded live, ${data.counts?.backfill ?? 0} backfilled from history on first run. Updated ${fmtTime(data.updated || Date.now())} UTC.`;
+    content.hidden = false;
+
+    $('perf-total').textContent = String(recs.length);
+    $('perf-total-note').textContent = `${data.counts?.live ?? 0} live · ${data.counts?.backfill ?? 0} backfill`;
+    $('perf-winrate').textContent = all.n ? `${all.favPct.toFixed(0)}%` : 'n/a';
+    const avgEl = $('perf-avg');
+    avgEl.textContent = all.n ? fmtPct(all.avg) : 'n/a';
+    avgEl.classList.remove('pos', 'neg');
+    if (all.n) avgEl.classList.add(all.avg >= 0 ? 'pos' : 'neg');
+    $('perf-pf').textContent = all.n ? fmtPf(all.pf) : 'n/a';
+
+    const row = (label, s) => s.n
+      ? `<tr><td>${label}</td><td class="num">${s.n}</td><td class="num">${s.favPct.toFixed(0)}%</td><td class="num ${s.avg >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(s.avg)}</td></tr>`
+      : `<tr><td>${label}</td><td class="num">0</td><td class="num">—</td><td class="num">—</td></tr>`;
+
+    $('perf-assets').innerHTML = Object.keys(ASSETS)
+      .map((a) => ({ a, s: segmentStats(recs.filter((r) => r.asset === a)) }))
+      .filter((x) => x.s.n)
+      .map((x) => `<tr><td>${ASSETS[x.a].pair}</td><td class="num">${x.s.n}</td><td class="num">${x.s.favPct.toFixed(0)}%</td><td class="num ${x.s.avg >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(x.s.avg)}</td><td class="num">${fmtPf(x.s.pf)}</td></tr>`)
+      .join('') || '<tr><td colspan="5" class="table-empty">No closed signals yet.</td></tr>';
+
+    const segments = [
+      ['▲ Longs', (r) => r.side === 'long'],
+      ['▼ Shorts', (r) => r.side === 'short'],
+      ['Confidence below 70', (r) => r.confidence < 70],
+      ['Confidence 70–84', (r) => r.confidence >= 70 && r.confidence < 85],
+      ['Confidence 85+', (r) => r.confidence >= 85],
+      ['ADX 20–25 (weak trend)', (r) => r.adx != null && r.adx >= 20 && r.adx < 25],
+      ['ADX 25+ (strong trend)', (r) => r.adx != null && r.adx >= 25],
+      ['Volume confirmed', (r) => r.volConfirm === true],
+      ['Volume not confirmed', (r) => r.volConfirm === false],
+    ];
+    $('perf-buckets').innerHTML = segments
+      .map(([label, fn]) => row(label, segmentStats(recs.filter(fn))))
+      .join('');
+  }
+
   /* ---------------- boot ---------------- */
 
   async function refresh() {
@@ -710,6 +797,8 @@
   }
 
   refresh();
+  loadPerformance();
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
+  setInterval(loadPerformance, 30 * 60 * 1000); // ledger updates every 4h
   setInterval(renderCountdown, 30 * 1000);
 })();
