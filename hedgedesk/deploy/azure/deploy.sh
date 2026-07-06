@@ -69,8 +69,22 @@ fi
 echo "▸ RG=$RG  LOCATION=$LOCATION  ACR=$ACR  APP=$APP_NAME  TAG=$IMAGE_TAG"
 
 az extension add --name containerapp --upgrade --only-show-errors -y >/dev/null 2>&1 || true
-az provider register -n Microsoft.App --wait >/dev/null 2>&1 || true
-az provider register -n Microsoft.OperationalInsights --wait >/dev/null 2>&1 || true
+
+# Resource providers must be Registered before we create anything, or Container
+# Apps / ACR / Storage calls fail on a fresh subscription. Register + wait (this
+# blocks a few minutes the first time; it's a no-op once registered).
+echo "▸ Ensuring resource providers are registered (first run can take a few min)…"
+for ns in Microsoft.App Microsoft.OperationalInsights Microsoft.ContainerRegistry Microsoft.Storage; do
+  state="$(az provider show -n "$ns" --query registrationState -o tsv 2>/dev/null || echo NotRegistered)"
+  if [[ "$state" != "Registered" ]]; then
+    echo "   registering $ns (currently: $state)…"
+    az provider register -n "$ns" --wait
+  fi
+done
+# Final gate: confirm the critical one really is Registered before proceeding.
+if [[ "$(az provider show -n Microsoft.App --query registrationState -o tsv)" != "Registered" ]]; then
+  echo "✗ Microsoft.App still not Registered. Run: az provider register -n Microsoft.App --wait"; exit 1
+fi
 
 # ---- 1. resource group ----------------------------------------------------
 az group create -n "$RG" -l "$LOCATION" -o none
