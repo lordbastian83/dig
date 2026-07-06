@@ -75,6 +75,10 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("tickers", nargs="+")
     w.add_argument("--every-min", type=int, default=240)
     sub.add_parser("exits")
+    sv = sub.add_parser("serve", help="24/7 service with /health + /status HTTP endpoints (Azure entrypoint)")
+    sv.add_argument("tickers", nargs="*", help="universe (defaults to config/universe.yaml or HEDGEDESK_UNIVERSE)")
+    sv.add_argument("--every-min", type=int, default=None)
+    sv.add_argument("--port", type=int, default=None)
     lr = sub.add_parser("learn")
     lr.add_argument("run_id")
     lr.add_argument("return_pct", type=float)
@@ -87,6 +91,14 @@ def main(argv: list[str] | None = None) -> int:
         cmd_once(pipe, args.tickers)
     elif args.cmd == "watch":
         cmd_watch(pipe, args.tickers, args.every_min)
+    elif args.cmd == "serve":
+        from .service import DeskService
+        DeskService(
+            universe=args.tickers or None,
+            every_min=args.every_min,
+            port=args.port,
+            pipeline=pipe,
+        ).serve()
     elif args.cmd == "exits":
         log.info("exit sweep: wire open positions from your broker/store here")
     elif args.cmd == "learn":

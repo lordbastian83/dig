@@ -61,6 +61,10 @@ python -m hedgedesk.main once BTC_USDT ETH_USDT
 # 24/7 loop (re-run every 4h, matching a 4h candle cadence):
 python -m hedgedesk.main watch AAPL MSFT --every-min 240
 
+# 24/7 SERVICE with health/status endpoints (this is the Azure entrypoint):
+python -m hedgedesk.main serve AAPL BTC_USDT --every-min 240 --port 8080
+#   GET /health  -> liveness   GET /status -> per-ticker state   GET /verdicts
+
 # Later, teach Hermes what actually happened (realized +6%):
 python -m hedgedesk.main learn <run_id> 0.06
 ```
@@ -88,6 +92,22 @@ feeds. `pytest tests/` proves the wiring end-to-end with the LLM stubbed.
 
 This JSON is the bridge point: pipe it into TradingView alerts, a Saxo/IBKR
 order router, or a human approval queue.
+
+## Go live on Azure (one command)
+
+```bash
+az login
+export ANTHROPIC_API_KEY=sk-ant-...        # required
+export OPENBB_PAT=...                       # optional (premium equity data)
+./deploy/azure/deploy.sh                    # builds the image in ACR, provisions, deploys
+```
+
+`deploy.sh` builds the image **server-side in ACR** (no local Docker needed),
+provisions a Container Apps environment with a persistent Azure Files audit
+ledger, wires your API key as a secret, and starts the service with a `/health`
+probe and one always-on replica. It prints the live URL; `curl https://<fqdn>/status`
+shows each ticker's latest verdict. CI/CD (`.github/workflows/hedgedesk-deploy.yml`)
+keeps it updated on every push. Full runbook: [`docs/DEPLOY_AZURE.md`](docs/DEPLOY_AZURE.md).
 
 ## Docs
 
