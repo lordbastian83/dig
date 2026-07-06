@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hedgedesk"
+version = "0.1.0"
+description = "AI Hedge Fund Desk — a 24/7 multi-agent investment committee (OpenBB + TradingAgents + Hermes + Claude Fable)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.40",
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+data = ["openbb>=4.3"]
+hermes = ["httpx>=0.27"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+hedgedesk = "hedgedesk.main:main"
+
+[tool.setuptools.packages.find]
+include = ["hedgedesk*"]

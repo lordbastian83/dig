@@ -1,0 +1,6 @@
+anthropic>=0.40
+pydantic>=2.6
+pyyaml>=6.0
+numpy>=1.26
+openbb>=4.3      # the data terminal; heavy — pin/trim providers as needed
+httpx>=0.27      # optional: hosted Hermes mirror

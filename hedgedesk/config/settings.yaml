@@ -1,0 +1,6 @@
+# Runtime settings for the desk (overridden by env vars named HEDGEDESK_*).
+model: claude-fable-5
+temperature: 0.2
+debate_rounds: 2
+analyst_concurrency: 7
+data_cache_ttl_seconds: 900

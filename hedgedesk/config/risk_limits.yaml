@@ -1,0 +1,8 @@
+# Hard portfolio guardrails enforced mechanically by the Risk Manager.
+max_position_pct: 0.08
+max_sector_pct: 0.25
+max_gross_exposure: 1.50
+max_net_exposure: 1.00
+max_name_vol_annualized: 0.90
+max_daily_drawdown_pct: 0.04
+min_reward_to_risk: 1.5
