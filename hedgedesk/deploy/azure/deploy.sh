@@ -38,7 +38,13 @@ if [[ "$ACR" == *RANDOM_SUFFIX_ACR* ]]; then
   ACR="hedgedesk$(echo "$RG$LOCATION" | md5sum | cut -c1-8)"
 fi
 
-: "${ANTHROPIC_API_KEY:?export ANTHROPIC_API_KEY before deploying}"
+# ANTHROPIC_API_KEY is OPTIONAL: without it the desk deploys and runs in
+# heuristic mode (rule-based verdicts on live data). Add it to upgrade to the
+# full Claude Fable committee.
+export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
+if [[ -z "$ANTHROPIC_API_KEY" ]]; then
+  echo "ℹ No ANTHROPIC_API_KEY set — deploying in HEURISTIC mode (no LLM). You can add the key later."
+fi
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 
@@ -124,16 +130,35 @@ az containerapp env storage set -g "$RG" -n "$ENV_NAME" --storage-name "$ENV_STO
   --azure-file-share-name "$SHARE" --access-mode ReadWrite -o none
 
 # ---- 6. render + deploy the Container App ----------------------------------
-# Rendered with a bash heredoc (portable; no envsubst/gettext dependency).
+# Rendered with python3 (present in Cloud Shell) so secrets are included only
+# when non-empty — Container Apps rejects empty secret values, and the key is
+# optional (heuristic mode runs with no secret at all).
 RENDERED="$(mktemp -t hedgedesk-app.XXXX.yaml)"
 trap 'rm -f "$RENDERED"' EXIT
-cat > "$RENDERED" <<EOF
-identity:
+export IDENTITY_RESOURCE_ID ENV_RESOURCE_ID ACR_LOGIN_SERVER IMAGE_TAG ENV_STORAGE_NAME \
+       HEDGEDESK_MODEL HEDGEDESK_UNIVERSE HEDGEDESK_EVERY_MIN ANTHROPIC_API_KEY OPENBB_PAT
+python3 - > "$RENDERED" <<'PY'
+import os
+E = os.environ.get
+key = (E("ANTHROPIC_API_KEY") or "").strip()
+pat = (E("OPENBB_PAT") or "").strip()
+
+secrets, envs = [], []
+if key:
+    secrets.append(f'      - name: anthropic-api-key\n        value: "{key}"')
+    envs.append("          - name: ANTHROPIC_API_KEY\n            secretRef: anthropic-api-key")
+if pat:
+    secrets.append(f'      - name: openbb-pat\n        value: "{pat}"')
+    envs.append("          - name: OPENBB_PAT\n            secretRef: openbb-pat")
+secrets_block = ("    secrets:\n" + "\n".join(secrets)) if secrets else ""
+env_secret_block = ("\n" + "\n".join(envs)) if envs else ""
+
+print(f"""identity:
   type: UserAssigned
   userAssignedIdentities:
-    ${IDENTITY_RESOURCE_ID}: {}
+    {E('IDENTITY_RESOURCE_ID')}: {{}}
 properties:
-  managedEnvironmentId: ${ENV_RESOURCE_ID}
+  managedEnvironmentId: {E('ENV_RESOURCE_ID')}
   configuration:
     activeRevisionsMode: Single
     ingress:
@@ -144,45 +169,37 @@ properties:
         - latestRevision: true
           weight: 100
     registries:
-      - server: ${ACR_LOGIN_SERVER}
-        identity: ${IDENTITY_RESOURCE_ID}
-    secrets:
-      - name: anthropic-api-key
-        value: "${ANTHROPIC_API_KEY}"
-      - name: openbb-pat
-        value: "${OPENBB_PAT}"
+      - server: {E('ACR_LOGIN_SERVER')}
+        identity: {E('IDENTITY_RESOURCE_ID')}
+{secrets_block}
   template:
     scale:
       minReplicas: 1
       maxReplicas: 1
     containers:
       - name: hedgedesk
-        image: ${ACR_LOGIN_SERVER}/hedgedesk:${IMAGE_TAG}
+        image: {E('ACR_LOGIN_SERVER')}/hedgedesk:{E('IMAGE_TAG')}
         resources:
           cpu: 1.0
           memory: 2.0Gi
         command: ["python", "-m", "hedgedesk.main"]
         args: ["serve"]
         env:
-          - name: ANTHROPIC_API_KEY
-            secretRef: anthropic-api-key
-          - name: OPENBB_PAT
-            secretRef: openbb-pat
           - name: HEDGEDESK_MODEL
-            value: "${HEDGEDESK_MODEL}"
+            value: "{E('HEDGEDESK_MODEL')}"
           - name: HEDGEDESK_UNIVERSE
-            value: "${HEDGEDESK_UNIVERSE}"
+            value: "{E('HEDGEDESK_UNIVERSE')}"
           - name: HEDGEDESK_EVERY_MIN
-            value: "${HEDGEDESK_EVERY_MIN}"
+            value: "{E('HEDGEDESK_EVERY_MIN')}"
           - name: PORT
-            value: "8080"
+            value: "8080"{env_secret_block}
         probes:
           - type: Liveness
-            httpGet: { path: /health, port: 8080 }
+            httpGet: {{ path: /health, port: 8080 }}
             initialDelaySeconds: 15
             periodSeconds: 30
           - type: Readiness
-            httpGet: { path: /health, port: 8080 }
+            httpGet: {{ path: /health, port: 8080 }}
             initialDelaySeconds: 5
             periodSeconds: 15
         volumeMounts:
@@ -191,8 +208,8 @@ properties:
     volumes:
       - name: desk-runs
         storageType: AzureFile
-        storageName: ${ENV_STORAGE_NAME}
-EOF
+        storageName: {E('ENV_STORAGE_NAME')}""")
+PY
 
 if az containerapp show -g "$RG" -n "$APP_NAME" -o none 2>/dev/null; then
   echo "▸ Updating existing Container App…"

@@ -175,10 +175,15 @@ def _analyst_rule(key: str, d: dict) -> tuple[Signal, float, list[str]]:
     if key == "news_sentiment":
         return Signal.NEUTRAL, 0.5, [f"{len(d.get('headlines', []))} headlines; no sentiment model in heuristic mode"]
     if key == "flow_ownership":
-        si = _f(d.get("short_interest_pct"))
+        imb = _f(d.get("book_imbalance"))          # live crypto order-book (bids vs asks)
+        if imb is not None and imb > 0.15:
+            return Signal.BULLISH, 0.56, [f"order book bid-heavy ({imb:+.0%})"]
+        if imb is not None and imb < -0.15:
+            return Signal.BEARISH, 0.56, [f"order book ask-heavy ({imb:+.0%})"]
+        si = _f(d.get("short_interest_pct"))        # equities
         if si is not None and si > 0.1:
             return Signal.BEARISH, 0.55, [f"elevated short interest {si:.0%}"]
-        return Signal.NEUTRAL, 0.5, ["ownership unremarkable"]
+        return Signal.NEUTRAL, 0.5, ["ownership/flow unremarkable"]
     if key == "options":
         pcr, iv = _f(d.get("put_call_ratio")), _f(d.get("atm_iv"))
         if pcr is not None and pcr > 1.2:
