@@ -66,6 +66,7 @@ class ClaudeClient:
         schema: Type[T],
         *,
         system: str | None = None,
+        context: dict | None = None,   # ignored by the LLM; used by HeuristicEngine
     ) -> T:
         """Force the model to return an instance of ``schema``.
 

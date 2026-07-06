@@ -31,7 +31,7 @@ class FakeLLM:
     def complete(self, prompt, system=None):
         return "Fake argument citing the dossier."
 
-    def complete_json(self, prompt, schema, system=None):
+    def complete_json(self, prompt, schema, system=None, context=None):
         if schema is AnalystReport:
             return AnalystReport(agent="x", ticker="TEST", signal=Signal.BULLISH, conviction=0.6)
         if schema is DebateResult:

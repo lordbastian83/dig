@@ -94,6 +94,7 @@ class DebateModerator(Agent):
         result = self.llm.complete_json(
             DEBATE_JUDGE_PROMPT.format(ticker=ticker, transcript=transcript),
             DebateResult,
+            context={"ticker": ticker, "reports": reports},
         )
         result.ticker = ticker
         result.turns = turns

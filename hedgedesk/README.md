@@ -42,13 +42,32 @@ and **learns from every run** so its theses sharpen over time.
 Every arrow carries a **typed Pydantic object** (`orchestration/schemas.py`), so
 a malformed LLM output fails at the boundary instead of poisoning the audit log.
 
-## Quick start
+## Run it in one command (no key, no Azure)
+
+```bash
+cd hedgedesk
+./run.sh                       # serves on http://localhost:8080
+# in another terminal:
+curl localhost:8080/status     # live verdicts per ticker
+```
+
+With **no API key** the desk runs in **heuristic mode**: live data, real
+indicators, real risk checks and valuations, with verdicts from a deterministic
+rules engine. Add a key to upgrade to the full Claude Fable committee — same
+command, it auto-detects:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # optional; upgrades reasoning to Claude Fable
+./run.sh once BTC_USDT AAPL           # one pass, prints verdicts
+```
+
+## Full setup
 
 ```bash
 cd hedgedesk
 python -m venv .venv && . .venv/bin/activate
-pip install -e .            # core deps; add ".[data]" for OpenBB
-cp .env.example .env        # add ANTHROPIC_API_KEY (+ OPENBB_PAT for live data)
+pip install -e ".[data]"    # core + live data (yfinance); add "openbb" for premium
+cp .env.example .env        # optional: ANTHROPIC_API_KEY (+ OPENBB_PAT)
 
 # Verify live data first (real indicators, no API key):
 python scripts/live_check.py BTC_USDT        # live crypto via Crypto.com

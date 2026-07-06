@@ -20,6 +20,7 @@ from ..agents import DebateModerator, FundManager, RiskManager, Trader, build_an
 from ..config import Settings, get_settings
 from ..data.openbb_gateway import OpenBBGateway
 from ..hermes.orchestrator import Hermes
+from ..llm import build_reasoner
 from ..llm.client import ClaudeClient
 from ..portfolio.valuation import blended_valuation
 from .schemas import AnalystReport, DeskRun, Verdict, VerdictType
@@ -36,7 +37,8 @@ class DeskPipeline:
         hermes: Hermes | None = None,
     ) -> None:
         self.settings = settings or get_settings()
-        self.llm = llm or ClaudeClient(self.settings)
+        # Auto-select: Claude Fable if a key is set, else the no-key heuristic engine.
+        self.llm = llm or build_reasoner(self.settings)
         self.gateway = gateway or OpenBBGateway(self.settings)
         self.hermes = hermes or Hermes(self.settings)
 
@@ -71,7 +73,8 @@ class DeskPipeline:
         regime = {"macro": data["macro"], "options": data["options"]}
         run.risk = self.risk.run(run.ticket, portfolio, regime)
         run.verdict = self.fund_manager.run(
-            ticker, run.debate, run.ticket, run.risk, run.valuation
+            ticker, run.debate, run.ticket, run.risk, run.valuation,
+            reports=run.analyst_reports,
         )
         run.verdict.audit_id = run.run_id
         run.finished_at = run.verdict.created_at

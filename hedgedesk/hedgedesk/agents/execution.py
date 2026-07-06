@@ -37,6 +37,10 @@ class Trader(Agent):
                 min_rr=s.risk.min_reward_to_risk,
             ),
             TradeTicket,
+            context={
+                "ticker": ticker, "market": market,
+                "debate_winner": getattr(debate, "winner", "TOSS-UP"),
+            },
         )
         ticket.ticker = ticker
         return ticket
@@ -127,6 +131,7 @@ class RiskManager(Agent):
                 max_dd=lim.max_daily_drawdown_pct,
             ),
             RiskAssessment,
+            context={"ticker": ticket.ticker},
         )
 
         # Merge: mechanical BLOCKs are authoritative and cannot be overridden.
@@ -147,7 +152,12 @@ class FundManager(Agent):
         ticket: TradeTicket,
         risk: RiskAssessment,
         valuation: ValuationResult | None,
+        reports: list | None = None,
     ) -> Verdict:
+        avg_conv = (
+            sum(r.conviction for r in reports) / len(reports)
+            if reports else 0.5
+        )
         verdict = self.llm.complete_json(
             FUND_MANAGER_PROMPT.format(
                 ticker=ticker,
@@ -157,6 +167,12 @@ class FundManager(Agent):
                 valuation=valuation.model_dump_json(indent=2) if valuation else "n/a",
             ),
             Verdict,
+            context={
+                "ticker": ticker,
+                "debate_winner": getattr(debate, "winner", "TOSS-UP"),
+                "risk_approved": risk.approved,
+                "avg_conviction": avg_conv,
+            },
         )
         verdict.ticker = ticker
         verdict.ticket = risk.adjusted_ticket or ticket

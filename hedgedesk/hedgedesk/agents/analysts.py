@@ -24,6 +24,7 @@ class AnalystAgent(Agent):
             analyst_prompt(self.spec, ticker, data),
             AnalystReport,
             system=ANALYST_SYSTEM.format(seat=self.spec.seat),
+            context={"spec_key": self.spec.key, "ticker": ticker, "data": data},
         )
         # Trust the seat identity from the registry, not the model's echo.
         report.agent = self.spec.key
