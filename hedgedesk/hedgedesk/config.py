@@ -67,8 +67,12 @@ class Settings:
         default_factory=lambda: os.getenv("ANTHROPIC_API_KEY")
     )
 
-    # --- Data (OpenBB is the terminal) ---
+    # --- Data (provider chain; richest live source first, synthetic floor last) ---
     openbb_pat: str | None = field(default_factory=lambda: os.getenv("OPENBB_PAT"))
+    providers: list[str] = field(
+        default_factory=lambda: ["openbb", "yfinance", "cryptocom", "synthetic"]
+    )
+    crypto_timeframe: str = "4h"            # candle timeframe for crypto pairs
     data_cache_ttl_seconds: int = 900       # reuse pulls within a 15m window
 
     # --- Committee behaviour ---

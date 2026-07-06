@@ -1,6 +1,13 @@
-anthropic>=0.40
+# Core (always needed)
+anthropic>=0.40      # Claude Fable reasoning engine
 pydantic>=2.6
 pyyaml>=6.0
 numpy>=1.26
-openbb>=4.3      # the data terminal; heavy — pin/trim providers as needed
-httpx>=0.27      # optional: hosted Hermes mirror
+
+# Live data
+requests>=2.31       # Crypto.com REST (crypto pairs) — no key needed
+yfinance>=0.2.40     # equities/ETFs live data — no key needed
+
+# Optional
+openbb>=4.3          # full terminal (premium providers); heavy, needs OPENBB_PAT
+httpx>=0.27          # hosted Hermes mirror

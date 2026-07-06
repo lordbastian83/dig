@@ -4,3 +4,14 @@ temperature: 0.2
 debate_rounds: 2
 analyst_concurrency: 7
 data_cache_ttl_seconds: 900
+
+# Data provider chain — first provider that supports a ticker AND returns a
+# slice wins; 'synthetic' is the offline floor and is always appended.
+#   equities (AAPL) -> openbb (if PAT) -> yfinance -> synthetic
+#   crypto  (BTC_USDT) -> cryptocom -> synthetic
+providers:
+  - openbb
+  - yfinance
+  - cryptocom
+  - synthetic
+crypto_timeframe: 4h

@@ -94,6 +94,18 @@ def test_valuation_ranges_are_ordered():
     v = blended_valuation("TEST", spot=100, fcf_per_share=4, eps=5, growth=0.1, vol=0.3)
     assert v.monte_carlo_p10 <= v.monte_carlo_p50 <= v.monte_carlo_p90
     assert v.blended_low <= v.blended_high
+    assert v.dcf_target is not None and v.exit_multiple_target is not None
+
+
+def test_valuation_monte_carlo_only_when_no_fundamentals():
+    # Crypto / no cash flows: DCF & exit-multiple omitted, cone centered on spot.
+    v = blended_valuation("BTC_USDT", spot=60000, fcf_per_share=0, eps=0,
+                          vol=0.37, fundamentals_reliable=False)
+    assert v.dcf_target is None and v.exit_multiple_target is None
+    assert v.monte_carlo_p10 <= v.monte_carlo_p50 <= v.monte_carlo_p90
+    # median within ~10% of spot (no directional view, drag cancelled)
+    assert 0.9 < v.monte_carlo_p50 / 60000 < 1.1
+    assert v.blended_low == v.monte_carlo_p10 and v.blended_high == v.monte_carlo_p90
 
 
 if __name__ == "__main__":

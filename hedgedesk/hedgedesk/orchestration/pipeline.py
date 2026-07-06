@@ -104,14 +104,22 @@ class DeskPipeline:
         """Best-effort valuation from whatever fundamentals OpenBB returned."""
         f = data["fundamentals"]
         t = data["technical"]
+        # Prefer live realized vol (works for crypto too); fall back to option IV.
+        vol = t.get("realized_vol") or data["options"].get("atm_iv") or 0.30
+        # DCF/exit-multiple are meaningless without real cash flows (crypto, or an
+        # equity whose fundamentals fell through to synthetic) -> Monte-Carlo only.
+        reliable = not f.get("_synthetic") and f.get("eps") is not None
         try:
             return blended_valuation(
                 ticker,
                 spot=float(t.get("last") or 100.0),
                 fcf_per_share=float(f.get("eps") or 3.0) * 0.8,  # crude FCF proxy
                 eps=float(f.get("eps") or 3.0),
-                growth=float(f.get("revenue_growth") or 0.08) or 0.08,
-                vol=float(data["options"].get("atm_iv") or 0.30) or 0.30,
+                # With no fundamentals, use a driftless GBM (median ≈ spot) — an
+                # honest "no directional view" prior rather than a borrowed growth.
+                growth=(float(f.get("revenue_growth") or 0.08) or 0.08) if reliable else 0.0,
+                vol=float(vol) or 0.30,
+                fundamentals_reliable=reliable,
             )
         except Exception as exc:
             log.warning("valuation failed for %s: %s", ticker, exc)

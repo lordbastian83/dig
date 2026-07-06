@@ -87,18 +87,44 @@ def blended_valuation(
     exit_multiple: float = 18.0,
     vol: float = 0.30,
     years: int = 5,
+    fundamentals_reliable: bool = True,
 ) -> ValuationResult:
-    """Combine the three models into one 5-year target range.
+    """Combine the models into one 5-year target range.
 
     The blend is deliberately conservative: the low is the min of the DCF and the
     Monte Carlo p10; the high is the max of the exit-multiple case and the MC p90.
     That brackets the committee's thesis with a model-driven range it must beat.
+
+    ``fundamentals_reliable=False`` (e.g. crypto, or an equity with no real EPS/FCF)
+    drops the DCF and exit-multiple legs — they are meaningless without cash flows —
+    and returns a Monte-Carlo-only range. Honest beats precise-looking-but-wrong.
     """
+    if not fundamentals_reliable:
+        # No cash-flow view: present a vol cone centered on spot. Choosing
+        # drift = ½σ² cancels GBM volatility drag so the median sits at today's
+        # price — an honest "we don't know the direction, here's the dispersion".
+        p10, p50, p90 = monte_carlo_paths(spot, drift=0.5 * vol**2, vol=vol, years=years)
+        return ValuationResult(
+            ticker=ticker,
+            dcf_target=None,
+            exit_multiple_target=None,
+            monte_carlo_p10=round(p10, 2),
+            monte_carlo_p50=round(p50, 2),
+            monte_carlo_p90=round(p90, 2),
+            blended_low=round(p10, 2),
+            blended_high=round(p90, 2),
+            horizon_years=years,
+            notes=(
+                f"Monte-Carlo only (no reliable cash flows for {ticker}; DCF/exit-"
+                f"multiple omitted). Spot={spot:.0f} → 5y p50={p50:.0f} "
+                f"({(p50 / spot - 1) * 100:+.0f}%), range p10–p90 "
+                f"[{p10:.0f}, {p90:.0f}] at {vol:.0%} annualized vol."
+            ),
+        )
+
+    p10, p50, p90 = monte_carlo_paths(spot, drift=growth, vol=vol, years=years)
     dcf = discounted_cash_flow(fcf_per_share, growth, discount, years, shares=1.0)
     exitv = exit_multiple_value(eps, exit_multiple, growth, years)
-    p10, p50, p90 = monte_carlo_paths(spot, drift=growth, vol=vol, years=years)
-
-    candidates = [c for c in (dcf, exitv, p50) if c and c > 0]
     low = min([c for c in (dcf, p10) if c and c > 0], default=None)
     high = max([c for c in (exitv, p90) if c and c > 0], default=None)
 

@@ -12,7 +12,7 @@ and **learns from every run** so its theses sharpen over time.
 
 | Layer | Role | Where it lives |
 |---|---|---|
-| **OpenBB** | Open-source Bloomberg terminal — prices, fundamentals, estimates, news, flow/ownership, options, macro | `hedgedesk/data/openbb_gateway.py` |
+| **Data terminal** | Multi-provider live-data chain — OpenBB (premium), Yahoo Finance (equities, no key), Crypto.com (crypto, no key), synthetic floor. Prices, fundamentals, estimates, news, flow/ownership, options, macro | `hedgedesk/data/gateway.py` + `data/providers/` |
 | **TradingAgents pattern** | The agentic org chart: 7 analysts → Bull vs Bear → Trader → Risk → Fund Manager | `hedgedesk/agents/` |
 | **Hermes** | Routing + learning brain: captures audits, learns from winners/losers, injects a sharpened prior | `hedgedesk/hermes/` |
 | **Claude Fable** | Reasoning engine behind every seat | `hedgedesk/llm/client.py` |
@@ -50,8 +50,13 @@ python -m venv .venv && . .venv/bin/activate
 pip install -e .            # core deps; add ".[data]" for OpenBB
 cp .env.example .env        # add ANTHROPIC_API_KEY (+ OPENBB_PAT for live data)
 
-# One committee pass over a few names:
+# Verify live data first (real indicators, no API key):
+python scripts/live_check.py BTC_USDT        # live crypto via Crypto.com
+python scripts/live_check.py AAPL            # live equities via yfinance
+
+# One committee pass over a few names (equities or crypto pairs):
 python -m hedgedesk.main once AAPL MSFT NVDA
+python -m hedgedesk.main once BTC_USDT ETH_USDT
 
 # 24/7 loop (re-run every 4h, matching a 4h candle cadence):
 python -m hedgedesk.main watch AAPL MSFT --every-min 240
@@ -87,6 +92,7 @@ order router, or a human approval queue.
 ## Docs
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — full design & wiring guide.
+- [`docs/LIVE_DATA.md`](docs/LIVE_DATA.md) — the provider chain, indicators, and how to verify live data.
 - [`docs/HERMES_LEARNING.md`](docs/HERMES_LEARNING.md) — how the audit→learn loop works.
 - [`docs/DEPLOY_AZURE.md`](docs/DEPLOY_AZURE.md) — 24/7 hosting on Azure.
 
