@@ -42,7 +42,30 @@ fi
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 
-echo "▸ Subscription: $(az account show --query name -o tsv)"
+# ---- 0. preflight: confirm we're logged into the RIGHT Azure account -------
+command -v az >/dev/null 2>&1 || { echo "✗ Azure CLI not found. Install it, then 'az login'."; exit 1; }
+if ! ACCOUNT_JSON="$(az account show -o json 2>/dev/null)"; then
+  echo "✗ Not logged in. Run:  az login   (as info@vaultmoney.io)"; exit 1
+fi
+SIGNED_IN="$(echo "$ACCOUNT_JSON" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("user",{}).get("name",""))')"
+SUB_NAME="$(echo "$ACCOUNT_JSON" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("name",""))')"
+echo "▸ Signed in as: ${SIGNED_IN:-<unknown>}   Subscription: ${SUB_NAME}"
+# Optional guard: export EXPECTED_ACCOUNT=info@vaultmoney.io to hard-fail on mismatch.
+if [[ -n "${EXPECTED_ACCOUNT:-}" && "$SIGNED_IN" != "$EXPECTED_ACCOUNT" ]]; then
+  echo "✗ Signed in as '$SIGNED_IN' but EXPECTED_ACCOUNT='$EXPECTED_ACCOUNT'."
+  echo "  Fix:  az login  (or)  az account set --subscription <name-or-id>"; exit 1
+fi
+# If the account has multiple subscriptions, pin one with: export SUBSCRIPTION=<id>
+if [[ -n "${SUBSCRIPTION:-}" ]]; then az account set --subscription "$SUBSCRIPTION"; fi
+# Interactive confirm; skip with ASSUME_YES=1 (for CI / non-TTY runs).
+if [[ "${ASSUME_YES:-}" != "1" ]]; then
+  if [[ -t 0 ]]; then
+    read -r -p "▸ Deploy to this subscription? [y/N] " ok; [[ "$ok" == [yY] ]] || { echo "aborted."; exit 1; }
+  else
+    echo "✗ Non-interactive shell. Re-run with ASSUME_YES=1 to proceed."; exit 1
+  fi
+fi
+
 echo "▸ RG=$RG  LOCATION=$LOCATION  ACR=$ACR  APP=$APP_NAME  TAG=$IMAGE_TAG"
 
 az extension add --name containerapp --upgrade --only-show-errors -y >/dev/null 2>&1 || true
