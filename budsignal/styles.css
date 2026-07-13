@@ -261,6 +261,46 @@ a { color: var(--text-primary); }
 .lvl-label { font-size: 12px; color: var(--text-muted); }
 .lvl-value { font-size: 18px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
+/* ---------- trade plan ---------- */
+
+.trade-plan { margin-top: 14px; }
+
+.plan-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.plan-head h3 { margin: 0; font-size: 17px; }
+
+.plan-inputs { display: flex; gap: 14px; }
+.plan-inputs label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text-muted);
+}
+.plan-inputs input {
+  width: 90px; padding: 7px 10px;
+  background: var(--surface-2); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 8px;
+  font: inherit; font-size: 14px; font-variant-numeric: tabular-nums;
+}
+
+.plan-verdict { margin: 0 0 14px; font-weight: 600; }
+.plan-verdict.ok { color: var(--up); }
+.plan-verdict.no { color: var(--text-secondary); }
+
+.plan-grid {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  padding: 14px 0; border-top: 1px solid var(--grid);
+}
+.plan-grid > div { display: flex; flex-direction: column; gap: 2px; }
+.plan-grid .lvl-value { font-size: 15px; }
+
+.plan-note { margin: 0; font-size: 13px; color: var(--text-secondary); max-width: 720px; }
+
+.plan-rules { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--grid); }
+.plan-rules h4 { margin: 14px 0 6px; font-size: 13px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); }
+.plan-rules h4:first-child { margin-top: 0; }
+.plan-rules ul { margin: 0; padding-left: 18px; }
+.plan-rules li { font-size: 13px; color: var(--text-secondary); margin: 5px 0; }
+.plan-rules li strong { color: var(--text-primary); }
+
 /* ---------- methodology ---------- */
 
 .method-grid {
