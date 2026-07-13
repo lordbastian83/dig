@@ -13,6 +13,8 @@
      ACCOUNT_GBP           account size for the £ trade plan (default 3500)
      RISK_PCT              % of account risked per trade (default 1)
      STATE_FILE            dedupe/state path (default .notify-state.json)
+     SCALP_ONLY=1          hourly mode: check only the validated 1h scalp
+                           stream (session + volatility + edge markets)
      DRY_RUN=1             compute and print, but send nothing
      SEND_TEST=1           send a connectivity test message and exit
      SELF_TEST=1           offline: synthetic candles through the full
@@ -94,7 +96,7 @@ function composeResolution(asset, sig) {
     '⏱ <b>Expired at market</b>';
   const move = `${sig.movePct >= 0 ? '+' : ''}${sig.movePct.toFixed(2)}%`;
   return [
-    `${head} — ${cfg.pair}`,
+    `${head} — ${cfg.pair}${sig.strategy === 'scalp' ? ' · 1h scalp' : ''}`,
     `${sig.side === 'long' ? '▲ LONG' : '▼ SHORT'} from $${fmtPrice(sig.entry)} closed ${sig.exit != null ? `at $${fmtPrice(sig.exit)} ` : ''}(${move})`,
     `Signal fired ${fmtTime(sig.t)} UTC`,
   ].join('\n');
@@ -174,12 +176,16 @@ const INDEX_PROXIES = ['US30', 'NAS100', 'SPX500'];
 function composeMessage(asset, sig, mlModel, plan, edge) {
   const cfg = ASSETS[asset];
   const bk = sig.strategy === 'breakout';
-  const arrow = `${sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT'}${bk ? ' BREAKOUT' : ''}`;
-  const windowEnd = fmtTime(sig.t + E.CFG.CANDLE_MS);
+  const scalp = sig.strategy === 'scalp';
+  const swing = sig.strategy === 'swing';
+  const trail = bk || scalp || swing;
+  const arrow = `${sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT'}${bk ? ' BREAKOUT' : scalp ? ' SCALP (1h)' : swing ? ' SWING (daily)' : ''}`;
+  const windowEnd = fmtTime(sig.t + (sig.candleMs || E.CFG.CANDLE_MS));
+  const maxHold = scalp ? '18 hours' : swing ? '18 days' : '3 days';
   const lines = [
     `${arrow} — <b>${cfg.pair}</b>`,
-    bk
-      ? `Entry $${fmtPrice(sig.entry)} · Initial stop $${fmtPrice(sig.stop)} · Exit: 2×ATR trailing stop (max 3 days)`
+    trail
+      ? `Entry $${fmtPrice(sig.entry)} · Initial stop $${fmtPrice(sig.stop)} · Exit: 2×ATR trailing stop (max ${maxHold})`
       : `Entry $${fmtPrice(sig.entry)} · Stop $${fmtPrice(sig.stop)} · Target $${fmtPrice(sig.target)}`,
     (sig.confidence != null ? `Confidence ${sig.confidence}/100 · ` : '') +
       (mlModel && sig.rsiAt != null ? `AI score ${Math.round(E.mlScore(sig, mlModel) * 100)}% · ` : '') +
@@ -193,13 +199,17 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
         ? `position value ≈ $${Math.round(plan.notionalUsd).toLocaleString('en-US')} (ETF-proxy feed — size by value)`
         : `${plan.units.toFixed(plan.units < 1 ? 4 : 2)} units ≈ $${Math.round(plan.notionalUsd).toLocaleString('en-US')}`;
     lines.push(`💷 Plan: risk £${plan.riskGbp.toFixed(0)} (${RISK_PCT}% of £${ACCOUNT_GBP.toLocaleString('en-US')}) → ${size}${plan.rateApprox ? ' · approx £→$' : ''}`);
-    lines.push(bk
-      ? `Close: raise stop to 2×ATR ${sig.side === 'long' ? 'below the highest' : 'above the lowest'} close after every 4h candle; hard exit after 3 days`
+    lines.push(trail
+      ? `Close: raise stop to 2×ATR ${sig.side === 'long' ? 'below the highest' : 'above the lowest'} close after every ${scalp ? '1h' : swing ? 'daily' : '4h'} candle; hard exit after ${maxHold}`
       : `Close: at target or stop; stop to entry once 1×ATR in profit; time-exit after 24h`);
   }
-  lines.push(bk && edge === true
-    ? `✅ Qualifies for real money — this market kept a net edge out-of-sample`
-    : `❌ <i>Paper only — ${bk ? 'this market showed no net edge in walk-forward validation' : 'the cross stream has never passed walk-forward validation'}. Watch, don't fund.</i>`);
+  lines.push(scalp
+    ? `✅ Qualifies for real money — validated filtered scalp stream (thin edge: ~+0.2%/trade net over 100 validation trades; the session/volatility/market filters are what make it work)`
+    : swing
+      ? `✅ Qualifies for real money — the strongest validated stream (+1.5%/trade net in validation, PF 1.9, pooled across markets)`
+      : bk && edge === true
+        ? `✅ Qualifies for real money — this market kept a net edge out-of-sample`
+        : `❌ <i>Paper only — ${bk ? 'this market showed no net edge in walk-forward validation' : 'the cross stream has never passed walk-forward validation'}. Watch, don't fund.</i>`);
   lines.push(
     `Signal candle closed ${fmtTime(sig.t)} UTC`,
     `<i>LordBastian Signal Generator — educational tool, not financial advice.</i>`);
@@ -378,6 +388,61 @@ async function main() {
     return cableRate;
   };
 
+  // Hourly scalp check: only the validated filtered 1h stream (Donchian
+  // breakout on ETH/XRP/GOLD/NAS100 in session hours with above-average
+  // volatility — the filters live in engine.computeScalpStream). Runs on its
+  // own hourly cron so the 1-hour entry window is actually catchable; keeps
+  // separate dedupe state so the 4h run never drops its pendings.
+  if (process.env.SCALP_ONLY === '1') {
+    state.scalpNotified = state.scalpNotified || {};
+    state.scalpPending = state.scalpPending || {};
+    let scalpSent = 0;
+    for (const asset of E.SCALP.ASSETS) {
+      let candles;
+      try { candles = await feedFetch(asset, FMP_KEY, { interval: '1h' }); } catch (e) { console.log(`${asset} 1h: ${e.message}`); continue; }
+      const closed = E.closedPrefix(candles, Date.now(), E.SCALP.CANDLE_MS);
+      if (closed.length < E.CFG.EMA_TREND + 10) { console.log(`${asset} 1h: only ${closed.length} closed candles — skipping`); continue; }
+      const ind = E.computeIndicators(closed);
+      const signals = E.computeScalpStream(closed, ind);
+
+      const stillPending = [];
+      for (const ptT of state.scalpPending[asset] || []) {
+        const p = signals.find((s) => s.t === ptT);
+        if (p && p.outcome === 'open') { stillPending.push(ptT); continue; }
+        if (p) {
+          const text = composeResolution(asset, p);
+          if (DRY_RUN) console.log(`DRY RUN — would send scalp resolution for ${asset}: ${text.replace(/<[^>]+>/g, ' ')}`);
+          else {
+            for (const chatId of chats) await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+            console.log(`${asset} 1h: scalp resolution sent (${p.outcome} @ ${fmtTime(p.t)})`);
+          }
+          scalpSent++;
+        }
+      }
+      state.scalpPending[asset] = stillPending;
+
+      if (!Array.isArray(state.scalpNotified[asset])) state.scalpNotified[asset] = [];
+      const fresh = signals.filter((s) =>
+        Date.now() - s.t <= 2 * E.SCALP.CANDLE_MS && !state.scalpNotified[asset].includes(s.t));
+      if (!fresh.length) { console.log(`${asset} 1h: no new scalp signal (last closed candle ${fmtTime(closed[closed.length - 1].t)})`); continue; }
+      for (const sig of fresh) {
+        const plan = E.tradePlan(asset, sig, { accountGbp: ACCOUNT_GBP, riskPct: RISK_PCT, gbpUsd: await gbpUsd() });
+        const text = composeMessage(asset, sig, null, plan);
+        if (DRY_RUN) console.log(`DRY RUN — would send scalp for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);
+        else {
+          for (const chatId of chats) await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+          console.log(`${asset} 1h: scalp notification sent (${sig.side} @ ${fmtTime(sig.t)})`);
+        }
+        state.scalpNotified[asset].push(sig.t);
+        state.scalpPending[asset].push(sig.t);
+        scalpSent++;
+      }
+    }
+    if (!scalpSent) console.log('no new scalp signals this hour');
+    saveState(state);
+    return;
+  }
+
   let enrichCtx = null, enrichTried = false;
   let sent = 0;
   for (const asset of Object.keys(ASSETS)) {
@@ -386,7 +451,11 @@ async function main() {
     const closed = E.closedPrefix(candles, Date.now());
     if (closed.length < E.CFG.EMA_TREND + 10) { console.log(`${asset}: only ${closed.length} closed candles — skipping`); continue; }
     const ind = E.computeIndicators(closed);
-    const signals = [...E.computeSignals(closed, ind, true), ...E.computeBreakoutStream(closed, ind)];
+    const signals = [
+      ...E.computeSignals(closed, ind, true),
+      ...E.computeBreakoutStream(closed, ind),
+      ...E.computeSwingStream(closed),
+    ];
 
     // resolution alerts: a signal we announced earlier has now closed out
     const stillPending = [];
@@ -413,8 +482,10 @@ async function main() {
       state.notified[asset] = state.notified[asset] ? [state.notified[asset]] : [];
     }
     const key = (s) => `${s.t}:${s.strategy || 'cross'}`;
+    // freshness window scales with the signal's own candle size (daily swing
+    // signals stay alertable for a day, 4h signals for 8 hours)
     const fresh = signals.filter((s) =>
-      Date.now() - s.t <= 2 * E.CFG.CANDLE_MS && !state.notified[asset].includes(key(s)));
+      Date.now() - s.t <= 2 * (s.candleMs || E.CFG.CANDLE_MS) && !state.notified[asset].includes(key(s)));
     if (!fresh.length) { console.log(`${asset}: no new signal (last closed candle ${fmtTime(closed[closed.length - 1].t)})`); continue; }
     if (fresh.length && mlModel && !enrichTried) {
       enrichTried = true;

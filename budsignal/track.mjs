@@ -55,7 +55,22 @@ async function main() {
     const closed = E.closedPrefix(candles, Date.now());
     if (closed.length < E.CFG.EMA_TREND + 10) { console.log(`${asset}: only ${closed.length} closed candles — skipping`); continue; }
     const ind = E.computeIndicators(closed);
-    const signals = [...E.computeSignals(closed, ind, true), ...E.computeBreakoutStream(closed, ind)];
+    const signals = [
+      ...E.computeSignals(closed, ind, true),
+      ...E.computeBreakoutStream(closed, ind),
+      ...E.computeSwingStream(closed),
+    ];
+
+    // the validated 1h scalp stream, for its markets only (extra 1h fetch)
+    if (E.SCALP.ASSETS.includes(asset)) {
+      try {
+        const c1h = DEMO ? demoCandles(1000, (DEMO_SEEDS[asset] || 1) + 100) : await fetchCandles(asset, FMP_KEY, { interval: '1h' });
+        const closed1h = E.closedPrefix(c1h, Date.now(), E.SCALP.CANDLE_MS);
+        if (closed1h.length >= E.CFG.EMA_TREND + 10) {
+          signals.push(...E.computeScalpStream(closed1h, E.computeIndicators(closed1h)));
+        }
+      } catch (e) { console.log(`${asset} 1h: ${e.message}`); }
+    }
 
     for (const s of signals) {
       const key = `${asset}:${s.t}:${s.strategy || 'cross'}`;
@@ -70,8 +85,12 @@ async function main() {
           eventHrs: s.eventHrs ?? null, ctxTrend: s.ctxTrend ?? null,
           outcome: s.outcome, movePct: Math.round(s.movePct * 100) / 100,
           // 'live' must mean recorded as it fired — historical signals pulled
-          // in when a market is first added (or on bootstrap) are backfill
-          recorded: bootstrap || Date.now() - s.t > 2 * E.CFG.CANDLE_MS ? 'backfill' : 'live',
+          // in when a market is first added (or on bootstrap) are backfill.
+          // The window scales with the signal's candle size, floored at the
+          // 4h run cadence so hourly scalp signals recorded on the next
+          // 4h run still count as live.
+          recorded: bootstrap || Date.now() - s.t > Math.max(2 * (s.candleMs || E.CFG.CANDLE_MS), 2 * E.CFG.CANDLE_MS)
+            ? 'backfill' : 'live',
         };
         ledger.records.push(rec);
         byKey.set(key, rec);

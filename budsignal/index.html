@@ -21,6 +21,7 @@
     <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#242423"/><path d="M10 22 L16 9 L22 22" stroke="#0ca30c" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span>LordBastian Signals</span>
   </a>
+  <button class="refresh-btn" id="refresh-btn" type="button" title="Refresh prices and signals" aria-label="Refresh data">↻</button>
   <nav class="site-nav">
     <a href="#dashboard">Dashboard</a>
     <a href="#signal">Current signal</a>
@@ -34,7 +35,7 @@
 
   <!-- ============ Hero ============ -->
   <section class="hero">
-    <p class="hero-kicker">Crypto swing signals · 4-hour timeframe</p>
+    <p class="hero-kicker">Crypto · Gold · Indices · FX — 1h / 4h / daily</p>
     <h1>Trading signals computed<br>in the open.</h1>
     <p class="hero-sub">
       The LordBastian Signal Generator produces long and short entries across crypto, gold, indices and FX from a
@@ -153,14 +154,14 @@
       <div class="plan-rules">
         <h4>When several markets fire at once</h4>
         <ul>
-          <li><strong>Only breakout signals on markets with a validated net edge qualify for real money.</strong> Everything else (the cross stream, and breakout on ❌ markets) is paper/informational — the walk-forward research says it doesn't pay after costs.</li>
+          <li><strong>Only validated streams qualify for real money:</strong> 🌊 daily swing signals (strongest edge), ◆ 4h breakouts on ✅ markets, and ⚡ 1h scalps (thin edge — Telegram only). Everything else (the cross stream, breakouts on ❌ markets) is paper/informational — the walk-forward research says it doesn't pay after costs.</li>
           <li><strong>Cap total open risk at 3% of the account</strong> — at most 3 positions open at once at 1% each, and no more than 2 of them in crypto (crypto moves together, so two crypto trades are closer to one double-sized trade).</li>
           <li><strong>If more than 3 qualify, take the markets with the strongest validated edge first</strong> (per the research report's per-market table) and skip the rest. Never respond to more signals by shrinking stops or doubling risk.</li>
           <li><strong>One position per market.</strong> A new signal on a market you're already in changes nothing — manage the open trade by its own exit rules.</li>
         </ul>
         <h4>When to close — no discretion</h4>
         <ul>
-          <li><strong>Breakout trades:</strong> initial stop 2×ATR from entry. After every 4-hour close, move the stop to 2×ATR below the highest close since entry (above the lowest close, for shorts) — it only ever tightens. Close when price hits the stop, or at market after 3 days (18 candles), whichever comes first. No profit target: that's what lets the occasional big winner pay for the frequent small losses.</li>
+          <li><strong>Breakout / swing / scalp trades:</strong> initial stop 2×ATR from entry. After every candle close (4h, daily, or 1h respectively), move the stop to 2×ATR below the highest close since entry (above the lowest close, for shorts) — it only ever tightens. Close when price hits the stop, or at market after 18 candles (3 days / 18 days / 18 hours), whichever comes first. No profit target: that's what lets the occasional big winner pay for the frequent small losses.</li>
           <li><strong>Cross trades (paper only):</strong> stop 1.5×ATR, target 2×ATR, stop to breakeven once 1×ATR in profit, time-exit after 24h.</li>
           <li><strong>Never widen a stop, never add to a loser, never re-enter a market the same day after a stop-out.</strong></li>
         </ul>
@@ -187,7 +188,15 @@
       </div>
       <div class="method-card">
         <h3><span class="step-num">◆</span>Breakout stream</h3>
-        <p>A second, independent strategy: long when price closes above its 55-candle high, short below its 55-candle low, exiting on a 2×ATR trailing stop (no fixed target, max 3 days). The only rule set here that stayed profitable out-of-sample across 3 years — see the research report.</p>
+        <p>A second, independent strategy: long when price closes above its 55-candle high, short below its 55-candle low, exiting on a 2×ATR trailing stop (no fixed target, max 3 days). Funded only on markets where it kept a net edge out-of-sample — see the research report.</p>
+      </div>
+      <div class="method-card">
+        <h3><span class="step-num">🌊</span>Swing stream (daily)</h3>
+        <p>The same Donchian-55 breakout on <em>daily</em> candles, trailing 2×ATR on daily closes (max 18 days). The strongest edge the walk-forward found: +1.5% per trade net of costs in validation, profit factor 1.9. Fewer, bigger trades — cost drag shrinks as the timeframe grows.</p>
+      </div>
+      <div class="method-card">
+        <h3><span class="step-num">⚡</span>Scalp stream (1h)</h3>
+        <p>Donchian breakout on 1-hour candles, alert-only via Telegram (checked hourly). Raw 1h trading fails after costs — this stream only fires during London/NY hours, in above-average volatility, on ETH, XRP, Gold and NAS100. That filtered combination was net-positive in both walk-forward periods (+0.22%/trade, 100 validation trades). The edge is thin: the filters are mandatory, not decoration.</p>
       </div>
       <div class="method-card">
         <h3><span class="step-num">4</span>4-hour entry window</h3>

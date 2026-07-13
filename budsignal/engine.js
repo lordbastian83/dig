@@ -304,6 +304,99 @@
     return sigs;
   }
 
+  // The validated 1h scalp stream: the same Donchian breakout + trailing
+  // exit, restricted to the ONLY combination that survived the walk-forward
+  // net of costs — London/NY session hours, above-average volatility, and
+  // the markets whose 4h breakout also has a net edge. The edge is thin
+  // (~+0.2%/trade net, PF 1.3 over 100 validation trades), so the filters
+  // are load-bearing: loosening any of them is what the research shows fails.
+  const SCALP = {
+    ASSETS: ['ETH', 'XRP', 'GOLD', 'NAS100'],
+    HOUR_FROM: 7, HOUR_TO: 16, // UTC entry window (07:00–15:59)
+    VOL_WINDOW: 200,           // trailing ATR% average for the volatility gate
+    CANDLE_MS: 3600000,        // 1h candles
+  };
+
+  function computeScalpStream(candles, ind) {
+    // trailing average of ATR% via prefix sums (same gate the research used)
+    const atrPct = candles.map((k, i) => (ind.atr[i] != null ? ind.atr[i] / k.c : null));
+    const pre = [0], cnt = [0];
+    for (let i = 0; i < atrPct.length; i++) {
+      pre.push(pre[i] + (atrPct[i] ?? 0));
+      cnt.push(cnt[i] + (atrPct[i] != null ? 1 : 0));
+    }
+    const avgAtrPct = (i) => {
+      const lo = Math.max(0, i - SCALP.VOL_WINDOW);
+      const n = cnt[i] - cnt[lo];
+      return n > 50 ? (pre[i] - pre[lo]) / n : null;
+    };
+    const out = [];
+    for (const s of computeBreakoutSignals(candles, ind)) {
+      const hour = new Date(s.t).getUTCHours();
+      if (hour < SCALP.HOUR_FROM || hour >= SCALP.HOUR_TO) continue;
+      const base = avgAtrPct(s.i);
+      if (base == null || atrPct[s.i] == null || atrPct[s.i] <= base) continue;
+      const dir = s.side === 'long' ? 1 : -1;
+      const tr = trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
+      s.strategy = 'scalp';
+      s.exitMode = 'trail';
+      s.target = null;
+      s.candleMs = SCALP.CANDLE_MS;
+      if (tr.closed) {
+        s.outcome = 'trail'; s.exit = tr.exit; s.movePct = tr.movePct;
+      } else {
+        const last = candles[candles.length - 1];
+        s.outcome = 'open'; s.exit = null;
+        s.movePct = (dir * (last.c - s.entry) / s.entry) * 100;
+      }
+      out.push(s);
+    }
+    return out;
+  }
+
+  // The daily swing stream — the strongest edge the walk-forward found
+  // (Donchian-55 on daily candles + trailing exit: validate +1.5%/trade net,
+  // PF 1.9, pooled across markets). Daily candles are aggregated from the 4h
+  // feed, so no extra data source is needed.
+  const SWING = { LOOKBACK: 55, CANDLE_MS: 86400000 };
+
+  function toDailyCandles(candles) {
+    const by = new Map();
+    for (const k of candles) {
+      const d = Math.floor(k.t / SWING.CANDLE_MS);
+      const cur = by.get(d);
+      if (!cur) by.set(d, { t: d * SWING.CANDLE_MS, o: k.o, h: k.h, l: k.l, c: k.c, v: k.v });
+      else { cur.h = Math.max(cur.h, k.h); cur.l = Math.min(cur.l, k.l); cur.c = k.c; cur.v += k.v; }
+    }
+    return [...by.values()].sort((a, b) => a.t - b.t);
+  }
+
+  function computeSwingStream(candles, now = Date.now()) {
+    const daily = toDailyCandles(candles);
+    // the current UTC day is still forming — computing on it would repaint
+    while (daily.length && daily[daily.length - 1].t + SWING.CANDLE_MS > now) daily.pop();
+    if (daily.length < SWING.LOOKBACK + 20) return [];
+    const ind = computeIndicators(daily);
+    const out = [];
+    for (const s of computeBreakoutSignals(daily, ind, { lookback: SWING.LOOKBACK })) {
+      const dir = s.side === 'long' ? 1 : -1;
+      const tr = trailingScore(daily, s.i, s.side, s.entry, ind.atr[s.i]);
+      s.strategy = 'swing';
+      s.exitMode = 'trail';
+      s.target = null;
+      s.candleMs = SWING.CANDLE_MS;
+      if (tr.closed) {
+        s.outcome = 'trail'; s.exit = tr.exit; s.movePct = tr.movePct;
+      } else {
+        const last = daily[daily.length - 1];
+        s.outcome = 'open'; s.exit = null;
+        s.movePct = (dir * (last.c - s.entry) / s.entry) * 100;
+      }
+      out.push(s);
+    }
+    return out;
+  }
+
   // Aggregate fixed-vs-trailing comparison over an existing signal list.
   function trailingComparison(candles, ind, signals) {
     const rows = [];
@@ -416,9 +509,9 @@
   // close changes until it closes, so a signal computed on it could appear
   // and then vanish ("repainting"). Returns the prefix of `candles` whose
   // final candle has fully closed as of `now`.
-  function closedPrefix(candles, now) {
+  function closedPrefix(candles, now, candleMs = CFG.CANDLE_MS) {
     let end = candles.length;
-    while (end > 0 && candles[end - 1].t + CFG.CANDLE_MS > now) end--;
+    while (end > 0 && candles[end - 1].t + candleMs > now) end--;
     return candles.slice(0, end);
   }
 
@@ -427,8 +520,8 @@
     closed.length ? (closed.filter((s) => s.movePct > 0).length / closed.length) * 100 : null;
 
   globalThis.BudSignalEngine = {
-    CFG, ema, rsi, atr, adx, sma,
-    computeIndicators, computeSignals, computeBreakoutSignals, computeBreakoutStream, scoreOutcome,
+    CFG, SCALP, SWING, ema, rsi, atr, adx, sma,
+    computeIndicators, computeSignals, computeBreakoutSignals, computeBreakoutStream, computeScalpStream, computeSwingStream, toDailyCandles, scoreOutcome,
     closedPrefix, closedOf, favorableRate,
     trailingScore, trailingComparison,
     mlFeatures, mlScore, mlTrain,

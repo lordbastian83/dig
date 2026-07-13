@@ -14,6 +14,7 @@ name: BudSignal alerts & performance tracking
 on:
   schedule:
     - cron: '7 */4 * * *'   # signal + resolution alerts, ledger update
+    - cron: '9 * * * *'     # hourly: validated 1h scalp stream only
     - cron: '15 0 * * 1'    # Monday weekly digest
     - cron: '15 20 * * *'   # daily heartbeat
   workflow_dispatch:
@@ -45,8 +46,18 @@ jobs:
           path: .notify-state.json
           key: budsignal-notify-state-${{ github.run_id }}
           restore-keys: budsignal-notify-state-
+      - name: Hourly scalp check (validated 1h stream)
+        if: ${{ github.event.schedule == '9 * * * *' }}
+        run: SCALP_ONLY=1 node budsignal/notify.mjs
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_HANDLE: 'Lordbastian83'
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          ACCOUNT_GBP: '3500'
+          RISK_PCT: '1'
       - name: Compute signals and notify
-        if: ${{ github.event.schedule != '15 0 * * 1' && github.event.schedule != '15 20 * * *' && !inputs.heartbeat }}
+        if: ${{ github.event.schedule != '15 0 * * 1' && github.event.schedule != '15 20 * * *' && github.event.schedule != '9 * * * *' && !inputs.heartbeat }}
         run: node budsignal/notify.mjs
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -75,7 +86,7 @@ jobs:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - name: Update performance ledger (budsignal-data branch)
-        if: ${{ !inputs.test && !inputs.heartbeat && github.event.schedule != '15 0 * * 1' && github.event.schedule != '15 20 * * *' }}
+        if: ${{ !inputs.test && !inputs.heartbeat && github.event.schedule != '15 0 * * 1' && github.event.schedule != '15 20 * * *' && github.event.schedule != '9 * * * *' }}
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         run: |
