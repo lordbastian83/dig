@@ -84,6 +84,7 @@ async function main() {
   ];
   const overall = { train: { F: [], B: [], T: [] }, validate: { F: [], B: [], T: [] } };
   const mlRows = { train: [], validate: [] }; // baseline signals with features, for meta-labeling
+  const edgeAssets = new Set(); // markets whose 4h breakout survived costs, filled below
 
   // fetch all histories first so cross-asset context (BTC trend) is available
   const histories = {};
@@ -224,6 +225,7 @@ async function main() {
 
     // per-market breakout verdicts (the "does MY market work" table) + edge status file
     const edgeStatus = { strategy: 'breakout-trailing', assets: {} };
+    edgeAssets.clear();
     lines.push(
       '## Breakout + trailing, per market (net of that market\'s cost)',
       '',
@@ -240,6 +242,7 @@ async function main() {
         netValidateAvg: va ? Math.round(va.avg * 100) / 100 : null,
         n: (pm.train.length + pm.validate.length),
       };
+      if (edge) edgeAssets.add(asset);
       lines.push(`| ${cfg.pair} | ${costOf(asset).toFixed(2)}% | ${fmtStats(tr)} | ${fmtStats(va)} | ${edge ? '✅ net edge' : '❌ no net edge'} |`);
     }
     writeFileSync('edge-status.json', JSON.stringify(edgeStatus, null, 2));
@@ -277,29 +280,72 @@ async function main() {
   }
 
   // ---- Faster timeframe: the winning strategy on 1h candles (scalp feasibility) ----
-  if (!DEMO) {
-    const fast = { fixed: { train: [], validate: [] }, trail: { train: [], validate: [] } };
+  // Plus the "scalp rescue" filters: the honest question isn't whether raw 1h
+  // trading works (it doesn't — costs eat it) but whether any defensible
+  // filter concentrates entries enough to clear the cost bar out-of-sample:
+  //   session   — entries 07:00–15:59 UTC (London/NY hours: tightest spreads,
+  //               biggest moves)
+  //   high-vol  — entry ATR% above its own trailing 200-candle average
+  //               (bigger expected move vs the same fixed cost)
+  //   edge mkts — only markets whose 4h breakout survived costs (note: that
+  //               list is derived from overlapping history, so treat a pass
+  //               as suggestive, not proof)
+  //   combo     — all three at once
+  {
+    const mk = () => ({ train: [], validate: [] });
+    const fast = { fixed: mk(), trail: mk(), session: mk(), highVol: mk(), edgeOnly: mk(), combo: mk() };
     let fastMarkets = 0;
     for (const [asset, cfg] of Object.entries(ASSETS)) {
       console.log(`fetching ${asset} 1h...`);
-      const candles = await fetchHistory(cfg.fmp, { interval: '1hour', years: Math.min(YEARS, 2), chunkDays: 25 });
-      if (candles.length < 2000) { console.log(`${asset} 1h: only ${candles.length} candles — skipped`); continue; }
+      const candles = DEMO
+        ? demoCandles(100, asset.length * 11 + 3)
+        : await fetchHistory(cfg.fmp, { interval: '1hour', years: Math.min(YEARS, 2), chunkDays: 25 });
+      if (candles.length < (DEMO ? 500 : 2000)) { console.log(`${asset} 1h: only ${candles.length} candles — skipped`); continue; }
       fastMarkets++;
       const ind = E.computeIndicators(candles);
       const splitT = candles[Math.floor(candles.length * 0.7)].t;
       const period = (s) => (s.t < splitT ? 'train' : 'validate');
       const c = costOf(asset);
+      // trailing average of ATR% via prefix sums, for the high-vol gate
+      const atrPct = candles.map((k, i) => (ind.atr[i] != null ? ind.atr[i] / k.c : null));
+      const pre = [0];
+      let cnt = [0];
+      for (let i = 0; i < atrPct.length; i++) {
+        pre.push(pre[i] + (atrPct[i] ?? 0));
+        cnt.push(cnt[i] + (atrPct[i] != null ? 1 : 0));
+      }
+      const avgAtrPct = (i) => {
+        const lo = Math.max(0, i - 200);
+        const n = cnt[i] - cnt[lo];
+        return n > 50 ? (pre[i] - pre[lo]) / n : null;
+      };
       for (const s of E.closedOf(E.computeBreakoutSignals(candles, ind))) {
         fast.fixed[period(s)].push({ m: s.movePct, c });
         const tr = E.trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
-        if (tr.closed) fast.trail[period(s)].push({ m: tr.movePct, c });
+        if (!tr.closed) continue;
+        const p = period(s);
+        const row = { m: tr.movePct, c };
+        fast.trail[p].push(row);
+        const hour = new Date(s.t).getUTCHours();
+        const inSession = hour >= 7 && hour < 16;
+        const base = avgAtrPct(s.i);
+        const highVol = base != null && atrPct[s.i] != null && atrPct[s.i] > base;
+        const onEdge = edgeAssets.has(asset);
+        if (inSession) fast.session[p].push(row);
+        if (highVol) fast.highVol[p].push(row);
+        if (onEdge) fast.edgeOnly[p].push(row);
+        if (inSession && highVol && onEdge) fast.combo[p].push(row);
       }
     }
     const fastVerdict = (rows) => {
       const tr = stats(net(rows.train)), va = stats(net(rows.validate));
-      return tr && va && tr.avg > 0 && va.avg > 0 ? '✅ survives costs on 1h' : '❌ not viable net of costs';
+      if (!tr || !va || va.n < 15) return '⚠️ too few signals to judge';
+      return tr.avg > 0 && va.avg > 0 ? '✅ survives costs on 1h' : '❌ not viable net of costs';
     };
+    const halfCost = (rows) => rows.map((r) => r.m - r.c / 2);
     const g = gross;
+    const fastRow = (label, rows) =>
+      `| ${label} | ${fmtStats(stats(net(rows.train)))} | ${fmtStats(stats(net(rows.validate)))} | ${fastVerdict(rows)} |`;
     lines.push(
       '## Scalp feasibility: Donchian breakout on 1-hour candles',
       '',
@@ -312,8 +358,66 @@ async function main() {
       `| 1h breakout, fixed exits | ${fmtStats(stats(g(fast.fixed.train)))} | ${fmtStats(stats(g(fast.fixed.validate)))} | ${fmtStats(stats(net(fast.fixed.train)))} | ${fmtStats(stats(net(fast.fixed.validate)))} | ${fastVerdict(fast.fixed)} |`,
       `| 1h breakout, trailing exits | ${fmtStats(stats(g(fast.trail.train)))} | ${fmtStats(stats(g(fast.trail.validate)))} | ${fmtStats(stats(net(fast.trail.train)))} | ${fmtStats(stats(net(fast.trail.validate)))} | ${fastVerdict(fast.trail)} |`,
       '',
+      '### Scalp rescue filters (1h breakout + trailing, net of costs)',
+      '',
+      'Each filter attacks the reason scalping failed: too-small moves against fixed costs. ' +
+      'A filter only counts if it turns the NET result positive in both periods.',
+      '',
+      '| Filter | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|',
+      fastRow('Session only (07–16 UTC)', fast.session),
+      fastRow('High volatility only (ATR% > trailing avg)', fast.highVol),
+      fastRow(`4h-edge markets only (${[...edgeAssets].join(', ') || 'none'})`, fast.edgeOnly),
+      fastRow('All three combined', fast.combo),
+      `| Combo at HALF costs (best-case raw spreads) | ${fmtStats(stats(halfCost(fast.combo.train)))} | ${fmtStats(stats(halfCost(fast.combo.validate)))} | ${(() => { const tr = stats(halfCost(fast.combo.train)), va = stats(halfCost(fast.combo.validate)); if (!tr || !va || va.n < 15) return '⚠️ too few signals to judge'; return tr.avg > 0 && va.avg > 0 ? '✅ viable IF costs halve' : '❌ fails even at half costs'; })()} |`,
+      '',
     );
-    console.log('1h scalp-feasibility evaluated');
+    console.log('1h scalp-feasibility + rescue filters evaluated');
+  }
+
+  // ---- Slower timeframe: daily candles (aggregated from the 4h history) ----
+  // The mirror image of the scalp question: per-trade moves grow with the
+  // timeframe while costs stay fixed, so if anything clears the cost bar
+  // by a wide margin it should be here.
+  {
+    const toDaily = (candles) => {
+      const by = new Map();
+      for (const k of candles) {
+        const d = Math.floor(k.t / 86400000);
+        const cur = by.get(d);
+        if (!cur) by.set(d, { t: d * 86400000, o: k.o, h: k.h, l: k.l, c: k.c, v: k.v });
+        else { cur.h = Math.max(cur.h, k.h); cur.l = Math.min(cur.l, k.l); cur.c = k.c; cur.v += k.v; }
+      }
+      return [...by.values()].sort((a, b) => a.t - b.t);
+    };
+    lines.push(
+      '## Daily-candle breakout (slower, not faster)',
+      '',
+      'Daily candles aggregated from the same history. Fewer, bigger trades — the direction where cost drag shrinks instead of grows.',
+      '',
+      '| Lookback | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|',
+    );
+    for (const L of [20, 55]) {
+      const pool = { train: [], validate: [] };
+      for (const [asset] of Object.entries(ASSETS)) {
+        const daily = histories[asset] ? toDaily(histories[asset]) : [];
+        if (daily.length < 400) continue;
+        const c = costOf(asset);
+        const ind = E.computeIndicators(daily);
+        const splitT = daily[Math.floor(daily.length * 0.7)].t;
+        for (const s of E.closedOf(E.computeBreakoutSignals(daily, ind, { lookback: L }))) {
+          const tr = E.trailingScore(daily, s.i, s.side, s.entry, ind.atr[s.i]);
+          if (!tr.closed) continue;
+          pool[s.t < splitT ? 'train' : 'validate'].push({ m: tr.movePct, c });
+        }
+      }
+      const tr = stats(net(pool.train)), va = stats(net(pool.validate));
+      const v = !tr || !va || va.n < 15 ? '⚠️ too few signals to judge' : tr.avg > 0 && va.avg > 0 ? '✅ survives costs on daily' : '❌ no net edge on daily';
+      lines.push(`| ${L} | ${fmtStats(tr)} | ${fmtStats(va)} | ${v} |`);
+    }
+    lines.push('');
+    console.log('daily-candle study evaluated');
   }
 
   // ---- ML meta-labeling: train on train-period baseline signals, judge on validate ----
