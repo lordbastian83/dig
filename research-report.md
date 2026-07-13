@@ -1,6 +1,6 @@
 # LordBastian Signal Generator — walk-forward research
 
-Generated 2026-07-13T22:15:37.402Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
+Generated 2026-07-13T22:41:26.827Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
 
 A variant only counts as an improvement if it beats its comparator in **both** periods — train-only wins are fitted noise.
 
@@ -160,6 +160,27 @@ Same strategy, 4× faster timeframe, 10 markets over up to 2 years. The question
 |---|---|---|---|---|---|
 | 1h breakout, fixed exits | 2221 · 37% fav · avg +0.05% · PF 1.14 | 907 · 36% fav · avg -0.00% · PF 0.99 | 2221 · 35% fav · avg -0.02% · PF 0.96 | 907 · 34% fav · avg -0.07% · PF 0.82 | ❌ not viable net of costs |
 | 1h breakout, trailing exits | 2221 · 38% fav · avg +0.03% · PF 1.05 | 905 · 38% fav · avg +0.04% · PF 1.09 | 2221 · 36% fav · avg -0.04% · PF 0.92 | 905 · 36% fav · avg -0.03% · PF 0.94 | ❌ not viable net of costs |
+
+### Scalp rescue filters (1h breakout + trailing, net of costs)
+
+Each filter attacks the reason scalping failed: too-small moves against fixed costs. A filter only counts if it turns the NET result positive in both periods.
+
+| Filter | Train (net) | Validate (net) | Verdict |
+|---|---|---|---|
+| Session only (07–16 UTC) | 1181 · 37% fav · avg -0.00% · PF 1.00 | 485 · 36% fav · avg -0.07% · PF 0.87 | ❌ not viable net of costs |
+| High volatility only (ATR% > trailing avg) | 1161 · 37% fav · avg +0.02% · PF 1.04 | 457 · 37% fav · avg -0.07% · PF 0.89 | ❌ not viable net of costs |
+| 4h-edge markets only (ETH, XRP, GOLD, NAS100) | 927 · 37% fav · avg +0.00% · PF 1.00 | 370 · 39% fav · avg +0.04% · PF 1.06 | ✅ survives costs on 1h |
+| All three combined | 264 · 39% fav · avg +0.16% · PF 1.24 | 100 · 43% fav · avg +0.22% · PF 1.32 | ✅ survives costs on 1h |
+| Combo at HALF costs (best-case raw spreads) | 264 · 40% fav · avg +0.20% · PF 1.31 | 100 · 44% fav · avg +0.26% · PF 1.39 | ✅ viable IF costs halve |
+
+## Daily-candle breakout (slower, not faster)
+
+Daily candles aggregated from the same history. Fewer, bigger trades — the direction where cost drag shrinks instead of grows.
+
+| Lookback | Train (net) | Validate (net) | Verdict |
+|---|---|---|---|
+| 20 | 346 · 41% fav · avg +0.45% · PF 1.26 | 148 · 36% fav · avg +0.51% · PF 1.25 | ✅ survives costs on daily |
+| 55 | 207 · 43% fav · avg +0.70% · PF 1.39 | 86 · 38% fav · avg +1.50% · PF 1.92 | ✅ survives costs on daily |
 
 ## AI meta-label experiment
 
