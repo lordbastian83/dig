@@ -10,6 +10,8 @@
                            from the bot's incoming messages (user must have
                            messaged the bot at least once)
      FMP_API_KEY           enables GOLD / US30 / GBPUSD signals (optional)
+     ACCOUNT_GBP           account size for the £ trade plan (default 3500)
+     RISK_PCT              % of account risked per trade (default 1)
      STATE_FILE            dedupe/state path (default .notify-state.json)
      DRY_RUN=1             compute and print, but send nothing
      SEND_TEST=1           send a connectivity test message and exit
@@ -26,6 +28,8 @@ const E = globalThis.BudSignalEngine;
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const HANDLE = (process.env.TELEGRAM_CHAT_HANDLE || 'Lordbastian83').replace(/^@/, '').toLowerCase();
 const FMP_KEY = process.env.FMP_API_KEY || '';
+const ACCOUNT_GBP = parseFloat(process.env.ACCOUNT_GBP) > 0 ? parseFloat(process.env.ACCOUNT_GBP) : 3500;
+const RISK_PCT = parseFloat(process.env.RISK_PCT) > 0 ? parseFloat(process.env.RISK_PCT) : 1;
 const STATE_FILE = process.env.STATE_FILE || '.notify-state.json';
 const DRY_RUN = process.env.DRY_RUN === '1';
 
@@ -163,12 +167,16 @@ async function composeHeartbeat() {
   return { text, data: { scanned, firedLast24h: fired, markets: near } };
 }
 
-function composeMessage(asset, sig, mlModel) {
+// ETF-proxy index feeds: units are proxy shares, so the plan is expressed as
+// position value rather than a unit count.
+const INDEX_PROXIES = ['US30', 'NAS100', 'SPX500'];
+
+function composeMessage(asset, sig, mlModel, plan, edge) {
   const cfg = ASSETS[asset];
   const bk = sig.strategy === 'breakout';
   const arrow = `${sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT'}${bk ? ' BREAKOUT' : ''}`;
   const windowEnd = fmtTime(sig.t + E.CFG.CANDLE_MS);
-  return [
+  const lines = [
     `${arrow} — <b>${cfg.pair}</b>`,
     bk
       ? `Entry $${fmtPrice(sig.entry)} · Initial stop $${fmtPrice(sig.stop)} · Exit: 2×ATR trailing stop (max 3 days)`
@@ -176,9 +184,26 @@ function composeMessage(asset, sig, mlModel) {
     (sig.confidence != null ? `Confidence ${sig.confidence}/100 · ` : '') +
       (mlModel && sig.rsiAt != null ? `AI score ${Math.round(E.mlScore(sig, mlModel) * 100)}% · ` : '') +
       `entry window until ${windowEnd} UTC`,
+  ];
+  if (plan) {
+    const lots = plan.lots != null ? Math.floor(plan.lots * 100) / 100 : null;
+    const size = lots != null
+      ? `${lots.toFixed(2)} lots${lots < 0.01 ? ' — below the 0.01 minimum, skip' : ''}`
+      : INDEX_PROXIES.includes(asset)
+        ? `position value ≈ $${Math.round(plan.notionalUsd).toLocaleString('en-US')} (ETF-proxy feed — size by value)`
+        : `${plan.units.toFixed(plan.units < 1 ? 4 : 2)} units ≈ $${Math.round(plan.notionalUsd).toLocaleString('en-US')}`;
+    lines.push(`💷 Plan: risk £${plan.riskGbp.toFixed(0)} (${RISK_PCT}% of £${ACCOUNT_GBP.toLocaleString('en-US')}) → ${size}${plan.rateApprox ? ' · approx £→$' : ''}`);
+    lines.push(bk
+      ? `Close: raise stop to 2×ATR ${sig.side === 'long' ? 'below the highest' : 'above the lowest'} close after every 4h candle; hard exit after 3 days`
+      : `Close: at target or stop; stop to entry once 1×ATR in profit; time-exit after 24h`);
+  }
+  lines.push(bk && edge === true
+    ? `✅ Qualifies for real money — this market kept a net edge out-of-sample`
+    : `❌ <i>Paper only — ${bk ? 'this market showed no net edge in walk-forward validation' : 'the cross stream has never passed walk-forward validation'}. Watch, don't fund.</i>`);
+  lines.push(
     `Signal candle closed ${fmtTime(sig.t)} UTC`,
-    `<i>LordBastian Signal Generator — educational tool, not financial advice.</i>`,
-  ].join('\n');
+    `<i>LordBastian Signal Generator — educational tool, not financial advice.</i>`);
+  return lines.join('\n');
 }
 
 // Per-market breakout edge verdicts from the walk-forward research.
@@ -269,7 +294,8 @@ async function main() {
     console.log(`self-test: ${total} signal(s) across 7 synthetic histories`);
     if (!last) { console.error('self-test FAILED: no signal produced'); process.exit(1); }
     console.log('--- composed message ---');
-    console.log(composeMessage('BTC', last).replace(/<[^>]+>/g, ''));
+    const testPlan = last ? E.tradePlan('BTC', last, { accountGbp: ACCOUNT_GBP, riskPct: RISK_PCT }) : null;
+    console.log(composeMessage('BTC', last, null, testPlan, true).replace(/<[^>]+>/g, ''));
     console.log('self-test OK');
     return;
   }
@@ -338,6 +364,20 @@ async function main() {
   state.pending = state.pending || {};
   const mlModel = await loadMlModel();
   const edgeStatus = await loadEdgeStatus();
+
+  // Live cable rate for the £ trade plan, fetched at most once per run.
+  // undefined = not tried yet, null = tried and unavailable (plan falls back
+  // to a flagged approximate rate).
+  let cableRate;
+  const gbpUsd = async () => {
+    if (cableRate !== undefined) return cableRate;
+    try {
+      const c = await feedFetch('GBPUSD', FMP_KEY);
+      cableRate = c[c.length - 1].c;
+    } catch (e) { cableRate = null; }
+    return cableRate;
+  };
+
   let enrichCtx = null, enrichTried = false;
   let sent = 0;
   for (const asset of Object.keys(ASSETS)) {
@@ -384,11 +424,8 @@ async function main() {
     }
     for (const sig of fresh) {
       if (enrichCtx) enrichSignal(asset, sig, enrichCtx);
-      let text = composeMessage(asset, sig, mlModel);
-      const es = edgeStatus?.assets?.[asset];
-      if (sig.strategy === 'breakout' && es && es.edge === false) {
-        text += `\n⚠️ <i>Historical note: this market showed no net edge for this strategy in the walk-forward — treat as informational.</i>`;
-      }
+      const plan = E.tradePlan(asset, sig, { accountGbp: ACCOUNT_GBP, riskPct: RISK_PCT, gbpUsd: await gbpUsd() });
+      const text = composeMessage(asset, sig, mlModel, plan, edgeStatus?.assets?.[asset]?.edge);
       if (DRY_RUN) {
         console.log(`DRY RUN — would send for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);
       } else {

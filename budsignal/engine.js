@@ -383,6 +383,35 @@
     };
   }
 
+  /* ---------------- account position sizing ---------------- */
+
+  // Standard CFD lot sizes where they are universal enough to state (FX 100k
+  // base units, gold 100 oz, WTI 1,000 bbl). Crypto and index CFD contract
+  // sizes vary by broker, so those plans are expressed in units and position
+  // value instead of lots.
+  const LOT_SIZES = { GBPUSD: 100000, EURUSD: 100000, GOLD: 100, OIL: 1000 };
+
+  // Turn a signal into an account-sized order: risk a fixed fraction of
+  // equity, with the position sized so that being stopped out loses exactly
+  // that amount. Every instrument here is USD-quoted, so a GBP account
+  // converts its risk at the cable rate (a live rate if the caller has one,
+  // otherwise a flagged approximation).
+  function tradePlan(asset, sig, { accountGbp, riskPct = 1, gbpUsd = null } = {}) {
+    const stopDist = Math.abs(sig.entry - sig.stop);
+    if (!stopDist || !(accountGbp > 0) || !(riskPct > 0)) return null;
+    const rate = gbpUsd || 1.3;
+    const riskGbp = (accountGbp * riskPct) / 100;
+    const riskUsd = riskGbp * rate;
+    const units = riskUsd / stopDist;
+    const lotSize = LOT_SIZES[asset] || null;
+    return {
+      riskGbp, riskUsd, rate, rateApprox: gbpUsd == null,
+      stopDist, stopPct: (stopDist / sig.entry) * 100,
+      units, notionalUsd: units * sig.entry,
+      lotSize, lots: lotSize ? units / lotSize : null,
+    };
+  }
+
   // Signals must only ever be computed on CLOSED candles — a forming candle's
   // close changes until it closes, so a signal computed on it could appear
   // and then vanish ("repainting"). Returns the prefix of `candles` whose
@@ -403,5 +432,6 @@
     closedPrefix, closedOf, favorableRate,
     trailingScore, trailingComparison,
     mlFeatures, mlScore, mlTrain,
+    tradePlan,
   };
 })();

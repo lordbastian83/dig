@@ -53,6 +53,8 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_CHAT_HANDLE: 'Lordbastian83'
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          ACCOUNT_GBP: '3500'   # sizing for the £ trade plan in alerts
+          RISK_PCT: '1'
           SEND_TEST: ${{ inputs.test && '1' || '' }}
       - name: Weekly digest
         if: ${{ github.event.schedule == '15 0 * * 1' }}

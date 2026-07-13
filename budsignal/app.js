@@ -29,6 +29,13 @@
   const FMP_KEY_STORE = 'budsignal-fmp-key';
   const TD_KEY_STORE = 'budsignal-td-key';
 
+  // Account settings drive position sizing in the trade plan and the paper
+  // account. Defaults match the owner's live account: £3,500, 1% per trade.
+  const ACCT_STORE = 'budsignal-acct-gbp';
+  const RISK_STORE = 'budsignal-risk-pct';
+  const acctGbp = () => { const v = parseFloat(localStorage.getItem(ACCT_STORE)); return v > 0 ? v : 3500; };
+  const riskPct = () => { const v = parseFloat(localStorage.getItem(RISK_STORE)); return v > 0 && v <= 5 ? v : 1; };
+
   let currentAsset = localStorage.getItem('budsignal-asset');
   if (!ASSETS[currentAsset]) currentAsset = 'BTC';
 
@@ -659,6 +666,7 @@
         aiWrap.hidden = true;
       }
       levels.hidden = false;
+      lastActiveSignal = s;
     } else {
       badge.className = 'signal-badge neutral';
       badge.textContent = '— NO SIGNAL';
@@ -668,7 +676,74 @@
         ? `Conditions don't currently line up on ${currentAsset} — the rule set is flat and waiting. The most recent signal was a ${lastSig.side.toUpperCase()} on ${fmtTime(lastSig.t)} UTC (see the track record below).`
         : `Conditions don't currently line up on ${currentAsset} — the rule set is flat and waiting. No signals passed the filters in the loaded history.`;
       levels.hidden = true;
+      lastActiveSignal = null;
     }
+    renderTradePlan();
+  }
+
+  /* ---------------- trade plan (account sizing) ---------------- */
+
+  // Per-market breakout verdicts from the walk-forward research — published
+  // by the research job, so the "trade it / skip it" call is evidence, not vibes.
+  const EDGE_URL = 'https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/edge-status.json';
+  let edgeStatus = null;
+  async function loadEdgeStatus() {
+    try {
+      const r = await fetch(`${EDGE_URL}?v=${Math.floor(Date.now() / 3600000)}`, { signal: AbortSignal.timeout(8000) });
+      if (r.ok) edgeStatus = await r.json();
+    } catch (e) { /* verdicts unavailable — plan falls back to paper-only wording */ }
+  }
+
+  // £ risk converts to USD-quoted instruments at the live cable rate; without
+  // a data key the plan uses a flagged approximation instead.
+  let gbpUsdRate = null;
+  async function loadGbpUsd() {
+    try {
+      const { source, candles } = await fetchCandles('GBPUSD');
+      if (!/demo/i.test(source) && candles.length) gbpUsdRate = candles[candles.length - 1].c;
+    } catch (e) { /* approximate rate used instead */ }
+  }
+
+  const INDEX_PROXIES = ['US30', 'NAS100', 'SPX500'];
+  let lastActiveSignal = null;
+
+  function renderTradePlan() {
+    const body = $('plan-body');
+    if (!body) return;
+    const s = lastActiveSignal;
+    if (!s) {
+      body.innerHTML = `<p class="plan-note">No live signal on ${currentAsset}, so there is nothing to do. ` +
+        `The moment one fires, this panel (and the Telegram alert) turns it into an exact order: ` +
+        `£${fmtUsd(acctGbp() * riskPct() / 100)} at risk (${riskPct()}% of £${fmtUsd(acctGbp())}), position sized to the stop, exits fixed in advance.</p>`;
+      return;
+    }
+    const plan = E.tradePlan(currentAsset, s, { accountGbp: acctGbp(), riskPct: riskPct(), gbpUsd: gbpUsdRate });
+    if (!plan) { body.innerHTML = ''; return; }
+    const bk = s.strategy === 'breakout';
+    const es = edgeStatus?.assets?.[currentAsset];
+    const verdict = bk && es?.edge === true
+      ? '<p class="plan-verdict ok">✅ Qualifies for real money — breakout signal on a market that kept a net edge out-of-sample.</p>'
+      : bk
+        ? '<p class="plan-verdict no">❌ Paper only — this market showed no net edge for the breakout strategy in walk-forward validation. Watch it, don\'t fund it.</p>'
+        : '<p class="plan-verdict no">❌ Paper only — the cross stream has never beaten its baseline out-of-sample; real money goes only on validated breakout markets.</p>';
+    const lots = plan.lots != null ? Math.floor(plan.lots * 100) / 100 : null;
+    const sizeLine = lots != null
+      ? `<strong>${lots.toFixed(2)} lots</strong> (${plan.units.toFixed(plan.units < 10 ? 2 : 0)} units ≈ $${fmtUsd(plan.notionalUsd)} position)` +
+        (lots < 0.01 ? ' — below the 0.01-lot minimum: skip the trade rather than over-risk' : '')
+      : INDEX_PROXIES.includes(currentAsset)
+        ? `set volume so <strong>position value ≈ $${fmtUsd(plan.notionalUsd)}</strong> — the chart uses an ETF proxy, so size by position value, not units`
+        : `<strong>${plan.units.toFixed(plan.units < 1 ? 4 : 2)} ${currentAsset}</strong> ≈ $${fmtUsd(plan.notionalUsd)} position value`;
+    const closeRule = bk
+      ? `<strong>Close:</strong> when price hits the trailing stop — it starts at $${fmtPrice(s.stop)} and after every 4-hour close moves to 2×ATR ${s.side === 'long' ? 'below the highest' : 'above the lowest'} close since entry, never loosening. Hard exit at market after 3 days.`
+      : `<strong>Close:</strong> at target $${fmtPrice(s.target)} or stop $${fmtPrice(s.stop)}; move the stop to entry once 1×ATR in profit; exit at market after 24h.`;
+    body.innerHTML = `
+      ${verdict}
+      <div class="plan-grid">
+        <div><span class="lvl-label">Risk</span><span class="lvl-value">£${fmtUsd(plan.riskGbp)} = ${riskPct()}% of £${fmtUsd(acctGbp())} (≈ $${fmtUsd(plan.riskUsd)})</span></div>
+        <div><span class="lvl-label">Size</span><span class="lvl-value">${sizeLine}</span></div>
+        <div><span class="lvl-label">Stop distance</span><span class="lvl-value">${plan.stopPct.toFixed(2)}% from entry — sized so a stop-out costs £${fmtUsd(plan.riskGbp)}</span></div>
+      </div>
+      <p class="plan-note">${closeRule}${plan.rateApprox ? ' · £→$ conversion is approximate (add a data key to load live cable)' : ''}</p>`;
   }
 
   function renderTrackRecord(signals, baseline, candles, ind, breakout) {
@@ -759,6 +834,40 @@
     renderPerformance(data);
   }
 
+  // Paper account: starts at the user's own account size (default £3,500),
+  // 1% of equity risked per trade (position sized to the stop distance),
+  // compounded chronologically, net of per-market costs.
+  const PAPER_COSTS = { BTC: 0.10, ETH: 0.10, SOL: 0.10, XRP: 0.10, GOLD: 0.05, OIL: 0.05, US30: 0.02, NAS100: 0.02, SPX500: 0.02, GBPUSD: 0.03, EURUSD: 0.03 };
+  function renderPaperAccount(recs) {
+    const start = acctGbp();
+    const closed = recs.filter((r) => r.outcome !== 'open' && r.entry && r.stop)
+      .sort((a, b) => a.t - b.t);
+    let equity = start, peak = start, maxDD = 0, best = null, worst = null;
+    for (const r of closed) {
+      const stopPct = Math.abs(r.entry - r.stop) / r.entry * 100;
+      if (!stopPct) continue;
+      const netMove = r.movePct - (PAPER_COSTS[r.asset] ?? 0.05);
+      const R = netMove / stopPct;           // outcome in risk units
+      const pnl = equity * 0.01 * R;         // 1% of equity at risk per trade
+      equity += pnl;
+      peak = Math.max(peak, equity);
+      maxDD = Math.max(maxDD, (peak - equity) / peak * 100);
+      if (best == null || pnl > best) best = pnl;
+      if (worst == null || pnl < worst) worst = pnl;
+    }
+    const ret = (equity / start - 1) * 100;
+    $('paper-equity').textContent = `£${fmtUsd(equity)}`;
+    $('paper-start').textContent = `started at £${fmtUsd(start)}`;
+    const retEl = $('paper-return');
+    retEl.textContent = fmtPct(ret);
+    retEl.classList.remove('pos', 'neg');
+    retEl.classList.add(ret >= 0 ? 'pos' : 'neg');
+    $('paper-trades').textContent = `${closed.length} closed trades, 1% risk each`;
+    $('paper-dd').textContent = `−${maxDD.toFixed(1)}%`;
+    $('paper-best').textContent = best != null ? `+£${fmtUsd(Math.max(best, 0))}` : '—';
+    $('paper-worst').textContent = worst != null ? `worst −£${fmtUsd(Math.abs(Math.min(worst, 0)))}` : '—';
+  }
+
   function segmentStats(recs) {
     const closed = recs.filter((r) => r.outcome !== 'open');
     if (!closed.length) return { n: 0 };
@@ -825,7 +934,11 @@
     $('perf-buckets').innerHTML = segments
       .map(([label, fn]) => row(label, segmentStats(recs.filter(fn))))
       .join('');
+
+    lastRecs = recs;
+    renderPaperAccount(recs);
   }
+  let lastRecs = null;
 
   /* ---------------- boot ---------------- */
 
@@ -874,8 +987,24 @@
     navigator.serviceWorker.register('sw.js').catch(() => { /* PWA optional */ });
   }
 
+  // Account inputs: persist, then re-price the plan and paper account live.
+  $('acct-size').value = String(acctGbp());
+  $('acct-risk').value = String(riskPct());
+  const onAcctChange = () => {
+    const a = parseFloat($('acct-size').value);
+    const r = parseFloat($('acct-risk').value);
+    if (a > 0) localStorage.setItem(ACCT_STORE, String(a));
+    if (r > 0 && r <= 5) localStorage.setItem(RISK_STORE, String(r));
+    renderTradePlan();
+    if (lastRecs) renderPaperAccount(lastRecs);
+  };
+  $('acct-size').addEventListener('input', onAcctChange);
+  $('acct-risk').addEventListener('input', onAcctChange);
+
   refresh();
   loadMlModel().then(() => { if (mlModel) refresh(); }); // re-render with AI score once the model arrives
+  loadEdgeStatus().then(renderTradePlan);
+  loadGbpUsd().then(renderTradePlan);
   loadPerformance();
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
   setInterval(loadPerformance, 30 * 60 * 1000); // ledger updates every 4h
