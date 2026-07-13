@@ -23,25 +23,26 @@ const FMP_KEY = process.env.FMP_API_KEY;
 if (!FMP_KEY && !DEMO) { console.error('FMP_API_KEY is required for research'); process.exit(1); }
 const YEARS = +(process.env.YEARS || 3);
 const REPORT_FILE = process.env.REPORT_FILE || 'research-report.md';
+const COST = 0.10; // assumed round-trip cost per trade (fees + slippage), in %
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const day = (t) => new Date(t).toISOString().slice(0, 10);
 
-const fetchChunk = (symbol, fromT, toT) => fmpChart(symbol, fromT, toT, FMP_KEY);
-
-async function fetchHistory(symbol) {
+async function fetchHistory(symbol, { interval = '4hour', years = YEARS, chunkDays = 85 } = {}) {
   const byT = new Map();
   const end = Date.now();
-  const CHUNK = 85 * 86400000;
-  for (let hi = end; hi > end - YEARS * 365 * 86400000; hi -= CHUNK) {
+  const CHUNK = chunkDays * 86400000;
+  for (let hi = end; hi > end - years * 365 * 86400000; hi -= CHUNK) {
     try {
-      for (const c of await fetchChunk(symbol, hi - CHUNK, hi)) byT.set(c.t, c);
+      for (const c of await fmpChart(symbol, hi - CHUNK, hi, FMP_KEY, interval)) byT.set(c.t, c);
     } catch (e) {
-      console.log(`${symbol} chunk ${day(hi - CHUNK)}..${day(hi)}: ${e.message}`);
+      console.log(`${symbol} ${interval} chunk ${day(hi - CHUNK)}..${day(hi)}: ${e.message}`);
     }
     await sleep(300); // stay friendly to rate limits
   }
   return [...byT.values()].sort((a, b) => a.t - b.t);
 }
+
+const net = (moves) => moves.map((m) => m - COST);
 
 function stats(moves) {
   if (!moves.length) return null;
@@ -203,9 +204,48 @@ async function main() {
       `| Donchian-55 breakout, trailing exits | ${fmtStats(stats(alt.breakoutTrail.train))} | ${fmtStats(stats(alt.breakoutTrail.validate))} | ${altVerdict('breakoutTrail')} |`,
       `| Funding-extreme mean reversion, fixed | ${fmtStats(stats(alt.fundingFixed.train))} | ${fmtStats(stats(alt.fundingFixed.validate))} | ${altVerdict('fundingFixed')} |`,
       `| Funding-extreme mean reversion, trailing | ${fmtStats(stats(alt.fundingTrail.train))} | ${fmtStats(stats(alt.fundingTrail.validate))} | ${altVerdict('fundingTrail')} |`,
+      `| **Breakout trailing, NET of ${COST.toFixed(2)}% costs** | ${fmtStats(stats(net(alt.breakoutTrail.train)))} | ${fmtStats(stats(net(alt.breakoutTrail.validate)))} | ${(() => { const tr = stats(net(alt.breakoutTrail.train)), va = stats(net(alt.breakoutTrail.validate)); return tr && va && tr.avg > 0 && va.avg > 0 ? '✅ survives costs' : '❌ costs eat the edge'; })()} |`,
       '',
     );
     console.log('alternative entry families evaluated');
+  }
+
+  // ---- Faster timeframe: the winning strategy on 1h candles (scalp feasibility) ----
+  if (!DEMO) {
+    const fast = { fixed: { train: [], validate: [] }, trail: { train: [], validate: [] } };
+    let fastMarkets = 0;
+    for (const [asset, cfg] of Object.entries(ASSETS)) {
+      console.log(`fetching ${asset} 1h...`);
+      const candles = await fetchHistory(cfg.fmp, { interval: '1hour', years: Math.min(YEARS, 2), chunkDays: 25 });
+      if (candles.length < 2000) { console.log(`${asset} 1h: only ${candles.length} candles — skipped`); continue; }
+      fastMarkets++;
+      const ind = E.computeIndicators(candles);
+      const splitT = candles[Math.floor(candles.length * 0.7)].t;
+      const period = (s) => (s.t < splitT ? 'train' : 'validate');
+      for (const s of E.closedOf(E.computeBreakoutSignals(candles, ind))) {
+        fast.fixed[period(s)].push(s.movePct);
+        const tr = E.trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
+        if (tr.closed) fast.trail[period(s)].push(tr.movePct);
+      }
+    }
+    const fastVerdict = (rows) => {
+      const tr = stats(net(rows.train)), va = stats(net(rows.validate));
+      return tr && va && tr.avg > 0 && va.avg > 0 ? '✅ survives costs on 1h' : '❌ not viable net of costs';
+    };
+    lines.push(
+      '## Scalp feasibility: Donchian breakout on 1-hour candles',
+      '',
+      `Same strategy, 4× faster timeframe, ${fastMarkets} markets over up to 2 years. ` +
+      `The question is not accuracy — it is whether the per-trade move survives a realistic ${COST.toFixed(2)}% round-trip cost. ` +
+      'Faster timeframes shrink the move; costs stay constant.',
+      '',
+      '| Variant | Train (gross) | Validate (gross) | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|---|---|',
+      `| 1h breakout, fixed exits | ${fmtStats(stats(fast.fixed.train))} | ${fmtStats(stats(fast.fixed.validate))} | ${fmtStats(stats(net(fast.fixed.train)))} | ${fmtStats(stats(net(fast.fixed.validate)))} | ${fastVerdict(fast.fixed)} |`,
+      `| 1h breakout, trailing exits | ${fmtStats(stats(fast.trail.train))} | ${fmtStats(stats(fast.trail.validate))} | ${fmtStats(stats(net(fast.trail.train)))} | ${fmtStats(stats(net(fast.trail.validate)))} | ${fastVerdict(fast.trail)} |`,
+      '',
+    );
+    console.log('1h scalp-feasibility evaluated');
   }
 
   // ---- ML meta-labeling: train on train-period baseline signals, judge on validate ----

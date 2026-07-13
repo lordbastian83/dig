@@ -43,12 +43,12 @@ async function fetchKraken(pairCode) {
 // FMP: keys issued after the 2025 API revamp only work on /stable/ endpoints
 // (legacy /api/v3/ returns 403 for them), while old keys are the reverse — so
 // try stable first and fall back to v3.
-export async function fmpChart(symbol, fromT, toT, fmpKey) {
+export async function fmpChart(symbol, fromT, toT, fmpKey, interval = '4hour') {
   const day = (x) => new Date(x).toISOString().slice(0, 10);
   const range = `from=${day(fromT)}&to=${day(toT)}&apikey=${encodeURIComponent(fmpKey)}`;
   const urls = [
-    `https://financialmodelingprep.com/stable/historical-chart/4hour?symbol=${encodeURIComponent(symbol)}&${range}`,
-    `https://financialmodelingprep.com/api/v3/historical-chart/4hour/${encodeURIComponent(symbol)}?${range}`,
+    `https://financialmodelingprep.com/stable/historical-chart/${interval}?symbol=${encodeURIComponent(symbol)}&${range}`,
+    `https://financialmodelingprep.com/api/v3/historical-chart/${interval}/${encodeURIComponent(symbol)}?${range}`,
   ];
   const errors = [];
   for (const url of urls) {
