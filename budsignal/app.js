@@ -631,9 +631,11 @@
     $('ind-next').textContent = `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
   }
 
-  function renderCurrentSignal(candles, ind, signals, breakout) {
+  function renderCurrentSignal(candles, ind, signals, breakout, swing) {
     const last = candles[candles.length - 1];
-    const active = [...signals, ...breakout].filter((s) => last.t - s.t <= CANDLE_MS).sort((a, b) => a.t - b.t);
+    const active = [...signals, ...breakout, ...(swing || [])]
+      .filter((s) => last.t - s.t <= (s.candleMs || CANDLE_MS))
+      .sort((a, b) => a.t - b.t);
     const badge = $('signal-badge');
     const copy = $('signal-copy');
     const levels = $('signal-levels');
@@ -641,9 +643,11 @@
     if (active.length) {
       const s = active[active.length - 1];
       badge.className = `signal-badge ${s.side}`;
-      badge.textContent = `${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}${s.strategy === 'breakout' ? ' · BREAKOUT' : ''}`;
+      badge.textContent = `${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}${s.strategy === 'breakout' ? ' · BREAKOUT' : s.strategy === 'swing' ? ' · SWING (DAILY)' : ''}`;
       $('signal-when').textContent = `${currentAsset} · fired ${fmtTime(s.t)} UTC`;
-      copy.textContent = s.strategy === 'breakout'
+      copy.textContent = s.strategy === 'swing'
+        ? `Price closed ${s.side === 'long' ? 'above its 55-day high' : 'below its 55-day low'} on the daily chart — the strongest validated stream. Exit is a 2×ATR trailing stop evaluated on daily closes (max 18 days). The entry window is one daily candle.`
+        : s.strategy === 'breakout'
         ? (s.side === 'long'
           ? 'Price closed above its 55-candle high — a momentum breakout. Exit is a 2×ATR trailing stop rather than a fixed target: winners run, losers are cut. The entry window is one 4-hour candle.'
           : 'Price closed below its 55-candle low — a momentum breakdown. Exit is a 2×ATR trailing stop rather than a fixed target: winners run, losers are cut. The entry window is one 4-hour candle.')
@@ -653,7 +657,7 @@
       $('lvl-entry').textContent = `$${fmtPrice(s.entry)}`;
       $('lvl-stop').textContent = `$${fmtPrice(s.stop)}`;
       $('lvl-target').textContent = s.target != null ? `$${fmtPrice(s.target)}` : 'trailing 2×ATR';
-      const remaining = Math.max(0, s.t + CANDLE_MS - Date.now());
+      const remaining = Math.max(0, s.t + (s.candleMs || CANDLE_MS) - Date.now());
       $('lvl-window').textContent = remaining > 0
         ? `${Math.floor(remaining / 3600000)}h ${Math.floor((remaining % 3600000) / 60000)}m left`
         : 'expired';
@@ -720,12 +724,15 @@
     const plan = E.tradePlan(currentAsset, s, { accountGbp: acctGbp(), riskPct: riskPct(), gbpUsd: gbpUsdRate });
     if (!plan) { body.innerHTML = ''; return; }
     const bk = s.strategy === 'breakout';
+    const swing = s.strategy === 'swing';
     const es = edgeStatus?.assets?.[currentAsset];
-    const verdict = bk && es?.edge === true
+    const verdict = swing
+      ? '<p class="plan-verdict ok">✅ Qualifies for real money — the daily swing stream is the strongest validated edge (+1.5%/trade net in validation, PF 1.9).</p>'
+      : bk && es?.edge === true
       ? '<p class="plan-verdict ok">✅ Qualifies for real money — breakout signal on a market that kept a net edge out-of-sample.</p>'
       : bk
         ? '<p class="plan-verdict no">❌ Paper only — this market showed no net edge for the breakout strategy in walk-forward validation. Watch it, don\'t fund it.</p>'
-        : '<p class="plan-verdict no">❌ Paper only — the cross stream has never beaten its baseline out-of-sample; real money goes only on validated breakout markets.</p>';
+        : '<p class="plan-verdict no">❌ Paper only — the cross stream has never beaten its baseline out-of-sample; real money goes only on validated streams.</p>';
     const lots = plan.lots != null ? Math.floor(plan.lots * 100) / 100 : null;
     const sizeLine = lots != null
       ? `<strong>${lots.toFixed(2)} lots</strong> (${plan.units.toFixed(plan.units < 10 ? 2 : 0)} units ≈ $${fmtUsd(plan.notionalUsd)} position)` +
@@ -733,8 +740,8 @@
       : INDEX_PROXIES.includes(currentAsset)
         ? `set volume so <strong>position value ≈ $${fmtUsd(plan.notionalUsd)}</strong> — the chart uses an ETF proxy, so size by position value, not units`
         : `<strong>${plan.units.toFixed(plan.units < 1 ? 4 : 2)} ${currentAsset}</strong> ≈ $${fmtUsd(plan.notionalUsd)} position value`;
-    const closeRule = bk
-      ? `<strong>Close:</strong> when price hits the trailing stop — it starts at $${fmtPrice(s.stop)} and after every 4-hour close moves to 2×ATR ${s.side === 'long' ? 'below the highest' : 'above the lowest'} close since entry, never loosening. Hard exit at market after 3 days.`
+    const closeRule = bk || swing
+      ? `<strong>Close:</strong> when price hits the trailing stop — it starts at $${fmtPrice(s.stop)} and after every ${swing ? 'daily' : '4-hour'} close moves to 2×ATR ${s.side === 'long' ? 'below the highest' : 'above the lowest'} close since entry, never loosening. Hard exit at market after ${swing ? '18 days' : '3 days'}.`
       : `<strong>Close:</strong> at target $${fmtPrice(s.target)} or stop $${fmtPrice(s.stop)}; move the stop to entry once 1×ATR in profit; exit at market after 24h.`;
     body.innerHTML = `
       ${verdict}
@@ -779,7 +786,7 @@
       const moveCls = s.movePct >= 0 ? 'move-pos' : 'move-neg';
       return `<tr>
         <td>${fmtTime(s.t)}</td>
-        <td>${s.strategy === 'breakout' ? '◆ Breakout' : 'Cross'}</td>
+        <td>${s.strategy === 'breakout' ? '◆ Breakout' : s.strategy === 'swing' ? '🌊 Swing (daily)' : s.strategy === 'scalp' ? '⚡ Scalp (1h)' : 'Cross'}</td>
         <td><span class="side-badge ${s.side}">${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}</span></td>
         <td class="num">$${fmtPrice(s.entry)}</td>
         <td class="num">${s.exit != null ? '$' + fmtPrice(s.exit) : '—'}</td>
@@ -919,8 +926,10 @@
       .join('') || '<tr><td colspan="5" class="table-empty">No closed signals yet.</td></tr>';
 
     const segments = [
-      ['Cross entries', (r) => r.strategy !== 'breakout'],
+      ['Cross entries', (r) => !r.strategy || r.strategy === 'cross'],
       ['◆ Breakout entries', (r) => r.strategy === 'breakout'],
+      ['🌊 Swing entries (daily)', (r) => r.strategy === 'swing'],
+      ['⚡ Scalp entries (1h)', (r) => r.strategy === 'scalp'],
       ['▲ Longs', (r) => r.side === 'long'],
       ['▼ Shorts', (r) => r.side === 'short'],
       ['Confidence below 70', (r) => r.confidence < 70],
@@ -960,16 +969,17 @@
     const signals = E.computeSignals(closedCandles, closedInd, true);
     const baseline = E.computeSignals(closedCandles, closedInd, false);
     const breakout = E.computeBreakoutStream(closedCandles, closedInd);
+    const swing = E.computeSwingStream(closedCandles);
     lastCandleT = candles[candles.length - 1].t;
 
     renderHero(candles);
     renderTiles(closedCandles, closedInd, signals, baseline, breakout);
     renderIndicators(candles, ind);
     renderCountdown();
-    renderCurrentSignal(closedCandles, closedInd, signals, breakout);
-    renderTrackRecord(signals, baseline, closedCandles, closedInd, breakout);
+    renderCurrentSignal(closedCandles, closedInd, signals, breakout, swing);
+    renderTrackRecord(signals, baseline, closedCandles, closedInd, [...breakout, ...swing]);
     setupChart(candles, ind, signals, breakout);
-    setupEquity([...signals, ...breakout].sort((a, b) => a.t - b.t));
+    setupEquity([...signals, ...breakout, ...swing].sort((a, b) => a.t - b.t));
   }
 
   // One-time key handoff via URL fragment (#fmpkey=...&tdkey=...): stores the

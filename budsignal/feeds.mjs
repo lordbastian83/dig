@@ -18,20 +18,26 @@ export const ASSETS = {
   OIL:    { kind: 'market', pair: 'WTI Crude Oil',      fmp: 'CLUSD' },
 };
 
-async function fetchBinance(host, symbol) {
+// Per-source interval names for the two granularities the app trades.
+const INTERVALS = {
+  '4h': { binance: '4h', kraken: 240, fmp: '4hour', spanDays: 170 },
+  '1h': { binance: '1h', kraken: 60, fmp: '1hour', spanDays: 42 },
+};
+
+async function fetchBinance(host, symbol, interval = '4h') {
   const r = await fetch(
-    `https://${host}/api/v3/klines?symbol=${symbol}&interval=4h&limit=${CANDLE_LIMIT}`,
+    `https://${host}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${CANDLE_LIMIT}`,
     { signal: AbortSignal.timeout(15000) });
   if (!r.ok) throw new Error(`${host} HTTP ${r.status}`);
   const rows = await r.json();
   return rows.map((k) => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] }));
 }
 
-// Kraken: native 4h (240-minute) candles, no key, not geo-blocked from US
-// runners, up to 720 rows (~120 days). Row: [t, o, h, l, c, vwap, vol, count].
-async function fetchKraken(pairCode) {
+// Kraken: native interval-minute candles, no key, not geo-blocked from US
+// runners, up to 720 rows. Row: [t, o, h, l, c, vwap, vol, count].
+async function fetchKraken(pairCode, minutes = 240) {
   const r = await fetch(
-    `https://api.kraken.com/0/public/OHLC?pair=${pairCode}&interval=240`,
+    `https://api.kraken.com/0/public/OHLC?pair=${pairCode}&interval=${minutes}`,
     { signal: AbortSignal.timeout(15000) });
   if (!r.ok) throw new Error(`Kraken HTTP ${r.status}`);
   const j = await r.json();
@@ -67,26 +73,28 @@ export async function fmpChart(symbol, fromT, toT, fmpKey, interval = '4hour') {
   throw new Error(`FMP ${symbol}: ${errors.join(' | ')}`);
 }
 
-async function fetchFmp(symbol, fmpKey) {
-  const candles = await fmpChart(symbol, Date.now() - 170 * 86400000, Date.now(), fmpKey);
+async function fetchFmp(symbol, fmpKey, iv = INTERVALS['4h']) {
+  const candles = await fmpChart(symbol, Date.now() - iv.spanDays * 86400000, Date.now(), fmpKey, iv.fmp);
   if (!candles.length) throw new Error(`FMP ${symbol}: empty`);
   return candles.slice(-CANDLE_LIMIT);
 }
 
-export async function fetchCandles(asset, fmpKey) {
+export async function fetchCandles(asset, fmpKey, { interval = '4h' } = {}) {
   const cfg = ASSETS[asset];
+  const iv = INTERVALS[interval];
+  if (!iv) throw new Error(`unsupported interval ${interval}`);
   if (cfg.kind === 'market') {
     if (!fmpKey) throw new Error('no FMP_API_KEY — skipping');
-    return fetchFmp(cfg.fmp, fmpKey);
+    return fetchFmp(cfg.fmp, fmpKey, iv);
   }
   // Binance geo-blocks US IPs (where GitHub runners live), so chain through
   // Binance.US and Kraken, then FMP if a key is available.
   const attempts = [
-    () => fetchBinance('api.binance.com', cfg.binance),
-    () => fetchBinance('api.binance.us', cfg.binance),
-    () => fetchKraken(cfg.kraken),
+    () => fetchBinance('api.binance.com', cfg.binance, iv.binance),
+    () => fetchBinance('api.binance.us', cfg.binance, iv.binance),
+    () => fetchKraken(cfg.kraken, iv.kraken),
   ];
-  if (fmpKey) attempts.push(() => fetchFmp(cfg.fmp, fmpKey));
+  if (fmpKey) attempts.push(() => fetchFmp(cfg.fmp, fmpKey, iv));
   const errors = [];
   for (const attempt of attempts) {
     try { return await attempt(); } catch (e) { errors.push(e.message); }
