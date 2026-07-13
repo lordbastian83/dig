@@ -1011,6 +1011,14 @@
   $('acct-size').addEventListener('input', onAcctChange);
   $('acct-risk').addEventListener('input', onAcctChange);
 
+  // Manual refresh: re-pull prices, signals, and the ledger on demand.
+  $('refresh-btn').addEventListener('click', async () => {
+    const btn = $('refresh-btn');
+    btn.classList.add('spinning');
+    try { await Promise.allSettled([refresh(), loadPerformance()]); }
+    finally { btn.classList.remove('spinning'); }
+  });
+
   refresh();
   loadMlModel().then(() => { if (mlModel) refresh(); }); // re-render with AI score once the model arrives
   loadEdgeStatus().then(renderTradePlan);

@@ -47,12 +47,24 @@ a { color: var(--text-primary); }
 
 .site-header {
   position: sticky; top: 0; z-index: 20;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center;
   padding: 14px 24px;
   background: rgba(13, 13, 13, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
+
+.refresh-btn {
+  order: 3; margin-left: 18px; flex: none;
+  width: 38px; height: 38px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-1); color: var(--text-secondary);
+  border: 1px solid var(--border);
+  font-size: 19px; line-height: 1; cursor: pointer;
+}
+.refresh-btn:hover { color: var(--text-primary); border-color: rgba(255, 255, 255, 0.22); }
+.refresh-btn.spinning { animation: refresh-spin 0.9s linear infinite; pointer-events: none; opacity: 0.7; }
+@keyframes refresh-spin { to { transform: rotate(360deg); } }
 
 .brand {
   display: flex; align-items: center; gap: 10px;
@@ -62,7 +74,7 @@ a { color: var(--text-primary); }
 
 .brand-mark { width: 28px; height: 28px; }
 
-.site-nav { display: flex; gap: 22px; }
+.site-nav { display: flex; gap: 22px; margin-left: auto; }
 
 .site-nav a {
   color: var(--text-secondary); text-decoration: none; font-size: 14px;
@@ -444,8 +456,9 @@ a { color: var(--text-primary); }
 }
 
 @media (max-width: 640px) {
-  /* header collapses to brand + horizontally scrollable nav */
+  /* header collapses to brand + refresh on row one, scrollable nav below */
   .site-header { flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+  .refresh-btn { order: 0; margin-left: auto; width: 36px; height: 36px; }
   .site-nav {
     flex-basis: 100%; gap: 16px;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
