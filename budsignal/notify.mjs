@@ -181,6 +181,16 @@ function composeMessage(asset, sig, mlModel) {
   ].join('\n');
 }
 
+// Per-market breakout edge verdicts from the walk-forward research.
+async function loadEdgeStatus() {
+  try {
+    const r = await fetch('https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/edge-status.json',
+      { signal: AbortSignal.timeout(10000) });
+    if (r.ok) return await r.json();
+  } catch (e) { /* fine */ }
+  return null;
+}
+
 // Published only when it passed out-of-sample validation; missing file = no model.
 async function loadMlModel() {
   try {
@@ -327,6 +337,7 @@ async function main() {
   state.notified = state.notified || {};
   state.pending = state.pending || {};
   const mlModel = await loadMlModel();
+  const edgeStatus = await loadEdgeStatus();
   let enrichCtx = null, enrichTried = false;
   let sent = 0;
   for (const asset of Object.keys(ASSETS)) {
@@ -373,7 +384,11 @@ async function main() {
     }
     for (const sig of fresh) {
       if (enrichCtx) enrichSignal(asset, sig, enrichCtx);
-      const text = composeMessage(asset, sig, mlModel);
+      let text = composeMessage(asset, sig, mlModel);
+      const es = edgeStatus?.assets?.[asset];
+      if (sig.strategy === 'breakout' && es && es.edge === false) {
+        text += `\n⚠️ <i>Historical note: this market showed no net edge for this strategy in the walk-forward — treat as informational.</i>`;
+      }
       if (DRY_RUN) {
         console.log(`DRY RUN — would send for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);
       } else {

@@ -42,11 +42,15 @@ jobs:
           fi
           git fetch origin budsignal-data
           REPORT_BLOB=$(git hash-object -w research-report.md)
-          { git ls-tree origin/budsignal-data | grep -v -e $'\tresearch-report.md$' -e $'\tml-model.json$' || true;
+          { git ls-tree origin/budsignal-data | grep -v -e $'\tresearch-report.md$' -e $'\tml-model.json$' -e $'\tedge-status.json$' || true;
             printf '100644 blob %s\tresearch-report.md\n' "$REPORT_BLOB";
             if [ -f ml-model.json ]; then
               ML_BLOB=$(git hash-object -w ml-model.json)
               printf '100644 blob %s\tml-model.json\n' "$ML_BLOB"
+            fi;
+            if [ -f edge-status.json ]; then
+              EDGE_BLOB=$(git hash-object -w edge-status.json)
+              printf '100644 blob %s\tedge-status.json\n' "$EDGE_BLOB"
             fi; } | git mktree > /tmp/tree
           COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "research report $(date -u +%FT%TZ)")
           git push origin "$COMMIT:refs/heads/budsignal-data"
