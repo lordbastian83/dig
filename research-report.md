@@ -1,6 +1,6 @@
 # LordBastian Signal Generator — walk-forward research
 
-Generated 2026-07-13T17:42:45.357Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
+Generated 2026-07-13T22:15:37.402Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
 
 A variant only counts as an improvement if it beats its comparator in **both** periods — train-only wins are fitted noise.
 
@@ -8,7 +8,7 @@ Enrichment coverage: funding 4/4 · fng 3081 · econ 1011 · usd ok · btc ok
 
 ## BTC / USD
 
-6637 candles, 2023-07-04 → 2026-07-13, split at 2025-08-15
+6638 candles, 2023-07-04 → 2026-07-13, split at 2025-08-16
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -18,7 +18,7 @@ Enrichment coverage: funding 4/4 · fng 3081 · econ 1011 · usd ok · btc ok
 
 ## ETH / USD
 
-6637 candles, 2023-07-04 → 2026-07-13, split at 2025-08-15
+6638 candles, 2023-07-04 → 2026-07-13, split at 2025-08-16
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -28,7 +28,7 @@ Enrichment coverage: funding 4/4 · fng 3081 · econ 1011 · usd ok · btc ok
 
 ## SOL / USD
 
-6637 candles, 2023-07-04 → 2026-07-13, split at 2025-08-15
+6638 candles, 2023-07-04 → 2026-07-13, split at 2025-08-16
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -38,7 +38,7 @@ Enrichment coverage: funding 4/4 · fng 3081 · econ 1011 · usd ok · btc ok
 
 ## XRP / USD
 
-6520 candles, 2023-07-04 → 2026-07-13, split at 2025-08-21
+6521 candles, 2023-07-04 → 2026-07-13, split at 2025-08-21
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -48,7 +48,7 @@ Enrichment coverage: funding 4/4 · fng 3081 · econ 1011 · usd ok · btc ok
 
 ## XAU / USD · Gold
 
-4641 candles, 2023-07-04 → 2026-07-13, split at 2025-08-18
+4642 candles, 2023-07-04 → 2026-07-13, split at 2025-08-18
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -88,7 +88,7 @@ Enrichment coverage: funding 4/4 · fng 3081 · econ 1011 · usd ok · btc ok
 
 ## GBP / USD · Cable
 
-4724 candles, 2023-07-04 → 2026-07-13, split at 2025-08-14
+4725 candles, 2023-07-04 → 2026-07-13, split at 2025-08-15
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -98,7 +98,7 @@ Enrichment coverage: funding 4/4 · fng 3081 · econ 1011 · usd ok · btc ok
 
 ## EUR / USD
 
-4721 candles, 2023-07-04 → 2026-07-13, split at 2025-08-14
+4722 candles, 2023-07-04 → 2026-07-13, split at 2025-08-14
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -108,7 +108,7 @@ Enrichment coverage: funding 4/4 · fng 3081 · econ 1011 · usd ok · btc ok
 
 ## WTI Crude Oil
 
-4250 candles, 2023-10-01 → 2026-07-13, split at 2025-09-12
+4251 candles, 2023-10-01 → 2026-07-13, split at 2025-09-12
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -124,16 +124,42 @@ Enrichment coverage: funding 4/4 · fng 3081 · econ 1011 · usd ok · btc ok
 | Donchian-55 breakout, trailing exits | 912 · 37% fav · avg +0.26% · PF 1.28 | 372 · 37% fav · avg +0.41% · PF 1.47 | ✅ positive in BOTH periods |
 | Funding-extreme mean reversion, fixed | 0 signals | 58 · 36% fav · avg -0.09% · PF 0.90 | ❌ no out-of-sample edge |
 | Funding-extreme mean reversion, trailing | 0 signals | 58 · 45% fav · avg +0.22% · PF 1.18 | ❌ no out-of-sample edge |
-| **Breakout trailing, NET of 0.10% costs** | 912 · 35% fav · avg +0.16% · PF 1.16 | 372 · 37% fav · avg +0.31% · PF 1.33 | ✅ survives costs |
+| **Breakout trailing, NET of per-market costs** | 912 · 36% fav · avg +0.19% · PF 1.20 | 372 · 37% fav · avg +0.34% · PF 1.37 | ✅ survives costs |
+
+## Breakout + trailing, per market (net of that market's cost)
+
+| Market | Cost | Train (net) | Validate (net) | Verdict |
+|---|---|---|---|---|
+| BTC / USD | 0.10% | 109 · 32% fav · avg -0.06% · PF 0.95 | 53 · 26% fav · avg -0.23% · PF 0.77 | ❌ no net edge |
+| ETH / USD | 0.10% | 109 · 42% fav · avg +0.93% · PF 1.74 | 44 · 39% fav · avg +0.31% · PF 1.23 | ✅ net edge |
+| SOL / USD | 0.10% | 112 · 42% fav · avg +0.36% · PF 1.18 | 50 · 34% fav · avg -0.22% · PF 0.88 | ❌ no net edge |
+| XRP / USD | 0.10% | 95 · 35% fav · avg +0.55% · PF 1.29 | 45 · 40% fav · avg +1.09% · PF 1.83 | ✅ net edge |
+| XAU / USD · Gold | 0.05% | 104 · 41% fav · avg +0.03% · PF 1.10 | 41 · 56% fav · avg +0.80% · PF 3.00 | ✅ net edge |
+| US30 · Dow (DIA proxy) | 0.02% | 35 · 40% fav · avg +0.28% · PF 1.57 | 16 · 13% fav · avg -0.56% · PF 0.24 | ❌ no net edge |
+| NAS100 · Nasdaq (QQQ proxy) | 0.02% | 36 · 44% fav · avg +0.30% · PF 1.55 | 14 · 57% fav · avg +1.07% · PF 3.58 | ✅ net edge |
+| SPX500 · S&P (SPY proxy) | 0.02% | 41 · 46% fav · avg +0.32% · PF 1.81 | 16 · 31% fav · avg -0.07% · PF 0.86 | ❌ no net edge |
+| GBP / USD · Cable | 0.03% | 92 · 33% fav · avg -0.08% · PF 0.65 | 33 · 33% fav · avg -0.00% · PF 0.98 | ❌ no net edge |
+| EUR / USD | 0.03% | 91 · 29% fav · avg -0.05% · PF 0.76 | 31 · 39% fav · avg +0.01% · PF 1.05 | ❌ no net edge |
+| WTI Crude Oil | 0.05% | 88 · 25% fav · avg -0.44% · PF 0.55 | 29 · 34% fav · avg +1.73% · PF 2.55 | ❌ no net edge |
+
+Per-market edge status published to edge-status.json — alerts for ❌ markets carry an informational-only warning.
+
+## Donchian lookback grid (breakout + trailing, net of costs)
+
+| Lookback | All markets: train | validate | Non-crypto only: train | validate |
+|---|---|---|---|---|
+| 20 | 1540 · 37% fav · avg +0.06% · PF 1.06 | 680 · 35% fav · avg -0.04% · PF 0.96 | 786 · 38% fav · avg +0.04% · PF 1.11 | 310 · 40% fav · avg +0.23% · PF 1.46 |
+| 55 | 912 · 36% fav · avg +0.19% · PF 1.20 | 372 · 37% fav · avg +0.34% · PF 1.37 | 487 · 35% fav · avg -0.03% · PF 0.94 | 180 · 39% fav · avg +0.49% · PF 2.04 |
+| 100 | 648 · 37% fav · avg +0.21% · PF 1.22 | 273 · 40% fav · avg +0.44% · PF 1.52 | 353 · 36% fav · avg +0.01% · PF 1.02 | 141 · 44% fav · avg +0.55% · PF 2.32 |
 
 ## Scalp feasibility: Donchian breakout on 1-hour candles
 
-Same strategy, 4× faster timeframe, 10 markets over up to 2 years. The question is not accuracy — it is whether the per-trade move survives a realistic 0.10% round-trip cost. Faster timeframes shrink the move; costs stay constant.
+Same strategy, 4× faster timeframe, 10 markets over up to 2 years. The question is not accuracy — it is whether the per-trade move survives realistic per-market round-trip costs. Faster timeframes shrink the move; costs stay constant.
 
 | Variant | Train (gross) | Validate (gross) | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|---|---|
-| 1h breakout, fixed exits | 2221 · 37% fav · avg +0.05% · PF 1.14 | 904 · 35% fav · avg -0.00% · PF 0.99 | 2221 · 33% fav · avg -0.05% · PF 0.89 | 904 · 31% fav · avg -0.10% · PF 0.76 | ❌ not viable net of costs |
-| 1h breakout, trailing exits | 2221 · 38% fav · avg +0.03% · PF 1.05 | 903 · 38% fav · avg +0.04% · PF 1.10 | 2221 · 34% fav · avg -0.07% · PF 0.87 | 903 · 34% fav · avg -0.06% · PF 0.89 | ❌ not viable net of costs |
+| 1h breakout, fixed exits | 2221 · 37% fav · avg +0.05% · PF 1.14 | 907 · 36% fav · avg -0.00% · PF 0.99 | 2221 · 35% fav · avg -0.02% · PF 0.96 | 907 · 34% fav · avg -0.07% · PF 0.82 | ❌ not viable net of costs |
+| 1h breakout, trailing exits | 2221 · 38% fav · avg +0.03% · PF 1.05 | 905 · 38% fav · avg +0.04% · PF 1.09 | 2221 · 36% fav · avg -0.04% · PF 0.92 | 905 · 36% fav · avg -0.03% · PF 0.94 | ❌ not viable net of costs |
 
 ## AI meta-label experiment
 
