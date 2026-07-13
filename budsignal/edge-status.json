@@ -1,0 +1,60 @@
+{
+  "strategy": "breakout-trailing",
+  "assets": {
+    "BTC": {
+      "edge": true,
+      "netValidateAvg": 0.83,
+      "n": 30
+    },
+    "ETH": {
+      "edge": true,
+      "netValidateAvg": 0.83,
+      "n": 30
+    },
+    "SOL": {
+      "edge": true,
+      "netValidateAvg": 0.83,
+      "n": 30
+    },
+    "XRP": {
+      "edge": true,
+      "netValidateAvg": 0.83,
+      "n": 30
+    },
+    "GOLD": {
+      "edge": true,
+      "netValidateAvg": 1.07,
+      "n": 41
+    },
+    "US30": {
+      "edge": true,
+      "netValidateAvg": 1.1,
+      "n": 41
+    },
+    "NAS100": {
+      "edge": true,
+      "netValidateAvg": 1.39,
+      "n": 39
+    },
+    "SPX500": {
+      "edge": true,
+      "netValidateAvg": 1.39,
+      "n": 39
+    },
+    "GBPUSD": {
+      "edge": true,
+      "netValidateAvg": 1.38,
+      "n": 39
+    },
+    "EURUSD": {
+      "edge": true,
+      "netValidateAvg": 1.38,
+      "n": 39
+    },
+    "OIL": {
+      "edge": true,
+      "netValidateAvg": 0.88,
+      "n": 30
+    }
+  }
+}

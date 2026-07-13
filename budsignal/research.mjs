@@ -23,7 +23,15 @@ const FMP_KEY = process.env.FMP_API_KEY;
 if (!FMP_KEY && !DEMO) { console.error('FMP_API_KEY is required for research'); process.exit(1); }
 const YEARS = +(process.env.YEARS || 3);
 const REPORT_FILE = process.env.REPORT_FILE || 'research-report.md';
-const COST = 0.10; // assumed round-trip cost per trade (fees + slippage), in %
+// Round-trip cost per trade (fees + spread + slippage), in %, by market
+// class: crypto taker fees dominate; FX spreads are tight; ETFs tighter.
+const COSTS = {
+  BTC: 0.10, ETH: 0.10, SOL: 0.10, XRP: 0.10,
+  GOLD: 0.05, OIL: 0.05,
+  US30: 0.02, NAS100: 0.02, SPX500: 0.02,
+  GBPUSD: 0.03, EURUSD: 0.03,
+};
+const costOf = (asset) => COSTS[asset] ?? 0.05;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const day = (t) => new Date(t).toISOString().slice(0, 10);
 
@@ -42,7 +50,9 @@ async function fetchHistory(symbol, { interval = '4hour', years = YEARS, chunkDa
   return [...byT.values()].sort((a, b) => a.t - b.t);
 }
 
-const net = (moves) => moves.map((m) => m - COST);
+// rows are {m: movePct, c: cost}; gross ignores c, net subtracts it
+const gross = (rows) => rows.map((r) => r.m);
+const net = (rows) => rows.map((r) => r.m - r.c);
 
 function stats(moves) {
   if (!moves.length) return null;
@@ -148,23 +158,27 @@ async function main() {
       fundingFixed: { train: [], validate: [] },
       fundingTrail: { train: [], validate: [] },
     };
+    const perMarket = {}; // breakout+trailing per asset
     for (const [asset] of Object.entries(ASSETS)) {
       const candles = histories[asset];
       if (!candles || candles.length < 800) continue;
+      const c = costOf(asset);
       const ind = E.computeIndicators(candles);
       const splitT = candles[Math.floor(candles.length * 0.7)].t;
       const period = (s) => (s.t < splitT ? 'train' : 'validate');
+      perMarket[asset] = { train: [], validate: [] };
 
       // Donchian breakout
       for (const s of E.closedOf(E.computeBreakoutSignals(candles, ind))) {
-        alt.breakoutFixed[period(s)].push(s.movePct);
+        alt.breakoutFixed[period(s)].push({ m: s.movePct, c });
         const tr = E.trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
-        if (tr.closed) alt.breakoutTrail[period(s)].push(tr.movePct);
+        if (tr.closed) {
+          alt.breakoutTrail[period(s)].push({ m: tr.movePct, c });
+          perMarket[asset][period(s)].push({ m: tr.movePct, c });
+        }
       }
 
-      // Funding-extreme mean reversion (crypto with funding history only):
-      // crowd maximally long (>=90th pctl of trailing 30d fundings) -> short,
-      // maximally short (<=10th) -> long
+      // Funding-extreme mean reversion (crypto with funding history only)
       const rates = ctx?.funding?.[asset];
       if (rates && rates.length > 200) {
         let last = -Infinity;
@@ -184,15 +198,15 @@ async function main() {
           const dir = side === 'long' ? 1 : -1;
           const entry = candles[i].c;
           const out = E.scoreOutcome(candles, i, side, entry, entry - dir * 1.5 * a, entry + dir * 2 * a, a);
-          const s = { i, t: candles[i].t, side, entry };
-          if (out.outcome !== 'open') alt.fundingFixed[period(s)].push(out.movePct);
+          const sSig = { t: candles[i].t };
+          if (out.outcome !== 'open') alt.fundingFixed[period(sSig)].push({ m: out.movePct, c });
           const tr = E.trailingScore(candles, i, side, entry, a);
-          if (tr.closed) alt.fundingTrail[period(s)].push(tr.movePct);
+          if (tr.closed) alt.fundingTrail[period(sSig)].push({ m: tr.movePct, c });
         }
       }
     }
     const altVerdict = (key) => {
-      const tr = stats(alt[key].train), va = stats(alt[key].validate);
+      const tr = stats(gross(alt[key].train)), va = stats(gross(alt[key].validate));
       return tr && va && tr.avg > 0 && va.avg > 0 ? '✅ positive in BOTH periods' : '❌ no out-of-sample edge';
     };
     lines.push(
@@ -200,14 +214,66 @@ async function main() {
       '',
       '| Strategy | Train | Validate | Verdict |',
       '|---|---|---|---|',
-      `| Donchian-55 breakout, fixed exits | ${fmtStats(stats(alt.breakoutFixed.train))} | ${fmtStats(stats(alt.breakoutFixed.validate))} | ${altVerdict('breakoutFixed')} |`,
-      `| Donchian-55 breakout, trailing exits | ${fmtStats(stats(alt.breakoutTrail.train))} | ${fmtStats(stats(alt.breakoutTrail.validate))} | ${altVerdict('breakoutTrail')} |`,
-      `| Funding-extreme mean reversion, fixed | ${fmtStats(stats(alt.fundingFixed.train))} | ${fmtStats(stats(alt.fundingFixed.validate))} | ${altVerdict('fundingFixed')} |`,
-      `| Funding-extreme mean reversion, trailing | ${fmtStats(stats(alt.fundingTrail.train))} | ${fmtStats(stats(alt.fundingTrail.validate))} | ${altVerdict('fundingTrail')} |`,
-      `| **Breakout trailing, NET of ${COST.toFixed(2)}% costs** | ${fmtStats(stats(net(alt.breakoutTrail.train)))} | ${fmtStats(stats(net(alt.breakoutTrail.validate)))} | ${(() => { const tr = stats(net(alt.breakoutTrail.train)), va = stats(net(alt.breakoutTrail.validate)); return tr && va && tr.avg > 0 && va.avg > 0 ? '✅ survives costs' : '❌ costs eat the edge'; })()} |`,
+      `| Donchian-55 breakout, fixed exits | ${fmtStats(stats(gross(alt.breakoutFixed.train)))} | ${fmtStats(stats(gross(alt.breakoutFixed.validate)))} | ${altVerdict('breakoutFixed')} |`,
+      `| Donchian-55 breakout, trailing exits | ${fmtStats(stats(gross(alt.breakoutTrail.train)))} | ${fmtStats(stats(gross(alt.breakoutTrail.validate)))} | ${altVerdict('breakoutTrail')} |`,
+      `| Funding-extreme mean reversion, fixed | ${fmtStats(stats(gross(alt.fundingFixed.train)))} | ${fmtStats(stats(gross(alt.fundingFixed.validate)))} | ${altVerdict('fundingFixed')} |`,
+      `| Funding-extreme mean reversion, trailing | ${fmtStats(stats(gross(alt.fundingTrail.train)))} | ${fmtStats(stats(gross(alt.fundingTrail.validate)))} | ${altVerdict('fundingTrail')} |`,
+      `| **Breakout trailing, NET of per-market costs** | ${fmtStats(stats(net(alt.breakoutTrail.train)))} | ${fmtStats(stats(net(alt.breakoutTrail.validate)))} | ${(() => { const tr = stats(net(alt.breakoutTrail.train)), va = stats(net(alt.breakoutTrail.validate)); return tr && va && tr.avg > 0 && va.avg > 0 ? '✅ survives costs' : '❌ costs eat the edge'; })()} |`,
       '',
     );
-    console.log('alternative entry families evaluated');
+
+    // per-market breakout verdicts (the "does MY market work" table) + edge status file
+    const edgeStatus = { strategy: 'breakout-trailing', assets: {} };
+    lines.push(
+      '## Breakout + trailing, per market (net of that market\'s cost)',
+      '',
+      '| Market | Cost | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|---|',
+    );
+    for (const [asset, cfg] of Object.entries(ASSETS)) {
+      const pm = perMarket[asset];
+      if (!pm) continue;
+      const tr = stats(net(pm.train)), va = stats(net(pm.validate));
+      const edge = !!(tr && va && tr.avg > 0 && va.avg > 0);
+      edgeStatus.assets[asset] = {
+        edge,
+        netValidateAvg: va ? Math.round(va.avg * 100) / 100 : null,
+        n: (pm.train.length + pm.validate.length),
+      };
+      lines.push(`| ${cfg.pair} | ${costOf(asset).toFixed(2)}% | ${fmtStats(tr)} | ${fmtStats(va)} | ${edge ? '✅ net edge' : '❌ no net edge'} |`);
+    }
+    writeFileSync('edge-status.json', JSON.stringify(edgeStatus, null, 2));
+    lines.push('', 'Per-market edge status published to edge-status.json — alerts for ❌ markets carry an informational-only warning.', '');
+
+    // lookback grid — asset-class level (pooled vs non-crypto), predefined
+    // values only; per-single-market tuning is deliberately NOT done (overfitting)
+    lines.push(
+      '## Donchian lookback grid (breakout + trailing, net of costs)',
+      '',
+      '| Lookback | All markets: train | validate | Non-crypto only: train | validate |',
+      '|---|---|---|---|---|',
+    );
+    for (const L of [20, 55, 100]) {
+      const pool = { train: [], validate: [] }, nc = { train: [], validate: [] };
+      for (const [asset] of Object.entries(ASSETS)) {
+        const candles = histories[asset];
+        if (!candles || candles.length < 800) continue;
+        const c = costOf(asset);
+        const ind = E.computeIndicators(candles);
+        const splitT = candles[Math.floor(candles.length * 0.7)].t;
+        const isCrypto = ASSETS[asset].kind === 'crypto';
+        for (const s of E.closedOf(E.computeBreakoutSignals(candles, ind, { lookback: L }))) {
+          const tr = E.trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
+          if (!tr.closed) continue;
+          const p = s.t < splitT ? 'train' : 'validate';
+          pool[p].push({ m: tr.movePct, c });
+          if (!isCrypto) nc[p].push({ m: tr.movePct, c });
+        }
+      }
+      lines.push(`| ${L} | ${fmtStats(stats(net(pool.train)))} | ${fmtStats(stats(net(pool.validate)))} | ${fmtStats(stats(net(nc.train)))} | ${fmtStats(stats(net(nc.validate)))} |`);
+    }
+    lines.push('');
+    console.log('alternative entry families + per-market + grid evaluated');
   }
 
   // ---- Faster timeframe: the winning strategy on 1h candles (scalp feasibility) ----
@@ -222,27 +288,29 @@ async function main() {
       const ind = E.computeIndicators(candles);
       const splitT = candles[Math.floor(candles.length * 0.7)].t;
       const period = (s) => (s.t < splitT ? 'train' : 'validate');
+      const c = costOf(asset);
       for (const s of E.closedOf(E.computeBreakoutSignals(candles, ind))) {
-        fast.fixed[period(s)].push(s.movePct);
+        fast.fixed[period(s)].push({ m: s.movePct, c });
         const tr = E.trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
-        if (tr.closed) fast.trail[period(s)].push(tr.movePct);
+        if (tr.closed) fast.trail[period(s)].push({ m: tr.movePct, c });
       }
     }
     const fastVerdict = (rows) => {
       const tr = stats(net(rows.train)), va = stats(net(rows.validate));
       return tr && va && tr.avg > 0 && va.avg > 0 ? '✅ survives costs on 1h' : '❌ not viable net of costs';
     };
+    const g = gross;
     lines.push(
       '## Scalp feasibility: Donchian breakout on 1-hour candles',
       '',
       `Same strategy, 4× faster timeframe, ${fastMarkets} markets over up to 2 years. ` +
-      `The question is not accuracy — it is whether the per-trade move survives a realistic ${COST.toFixed(2)}% round-trip cost. ` +
+      `The question is not accuracy — it is whether the per-trade move survives realistic per-market round-trip costs. ` +
       'Faster timeframes shrink the move; costs stay constant.',
       '',
       '| Variant | Train (gross) | Validate (gross) | Train (net) | Validate (net) | Verdict |',
       '|---|---|---|---|---|---|',
-      `| 1h breakout, fixed exits | ${fmtStats(stats(fast.fixed.train))} | ${fmtStats(stats(fast.fixed.validate))} | ${fmtStats(stats(net(fast.fixed.train)))} | ${fmtStats(stats(net(fast.fixed.validate)))} | ${fastVerdict(fast.fixed)} |`,
-      `| 1h breakout, trailing exits | ${fmtStats(stats(fast.trail.train))} | ${fmtStats(stats(fast.trail.validate))} | ${fmtStats(stats(net(fast.trail.train)))} | ${fmtStats(stats(net(fast.trail.validate)))} | ${fastVerdict(fast.trail)} |`,
+      `| 1h breakout, fixed exits | ${fmtStats(stats(g(fast.fixed.train)))} | ${fmtStats(stats(g(fast.fixed.validate)))} | ${fmtStats(stats(net(fast.fixed.train)))} | ${fmtStats(stats(net(fast.fixed.validate)))} | ${fastVerdict(fast.fixed)} |`,
+      `| 1h breakout, trailing exits | ${fmtStats(stats(g(fast.trail.train)))} | ${fmtStats(stats(g(fast.trail.validate)))} | ${fmtStats(stats(net(fast.trail.train)))} | ${fmtStats(stats(net(fast.trail.validate)))} | ${fastVerdict(fast.trail)} |`,
       '',
     );
     console.log('1h scalp-feasibility evaluated');
