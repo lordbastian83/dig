@@ -1,12 +1,10 @@
-# This is a basic workflow that is manually triggered
+# Legacy dig chain binaries. Manual-only: the repo's active work is budsignal/hedgedesk,
+# and running this on every push produced a failure email per push (deprecated actions).
+# Trigger from the Actions tab when you actually need binaries.
 
 name: compile dig
 
-# Controls when the action will run. Workflow runs when manually triggered using the UI
-# or API.
-on: [push, pull_request, workflow_dispatch]
-
-# This workflow makes x86_64 binaries for mac, windows, and linux.
+on: [workflow_dispatch]
 
 jobs:
   build:
@@ -20,32 +18,30 @@ jobs:
             arch: amd64
     name: dig ${{ matrix.arch }} for ${{ matrix.targetos }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2.1.3
-        with: 
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
           go-version: '^1.17'
+
+      - name: Compile dig
         env:
           GOOS: ${{ matrix.targetos }}
           GOARCH: ${{ matrix.arch }}
-
-      - name: Compile dig
         run: |
           go mod download
           cd cmd/digd
           go build .
-          go install .
 
       - name: Compile airdrop
+        env:
+          GOOS: ${{ matrix.targetos }}
+          GOARCH: ${{ matrix.arch }}
         run: |
           cd airdrop
           go mod download
           go build .
-          go install .
-        
-          
-          
-# now uploads genesis.json and bin
-      - uses: actions/upload-artifact@v2
+
+      - uses: actions/upload-artifact@v4
         with:
           name: digd ${{ matrix.targetos }} ${{ matrix.arch }}
           path: cmd/digd
