@@ -4,11 +4,11 @@
 
 export const CANDLE_LIMIT = 1000;
 
+// ETH / SOL / XRP were removed by owner request (BTC is the only crypto kept)
+// — note ETH and XRP had validated breakout edges; re-adding them is one line
+// here and one in app.js.
 export const ASSETS = {
   BTC:    { kind: 'crypto', pair: 'BTC / USD',        binance: 'BTCUSDT',  kraken: 'XBTUSD', fmp: 'BTCUSD' },
-  ETH:    { kind: 'crypto', pair: 'ETH / USD',        binance: 'ETHUSDT',  kraken: 'ETHUSD', fmp: 'ETHUSD' },
-  SOL:    { kind: 'crypto', pair: 'SOL / USD',        binance: 'SOLUSDT',  kraken: 'SOLUSD', fmp: 'SOLUSD' },
-  XRP:    { kind: 'crypto', pair: 'XRP / USD',        binance: 'XRPUSDT',  kraken: 'XRPUSD', fmp: 'XRPUSD' },
   GOLD:   { kind: 'market', pair: 'XAU / USD · Gold',   fmp: 'XAUUSD' },
   US30:   { kind: 'market', pair: 'US30 · Dow (DIA proxy)',   fmp: 'DIA' },
   NAS100: { kind: 'market', pair: 'NAS100 · Nasdaq (QQQ proxy)', fmp: 'QQQ' },

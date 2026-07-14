@@ -79,6 +79,7 @@ async function main() {
         enrichSignal(asset, s, ctx);
         const rec = {
           asset, t: s.t, side: s.side, strategy: s.strategy || 'cross',
+          ...(s.early ? { early: true } : {}),
           entry: s.entry, stop: s.stop, target: s.target,
           confidence: s.confidence, adx: s.adx, rsi: s.rsiAt, volConfirm: s.volConfirm,
           fundRate: s.fundRate ?? null, fundPctl: s.fundPctl ?? null, fng: s.fng ?? null,

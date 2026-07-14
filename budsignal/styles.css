@@ -431,6 +431,13 @@ a { color: var(--text-primary); }
 
 .table-empty { text-align: center; color: var(--text-muted); padding: 28px !important; }
 
+.radar-dist { color: var(--text-muted); font-size: 12.5px; }
+.radar-hot {
+  color: var(--ema50); font-weight: 700; font-size: 12.5px;
+  background: rgba(201, 133, 0, 0.12);
+  padding: 2px 8px; border-radius: 999px;
+}
+
 /* ---------- performance ---------- */
 
 .perf-table { margin-bottom: 16px; }
