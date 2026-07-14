@@ -508,21 +508,36 @@
   // value instead of lots.
   const LOT_SIZES = { GBPUSD: 100000, EURUSD: 100000, GOLD: 100, OIL: 1000 };
 
+  // Edge-weighted risk: streams with a stronger validated edge get more of
+  // the base risk, thinner ones get less. Ratios follow the walk-forward
+  // net-validate averages (swing-55 +1.5%/trade · breakout +0.3 · early
+  // swing +0.5 · scalp +0.2) and every resulting size sits far below the
+  // Kelly-optimal fraction for its stream — this reallocates risk, it does
+  // not add any.
+  const STREAM_RISK = { swing: 1.25, swingEarly: 0.75, breakout: 1.0, scalp: 0.5 };
+
+  function riskMultiplier(sig) {
+    if (!sig || !sig.strategy || sig.strategy === 'cross') return 1;
+    if (sig.strategy === 'swing') return sig.early ? STREAM_RISK.swingEarly : STREAM_RISK.swing;
+    return STREAM_RISK[sig.strategy] ?? 1;
+  }
+
   // Turn a signal into an account-sized order: risk a fixed fraction of
-  // equity, with the position sized so that being stopped out loses exactly
-  // that amount. Every instrument here is USD-quoted, so a GBP account
-  // converts its risk at the cable rate (a live rate if the caller has one,
-  // otherwise a flagged approximation).
+  // equity (scaled by the stream's edge weight), with the position sized so
+  // that being stopped out loses exactly that amount. Every instrument here
+  // is USD-quoted, so a GBP account converts its risk at the cable rate (a
+  // live rate if the caller has one, otherwise a flagged approximation).
   function tradePlan(asset, sig, { accountGbp, riskPct = 1, gbpUsd = null } = {}) {
     const stopDist = Math.abs(sig.entry - sig.stop);
     if (!stopDist || !(accountGbp > 0) || !(riskPct > 0)) return null;
     const rate = gbpUsd || 1.3;
-    const riskGbp = (accountGbp * riskPct) / 100;
+    const riskPctEff = riskPct * riskMultiplier(sig);
+    const riskGbp = (accountGbp * riskPctEff) / 100;
     const riskUsd = riskGbp * rate;
     const units = riskUsd / stopDist;
     const lotSize = LOT_SIZES[asset] || null;
     return {
-      riskGbp, riskUsd, rate, rateApprox: gbpUsd == null,
+      riskGbp, riskUsd, riskPctEff, rate, rateApprox: gbpUsd == null,
       stopDist, stopPct: (stopDist / sig.entry) * 100,
       units, notionalUsd: units * sig.entry,
       lotSize, lots: lotSize ? units / lotSize : null,
@@ -549,6 +564,6 @@
     closedPrefix, closedOf, favorableRate,
     trailingScore, trailingComparison,
     mlFeatures, mlScore, mlTrain,
-    tradePlan,
+    tradePlan, riskMultiplier,
   };
 })();

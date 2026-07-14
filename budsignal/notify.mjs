@@ -209,7 +209,7 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
       : INDEX_PROXIES.includes(asset)
         ? `position value ≈ $${Math.round(plan.notionalUsd).toLocaleString('en-US')} (ETF-proxy feed — size by value)`
         : `${plan.units.toFixed(plan.units < 1 ? 4 : 2)} units ≈ $${Math.round(plan.notionalUsd).toLocaleString('en-US')}`;
-    lines.push(`💷 Plan: risk £${plan.riskGbp.toFixed(0)} (${RISK_PCT}% of £${ACCOUNT_GBP.toLocaleString('en-US')}) → ${size}${plan.rateApprox ? ' · approx £→$' : ''}`);
+    lines.push(`💷 Plan: risk £${plan.riskGbp.toFixed(0)} (${plan.riskPctEff}% of £${ACCOUNT_GBP.toLocaleString('en-US')}${plan.riskPctEff !== RISK_PCT ? ', edge-weighted' : ''}) → ${size}${plan.rateApprox ? ' · approx £→$' : ''}`);
     lines.push(trail
       ? `Close: raise stop to 2×ATR ${sig.side === 'long' ? 'below the highest' : 'above the lowest'} close after every ${scalp ? '1h' : swing ? 'daily' : '4h'} candle; hard exit after ${maxHold}`
       : `Close: at target or stop; stop to entry once 1×ATR in profit; time-exit after 24h`);
