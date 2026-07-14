@@ -746,7 +746,7 @@
     body.innerHTML = `
       ${verdict}
       <div class="plan-grid">
-        <div><span class="lvl-label">Risk</span><span class="lvl-value">£${fmtUsd(plan.riskGbp)} = ${riskPct()}% of £${fmtUsd(acctGbp())} (≈ $${fmtUsd(plan.riskUsd)})</span></div>
+        <div><span class="lvl-label">Risk</span><span class="lvl-value">£${fmtUsd(plan.riskGbp)} = ${plan.riskPctEff}% of £${fmtUsd(acctGbp())}${plan.riskPctEff !== riskPct() ? ` (edge-weighted from your ${riskPct()}% base)` : ''} ≈ $${fmtUsd(plan.riskUsd)}</span></div>
         <div><span class="lvl-label">Size</span><span class="lvl-value">${sizeLine}</span></div>
         <div><span class="lvl-label">Stop distance</span><span class="lvl-value">${plan.stopPct.toFixed(2)}% from entry — sized so a stop-out costs £${fmtUsd(plan.riskGbp)}</span></div>
       </div>
@@ -880,8 +880,9 @@
   }
 
   // Paper account: starts at the user's own account size (default £3,500),
-  // 1% of equity risked per trade (position sized to the stop distance),
-  // compounded chronologically, net of per-market costs.
+  // risking the same edge-weighted fraction per trade the trade plan uses
+  // (position sized to the stop distance), compounded chronologically, net
+  // of per-market costs.
   const PAPER_COSTS = { BTC: 0.10, ETH: 0.10, SOL: 0.10, XRP: 0.10, GOLD: 0.05, OIL: 0.05, US30: 0.02, NAS100: 0.02, SPX500: 0.02, GBPUSD: 0.03, EURUSD: 0.03 };
   function renderPaperAccount(recs) {
     const start = acctGbp();
@@ -893,7 +894,7 @@
       if (!stopPct) continue;
       const netMove = r.movePct - (PAPER_COSTS[r.asset] ?? 0.05);
       const R = netMove / stopPct;           // outcome in risk units
-      const pnl = equity * 0.01 * R;         // 1% of equity at risk per trade
+      const pnl = equity * 0.01 * E.riskMultiplier(r) * R; // 1% base, edge-weighted per stream
       equity += pnl;
       peak = Math.max(peak, equity);
       maxDD = Math.max(maxDD, (peak - equity) / peak * 100);

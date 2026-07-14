@@ -279,6 +279,51 @@ async function main() {
     console.log('alternative entry families + per-market + grid evaluated');
   }
 
+  // ---- Candidate markets: breadth is the honest profit lever ----
+  // Trend-following returns scale with the number of independent validated
+  // markets far more than with per-market tweaks. Candidates are tested with
+  // the exact live rule set (Donchian-55 + trailing, net of a realistic
+  // per-market cost) and earn a place only by passing both periods.
+  {
+    const CANDIDATES = {
+      SILVER: { fmp: 'XAGUSD', pair: 'XAG / USD · Silver', cost: 0.05 },
+      USDJPY: { fmp: 'USDJPY', pair: 'USD / JPY', cost: 0.03 },
+      AUDUSD: { fmp: 'AUDUSD', pair: 'AUD / USD', cost: 0.03 },
+      USDCAD: { fmp: 'USDCAD', pair: 'USD / CAD', cost: 0.03 },
+      EURGBP: { fmp: 'EURGBP', pair: 'EUR / GBP', cost: 0.03 },
+      NATGAS: { fmp: 'NGUSD', pair: 'Natural Gas', cost: 0.08 },
+    };
+    lines.push(
+      '## Candidate markets (4h breakout + trailing, net of own cost)',
+      '',
+      'New markets audition with the exact live rule set — a candidate is added to the app only if net-positive in both periods.',
+      '',
+      '| Candidate | Cost | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|---|',
+    );
+    for (const [key, cfg] of Object.entries(CANDIDATES)) {
+      console.log(`fetching candidate ${key} (${cfg.fmp})...`);
+      const candles = DEMO ? demoCandles(100, key.length * 13 + 5) : await fetchHistory(cfg.fmp);
+      if (candles.length < 800) {
+        lines.push(`| ${cfg.pair} | ${cfg.cost.toFixed(2)}% | insufficient history (${candles.length} candles) | — | ⚠️ no data |`);
+        continue;
+      }
+      const ind = E.computeIndicators(candles);
+      const splitT = candles[Math.floor(candles.length * 0.7)].t;
+      const pool = { train: [], validate: [] };
+      for (const s of E.closedOf(E.computeBreakoutSignals(candles, ind))) {
+        const tr = E.trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
+        if (!tr.closed) continue;
+        pool[s.t < splitT ? 'train' : 'validate'].push({ m: tr.movePct, c: cfg.cost });
+      }
+      const tr = stats(net(pool.train)), va = stats(net(pool.validate));
+      const pass = !!(tr && va && va.n >= 15 && tr.avg > 0 && va.avg > 0);
+      lines.push(`| ${cfg.pair} | ${cfg.cost.toFixed(2)}% | ${fmtStats(tr)} | ${fmtStats(va)} | ${pass ? '✅ net edge — add' : '❌ no net edge'} |`);
+    }
+    lines.push('');
+    console.log('candidate markets evaluated');
+  }
+
   // ---- Faster timeframe: the winning strategy on 1h candles (scalp feasibility) ----
   // Plus the "scalp rescue" filters: the honest question isn't whether raw 1h
   // trading works (it doesn't — costs eat it) but whether any defensible
