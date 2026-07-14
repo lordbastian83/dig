@@ -156,15 +156,26 @@ async function composeHeartbeat() {
       const trendOk = dir === 'long' ? closed[i].c > ind.emaTrend[i] : closed[i].c < ind.emaTrend[i];
       if (!trendOk) blockers.push('wrong side of 200-EMA');
     }
-    near.push({ asset, gapAtr, dir, blockers });
+    // breakout radar: distance to the Donchian trigger on 4h and daily
+    const r4 = E.breakoutRadar(closed);
+    const daily = E.toDailyCandles(closed);
+    while (daily.length && daily[daily.length - 1].t + E.SWING.CANDLE_MS > Date.now()) daily.pop();
+    const rd = daily.length > 56 ? E.breakoutRadar(daily) : null;
+    const nearer = (r) => (r ? (r.upPct <= r.downPct ? { side: '▲', pct: r.upPct } : { side: '▼', pct: r.downPct }) : null);
+    near.push({ asset, gapAtr, dir, blockers, bo4: nearer(r4), boD: nearer(rd) });
   }
   near.sort((a, b) => a.gapAtr - b.gapAtr);
   const top = near.slice(0, 3).map((n) =>
     `${n.asset}: ${n.dir === 'long' ? '▲' : '▼'} cross ${n.gapAtr.toFixed(1)} ATR away${n.blockers.length ? ` · ${n.blockers.join(' · ')}` : ' · gates clear'}`);
+  const boTop = near.filter((n) => n.bo4)
+    .sort((a, b) => a.bo4.pct - b.bo4.pct).slice(0, 3)
+    .map((n) => `${n.asset}: ${n.bo4.side} 4h breakout ${n.bo4.pct.toFixed(1)}% away${n.boD ? ` · daily ${n.boD.side} ${n.boD.pct.toFixed(1)}%` : ''}`);
   const text = [
     `🫀 <b>Daily check</b> — ${scanned} markets scanned, ${fired ? `${fired} signal(s) fired in the last 24h` : 'no setups today'}.`,
-    top.length ? 'Closest to firing:' : '',
+    top.length ? 'Closest to a cross:' : '',
     ...top,
+    boTop.length ? 'Closest to a breakout:' : '',
+    ...boTop,
   ].filter(Boolean).join('\n');
   return { text, data: { scanned, firedLast24h: fired, markets: near } };
 }
@@ -179,7 +190,7 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
   const scalp = sig.strategy === 'scalp';
   const swing = sig.strategy === 'swing';
   const trail = bk || scalp || swing;
-  const arrow = `${sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT'}${bk ? ' BREAKOUT' : scalp ? ' SCALP (1h)' : swing ? ' SWING (daily)' : ''}`;
+  const arrow = `${sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT'}${bk ? ' BREAKOUT' : scalp ? ' SCALP (1h)' : swing ? (sig.early ? ' EARLY SWING (daily-20)' : ' SWING (daily)') : ''}`;
   const windowEnd = fmtTime(sig.t + (sig.candleMs || E.CFG.CANDLE_MS));
   const maxHold = scalp ? '18 hours' : swing ? '18 days' : '3 days';
   const lines = [
@@ -206,7 +217,9 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
   lines.push(scalp
     ? `✅ Qualifies for real money — validated filtered scalp stream (thin edge: ~+0.2%/trade net over 100 validation trades; the session/volatility/market filters are what make it work)`
     : swing
-      ? `✅ Qualifies for real money — the strongest validated stream (+1.5%/trade net in validation, PF 1.9, pooled across markets)`
+      ? (sig.early
+        ? `✅ Qualifies for real money — validated early-swing variant (+0.5%/trade net in validation, PF 1.25 — thinner edge than the main daily-55 stream, size accordingly)`
+        : `✅ Qualifies for real money — the strongest validated stream (+1.5%/trade net in validation, PF 1.9, pooled across markets)`)
       : bk && edge === true
         ? `✅ Qualifies for real money — this market kept a net edge out-of-sample`
         : `❌ <i>Paper only — ${bk ? 'this market showed no net edge in walk-forward validation' : 'the cross stream has never passed walk-forward validation'}. Watch, don't fund.</i>`);
@@ -389,7 +402,7 @@ async function main() {
   };
 
   // Hourly scalp check: only the validated filtered 1h stream (Donchian
-  // breakout on ETH/XRP/GOLD/NAS100 in session hours with above-average
+  // breakout on the validated scalp markets in session hours with above-average
   // volatility — the filters live in engine.computeScalpStream). Runs on its
   // own hourly cron so the 1-hour entry window is actually catchable; keeps
   // separate dedupe state so the 4h run never drops its pendings.

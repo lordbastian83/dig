@@ -311,7 +311,9 @@
   // (~+0.2%/trade net, PF 1.3 over 100 validation trades), so the filters
   // are load-bearing: loosening any of them is what the research shows fails.
   const SCALP = {
-    ASSETS: ['ETH', 'XRP', 'GOLD', 'NAS100'],
+    // ETH and XRP also validated, but crypto beyond BTC was removed from the
+    // app by owner request — the scalp stream runs on the remaining two.
+    ASSETS: ['GOLD', 'NAS100'],
     HOUR_FROM: 7, HOUR_TO: 16, // UTC entry window (07:00–15:59)
     VOL_WINDOW: 200,           // trailing ATR% average for the volatility gate
     CANDLE_MS: 3600000,        // 1h candles
@@ -358,7 +360,7 @@
   // (Donchian-55 on daily candles + trailing exit: validate +1.5%/trade net,
   // PF 1.9, pooled across markets). Daily candles are aggregated from the 4h
   // feed, so no extra data source is needed.
-  const SWING = { LOOKBACK: 55, CANDLE_MS: 86400000 };
+  const SWING = { LOOKBACK: 55, EARLY_LOOKBACK: 20, CANDLE_MS: 86400000 };
 
   function toDailyCandles(candles) {
     const by = new Map();
@@ -377,8 +379,7 @@
     while (daily.length && daily[daily.length - 1].t + SWING.CANDLE_MS > now) daily.pop();
     if (daily.length < SWING.LOOKBACK + 20) return [];
     const ind = computeIndicators(daily);
-    const out = [];
-    for (const s of computeBreakoutSignals(daily, ind, { lookback: SWING.LOOKBACK })) {
+    const score = (s) => {
       const dir = s.side === 'long' ? 1 : -1;
       const tr = trailingScore(daily, s.i, s.side, s.entry, ind.atr[s.i]);
       s.strategy = 'swing';
@@ -392,9 +393,32 @@
         s.outcome = 'open'; s.exit = null;
         s.movePct = (dir * (last.c - s.entry) / s.entry) * 100;
       }
-      out.push(s);
+      return s;
+    };
+    const main = computeBreakoutSignals(daily, ind, { lookback: SWING.LOOKBACK }).map(score);
+    // Early variant: Donchian-20 also passed validation (+0.5%/trade net,
+    // PF 1.25) with ~2-3x the frequency, but a thinner per-trade edge. An
+    // early signal is suppressed when a main-55 signal fired the same side
+    // within the cooldown BEFORE it (never by later signals — filtering on
+    // the future would repaint history).
+    const early = computeBreakoutSignals(daily, ind, { lookback: SWING.EARLY_LOOKBACK })
+      .filter((e) => !main.some((m) => m.side === e.side && m.i <= e.i && e.i - m.i <= 10))
+      .map((e) => { e.early = true; return score(e); });
+    return [...main, ...early].sort((a, b) => a.t - b.t);
+  }
+
+  // How far the market is from triggering a breakout on the NEXT candle:
+  // the Donchian band over the trailing `lookback` closed candles and the
+  // distance from the last close to each side, in percent.
+  function breakoutRadar(candles, { lookback = 55 } = {}) {
+    if (candles.length < lookback + 1) return null;
+    let h = -Infinity, l = Infinity;
+    for (let j = candles.length - lookback; j < candles.length; j++) {
+      if (candles[j].h > h) h = candles[j].h;
+      if (candles[j].l < l) l = candles[j].l;
     }
-    return out;
+    const c = candles[candles.length - 1].c;
+    return { up: h, down: l, upPct: ((h - c) / c) * 100, downPct: ((c - l) / c) * 100 };
   }
 
   // Aggregate fixed-vs-trailing comparison over an existing signal list.
@@ -521,7 +545,7 @@
 
   globalThis.BudSignalEngine = {
     CFG, SCALP, SWING, ema, rsi, atr, adx, sma,
-    computeIndicators, computeSignals, computeBreakoutSignals, computeBreakoutStream, computeScalpStream, computeSwingStream, toDailyCandles, scoreOutcome,
+    computeIndicators, computeSignals, computeBreakoutSignals, computeBreakoutStream, computeScalpStream, computeSwingStream, toDailyCandles, breakoutRadar, scoreOutcome,
     closedPrefix, closedOf, favorableRate,
     trailingScore, trailingComparison,
     mlFeatures, mlScore, mlTrain,

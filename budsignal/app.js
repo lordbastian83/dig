@@ -12,11 +12,9 @@
 
   // kind 'crypto' loads keyless from Binance/Coinbase; kind 'market' (metals,
   // indices, FX) loads from FMP or Twelve Data with the user's own API key.
+  // ETH / SOL / XRP removed by owner request (BTC is the only crypto kept).
   const ASSETS = {
     BTC:    { kind: 'crypto', tab: 'BTC',     pair: 'BTC / USD',        binance: 'BTCUSDT',  kraken: 'XBTUSD', fmp: 'BTCUSD', demoPrice: 64000, demoSeed: 42 },
-    ETH:    { kind: 'crypto', tab: 'ETH',     pair: 'ETH / USD',        binance: 'ETHUSDT',  kraken: 'ETHUSD', fmp: 'ETHUSD', demoPrice: 3400,  demoSeed: 7 },
-    SOL:    { kind: 'crypto', tab: 'SOL',     pair: 'SOL / USD',        binance: 'SOLUSDT',  kraken: 'SOLUSD', fmp: 'SOLUSD', demoPrice: 150,   demoSeed: 19 },
-    XRP:    { kind: 'crypto', tab: 'XRP',     pair: 'XRP / USD',        binance: 'XRPUSDT',  kraken: 'XRPUSD', fmp: 'XRPUSD', demoPrice: 2.2,   demoSeed: 3 },
     GOLD:   { kind: 'market', tab: 'GOLD',    pair: 'XAU / USD · Gold',   fmp: 'XAUUSD', td: 'XAU/USD', demoPrice: 2700,  demoSeed: 5 },
     US30:   { kind: 'market', tab: 'US30',    pair: 'US30 · Dow (DIA proxy)',   fmp: 'DIA',   td: 'DJI',     demoPrice: 44000, demoSeed: 13 },
     NAS100: { kind: 'market', tab: 'NAS100',  pair: 'NAS100 · Nasdaq (QQQ proxy)', fmp: 'QQQ',  td: 'NDX',     demoPrice: 21000, demoSeed: 31 },
@@ -643,10 +641,10 @@
     if (active.length) {
       const s = active[active.length - 1];
       badge.className = `signal-badge ${s.side}`;
-      badge.textContent = `${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}${s.strategy === 'breakout' ? ' · BREAKOUT' : s.strategy === 'swing' ? ' · SWING (DAILY)' : ''}`;
+      badge.textContent = `${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}${s.strategy === 'breakout' ? ' · BREAKOUT' : s.strategy === 'swing' ? (s.early ? ' · EARLY SWING (DAILY-20)' : ' · SWING (DAILY)') : ''}`;
       $('signal-when').textContent = `${currentAsset} · fired ${fmtTime(s.t)} UTC`;
       copy.textContent = s.strategy === 'swing'
-        ? `Price closed ${s.side === 'long' ? 'above its 55-day high' : 'below its 55-day low'} on the daily chart — the strongest validated stream. Exit is a 2×ATR trailing stop evaluated on daily closes (max 18 days). The entry window is one daily candle.`
+        ? `Price closed ${s.side === 'long' ? `above its ${s.early ? '20' : '55'}-day high` : `below its ${s.early ? '20' : '55'}-day low`} on the daily chart — ${s.early ? 'the validated early-swing variant (thinner edge than the main daily-55 stream)' : 'the strongest validated stream'}. Exit is a 2×ATR trailing stop evaluated on daily closes (max 18 days). The entry window is one daily candle.`
         : s.strategy === 'breakout'
         ? (s.side === 'long'
           ? 'Price closed above its 55-candle high — a momentum breakout. Exit is a 2×ATR trailing stop rather than a fixed target: winners run, losers are cut. The entry window is one 4-hour candle.'
@@ -727,7 +725,9 @@
     const swing = s.strategy === 'swing';
     const es = edgeStatus?.assets?.[currentAsset];
     const verdict = swing
-      ? '<p class="plan-verdict ok">✅ Qualifies for real money — the daily swing stream is the strongest validated edge (+1.5%/trade net in validation, PF 1.9).</p>'
+      ? (s.early
+        ? '<p class="plan-verdict ok">✅ Qualifies for real money — validated early-swing variant (+0.5%/trade net in validation, PF 1.25 — thinner edge than the main daily-55 stream).</p>'
+        : '<p class="plan-verdict ok">✅ Qualifies for real money — the daily swing stream is the strongest validated edge (+1.5%/trade net in validation, PF 1.9).</p>')
       : bk && es?.edge === true
       ? '<p class="plan-verdict ok">✅ Qualifies for real money — breakout signal on a market that kept a net edge out-of-sample.</p>'
       : bk
@@ -751,6 +751,44 @@
         <div><span class="lvl-label">Stop distance</span><span class="lvl-value">${plan.stopPct.toFixed(2)}% from entry — sized so a stop-out costs £${fmtUsd(plan.riskGbp)}</span></div>
       </div>
       <p class="plan-note">${closeRule}${plan.rateApprox ? ' · £→$ conversion is approximate (add a data key to load live cable)' : ''}</p>`;
+  }
+
+  /* ---------------- breakout radar ---------------- */
+
+  // Distance from every market to its next Donchian trigger, 4h and daily.
+  // Fetches all markets, so it refreshes on load / manual refresh / a slow
+  // 30-minute interval — not the 5-minute chart cycle — to stay inside
+  // data-provider rate limits.
+  async function renderRadar() {
+    const body = $('radar-body');
+    if (!body) return;
+    const rows = await Promise.all(Object.keys(ASSETS).map(async (a) => {
+      try {
+        const { source, candles } = await fetchCandles(a);
+        const closed = E.closedPrefix(candles, Date.now());
+        if (closed.length < 60) return null;
+        const r4 = E.breakoutRadar(closed);
+        const daily = E.toDailyCandles(closed);
+        while (daily.length && daily[daily.length - 1].t + E.SWING.CANDLE_MS > Date.now()) daily.pop();
+        const rd = daily.length > 56 ? E.breakoutRadar(daily) : null;
+        return { a, demo: /demo/i.test(source), price: closed[closed.length - 1].c, r4, rd };
+      } catch (e) { return null; }
+    }));
+    const nearer = (r) => (r ? (r.upPct <= r.downPct
+      ? { side: '▲', cls: 'move-pos', level: r.up, pct: r.upPct }
+      : { side: '▼', cls: 'move-neg', level: r.down, pct: r.downPct }) : null);
+    const cell = (n) => n
+      ? `<span class="${n.cls}">${n.side}</span> $${fmtPrice(n.level)} <span class="${n.pct < 1 ? 'radar-hot' : 'radar-dist'}">${n.pct.toFixed(1)}% away</span>`
+      : '—';
+    const list = rows.filter(Boolean)
+      .map((r) => ({ ...r, n4: nearer(r.r4), nd: nearer(r.rd) }))
+      .sort((x, y) => (x.n4?.pct ?? 99) - (y.n4?.pct ?? 99));
+    body.innerHTML = list.map((r) => `<tr>
+      <td>${ASSETS[r.a].pair}${r.demo ? ' <span class="radar-dist">(demo)</span>' : ''}</td>
+      <td class="num">$${fmtPrice(r.price)}</td>
+      <td>${cell(r.n4)}</td>
+      <td>${cell(r.nd)}</td>
+    </tr>`).join('') || '<tr><td colspan="4" class="table-empty">No market data available.</td></tr>';
   }
 
   function renderTrackRecord(signals, baseline, candles, ind, breakout) {
@@ -786,7 +824,7 @@
       const moveCls = s.movePct >= 0 ? 'move-pos' : 'move-neg';
       return `<tr>
         <td>${fmtTime(s.t)}</td>
-        <td>${s.strategy === 'breakout' ? '◆ Breakout' : s.strategy === 'swing' ? '🌊 Swing (daily)' : s.strategy === 'scalp' ? '⚡ Scalp (1h)' : 'Cross'}</td>
+        <td>${s.strategy === 'breakout' ? '◆ Breakout' : s.strategy === 'swing' ? (s.early ? '🌊 Early swing (20d)' : '🌊 Swing (daily)') : s.strategy === 'scalp' ? '⚡ Scalp (1h)' : 'Cross'}</td>
         <td><span class="side-badge ${s.side}">${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}</span></td>
         <td class="num">$${fmtPrice(s.entry)}</td>
         <td class="num">${s.exit != null ? '$' + fmtPrice(s.exit) : '—'}</td>
@@ -928,7 +966,8 @@
     const segments = [
       ['Cross entries', (r) => !r.strategy || r.strategy === 'cross'],
       ['◆ Breakout entries', (r) => r.strategy === 'breakout'],
-      ['🌊 Swing entries (daily)', (r) => r.strategy === 'swing'],
+      ['🌊 Swing entries (daily-55)', (r) => r.strategy === 'swing' && !r.early],
+      ['🌊 Early swing (daily-20)', (r) => r.strategy === 'swing' && r.early === true],
       ['⚡ Scalp entries (1h)', (r) => r.strategy === 'scalp'],
       ['▲ Longs', (r) => r.side === 'long'],
       ['▼ Shorts', (r) => r.side === 'short'],
@@ -1011,11 +1050,11 @@
   $('acct-size').addEventListener('input', onAcctChange);
   $('acct-risk').addEventListener('input', onAcctChange);
 
-  // Manual refresh: re-pull prices, signals, and the ledger on demand.
+  // Manual refresh: re-pull prices, signals, radar, and the ledger on demand.
   $('refresh-btn').addEventListener('click', async () => {
     const btn = $('refresh-btn');
     btn.classList.add('spinning');
-    try { await Promise.allSettled([refresh(), loadPerformance()]); }
+    try { await Promise.allSettled([refresh(), loadPerformance(), renderRadar()]); }
     finally { btn.classList.remove('spinning'); }
   });
 
@@ -1024,7 +1063,9 @@
   loadEdgeStatus().then(renderTradePlan);
   loadGbpUsd().then(renderTradePlan);
   loadPerformance();
+  renderRadar();
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
   setInterval(loadPerformance, 30 * 60 * 1000); // ledger updates every 4h
+  setInterval(renderRadar, 30 * 60 * 1000); // radar sweeps all markets — keep it slow
   setInterval(renderCountdown, 30 * 1000);
 })();

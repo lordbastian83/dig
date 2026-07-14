@@ -24,6 +24,7 @@
   <button class="refresh-btn" id="refresh-btn" type="button" title="Refresh prices and signals" aria-label="Refresh data">↻</button>
   <nav class="site-nav">
     <a href="#dashboard">Dashboard</a>
+    <a href="#radar">Radar</a>
     <a href="#signal">Current signal</a>
     <a href="#methodology">How it works</a>
     <a href="#track-record">Track record</a>
@@ -123,6 +124,18 @@
     </div>
   </section>
 
+  <!-- ============ Breakout radar ============ -->
+  <section id="radar" class="section">
+    <h2>Breakout radar</h2>
+    <p class="section-sub">Quiet days still tell you something: how far each market sits from triggering its next breakout signal. Distances are from the last closed candle to the Donchian band — under 1% means a single decent candle could fire it.</p>
+    <div class="table-wrap">
+      <table class="record-table radar-table">
+        <thead><tr><th>Market</th><th class="num">Price</th><th>◆ 4h trigger</th><th>🌊 Daily trigger</th></tr></thead>
+        <tbody id="radar-body"><tr><td colspan="4" class="table-empty">Scanning markets…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- ============ Current signal ============ -->
   <section id="signal" class="section">
     <h2>Current signal</h2>
@@ -155,7 +168,7 @@
         <h4>When several markets fire at once</h4>
         <ul>
           <li><strong>Only validated streams qualify for real money:</strong> 🌊 daily swing signals (strongest edge), ◆ 4h breakouts on ✅ markets, and ⚡ 1h scalps (thin edge — Telegram only). Everything else (the cross stream, breakouts on ❌ markets) is paper/informational — the walk-forward research says it doesn't pay after costs.</li>
-          <li><strong>Cap total open risk at 3% of the account</strong> — at most 3 positions open at once at 1% each, and no more than 2 of them in crypto (crypto moves together, so two crypto trades are closer to one double-sized trade).</li>
+          <li><strong>Cap total open risk at 3% of the account</strong> — at most 3 positions open at once at 1% each. NAS100 and SPX500 (and often US30) move together: treat two US-index positions as closer to one double-sized trade.</li>
           <li><strong>If more than 3 qualify, take the markets with the strongest validated edge first</strong> (per the research report's per-market table) and skip the rest. Never respond to more signals by shrinking stops or doubling risk.</li>
           <li><strong>One position per market.</strong> A new signal on a market you're already in changes nothing — manage the open trade by its own exit rules.</li>
         </ul>
@@ -192,11 +205,11 @@
       </div>
       <div class="method-card">
         <h3><span class="step-num">🌊</span>Swing stream (daily)</h3>
-        <p>The same Donchian-55 breakout on <em>daily</em> candles, trailing 2×ATR on daily closes (max 18 days). The strongest edge the walk-forward found: +1.5% per trade net of costs in validation, profit factor 1.9. Fewer, bigger trades — cost drag shrinks as the timeframe grows.</p>
+        <p>The same Donchian breakout on <em>daily</em> candles, trailing 2×ATR on daily closes (max 18 days). The 55-day variant is the strongest edge the walk-forward found (+1.5%/trade net in validation, PF 1.9); a validated 20-day "early swing" variant fires more often with a thinner edge (+0.5%/trade, PF 1.25) and is labelled separately. Fewer, bigger trades — cost drag shrinks as the timeframe grows.</p>
       </div>
       <div class="method-card">
         <h3><span class="step-num">⚡</span>Scalp stream (1h)</h3>
-        <p>Donchian breakout on 1-hour candles, alert-only via Telegram (checked hourly). Raw 1h trading fails after costs — this stream only fires during London/NY hours, in above-average volatility, on ETH, XRP, Gold and NAS100. That filtered combination was net-positive in both walk-forward periods (+0.22%/trade, 100 validation trades). The edge is thin: the filters are mandatory, not decoration.</p>
+        <p>Donchian breakout on 1-hour candles, alert-only via Telegram (checked hourly). Raw 1h trading fails after costs — this stream only fires during London/NY hours, in above-average volatility, on Gold and NAS100. That filtered combination was net-positive in both walk-forward periods (+0.22%/trade, 100 validation trades). The edge is thin: the filters are mandatory, not decoration.</p>
       </div>
       <div class="method-card">
         <h3><span class="step-num">4</span>4-hour entry window</h3>
