@@ -8,6 +8,20 @@ Testnet 3 features a full state export from the DeFiForYou contracts on Binance 
 
 We expect to launch mainnet and integrate with dexes shortly after the public testnet-- provided that the test network proves to be stable and secure.
 
+## Quick install
+
+If you'd rather not run the steps below by hand, the repo ships an `install.sh`
+helper at the root that checks prerequisites, builds `digd`, initialises your
+node, and installs this genesis file:
+
+```bash
+git clone https://github.com/notional-labs/dig
+cd dig
+./install.sh --moniker "your-node-name"
+```
+
+Run `./install.sh --help` for options (chain id, network, home directory,
+build-only, etc.). The manual steps below remain available if you prefer them.
 
 **Before this process, you should add your dfy/dig key like thus**
 
