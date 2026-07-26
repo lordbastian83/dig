@@ -106,7 +106,21 @@
       <button id="export-csv">Export CSV</button>
       <button id="export-json">Backup JSON</button>
       <label class="file-btn">Restore JSON<input type="file" id="import-json" accept=".json" hidden></label>
+      <label class="file-btn">Import catalogue CSV<input type="file" id="import-csv" accept=".csv" hidden></label>
     </div>
+  </section>
+
+  <!-- ============ Data feeds ============ -->
+  <section class="card">
+    <h2>Data feeds</h2>
+    <p class="hint">Bulk-scan a whole catalogue: build a CSV with columns
+    <code>name,lot,sale,sire,dam,vendor,rating,starts,sireTier,vet,powerhouse,blackType,awForm,notes</code>
+    and use <b>Import catalogue CSV</b> above — every row is scored instantly.
+    To automate the feeds (BHA ratings are free; The Racing API covers starts and
+    AW form; catalogues need a per-house scraper), see
+    <code>bloodstock/DATA.md</code> and the <code>ingest.mjs</code> pipeline —
+    same Actions-secret pattern as budsignal. Vet data has no API and never
+    will: the &minus;20% rule stays until your vet clears the file.</p>
   </section>
 
   <!-- ============ Model parameters ============ -->

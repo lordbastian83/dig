@@ -28,6 +28,8 @@ const DEFAULT_PARAMS = {
 };
 
 const SALES = [
+  { name: 'Tattersalls Online August Sale', date: '2026-08-04',
+    note: 'Watch for early cast-offs at softer prices — screen every entry', est: true },
   { name: 'Goffs UK Premier Yearling Sale, Doncaster', date: '2026-08-25',
     note: 'Opportunistic only — yearling EV cap £13,500 (see investment-analysis-2026-07.md)' },
   { name: 'Tattersalls Autumn HIT catalogue expected online', date: '2026-10-06',
@@ -36,6 +38,10 @@ const SALES = [
     note: 'PRIMARY VENUE — Godolphin & powerhouse drafts. Hard limit 56,000 gns clean vet' },
   { name: 'Dubai World Cup Carnival opens, Meydan', date: '2026-11-06',
     note: 'Campaign destination for the export play', est: true },
+  { name: 'Arqana Autumn Sale HIT session, Deauville', date: '2026-11-18',
+    note: 'SECONDARY VENUE — French PSF form is an underrated dirt proxy and French cast-offs price below Newmarket equivalents' },
+  { name: 'Tattersalls Online × ERA Dubai Sale', date: '2027-02-15',
+    note: 'Where Imperial Emperor sold at $300k — the ring that prices the upside IN. Sell here, don\'t buy here', est: true },
 ];
 
 const STATUSES = ['watch', 'shortlist', 'vet ordered', 'bid', 'bought', 'passed'];
@@ -276,6 +282,65 @@ $('#export-csv').addEventListener('click', () => {
 $('#export-json').addEventListener('click', () =>
   download('bloodstock-watchlist.json', 'application/json',
     JSON.stringify({ params: loadParams(), watchlist: loadList() }, null, 2)));
+
+$('#import-csv').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const P = loadParams();
+  try {
+    const rows = parseCSV(await file.text());
+    const bool = (v) => ['true', 'yes', '1', 'y'].includes(String(v || '').toLowerCase());
+    const TIER_A = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
+    const TIER_B_DAMSIRE = ['street cry', 'shamardal', "medaglia d'oro", 'dubai millennium'];
+    const tierOf = (r) => {
+      const t = (r.siretier || '').toUpperCase();
+      if (t === 'A' || t === 'B') return t;
+      const sire = (r.sire || '').toLowerCase(), dam = (r.dam || '').toLowerCase();
+      return TIER_A.some((s) => sire.includes(s)) ? 'A'
+           : TIER_B_DAMSIRE.some((s) => dam.includes(s)) ? 'B' : '';
+    };
+    const lots = rows.filter((r) => r.name).map((r) => ({
+      name: r.name, lot: r.lot || '', sale: r.sale || 'Other',
+      sire: r.sire || '', dam: r.dam || '', vendor: r.vendor || '',
+      rating: +r.rating || 0, starts: r.starts === '' ? 99 : +r.starts,
+      sireTier: tierOf(r),
+      vet: ['clean', 'incomplete'].includes(r.vet) ? r.vet : 'unknown',
+      powerhouse: bool(r.powerhouse), blackType: bool(r.blacktype),
+      awForm: bool(r.awform), notes: r.notes || '',
+      status: 'watch', added: new Date().toISOString().slice(0, 10),
+    }));
+    if (!lots.length) { alert('No rows with a name column found — see DATA.md for the format.'); return; }
+    saveList([...lots, ...loadList()]);
+    renderList();
+    const bids = lots.filter((h) => evaluate(h, P).verdict === 'BID').length;
+    alert(`Imported ${lots.length} lots: ${bids} pass the screen (BID), ${lots.length - bids} rejected.`);
+  } catch {
+    alert('Could not parse that CSV — see DATA.md for the expected columns.');
+  }
+  e.target.value = '';
+});
+
+// Minimal CSV parser — quoted fields, the dialect this app exports.
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (cell !== '' || row.length) { row.push(cell); rows.push(row); row = []; cell = ''; }
+      if (c === '\r' && text[i + 1] === '\n') i++;
+    } else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  const head = rows.shift().map((h) => h.trim().toLowerCase());
+  return rows.map((r) => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+}
 
 $('#import-json').addEventListener('change', async (e) => {
   const file = e.target.files[0];

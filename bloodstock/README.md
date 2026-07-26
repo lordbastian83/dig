@@ -12,6 +12,14 @@ and send it to Meydan.
 - **`imperial-emperor-replication-screen.md`** — the 6-filter shopping list
   and the ~£60k valuation math (hard limit 56,000 gns clean vet / 45,000 gns
   incomplete).
+- **`venues-2026-27.md`** — the buying map: every venue ranked by edge,
+  including the Arqana Autumn Sale (French PSF form as a dirt proxy) and why
+  the ERA Dubai ring is the exit, not the entry.
+- **`DATA.md`** — the full data spec: the 13 fields the scanner needs, which
+  are automatable, and the three feeds worth adding (BHA ratings — free;
+  The Racing API; catalogue scrapes).
+- **`ingest.mjs`** — catalogue CSV → enriched `lots.json` pipeline scaffold
+  (The Racing API, Actions-secret pattern like budsignal's notifier).
 - **`app/`** — the **Bloodstock Scanner**: a static, dependency-free web app
   (same pattern and palette as `budsignal/`) that turns the screen into a
   workflow tool:
@@ -21,6 +29,9 @@ and send it to Meydan.
   - watchlist with status pipeline (watch → shortlist → vet ordered → bid →
     bought/passed), persisted in localStorage, CSV export and JSON
     backup/restore
+  - **bulk catalogue import** — drop in a CSV of a whole sale catalogue and
+    every lot is scored instantly (sire tier auto-derived from the pedigree
+    text; see `DATA.md` for the columns)
   - sales calendar with countdowns to the key 2026 windows
   - editable model parameters (residual tree, costs, margin, budget, rating
     band) — a perfect-score lot reproduces the committed 56,000 gns limit
