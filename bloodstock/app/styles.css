@@ -1,0 +1,129 @@
+/* Bloodstock Scanner — same dark fintech palette as budsignal. */
+
+:root {
+  --page:           #0d0d0d;
+  --surface-1:      #1a1a19;
+  --surface-2:      #242423;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --border:         rgba(255, 255, 255, 0.10);
+  --up:             #0ca30c;
+  --down:           #d03b3b;
+  --accent:         #c98500;   /* gold — the bloodstock stream's colour */
+  --accent-wash:    rgba(201, 133, 0, 0.12);
+  --up-wash:        rgba(12, 163, 12, 0.12);
+  --down-wash:      rgba(208, 59, 59, 0.12);
+  --shadow-card:    0 1px 2px rgba(0,0,0,.35), 0 8px 28px rgba(0,0,0,.22);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-secondary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { color: var(--text-primary); margin: 0 0 .5em; }
+h2 { font-size: 1.15rem; }
+code { background: var(--surface-2); padding: .1em .35em; border-radius: 4px; font-size: .85em; }
+
+.site-header {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+  padding: .8rem 1.2rem;
+  background: rgba(13,13,13,.92); backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+}
+.site-header h1 { font-size: 1.25rem; margin: 0; }
+.tagline { color: var(--text-muted); font-size: .85rem; }
+
+main { max-width: 980px; margin: 0 auto; padding: 1.2rem; display: grid; gap: 1.2rem; }
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  box-shadow: var(--shadow-card);
+}
+
+.hint { color: var(--text-muted); font-size: .85rem; margin-top: -0.3em; }
+.warn { color: var(--down); font-size: .9rem; }
+
+/* ---------- calendar ---------- */
+.calendar { display: grid; gap: .4rem; }
+.cal-row {
+  display: grid; gap: .2rem .9rem;
+  grid-template-columns: 9.5rem 1fr auto;
+  grid-template-areas: "date name count" "date note note";
+  padding: .5rem .7rem; border-radius: 8px; background: var(--surface-2);
+}
+.cal-row.live { background: var(--accent-wash); border: 1px solid var(--accent); }
+.cal-date { grid-area: date; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.cal-name { grid-area: name; color: var(--text-primary); font-weight: 600; }
+.cal-count { grid-area: count; color: var(--accent); font-weight: 600; }
+.cal-note { grid-area: note; color: var(--text-muted); font-size: .82rem; }
+@media (max-width: 640px) {
+  .cal-row { grid-template-columns: 1fr auto; grid-template-areas: "date count" "name name" "note note"; }
+}
+
+/* ---------- shopping list ---------- */
+.filters { margin: .6rem 0 0; padding-left: 1.3rem; display: grid; gap: .35rem; }
+.filters b { color: var(--text-primary); }
+
+/* ---------- form ---------- */
+.grid { display: grid; gap: .8rem 1rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+label { display: grid; gap: .25rem; font-size: .85rem; color: var(--text-muted); }
+input, select {
+  background: var(--surface-2); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: .45rem .6rem; font: inherit; font-size: .95rem;
+}
+input:focus, select:focus { outline: 1px solid var(--accent); }
+.checks { display: flex; gap: 1.4rem; flex-wrap: wrap; margin: .9rem 0; }
+.checks label { display: flex; align-items: center; gap: .45rem; font-size: .9rem; color: var(--text-secondary); }
+.checks input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); }
+.notes-label { margin-bottom: .9rem; }
+
+.form-actions { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .8rem; }
+button, .file-btn {
+  background: var(--surface-2); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: .5rem 1rem; font: inherit; font-size: .9rem; cursor: pointer;
+}
+button:hover, .file-btn:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: #0d0d0d; font-weight: 700; border: none; }
+button.primary:hover { filter: brightness(1.1); }
+.file-btn { display: inline-flex; align-items: center; }
+
+/* ---------- score result ---------- */
+.score-result { margin-top: 1.1rem; padding: 1rem 1.2rem; border-radius: 10px; background: var(--surface-2); }
+.check-list { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .15rem; }
+.check-list .ok { color: var(--up); }
+.check-list .fail { color: var(--down); }
+.verdict-bid { color: var(--up); }
+.verdict-reject { color: var(--down); }
+.max-bid { font-size: 1.05rem; color: var(--text-primary); }
+.max-bid b { color: var(--accent); font-size: 1.25rem; }
+details summary { cursor: pointer; color: var(--text-muted); }
+details summary h2 { display: inline; }
+
+/* ---------- watchlist ---------- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--text-muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+td small { color: var(--text-muted); }
+.bid-cell { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; }
+.row-reject { opacity: .55; }
+.empty { color: var(--text-muted); text-align: center; padding: 1.4rem; }
+.del-btn { padding: .2rem .55rem; color: var(--down); }
+.status-sel { font-size: .85rem; padding: .3rem .4rem; }
+
+footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: var(--text-muted); font-size: .8rem; }

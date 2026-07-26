@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LordBastian Bloodstock Scanner</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>Bloodstock Scanner</h1>
+  <span class="tagline">The Imperial Emperor screen &mdash; computed, never curated</span>
+</header>
+
+<main>
+
+  <!-- ============ Sales calendar ============ -->
+  <section class="card">
+    <h2>Sales calendar</h2>
+    <div id="calendar" class="calendar"></div>
+  </section>
+
+  <!-- ============ The shopping list ============ -->
+  <section class="card">
+    <h2>The shopping list &mdash; 6 hard filters</h2>
+    <p class="hint">Every filter must pass. The screen's job is to find the elite-pedigree
+    cast-off with dirt upside <em>before</em> the ring prices it in. Full model:
+    <code>bloodstock/imperial-emperor-replication-screen.md</code>.</p>
+    <ol class="filters">
+      <li><b>Powerhouse cast-off</b> — Godolphin / Juddmonte / Shadwell (or equivalent) draft</li>
+      <li><b>Dirt-translating sire line</b> — Dubawi, Night Of Thunder, Too Darn Hot, New Bay, Blue Point; or Street Cry / Shamardal / Medaglia d'Oro damsire cluster</li>
+      <li><b>Black type in the first two dams</b> — the residual-value floor, non-negotiable</li>
+      <li><b>Official rating 85&ndash;95</b> — proven ability, unpriced ceiling</li>
+      <li><b>&le; 7 career starts</b> — unexposed, still progressive</li>
+      <li><b>All-weather form signal</b> — a win or best-figure on Tapeta/Polytrack (cheapest dirt proxy)</li>
+    </ol>
+  </section>
+
+  <!-- ============ Score a horse ============ -->
+  <section class="card">
+    <h2>Score a lot</h2>
+    <form id="horse-form" autocomplete="off">
+      <div class="grid">
+        <label>Horse name <input name="name" required placeholder="e.g. Lot 1234"></label>
+        <label>Sale / venue
+          <select name="sale">
+            <option>Tattersalls Autumn HIT 2026</option>
+            <option>Tattersalls Online</option>
+            <option>Goffs UK Premier 2026</option>
+            <option>ERA Dubai</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>Lot # <input name="lot" placeholder="optional"></label>
+        <label>Sire <input name="sire" placeholder="e.g. Night Of Thunder"></label>
+        <label>Dam (damsire) <input name="dam" placeholder="e.g. Zhukova (Fastnet Rock)"></label>
+        <label>Vendor / breeder <input name="vendor" placeholder="e.g. Godolphin"></label>
+        <label>Official rating <input name="rating" type="number" min="0" max="130" required></label>
+        <label>Career starts <input name="starts" type="number" min="0" max="50" required></label>
+        <label>Sire tier
+          <select name="sireTier">
+            <option value="A">A — proven dirt line (Dubawi etc.)</option>
+            <option value="B">B — dirt influence via damsire</option>
+            <option value="">None / turf-only</option>
+          </select>
+        </label>
+        <label>Vet file
+          <select name="vet">
+            <option value="clean">Clean — full file reviewed</option>
+            <option value="incomplete">Incomplete (&minus;20% mandatory)</option>
+            <option value="unknown" selected>Not yet ordered (&minus;20% until clean)</option>
+          </select>
+        </label>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" name="powerhouse"> Powerhouse cast-off vendor</label>
+        <label><input type="checkbox" name="blackType"> Black type in first two dams</label>
+        <label><input type="checkbox" name="awForm"> AW win / best figure</label>
+      </div>
+      <label class="notes-label">Notes <input name="notes" placeholder="conformation, wind history, trip…"></label>
+      <div class="form-actions">
+        <button type="submit" class="primary">Score &amp; add to watchlist</button>
+        <button type="button" id="demo-btn" title="Fill the form with a hypothetical example">Demo example</button>
+      </div>
+    </form>
+    <div id="score-result" class="score-result" hidden></div>
+  </section>
+
+  <!-- ============ Watchlist ============ -->
+  <section class="card">
+    <h2>Watchlist</h2>
+    <p class="hint">Stored in this browser (localStorage). Export before clearing your cache.</p>
+    <div class="table-wrap">
+      <table id="watchlist">
+        <thead>
+          <tr>
+            <th>Horse</th><th>Sale</th><th>OR</th><th>Screen</th>
+            <th>Max bid (gns)</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="form-actions">
+      <button id="export-csv">Export CSV</button>
+      <button id="export-json">Backup JSON</button>
+      <label class="file-btn">Restore JSON<input type="file" id="import-json" accept=".json" hidden></label>
+    </div>
+  </section>
+
+  <!-- ============ Model parameters ============ -->
+  <section class="card">
+    <details id="model-details">
+      <summary><h2>Valuation model (editable)</h2></summary>
+      <p class="hint">Max bid = (prize EV + probability-weighted residual &minus; campaign costs)
+      &divide; (1 + margin) &divide; 1.05 frictions&rarr;gns, then &minus;20% if the vet file
+      isn't clean, floored to the nearest 1,000 gns and capped at budget. The upside-branch
+      probability scales from 4% to 10% with the lot's quality score &mdash; a perfect-score
+      lot reproduces the committed 56,000 gns limit exactly.</p>
+      <div class="grid" id="params-grid"></div>
+      <div class="form-actions">
+        <button id="params-save" class="primary">Save parameters</button>
+        <button id="params-reset">Reset to defaults</button>
+      </div>
+    </details>
+  </section>
+
+</main>
+
+<footer>
+  Model assumptions are stated, editable and committed to the repo so they can be
+  challenged &mdash; this is analysis, not financial advice.
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
