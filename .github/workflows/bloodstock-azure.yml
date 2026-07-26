@@ -17,6 +17,11 @@ on:
       - 'bloodstock/app/**'
       - '.github/workflows/bloodstock-azure.yml'
   workflow_dispatch:
+    inputs:
+      deployment_token:
+        description: 'One-off deployment token override (normally leave empty — the secret is used). Rotate the token after any manual use.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -31,10 +36,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Mask any token passed as input
+        if: inputs.deployment_token != ''
+        env:
+          T: ${{ inputs.deployment_token }}
+        run: echo "::add-mask::$T"
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLOODSTOCK }}
+          azure_static_web_apps_api_token: ${{ inputs.deployment_token != '' && inputs.deployment_token || secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLOODSTOCK }}
           action: upload
           app_location: bloodstock/app
           output_location: ''
