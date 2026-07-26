@@ -91,7 +91,7 @@ async function enrich(horse) {
       console.error(`  ? ${horse.name} race keys: ${Object.keys(races[0]).join(',').slice(0, 300)}`);
       if (races[0].runners?.[0]) console.error(`  ? runner keys: ${Object.keys(races[0].runners[0]).join(',').slice(0, 300)}`);
     }
-    let starts = 0, awForm = false, rating = null;
+    let starts = 0, awForm = false, rating = null, pedigree = null;
     for (const race of races) {
       // Results may be flat per-horse rows, or per-race objects with a
       // runners array — find our horse in the latter case.
@@ -101,13 +101,19 @@ async function enrich(horse) {
         ?? (runners.length === 1 ? runners[0] : null);
       if (!me) continue;
       starts++;
+      // The API carries an explicit surface per race; course list is fallback.
+      const surface = lc(race.surface);
       const course = lc(race.course ?? race.course_name ?? me.course);
+      const isAW = ['aw', 'tapeta', 'polytrack', 'fibresand', 'psf', 'dirt', 'sand']
+        .some((sfc) => surface.includes(sfc)) || AW_COURSES.some((c) => course.includes(c));
       const won = String(me.position ?? me.pos ?? me.finishing_position ?? '') === '1';
-      if (won && AW_COURSES.some((c) => course.includes(c))) awForm = true;
+      if (won && isAW) awForm = true;
       const or = +(me.or ?? me.official_rating ?? me.or_rating ?? NaN);
       if (rating === null && Number.isFinite(or) && or > 0) rating = or; // rows newest-first
+      // Runner rows carry pedigree — fill what the catalogue lacked.
+      pedigree = pedigree ?? { sire: me.sire, dam: me.dam, damsire: me.damsire };
     }
-    return { enriched: true, starts, awForm, rating };
+    return { enriched: true, starts, awForm, rating, pedigree };
   } catch (e) {
     console.error(`  ! ${horse.name}: ${e.message}`);
     return { enriched: false };
@@ -151,6 +157,14 @@ for (const row of input) {
       base.rating = base.rating ?? extra.rating;
       base.starts = base.starts ?? extra.starts;
       base.awForm = base.awForm || extra.awForm;
+      // Pedigree from the form data fills catalogue gaps, then re-classify.
+      if (!base.sire && extra.pedigree?.sire) base.sire = extra.pedigree.sire;
+      if (!base.dam && extra.pedigree?.dam) {
+        base.dam = extra.pedigree.damsire
+          ? `${extra.pedigree.dam} (${extra.pedigree.damsire})` : extra.pedigree.dam;
+      }
+      const re = classify(base);
+      if (!base.sireTier) base.sireTier = re.sireTier;
     }
     await sleep(400); // stay polite to the API
   }
