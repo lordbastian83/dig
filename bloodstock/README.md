@@ -60,6 +60,29 @@ setup:
 4. Run the workflow from the Actions tab (or push to `master` touching
    `bloodstock/app/**`). Your app URL is on the resource's overview page.
 
+## Pipeline (automated)
+
+- **`.github/workflows/bloodstock-watch.yml`** — daily page watcher;
+  Telegrams (existing bot) when a sale-house page changes, i.e. a catalogue
+  drops. State lives on the `bloodstock-data` branch.
+- **`.github/workflows/bloodstock-ingest.yml`** — manual run: scrape a
+  catalogue URL (or use `bloodstock/catalogue.csv`), enrich every lot via
+  **The Racing API Pro** (secrets `RACING_API_USERNAME` /
+  `RACING_API_PASSWORD` — add them in Settings → Secrets → Actions, never
+  paste them in chat or code), publish scored `lots.json` to
+  `bloodstock-data`.
+- **`comps.mjs`** — sale results CSV → computed sire medians in
+  `app/data/sire-medians.json`, replacing the labelled seed estimates. The
+  app's **value gap** column (max bid − expected hammer) and **Rank by value
+  gap** button turn a scored catalogue into a ranked shopping list — the
+  diamond in the rough is row one.
+- **`scrape-tattersalls.mjs`** — catalogue scraper; selectors are config and
+  will need a 10-minute tune against live markup when the October catalogue
+  drops (marked in the file).
+- **`outcomes.csv`** — log every screened lot's hammer price and 12-month
+  outcome; after one cycle the assumed probability tree gets replaced with
+  measured frequencies. Computed, never curated.
+
 ## Workflow
 
 1. Catalogue drops (~early Oct for the Tattersalls Autumn HIT Sale) →

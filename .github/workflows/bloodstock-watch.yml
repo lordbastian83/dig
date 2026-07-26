@@ -1,0 +1,58 @@
+name: Bloodstock catalogue watch
+
+# Daily check of sale-house pages; Telegrams when one changes (catalogue
+# drop / lots published). Reuses the existing TELEGRAM_BOT_TOKEN secret.
+# State (page hashes) is committed to the bloodstock-data branch so each
+# change alerts exactly once.
+
+on:
+  schedule:
+    - cron: '20 7 * * *'   # 07:20 UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bloodstock-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore watch state from bloodstock-data branch
+        run: |
+          git fetch origin bloodstock-data --depth 1 || true
+          git show origin/bloodstock-data:watch-state.json > watch-state.json 2>/dev/null || echo '{}' > watch-state.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run watcher
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_HANDLE: 'Lordbastian83'
+          STATE_FILE: watch-state.json
+        run: node bloodstock/watch.mjs
+
+      - name: Persist state to bloodstock-data branch
+        run: |
+          git config user.name 'bloodstock-watch[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          if git rev-parse --verify origin/bloodstock-data >/dev/null 2>&1; then
+            git worktree add data origin/bloodstock-data
+            cd data && git checkout -B bloodstock-data
+          else
+            git worktree add --orphan -b bloodstock-data data 2>/dev/null \
+              || { git worktree add --detach data && cd data && git checkout --orphan bloodstock-data && git rm -rf --quiet . 2>/dev/null; cd ..; }
+            cd data
+          fi
+          cp ../watch-state.json .
+          git add watch-state.json
+          git commit -m "watch-state $(date -u +%F)" || exit 0
+          git push origin bloodstock-data

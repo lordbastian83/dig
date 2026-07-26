@@ -95,6 +95,41 @@ function saveParams(p) { localStorage.setItem(LS_PARAMS, JSON.stringify(p)); }
 function loadList() { return JSON.parse(localStorage.getItem(LS_LIST) || '[]'); }
 function saveList(list) { localStorage.setItem(LS_LIST, JSON.stringify(list)); }
 
+/* ---------- comps / expected-price model ---------- */
+
+// Fallback medians (gns, HIT market) — SEED ESTIMATES, overridden at runtime
+// by data/sire-medians.json once the comps pipeline computes real ones.
+let MEDIANS = {
+  'dubawi': { median: 150000, est: true }, 'night of thunder': { median: 45000, est: true },
+  'too darn hot': { median: 60000, est: true }, 'new bay': { median: 40000, est: true },
+  'blue point': { median: 50000, est: true }, 'frankel': { median: 120000, est: true },
+  'kingman': { median: 90000, est: true }, 'sea the stars': { median: 80000, est: true },
+  'lope de vega': { median: 70000, est: true }, 'pinatubo': { median: 40000, est: true },
+};
+fetch('data/sire-medians.json')
+  .then((r) => r.json())
+  .then((j) => { delete j._meta; MEDIANS = j; renderList(); })
+  .catch(() => {}); // file:// or offline — fallback stands
+
+// Rating multiplier: what the HIT ring pays relative to the sire median.
+function ratingMult(r) {
+  return r >= 98 ? 2.5 : r >= 94 ? 1.9 : r >= 90 ? 1.4 : r >= 85 ? 1.0
+       : r >= 80 ? 0.75 : 0.5;
+}
+
+// Expected hammer price (gns) — transparent heuristic until the comps
+// pipeline provides lot-level comparables. null = no sire comp available.
+function expectedPrice(h) {
+  const s = String(h.sire || '').toLowerCase().replace(/\(.*?\)/g, '').trim();
+  const comp = MEDIANS[s] || Object.entries(MEDIANS)
+    .find(([k]) => s && (s.includes(k) || k.includes(s)))?.[1];
+  if (!comp) return null;
+  let p = comp.median * ratingMult(+h.rating || 0);
+  if (h.powerhouse) p *= 1.2;   // powerhouse drafts attract a premium
+  if (h.awForm) p *= 1.1;       // AW winners are bid up by export money
+  return { gns: Math.round(p / 500) * 500, est: !!comp.est };
+}
+
 /* ---------- valuation engine ---------- */
 
 function evaluate(h, P) {
@@ -190,6 +225,14 @@ function renderScore(h, r) {
     ${r.verdict === 'BID'
       ? `<p class="max-bid">Hard max bid: <b>${fmt(r.gns)} gns</b></p>`
       : `<p class="max-bid">Fails: ${r.fails.join('; ')}. Reference value if filters cleared: ${fmt(r.gns)} gns.</p>`}
+    ${(() => {
+      const exp = expectedPrice(h);
+      if (!exp) return '<p class="hint">No sire comp yet — expected price unavailable (add via comps pipeline).</p>';
+      const gap = r.gns - exp.gns;
+      return `<p>Expected hammer: ~${fmt(exp.gns)} gns${exp.est ? ' (est)' : ''} →
+        value gap <b class="${gap >= 0 ? 'verdict-bid' : 'verdict-reject'}">${gap >= 0 ? '+' : ''}${fmt(gap)} gns</b>
+        ${gap >= 0 ? '— the ring should hand it to you inside the limit' : '— expect to be outbid; walk away at the limit'}</p>`;
+    })()}
     ${vetNote}${clampNote}
     <details><summary>Math</summary>
       <p>Quality score ${pct(r.score)} → outcome tree:
@@ -207,11 +250,13 @@ function renderList() {
   const tbody = $('#watchlist tbody');
   const list = loadList();
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">Nothing scanned yet — score a lot above.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">Nothing scanned yet — score a lot above.</td></tr>';
     return;
   }
   tbody.innerHTML = list.map((h, i) => {
     const r = evaluate(h, P);
+    const exp = expectedPrice(h);
+    const gap = exp ? r.gns - exp.gns : null;
     const opts = STATUSES.map((s) =>
       `<option ${h.status === s ? 'selected' : ''}>${s}</option>`).join('');
     return `<tr class="${r.verdict === 'BID' ? '' : 'row-reject'}">
@@ -222,6 +267,9 @@ function renderList() {
       <td class="${r.verdict === 'BID' ? 'verdict-bid' : 'verdict-reject'}">
           ${r.verdict === 'BID' ? 'PASS 6/6' : (6 - r.fails.length) + '/6'}</td>
       <td class="bid-cell">${fmt(r.gns)}${r.vetClean ? '' : ' ⚠'}</td>
+      <td class="gap-cell">${gap == null ? '<small>no comp</small>'
+        : `<span class="${gap >= 0 ? 'verdict-bid' : 'verdict-reject'}">${gap >= 0 ? '+' : ''}${fmt(gap)}</span>
+           <small>exp ${fmt(exp.gns)}${exp.est ? ' est' : ''}</small>`}</td>
       <td><select data-i="${i}" class="status-sel">${opts}</select></td>
       <td><button data-i="${i}" class="del-btn" title="Remove">✕</button></td>
     </tr>`;
@@ -310,6 +358,22 @@ function download(name, mime, text) {
   a.click();
   URL.revokeObjectURL(a.href);
 }
+
+$('#rank-gap').addEventListener('click', () => {
+  const P = loadParams();
+  const list = loadList();
+  const key = (h) => {
+    const exp = expectedPrice(h);
+    return exp == null ? -Infinity : evaluate(h, P).gns - exp.gns;
+  };
+  list.sort((a, b) => {
+    const fa = evaluate(a, P).fails.length === 0, fb = evaluate(b, P).fails.length === 0;
+    if (fa !== fb) return fa ? -1 : 1;          // screen-passers first
+    return key(b) - key(a);                     // widest value gap first
+  });
+  saveList(list);
+  renderList();
+});
 
 $('#export-csv').addEventListener('click', () => {
   const P = loadParams();

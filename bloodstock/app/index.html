@@ -101,13 +101,14 @@
         <thead>
           <tr>
             <th>Horse</th><th>Sale</th><th>OR</th><th>Screen</th>
-            <th>Max bid (gns)</th><th>Status</th><th></th>
+            <th>Max bid (gns)</th><th>Value gap</th><th>Status</th><th></th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
     <div class="form-actions">
+      <button id="rank-gap" class="primary" title="Screen-passers first, widest value gap on top">Rank by value gap</button>
       <button id="export-csv">Export CSV</button>
       <button id="export-json">Backup JSON</button>
       <label class="file-btn">Restore JSON<input type="file" id="import-json" accept=".json" hidden></label>
