@@ -56,6 +56,14 @@ jobs:
           DEBUG: ${{ inputs.debug }}
         run: node bloodstock/ingest.mjs
 
+      - name: Telegram alert when horses are identified
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_HANDLE: 'Lordbastian83'
+          LOTS: lots.json
+        run: node bloodstock/notify.mjs
+
       - name: Publish to bloodstock-data branch
         run: |
           git config user.name 'bloodstock-ingest[bot]'
