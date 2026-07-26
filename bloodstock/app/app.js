@@ -27,22 +27,56 @@ const DEFAULT_PARAMS = {
   maxStarts: { label: 'Maximum career starts',                  value: 7 },
 };
 
+// Global sales calendar — region-tagged. est: true = date not yet confirmed
+// by the sale house; verify before travelling.
 const SALES = [
-  { name: 'Tattersalls Online August Sale', date: '2026-08-04',
-    note: 'Watch for early cast-offs at softer prices — screen every entry', est: true },
-  { name: 'Goffs UK Premier Yearling Sale, Doncaster', date: '2026-08-25',
+  // ---- UK ----
+  { region: 'UK', name: 'Tattersalls Online August Sale', date: '2026-08-04',
+    note: 'Early cast-offs at softer prices — screen every entry', est: true },
+  { region: 'UK', name: 'Goffs UK Premier Yearling Sale, Doncaster', date: '2026-08-25',
     note: 'Opportunistic only — yearling EV cap £13,500 (see investment-analysis-2026-07.md)' },
-  { name: 'Tattersalls Autumn HIT catalogue expected online', date: '2026-10-06',
+  { region: 'UK', name: 'Tattersalls Somerville Yearling Sale', date: '2026-09-22',
+    note: 'Speed yearlings — same EV caution as Doncaster', est: true },
+  { region: 'UK', name: 'Tattersalls October Yearling Sale Book 1', date: '2026-10-06',
+    note: 'Elite yearlings, elite prices — watch, don\'t bid', est: true },
+  { region: 'UK', name: 'Tattersalls Autumn HIT catalogue expected online', date: '2026-10-06',
     note: 'Run the 6-filter screen over the full catalogue the day it drops', est: true },
-  { name: 'Tattersalls Autumn Horses-in-Training Sale', date: '2026-10-28',
+  { region: 'UK', name: 'Tattersalls Autumn Horses-in-Training Sale', date: '2026-10-28',
     note: 'PRIMARY VENUE — Godolphin & powerhouse drafts. Hard limit 56,000 gns clean vet' },
-  { name: 'Dubai World Cup Carnival opens, Meydan', date: '2026-11-06',
+  // ---- Ireland ----
+  { region: 'IRE', name: 'Tattersalls Ireland September Yearling Sale', date: '2026-09-15',
+    note: 'Mid-market yearlings — scan for dirt-line pages that slip through', est: true },
+  { region: 'IRE', name: 'Goffs Orby Sale, Kildare', date: '2026-09-29',
+    note: 'Ireland\'s premier yearling ring — watch the dirt-sire pages', est: true },
+  { region: 'IRE', name: 'Goffs November Sale, Kildare', date: '2026-11-15',
+    note: 'Foals & breeding stock — occasional HIT wildcards only' },
+  // ---- France / Germany ----
+  { region: 'FR', name: 'Arqana August Select Sale, Deauville', date: '2026-08-15',
+    note: 'Elite yearlings — intelligence on French dirt-line pages', est: true },
+  { region: 'FR', name: 'Arqana October Yearling Sale, Deauville', date: '2026-10-20',
+    note: 'Value tier of the French yearling market', est: true },
+  { region: 'FR', name: 'Arqana Autumn Sale HIT session, Deauville', date: '2026-11-18',
+    note: 'SECONDARY VENUE — French PSF form is an underrated dirt proxy; French cast-offs price below Newmarket equivalents' },
+  { region: 'GER', name: 'BBAG September Yearling Sale, Baden-Baden', date: '2026-09-04',
+    note: 'German stamina lines, soft prices — occasional Meydan handicap type', est: true },
+  // ---- USA ----
+  { region: 'USA', name: 'Fasig-Tipton Saratoga Select Yearling Sale', date: '2026-08-03',
+    note: 'Elite US dirt yearlings — price intelligence only at our budget', est: true },
+  { region: 'USA', name: 'Keeneland September Yearling Sale', date: '2026-09-07',
+    note: 'Books 4-6 hold $30-60k dirt-bred yearlings — real dirt pedigrees, but 2 years from Meydan', est: true },
+  { region: 'USA', name: 'Keeneland November Horses of Racing Age Sale', date: '2026-11-11',
+    note: 'US BARGAIN WINDOW — proven dirt form post-season; import math differs (see venues doc)' },
+  { region: 'USA', name: 'Keeneland January Horses of All Ages Sale', date: '2027-01-12',
+    note: 'Second US bargain window — end-of-year culls with dirt form on the page' },
+  // ---- UAE (exit market) ----
+  { region: 'UAE', name: 'Dubai World Cup Carnival opens, Meydan', date: '2026-11-06',
     note: 'Campaign destination for the export play', est: true },
-  { name: 'Arqana Autumn Sale HIT session, Deauville', date: '2026-11-18',
-    note: 'SECONDARY VENUE — French PSF form is an underrated dirt proxy and French cast-offs price below Newmarket equivalents' },
-  { name: 'Tattersalls Online × ERA Dubai Sale', date: '2027-02-15',
+  { region: 'UAE', name: 'Tattersalls Online × ERA Dubai Sale', date: '2027-02-15',
     note: 'Where Imperial Emperor sold at $300k — the ring that prices the upside IN. Sell here, don\'t buy here', est: true },
 ];
+
+const REGIONS = ['ALL', 'UK', 'IRE', 'FR', 'GER', 'USA', 'UAE'];
+let regionFilter = 'ALL';
 
 const STATUSES = ['watch', 'shortlist', 'vet ordered', 'bid', 'bought', 'passed'];
 
@@ -114,19 +148,32 @@ const pct = (p) => (p * 100).toFixed(0) + '%';
 
 function renderCalendar() {
   const now = Date.now();
-  $('#calendar').innerHTML = SALES.map((s) => {
+  $('#region-chips').innerHTML = REGIONS.map((r) =>
+    `<button class="chip ${r === regionFilter ? 'active' : ''}" data-region="${r}">${r}</button>`
+  ).join('');
+  const rows = SALES
+    .filter((s) => regionFilter === 'ALL' || s.region === regionFilter)
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+  $('#calendar').innerHTML = rows.map((s) => {
     const t = new Date(s.date + 'T00:00:00Z').getTime();
     const days = Math.ceil((t - now) / 86400000);
     const when = days > 0 ? `in ${days} day${days === 1 ? '' : 's'}`
-               : days > -5 ? 'NOW' : 'past';
-    return `<div class="cal-row ${days <= 0 && days > -5 ? 'live' : ''}">
+               : days > -8 ? 'NOW' : 'past';
+    return `<div class="cal-row ${days <= 0 && days > -8 ? 'live' : ''} ${when === 'past' ? 'done' : ''}">
       <span class="cal-date">${s.date}${s.est ? ' (est.)' : ''}</span>
-      <span class="cal-name">${s.name}</span>
+      <span class="cal-name"><span class="region-tag">${s.region}</span> ${s.name}</span>
       <span class="cal-count">${when}</span>
       <span class="cal-note">${s.note}</span>
     </div>`;
   }).join('');
 }
+
+document.addEventListener('click', (e) => {
+  if (!e.target.matches('.chip')) return;
+  regionFilter = e.target.dataset.region;
+  renderCalendar();
+});
 
 function renderScore(h, r) {
   const el = $('#score-result');
@@ -380,3 +427,7 @@ $('#params-reset').addEventListener('click', () => {
 renderCalendar();
 renderParams();
 renderList();
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}

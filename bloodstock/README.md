@@ -43,6 +43,23 @@ cd bloodstock/app
 python3 -m http.server 8080   # or just open index.html
 ```
 
+The scanner is a PWA: once served over HTTPS (see hosting below), open it on
+your phone and "Add to Home Screen" — it installs as an app and the shell
+works offline at the sales ground.
+
+## Hosting on Azure (Static Web Apps, free tier)
+
+The deploy workflow is `.github/workflows/bloodstock-azure.yml`. One-time
+setup:
+
+1. Azure portal → Create resource → **Static Web App** → Free plan, any
+   region. Deployment source: **Other**.
+2. On the created resource: **Manage deployment token** → copy it.
+3. GitHub repo → Settings → Secrets and variables → Actions → new secret
+   **`AZURE_STATIC_WEB_APPS_API_TOKEN_BLOODSTOCK`** = that token.
+4. Run the workflow from the Actions tab (or push to `master` touching
+   `bloodstock/app/**`). Your app URL is on the resource's overview page.
+
 ## Workflow
 
 1. Catalogue drops (~early Oct for the Tattersalls Autumn HIT Sale) →
