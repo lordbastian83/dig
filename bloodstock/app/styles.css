@@ -1,145 +1,179 @@
-/* Bloodstock Scanner — same dark fintech palette as budsignal. */
+/* vault racing — scanner. Brand Guidelines v0.1:
+   navy #12203A base & ink · blue #0066CC links, live data ·
+   gold #DCB64A display only 24px+ · gold deep #8A6A34 small gold text ·
+   green #2CC1A0 shortening odds (positives) · cloud #F7F8FA surfaces.
+   Type: Outfit (licensed Stolzl web substitute) — headings, wordmark,
+   buttons; IBM Plex Mono — odds, ratings, times, money. Gold marks a win
+   and one call to action per screen. Quiet, numerate, exact. */
 
 :root {
-  --page:           #0d0d0d;
-  --surface-1:      #1a1a19;
-  --surface-2:      #242423;
-  --text-primary:   #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted:     #898781;
-  --border:         rgba(255, 255, 255, 0.10);
-  --up:             #0ca30c;
-  --down:           #d03b3b;
-  --accent:         #c98500;   /* gold — the bloodstock stream's colour */
-  --accent-wash:    rgba(201, 133, 0, 0.12);
-  --up-wash:        rgba(12, 163, 12, 0.12);
-  --down-wash:      rgba(208, 59, 59, 0.12);
-  --shadow-card:    0 1px 2px rgba(0,0,0,.35), 0 8px 28px rgba(0,0,0,.22);
+  --navy:        #12203A;
+  --navy-2:      #1A2B4A;   /* card surface on navy (blue-gradient floor) */
+  --navy-3:      #223455;
+  --blue:        #0066CC;
+  --gold:        #DCB64A;
+  --gold-deep:   #8A6A34;
+  --green:       #2CC1A0;
+  --cloud:       #F7F8FA;
+  --ink-muted:   #93A1B8;
+  --border:      rgba(247, 248, 250, 0.12);
+  --green-wash:  rgba(44, 193, 160, 0.14);
+  --gold-wash:   rgba(220, 182, 74, 0.14);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.25);
+  --sans: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--page);
-  color: var(--text-secondary);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--navy);
+  color: var(--cloud);
+  font-family: var(--sans);
   font-size: 16px;
-  line-height: 1.55;
+  font-weight: 300;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3 { color: var(--text-primary); margin: 0 0 .5em; }
-h2 { font-size: 1.15rem; }
-code { background: var(--surface-2); padding: .1em .35em; border-radius: 4px; font-size: .85em; }
+h1, h2, h3 { color: var(--cloud); margin: 0 0 .5em; font-weight: 500; letter-spacing: .01em; }
+h2 { font-size: 1.1rem; }
+a { color: var(--blue); }
+code {
+  background: var(--navy-3); padding: .1em .35em; border-radius: 4px;
+  font-family: var(--mono); font-size: .82em;
+}
 
+/* ---------- header: wordmark ---------- */
 .site-header {
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
-  padding: .8rem 1.2rem;
-  background: rgba(13,13,13,.92); backdrop-filter: blur(6px);
+  padding: .85rem 1.2rem;
+  background: rgba(18, 32, 58, 0.94); backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border);
 }
-.site-header h1 { font-size: 1.25rem; margin: 0; }
-.tagline { color: var(--text-muted); font-size: .85rem; }
+.site-header h1 {
+  font-size: 1.3rem; margin: 0; font-weight: 700;
+  letter-spacing: -0.01em; text-transform: lowercase;
+}
+.site-header h1 .shoe-u { color: var(--gold); }
+.site-header h1 .sub {
+  color: var(--gold); font-weight: 500; font-size: .72em; margin-left: .15em;
+}
+.tagline { color: var(--ink-muted); font-size: .82rem; }
 
 main { max-width: 980px; margin: 0 auto; padding: 1.2rem; display: grid; gap: 1.2rem; }
 
 .card {
-  background: var(--surface-1);
+  background: var(--navy-2);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.2rem 1.4rem;
   box-shadow: var(--shadow-card);
 }
 
-.hint { color: var(--text-muted); font-size: .85rem; margin-top: -0.3em; }
-.warn { color: var(--down); font-size: .9rem; }
+.hint { color: var(--ink-muted); font-size: .85rem; margin-top: -0.3em; }
+.warn { color: var(--gold); font-size: .9rem; }
 
-/* ---------- calendar ---------- */
+/* ---------- calendar (live data = blue) ---------- */
 .chips { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: .8rem; }
 .chip {
-  padding: .25rem .8rem; border-radius: 999px; font-size: .8rem;
-  background: var(--surface-2); color: var(--text-secondary);
+  padding: .22rem .85rem; border-radius: 999px; font-size: .78rem;
+  font-family: var(--mono);
+  background: var(--navy-3); color: var(--ink-muted);
   border: 1px solid var(--border); cursor: pointer;
 }
-.chip.active { background: var(--accent); color: #0d0d0d; font-weight: 700; border-color: var(--accent); }
+.chip.active { background: var(--cloud); color: var(--navy); font-weight: 600; border-color: var(--cloud); }
 .region-tag {
   display: inline-block; min-width: 2.6em; text-align: center;
-  font-size: .7rem; font-weight: 700; letter-spacing: .05em;
-  padding: .1em .4em; margin-right: .3em; border-radius: 4px;
-  background: var(--accent-wash); color: var(--accent);
+  font-family: var(--mono); font-size: .68rem; font-weight: 600; letter-spacing: .05em;
+  padding: .12em .4em; margin-right: .35em; border-radius: 4px;
+  background: rgba(0, 102, 204, 0.18); color: #5EA3E8;
 }
-.cal-row.done { opacity: .45; }
+.cal-row.done { opacity: .4; }
 .calendar { display: grid; gap: .4rem; }
 .cal-row {
   display: grid; gap: .2rem .9rem;
   grid-template-columns: 9.5rem 1fr auto;
   grid-template-areas: "date name count" "date note note";
-  padding: .5rem .7rem; border-radius: 8px; background: var(--surface-2);
+  padding: .55rem .75rem; border-radius: 8px; background: var(--navy-3);
 }
-.cal-row.live { background: var(--accent-wash); border: 1px solid var(--accent); }
-.cal-date { grid-area: date; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.cal-name { grid-area: name; color: var(--text-primary); font-weight: 600; }
-.cal-count { grid-area: count; color: var(--accent); font-weight: 600; }
-.cal-note { grid-area: note; color: var(--text-muted); font-size: .82rem; }
+.cal-row.live { background: var(--gold-wash); border: 1px solid var(--gold-deep); }
+.cal-date { grid-area: date; color: var(--ink-muted); font-family: var(--mono); font-size: .82rem; }
+.cal-name { grid-area: name; color: var(--cloud); font-weight: 500; }
+.cal-count { grid-area: count; color: #5EA3E8; font-family: var(--mono); font-size: .82rem; }
+.cal-note { grid-area: note; color: var(--ink-muted); font-size: .8rem; }
 @media (max-width: 640px) {
   .cal-row { grid-template-columns: 1fr auto; grid-template-areas: "date count" "name name" "note note"; }
 }
 
 /* ---------- shopping list ---------- */
 .filters { margin: .6rem 0 0; padding-left: 1.3rem; display: grid; gap: .35rem; }
-.filters b { color: var(--text-primary); }
+.filters b { color: var(--cloud); font-weight: 500; }
 
 /* ---------- form ---------- */
 .grid { display: grid; gap: .8rem 1rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
-label { display: grid; gap: .25rem; font-size: .85rem; color: var(--text-muted); }
+label { display: grid; gap: .25rem; font-size: .82rem; color: var(--ink-muted); }
 input, select {
-  background: var(--surface-2); color: var(--text-primary);
+  background: var(--navy); color: var(--cloud);
   border: 1px solid var(--border); border-radius: 6px;
   padding: .45rem .6rem; font: inherit; font-size: .95rem;
 }
-input:focus, select:focus { outline: 1px solid var(--accent); }
+input[type=number] { font-family: var(--mono); }
+input:focus, select:focus { outline: 1px solid var(--blue); }
 .checks { display: flex; gap: 1.4rem; flex-wrap: wrap; margin: .9rem 0; }
-.checks label { display: flex; align-items: center; gap: .45rem; font-size: .9rem; color: var(--text-secondary); }
-.checks input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); }
+.checks label { display: flex; align-items: center; gap: .45rem; font-size: .9rem; color: var(--cloud); font-weight: 300; }
+.checks input { width: 1.05rem; height: 1.05rem; accent-color: var(--gold); }
 .notes-label { margin-bottom: .9rem; }
 
 .form-actions { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .8rem; }
 button, .file-btn {
-  background: var(--surface-2); color: var(--text-primary);
+  background: transparent; color: var(--cloud);
   border: 1px solid var(--border); border-radius: 8px;
-  padding: .5rem 1rem; font: inherit; font-size: .9rem; cursor: pointer;
+  padding: .5rem 1.05rem; font-family: var(--sans); font-size: .9rem;
+  font-weight: 500; cursor: pointer;
 }
-button:hover, .file-btn:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); color: #0d0d0d; font-weight: 700; border: none; }
-button.primary:hover { filter: brightness(1.1); }
+button:hover, .file-btn:hover { border-color: var(--cloud); }
+/* gold marks a win and one call to action per screen */
+button.primary { background: var(--gold); color: var(--navy); font-weight: 600; border: none; }
+button.primary:hover { filter: brightness(1.06); }
 .file-btn { display: inline-flex; align-items: center; }
 
 /* ---------- score result ---------- */
-.score-result { margin-top: 1.1rem; padding: 1rem 1.2rem; border-radius: 10px; background: var(--surface-2); }
-.check-list { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .15rem; }
-.check-list .ok { color: var(--up); }
-.check-list .fail { color: var(--down); }
-.verdict-bid { color: var(--up); }
-.verdict-reject { color: var(--down); }
-.max-bid { font-size: 1.05rem; color: var(--text-primary); }
-.max-bid b { color: var(--accent); font-size: 1.25rem; }
-details summary { cursor: pointer; color: var(--text-muted); }
+.score-result { margin-top: 1.1rem; padding: 1rem 1.2rem; border-radius: 10px; background: var(--navy-3); }
+.check-list { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .15rem; font-size: .92rem; }
+.check-list .ok { color: var(--green); }
+.check-list .fail { color: var(--ink-muted); }
+.verdict-bid { color: var(--green); }
+.verdict-reject { color: var(--ink-muted); }
+.max-bid { font-size: 1rem; color: var(--cloud); }
+.max-bid b { color: var(--gold); font-family: var(--mono); font-size: 1.6rem; font-weight: 600; }
+details summary { cursor: pointer; color: var(--ink-muted); }
 details summary h2 { display: inline; }
 
 /* ---------- watchlist ---------- */
 .table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-th { color: var(--text-muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
-td small { color: var(--text-muted); }
-.bid-cell { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; }
-.gap-cell { font-variant-numeric: tabular-nums; }
-.gap-cell small { display: block; }
-.row-reject { opacity: .55; }
-.empty { color: var(--text-muted); text-align: center; padding: 1.4rem; }
-.del-btn { padding: .2rem .55rem; color: var(--down); }
+th {
+  color: var(--ink-muted); font-weight: 500; font-size: .72rem;
+  font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em;
+}
+td small { color: var(--ink-muted); }
+td { font-weight: 300; }
+td b { font-weight: 500; }
+.bid-cell { font-family: var(--mono); color: var(--gold); font-weight: 600; font-size: .95rem; }
+.gap-cell { font-family: var(--mono); font-size: .88rem; }
+.gap-cell small { display: block; font-size: .72rem; }
+.gap-cell .verdict-bid { color: var(--green); }
+.row-reject { opacity: .5; }
+.empty { color: var(--ink-muted); text-align: center; padding: 1.4rem; }
+.del-btn { padding: .2rem .55rem; color: var(--ink-muted); }
+.del-btn:hover { color: var(--cloud); }
 .status-sel { font-size: .85rem; padding: .3rem .4rem; }
 
-footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: var(--text-muted); font-size: .8rem; }
+/* numerals are Plex Mono, everywhere they carry meaning */
+td:nth-child(3) { font-family: var(--mono); }
+
+footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: var(--ink-muted); font-size: .78rem; }

@@ -70,26 +70,43 @@ async function api(path) {
   return res.json();
 }
 
+const DEBUG = process.env.DEBUG === '1';
+
 async function enrich(horse) {
   try {
-    // VERIFY: horse search endpoint & response shape against the API docs.
     const search = await api(`/horses/search?name=${encodeURIComponent(horse.name)}`);
-    const id = search?.horses?.[0]?.id ?? search?.search_results?.[0]?.horse_id;
-    if (!id) return { enriched: false };
+    // Tolerate the plausible response shapes; log the real one under DEBUG
+    // so a single workflow run pins it down.
+    const cand = search?.search_results?.[0] ?? search?.horses?.[0] ?? search?.results?.[0]
+      ?? (Array.isArray(search) ? search[0] : null);
+    const id = cand?.id ?? cand?.horse_id;
+    if (!id) {
+      if (DEBUG) console.error(`  ? ${horse.name} search shape: ${JSON.stringify(search)?.slice(0, 400)}`);
+      return { enriched: false };
+    }
 
-    // VERIFY: results endpoint & row fields (course, position, or/rating).
     const res = await api(`/horses/${id}/results`);
-    const runs = res?.results ?? [];
-    const starts = runs.length;
-    const awForm = runs.some((r) => {
-      const course = String(r.course || '').toLowerCase();
-      const won = String(r.position ?? r.pos ?? '') === '1';
-      return won && AW_COURSES.some((c) => course.includes(c));
-    });
-    // Official rating: take the most recent non-empty OR carried in a result
-    // row if present; otherwise leave for the BHA ratings sheet / manual.
-    const rating = runs.map((r) => +(r.or ?? r.official_rating ?? NaN))
-      .find(Number.isFinite) ?? null;
+    const races = res?.results ?? res?.races ?? (Array.isArray(res) ? res : []);
+    if (DEBUG && races[0]) {
+      console.error(`  ? ${horse.name} race keys: ${Object.keys(races[0]).join(',').slice(0, 300)}`);
+      if (races[0].runners?.[0]) console.error(`  ? runner keys: ${Object.keys(races[0].runners[0]).join(',').slice(0, 300)}`);
+    }
+    let starts = 0, awForm = false, rating = null;
+    for (const race of races) {
+      // Results may be flat per-horse rows, or per-race objects with a
+      // runners array — find our horse in the latter case.
+      const runners = Array.isArray(race.runners) ? race.runners : [race];
+      const me = runners.find((r) => (r.horse_id ?? r.id) === id
+        || lc(r.horse ?? r.horse_name ?? r.name) === lc(horse.name))
+        ?? (runners.length === 1 ? runners[0] : null);
+      if (!me) continue;
+      starts++;
+      const course = lc(race.course ?? race.course_name ?? me.course);
+      const won = String(me.position ?? me.pos ?? me.finishing_position ?? '') === '1';
+      if (won && AW_COURSES.some((c) => course.includes(c))) awForm = true;
+      const or = +(me.or ?? me.official_rating ?? me.or_rating ?? NaN);
+      if (rating === null && Number.isFinite(or) && or > 0) rating = or; // rows newest-first
+    }
     return { enriched: true, starts, awForm, rating };
   } catch (e) {
     console.error(`  ! ${horse.name}: ${e.message}`);

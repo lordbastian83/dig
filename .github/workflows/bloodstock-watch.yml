@@ -1,7 +1,7 @@
 name: Bloodstock catalogue watch
 
-# Daily check of sale-house pages; Telegrams when one changes (catalogue
-# drop / lots published). Reuses the existing TELEGRAM_BOT_TOKEN secret.
+# Daily check of sale-house pages; opens a GitHub issue when one changes
+# (catalogue drop / lots published) — GitHub emails you natively, no bot.
 # State (page hashes) is committed to the bloodstock-data branch so each
 # change alerts exactly once.
 
@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: bloodstock-watch
@@ -33,18 +34,31 @@ jobs:
           node-version: 22
 
       - name: Run watcher
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_CHAT_HANDLE: 'Lordbastian83'
-          STATE_FILE: watch-state.json
         run: node bloodstock/watch.mjs
+        env:
+          STATE_FILE: watch-state.json
+          CHANGES_FILE: changes.txt
+
+      - name: Open issue on change
+        if: hashFiles('changes.txt') != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BODY="$(cat changes.txt)
+
+          A sale page changed — likely a catalogue drop. Next step: run the **Bloodstock catalogue ingest** workflow to scrape and score it, then open the scanner and hit **Rank by value gap**."
+          curl -sf -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues" \
+            -d "$(node -e 'console.log(JSON.stringify({title: "🐎 Catalogue watch: sale page changed "+new Date().toISOString().slice(0,10), body: process.argv[1]}))' "$BODY")"
 
       - name: Persist state to bloodstock-data branch
         run: |
           git config user.name 'bloodstock-watch[bot]'
           git config user.email 'actions@users.noreply.github.com'
-          if git rev-parse --verify origin/bloodstock-data >/dev/null 2>&1; then
+          git fetch origin bloodstock-data:refs/remotes/origin/bloodstock-data || true
+          if git rev-parse --verify refs/remotes/origin/bloodstock-data >/dev/null 2>&1; then
             git worktree add data origin/bloodstock-data
             cd data && git checkout -B bloodstock-data
           else
