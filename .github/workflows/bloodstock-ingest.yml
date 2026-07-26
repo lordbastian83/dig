@@ -3,12 +3,10 @@ name: Bloodstock catalogue ingest
 # Manual pipeline: scrape a catalogue (or use a committed/uploaded CSV),
 # enrich every lot via The Racing API (Pro credentials from repo secrets),
 # and publish the scored lots.json + the CSV to the bloodstock-data branch.
-# Load lots.json into the app via its "Restore JSON" button (or point the
-# app's data fetch at the raw branch URL once stable).
+# Load lots.json into the app via its "Restore JSON" button.
 #
 # Secrets required (Settings -> Secrets -> Actions):
 #   RACING_API_USERNAME / RACING_API_PASSWORD   - The Racing API Pro
-#   TELEGRAM_BOT_TOKEN (optional)               - summary alert
 
 on:
   workflow_dispatch:
@@ -17,6 +15,10 @@ on:
         description: 'Sale lots index URL to scrape (leave empty to use bloodstock/catalogue.csv from the repo)'
         required: false
         default: ''
+      debug:
+        description: 'Log API response shapes (1 = on)'
+        required: false
+        default: '0'
 
 permissions:
   contents: write
@@ -51,13 +53,15 @@ jobs:
           RACING_API_PASSWORD: ${{ secrets.RACING_API_PASSWORD }}
           CATALOGUE: catalogue.csv
           OUT: lots.json
+          DEBUG: ${{ inputs.debug }}
         run: node bloodstock/ingest.mjs
 
       - name: Publish to bloodstock-data branch
         run: |
           git config user.name 'bloodstock-ingest[bot]'
           git config user.email 'actions@users.noreply.github.com'
-          if git rev-parse --verify origin/bloodstock-data >/dev/null 2>&1; then
+          git fetch origin bloodstock-data:refs/remotes/origin/bloodstock-data || true
+          if git rev-parse --verify refs/remotes/origin/bloodstock-data >/dev/null 2>&1; then
             git worktree add data origin/bloodstock-data
             cd data && git checkout -B bloodstock-data
           else
@@ -69,16 +73,3 @@ jobs:
           git add lots.json catalogue.csv
           git commit -m "ingest $(date -u +%F)" || exit 0
           git push origin bloodstock-data
-
-      - name: Telegram summary (optional)
-        if: always()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          [ -z "$TELEGRAM_BOT_TOKEN" ] && exit 0
-          [ -z "$TELEGRAM_CHAT_ID" ] && { echo "TELEGRAM_CHAT_ID not set - skipping summary"; exit 0; }
-          N=$(node -e 'try{console.log(JSON.parse(require("fs").readFileSync("lots.json")).watchlist.length)}catch{console.log(0)}')
-          curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode text="🐎 Bloodstock ingest complete: ${N} lots enriched and published to bloodstock-data. Load lots.json into the scanner and hit 'Rank by value gap'."

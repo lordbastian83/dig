@@ -1,19 +1,16 @@
-/* Catalogue watcher — checks sale pages daily and Telegrams when one
-   changes (i.e. a catalogue has dropped or lots were published).
+/* Catalogue watcher — checks sale pages daily and reports when one changes
+   (i.e. a catalogue has dropped or lots were published).
 
-   Reuses the budsignal Telegram pattern:
-     TELEGRAM_BOT_TOKEN   required to send (existing repo secret)
-     TELEGRAM_CHAT_ID     optional numeric id; else auto-resolved from the
-     TELEGRAM_CHAT_HANDLE (default Lordbastian83) via the bot's updates
-   State (content hashes per URL) lives in watch-state.json, committed back
-   by the workflow so a change only alerts once. */
+   No Telegram, no external services: when a change is detected this script
+   writes changes.txt, and the workflow opens a GitHub issue — GitHub then
+   emails you natively. State (content hashes per URL) lives in
+   watch-state.json, committed to the data branch so a change reports once. */
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
 const STATE_FILE = process.env.STATE_FILE || 'watch-state.json';
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const HANDLE = (process.env.TELEGRAM_CHAT_HANDLE || 'Lordbastian83').replace(/^@/, '').toLowerCase();
+const CHANGES_FILE = process.env.CHANGES_FILE || 'changes.txt';
 
 const WATCH = [
   { key: 'tatts-autumn-hit',
@@ -26,33 +23,6 @@ const WATCH = [
     url: 'https://www.tattersallsonline.com/',
     label: 'Tattersalls Online (monthly sales)' },
 ];
-
-async function tg(method, body) {
-  const r = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const j = await r.json();
-  if (!j.ok) throw new Error(`telegram ${method}: ${j.description || r.status}`);
-  return j.result;
-}
-
-async function resolveChats(state) {
-  state.chats = state.chats || [];
-  if (process.env.TELEGRAM_CHAT_ID && !state.chats.includes(+process.env.TELEGRAM_CHAT_ID)) {
-    state.chats.push(+process.env.TELEGRAM_CHAT_ID);
-  }
-  try {
-    const updates = await tg('getUpdates', {});
-    for (const u of updates) {
-      const chat = u.message?.chat || u.edited_message?.chat;
-      if (chat?.type === 'private' && !state.chats.includes(chat.id)) {
-        if (!chat.username || chat.username.toLowerCase() === HANDLE) state.chats.push(chat.id);
-      }
-    }
-  } catch (e) { console.error('getUpdates:', e.message); }
-  return state.chats;
-}
 
 let state = {};
 try { state = JSON.parse(readFileSync(STATE_FILE, 'utf8')); } catch { /* first run */ }
@@ -76,20 +46,9 @@ for (const w of WATCH) {
   }
 }
 
-if (changes.length && TOKEN) {
-  const chats = await resolveChats(state);
-  const msg = ['🐎 Bloodstock watch — page change detected:',
-    ...changes.map((c) => `• ${c.label}\n  ${c.url}`),
-    '',
-    'If this is the catalogue drop: run the Actions workflow',
-    '"Bloodstock catalogue ingest" to scrape + score, or screen it in the app.',
-  ].join('\n');
-  for (const chat of chats) {
-    try { await tg('sendMessage', { chat_id: chat, text: msg }); console.log(`alerted ${chat}`); }
-    catch (e) { console.error(`send ${chat}: ${e.message}`); }
-  }
-} else if (changes.length) {
-  console.log('changes detected but TELEGRAM_BOT_TOKEN not set — no alert sent');
+if (changes.length) {
+  writeFileSync(CHANGES_FILE, changes.map((c) => `- **${c.label}**\n  ${c.url}`).join('\n'));
+  console.log(`${changes.length} change(s) → ${CHANGES_FILE}`);
 } else {
   console.log('no changes');
 }
