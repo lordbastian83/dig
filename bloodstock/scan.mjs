@@ -386,7 +386,7 @@ for (const m of ranked) {
     powerhouse: POWERHOUSE.some((p) => lc(m.owner).includes(p)),
     awForm: deep.awForm,
     rprEdge: deep.rprEdge, trend: deep.trend,
-    region: m.region, sex: m.sex,
+    region: m.region, sex: m.sex, age: m.age,
     distBest: deep.distBest, distMin: deep.distMin, distMax: deep.distMax,
     racePlan: deep.racePlan, versatile: deep.versatile,
     consistency: deep.consistency, classMove: deep.classMove,

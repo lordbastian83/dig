@@ -700,7 +700,9 @@ function editorProfile() {
 let RADAR = [];
 let RADAR_META = {};
 let findsExpanded = false;   // radar shows a top few by default, expands on demand
+let radarSort = 'vault';     // 'vault' = best value/EV · 'dubai' = best Meydan fit
 const FINDS_LIMIT = 6;
+const dubaiPct = (r) => Math.round((r.dubai?.pct ?? 0) * 100);
 function navShow(id, on) {
   const a = document.querySelector(`.quicknav a[href="#${id}"]`);
   if (a) a.hidden = !on;
@@ -714,9 +716,13 @@ function renderFinds() {
   const rows = RADAR
     .filter((h) => matchesProfile(h, prof))
     .map((h) => ({ h, r: evaluate(h, P) }))
-    // Rank by vault score (the intelligence), then value gap, then bid —
-    // so the best horse floats to the top and the order is meaningful.
     .sort((a, b) => {
+      if (radarSort === 'dubai') {
+        // Best for the Meydan campaign first, vault score breaks ties
+        if (dubaiPct(b.r) !== dubaiPct(a.r)) return dubaiPct(b.r) - dubaiPct(a.r);
+        return b.r.score - a.r.score;
+      }
+      // Best value: vault score, then widest value gap
       if (Math.round(b.r.score * 100) !== Math.round(a.r.score * 100))
         return b.r.score - a.r.score;
       const ga = a.r.gns - (expectedPrice(a.h)?.gns ?? a.r.gns);
@@ -725,9 +731,11 @@ function renderFinds() {
     })
     .slice(0, 40);
   renderProfileBar();
+  renderStats(rows);
   const scanDate = RADAR_META.generated || '—';
+  const rankLabel = radarSort === 'dubai' ? 'Dubai Carnival fit' : 'vault value score';
   const header = `<p class="finds-meta">Scanned <b>${scanDate}</b> · ${RADAR.length} horses swept ·
-    showing ${rows.length} for "${prof.name}" ranked by vault score</p>`;
+    showing ${rows.length} for "${prof.name}" ranked by ${rankLabel}</p>`;
   if (!rows.length) {
     $('#finds').innerHTML = header +
       `<p class="empty">No radar finds match "${prof.name}". Loosen the filters (⚙ Profiles) or wait for tomorrow's scan.</p>`;
@@ -769,18 +777,25 @@ function renderFinds() {
     if (h.damLabel) t.push(`<span class="ftag">dam: ${h.damLabel}</span>`);
     return t.join('');
   };
+  const dubaiClass = (p) => p >= 75 ? 'df-hot' : p >= 55 ? 'df-warm' : 'df-cool';
   const shown = findsExpanded ? rows : rows.slice(0, FINDS_LIMIT);
   const rowHTML = shown.map(({ h, r }, i) => {
     const [tl, tc] = tier(r.score);
     const top = i === 0 && r.score >= 0.7;
+    const dp = dubaiPct(r);
     return `
     <div class="find-row ${tc}-edge${top ? ' find-top' : ''}">
-      ${top ? '<span class="top-tag">★ top pick</span>' : ''}
+      ${top ? `<span class="top-tag">★ top pick${radarSort === 'dubai' ? ' for dubai' : ''}</span>` : ''}
       <div class="find-score ${tc}"><span class="fs-num">${Math.round(r.score * 100)}</span><span class="fs-lab">${tl}</span></div>
       <div class="find-main">
         <b class="find-name" data-i="${i}" title="Click for full profile">${h.name}</b>
         <small class="find-ped">${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
         <div class="find-tags">${findTags(h)}</div>
+        <div class="dubai-meter ${dubaiClass(dp)}" title="How well this horse suits a Meydan dirt campaign">
+          <span class="dm-lab">🏜 Dubai fit</span>
+          <span class="dm-bar"><span class="dm-fill" style="width:${dp}%"></span></span>
+          <span class="dm-num">${dp}</span>
+        </div>
         ${h.racePlan ? `<small class="race-plan">🏁 ${h.racePlan}</small>` : ''}
         <button class="find-profile" data-i="${i}">view full profile →</button>
       </div>
@@ -798,6 +813,43 @@ function renderFinds() {
   card.hidden = false;
 }
 
+/* ---------- at-a-glance dashboard ---------- */
+function daysToCarnival() {
+  // Meydan Dubai Carnival opens early January (World Cup night late March).
+  const now = new Date();
+  let open = new Date(Date.UTC(now.getUTCFullYear(), 0, 2));
+  if (now > open) open = new Date(Date.UTC(now.getUTCFullYear() + 1, 0, 2));
+  return Math.max(0, Math.ceil((open - now) / 86400000));
+}
+function renderStats(rows) {
+  const strip = $('#statstrip');
+  if (!strip) return;
+  if (!RADAR.length) { strip.hidden = true; return; }
+  const diamonds = rows.filter((x) => x.r.score >= 0.85).length;
+  const dubaiReady = rows.filter((x) => dubaiPct(x.r) >= 70).length;
+  const top = rows[0];
+  const cell = (num, lab, cls = '') =>
+    `<div class="stat ${cls}"><span class="stat-num">${num}</span><span class="stat-lab">${lab}</span></div>`;
+  strip.innerHTML =
+    cell(RADAR.length, 'horses swept') +
+    cell(diamonds, '💎 diamonds', diamonds ? 'stat-gold' : '') +
+    cell(dubaiReady, '🏜 Dubai-ready', dubaiReady ? 'stat-green' : '') +
+    cell(daysToCarnival(), '⏱ days to Carnival') +
+    (top ? `<div class="stat stat-top"><span class="stat-lab">top ${radarSort === 'dubai' ? 'for Dubai' : 'value'}</span>` +
+      `<span class="stat-topname">${top.h.name}</span>` +
+      `<span class="stat-topsub">vault ${Math.round(top.r.score * 100)} · Dubai fit ${dubaiPct(top.r)}</span></div>` : '');
+  strip.hidden = false;
+}
+
+$('#sort-toggle').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-sort]'); if (!b) return;
+  radarSort = b.dataset.sort;
+  $('#sort-toggle').querySelectorAll('button').forEach((x) =>
+    x.classList.toggle('on', x.dataset.sort === radarSort));
+  findsExpanded = false;
+  renderFinds();
+});
+
 /* ---------- horse profile modal — everything we know ---------- */
 function openHorseModal(h) {
   const P = loadParams();
@@ -811,7 +863,8 @@ function openHorseModal(h) {
   $('#modal-body').innerHTML = `
     <div class="mp-head">
       <h3>${h.name}</h3>
-      <span class="mp-score">vault score ${Math.round(r.score * 100)}</span>
+      <span class="mp-score">vault ${Math.round(r.score * 100)}</span>
+      <span class="mp-score mp-dubai">🏜 Dubai fit ${dubaiPct(r)}</span>
     </div>
     <p class="mp-sub">${h.sire || '?'} × ${h.dam || '?'} · ${h.vendor || '?'}${h.trainer ? ` · ${h.trainer}` : ''}</p>
 
@@ -821,6 +874,11 @@ function openHorseModal(h) {
       <div><span class="mp-big">${h.bestRPR ?? h.careerHigh ?? '—'}</span><span class="mp-lab">${h.bestRPR != null ? 'best RPR (speed)' : 'career-high OR'}</span></div>
       <div><span class="mp-big ${r.verdict === 'BID' ? 'ok' : ''}">${r.verdict === 'BID' ? 'PASS' : (6 - r.fails.length) + '/6'}</span><span class="mp-lab">screen</span></div>
     </div>
+
+    ${(r.dubai?.reasons || []).length ? `<div class="mp-dubai-why">
+      <b>🏜 Why it fits Dubai (${dubaiPct(r)}/100):</b> ${r.dubai.reasons.join(' · ')}.
+      ${dubaiPct(r) < 55 ? ' Fit is modest — better value elsewhere than as a Meydan type.' : ''}
+    </div>` : ''}
 
     ${section('Ability &amp; speed', [
       row('Official rating', h.rating), row('Career-high OR', h.careerHigh),

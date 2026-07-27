@@ -93,8 +93,45 @@
 
     const verdict = fails.length ? 'REJECT' : 'BID';
     return { checks, fails, score: s, pTop, pWin, pMid, pFlop,
-             residual, inflows, cap, gns, vetClean, clamped, verdict };
+             residual, inflows, cap, gns, vetClean, clamped, verdict,
+             dubai: dubaiFit(h) };
   }
 
-  globalThis.VaultRacingEngine = { PARAM_DEFAULTS, ratingMult, expectedPrice, evaluate };
+  /* Dubai Carnival fit (0..1) — how well this horse suits a Meydan dirt
+     campaign next season, independent of price/value. Dirt proof is the
+     differentiator; then a dirt sire line, the Carnival-competitive rating
+     band, a Meydan trip, the right age to campaign, and upside. A turf-only
+     sprinter can be great VALUE (high vault score) yet a poor Dubai FIT. */
+  function dubaiFit(h) {
+    let f = 0;
+    const reasons = [];
+    // dirt / all-weather proof — THE Meydan differentiator
+    if (h.awForm) { f += 0.28; reasons.push('AW/dirt winner'); }
+    const dirtSurf = /aw|tapeta|polytrack|fibresand|dirt|sand|psf/
+      .test(String(h.surfaceList || '').toLowerCase());
+    if (dirtSurf && !h.awForm) { f += 0.08; reasons.push('run on the surface'); }
+    // dirt-translating sire line
+    if (h.sireTier === 'A') { f += 0.18; reasons.push('proven dirt sire'); }
+    else if (h.sireTier === 'B') { f += 0.11; reasons.push('dirt damsire'); }
+    // Carnival-competitive mark (imported handicappers sit ~90–102)
+    const r = +h.rating || 0;
+    if (r >= 90 && r <= 102) { f += 0.16; reasons.push('Carnival rating band'); }
+    else if (r >= 85 && r <= 108) { f += 0.10; }
+    else if (r >= 80) { f += 0.04; }
+    // a Meydan dirt trip (sprints to 9f handicaps)
+    if (h.distBest != null) {
+      if (h.distBest >= 6 && h.distBest <= 9.5) { f += 0.12; reasons.push('Meydan trip'); }
+      else if (h.distBest >= 5 && h.distBest <= 10.5) { f += 0.06; }
+    }
+    // the right age to campaign next season
+    const age = +h.age || null;
+    if (age != null) { if (age >= 3 && age <= 6) { f += 0.08; } }
+    else { f += 0.04; }
+    // upside — improving and still unexposed
+    if (h.trend === 'improving') { f += 0.04; reasons.push('improving'); }
+    if (+h.starts <= 10) { f += 0.02; }
+    return { pct: Math.min(1, +f.toFixed(3)), reasons };
+  }
+
+  globalThis.VaultRacingEngine = { PARAM_DEFAULTS, ratingMult, expectedPrice, evaluate, dubaiFit };
 })();
