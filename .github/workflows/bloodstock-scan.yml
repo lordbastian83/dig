@@ -15,6 +15,10 @@ on:
         description: 'Lookback window in days'
         required: false
         default: '7'
+      debug:
+        description: 'Log API response shapes (1 = on)'
+        required: false
+        default: '0'
 
 permissions:
   contents: write
@@ -46,6 +50,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_CHAT_HANDLE: 'Lordbastian83'
           DAYS: ${{ inputs.days || '7' }}
+          DEBUG: ${{ inputs.debug || '0' }}
           OUT: candidates.json
           EXISTING: candidates.json
         run: node bloodstock/scan.mjs

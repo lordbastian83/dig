@@ -24,6 +24,7 @@ const E = globalThis.VaultRacingEngine;
 const USER = process.env.RACING_API_USERNAME;
 const PASS = process.env.RACING_API_PASSWORD;
 const DEMO = process.env.DEMO === '1';
+const DEBUG = process.env.DEBUG === '1';
 const DAYS = +(process.env.DAYS || 7);
 const OUT = process.env.OUT || 'candidates.json';
 const EXISTING = process.env.EXISTING || OUT;
@@ -114,32 +115,48 @@ async function sweep() {
 // tickbox. Looks up the dam and her other offspring; returns a 0-1 score and
 // a label. VERIFY the progeny endpoint against the API once live; degrades to
 // null (falls back to the manual blackType flag) if unavailable.
-async function damProduction(damId, damName) {
+async function damProduction(damId, damName, selfId) {
   if (!damId && !damName) return null;
   try {
-    const id = damId || (await api(`/horses/search?name=${encodeURIComponent(damName)}`))
-      ?.search_results?.[0]?.id;
+    const id = damId || (await api(`/dams/search?name=${encodeURIComponent(damName)}`))
+      ?.search_results?.[0]?.id
+      || (await api(`/horses/search?name=${encodeURIComponent(damName)}`))?.search_results?.[0]?.id;
     if (!id) return null;
-    // Try a progeny endpoint; shapes vary, so read tolerantly.
-    let prog = null;
-    for (const path of [`/dams/${id}/results`, `/horses/${id}/progeny`, `/dams/${id}/progeny`]) {
-      try { prog = await api(path); if (prog) break; } catch { /* try next */ }
+    // The dam endpoint returns the offspring's RACE RESULTS (races with a
+    // runners[] of her foals), not a flat foal list. Try the known paths.
+    let data = null;
+    for (const path of [`/dams/${id}/results`, `/dams/${id}/results?limit=200`]) {
+      try { data = await api(path); if (data) break; } catch { /* next */ }
     }
-    const foals = prog?.progeny ?? prog?.results ?? (Array.isArray(prog) ? prog : []);
-    if (!foals.length) return null;
-    let rated90 = 0, blackType = 0, n = 0;
-    for (const f of foals) {
-      n++;
-      const or = +(f.or ?? f.best_or ?? NaN);
-      if (Number.isFinite(or) && or >= 90) rated90++;
-      const bt = lc(f.black_type ?? '') + lc(f.pattern ?? '');
-      if (/group|listed|\bg[123]\b|stakes/.test(bt)) blackType++;
+    const races = data?.results ?? (Array.isArray(data) ? data : []);
+    if (DEBUG && races[0]) console.error(`  ? dam ${damName} result keys: ${Object.keys(races[0]).join(',').slice(0, 200)}`);
+    if (!races.length) return null;
+
+    // Aggregate per offspring: best OR, and whether it hit black type.
+    const foals = new Map(); // offspring horse_id -> {bestOR, blackType}
+    for (const race of races) {
+      const runners = Array.isArray(race.runners) ? race.runners : [race];
+      const pat = lc(race.pattern) + ' ' + lc(race.race_name) + ' ' + lc(race.class);
+      const isBT = /group|listed|\bg[123]\b|stakes/.test(pat);
+      for (const r of runners) {
+        const hid = r.horse_id ?? r.id ?? r.horse;
+        if (!hid || hid === selfId) continue;   // exclude the candidate itself
+        const e = foals.get(hid) || { bestOR: 0, blackType: false };
+        const or = +(r.or ?? r.official_rating ?? NaN);
+        if (Number.isFinite(or)) e.bestOR = Math.max(e.bestOR, or);
+        if (isBT && +(r.position ?? 99) <= 3) e.blackType = true;
+        foals.set(hid, e);
+      }
     }
-    const rate90 = n ? rated90 / n : 0;
+    const n = foals.size;
+    if (!n) return null;
+    let rated90 = 0, blackType = 0;
+    for (const f of foals.values()) { if (f.bestOR >= 90) rated90++; if (f.blackType) blackType++; }
+    const rate90 = rated90 / n;
     const score = Math.min(1, blackType * 0.4 + rate90);
-    const label = blackType ? `${blackType} black-type from ${n} foals`
-      : `${rated90}/${n} foals rated 90+`;
-    return { score: +score.toFixed(2), label, blackType: blackType > 0 };
+    const label = blackType ? `${blackType} black-type from ${n} siblings`
+      : rated90 ? `${rated90}/${n} siblings rated 90+` : `${n} siblings, none 90+`;
+    return { score: +score.toFixed(2), label, blackType: blackType > 0, n };
   } catch (e) { console.error(`  dam ${damName}: ${e.message}`); return null; }
 }
 
@@ -213,7 +230,7 @@ async function deepCheck(c) {
   const classMove = classesNewestFirst.length >= 2
     ? (clsFirst > clsLast ? 'dropping' : clsFirst < clsLast ? 'rising' : 'level') : null;
 
-  const dam = await damProduction(damId, (c.dam || '').replace(/\(.*?\)/g, '').trim());
+  const dam = await damProduction(damId, (c.dam || '').replace(/\(.*?\)/g, '').trim(), c.id);
 
   return { starts, awForm, rprEdge, trend, distMin, distMax, distBest, racePlan,
            versatile, consistency, classMove, dam,
