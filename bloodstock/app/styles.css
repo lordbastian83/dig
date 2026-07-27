@@ -94,8 +94,16 @@ main { max-width: 980px; margin: 0 auto; padding: 1.2rem; display: grid; gap: 1.
   width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
   border: 1px solid var(--border);
 }
+.hero-media img + button + .hero-horse,
 .hero-media img + .hero-horse { display: none; }  /* photo wins when present */
 .hero-horse { width: 100%; height: 100%; }
+#hero-set {
+  position: absolute; bottom: 4px; right: 4px;
+  font-size: .62rem; padding: .15rem .45rem; opacity: .5;
+  background: rgba(18,32,58,.8); color: var(--cloud); border: 1px solid var(--border);
+  border-radius: 5px; cursor: pointer;
+}
+#hero-set:hover { opacity: 1; }
 @media (max-width: 640px) {
   .hero { flex-direction: column; text-align: center; }
   .hero-media { width: 140px; height: 120px; }

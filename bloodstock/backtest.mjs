@@ -1,41 +1,49 @@
-/* Outcome-tree backtest — replace the ASSUMED probability tree
-   (10/20/40/30) with MEASURED frequencies from horses actually sold at past
-   HIT sales in our profile band.
+/* Outcome-tree backtest — MEASURE the real probability tree instead of
+   assuming 10/20/40/30.
 
-   Input: a CSV of past-sale lots we can track forward —
-     name,sold_gns,sale_date   (one row per lot; name must resolve in the API)
-   For each, the script pulls the 12 months after sale_date from The Racing
-   API and classifies the outcome into the same four branches the engine
-   uses, then prints the empirical distribution + the £-weighted residual
-   those frequencies imply, so PARAM_DEFAULTS can be recalibrated from data.
+   Method (needs no auction data — builds its own cohort from race results,
+   a less biased sample than sale lots): take every horse that, in a window
+   ~13-15 months ago, matched the radar profile at that time (OR in band,
+   dirt-line sire, age <= 4, few prior starts), then follow each for the
+   next 12 months and classify the outcome into the four residual branches.
+   Print the empirical distribution, the £-weighted residual it implies, and
+   the pTop/pWin base rates to drop into engine.js.
 
    Environment:
      RACING_API_USERNAME / RACING_API_PASSWORD  required
-     LOTS      input CSV (default backtest-lots.csv)
-     DEMO=1    offline synthetic run
+     COHORT_MONTHS   how far back the cohort window opens (default 15)
+     WINDOW_DAYS     width of the cohort window (default 45)
+     TRACK_MONTHS    follow-forward horizon (default 12)
+     MAX_PAGES       result pages to sweep for the cohort (default 60)
+     OUT             write JSON report here (optional)
+     DEMO=1          offline synthetic run */
 
-   This is the honesty engine: it does not guess, it measures. Feed it one
-   past sale's results and the max-bid math stops being assumption. */
-
-import { readFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 
 const USER = process.env.RACING_API_USERNAME;
 const PASS = process.env.RACING_API_PASSWORD;
 const DEMO = process.env.DEMO === '1';
-const LOTS = process.env.LOTS || 'backtest-lots.csv';
+const COHORT_MONTHS = +(process.env.COHORT_MONTHS || 15);
+const WINDOW_DAYS = +(process.env.WINDOW_DAYS || 45);
+const TRACK_MONTHS = +(process.env.TRACK_MONTHS || 12);
+const MAX_PAGES = +(process.env.MAX_PAGES || 60);
 const API = 'https://api.theracingapi.com/v1';
 
-// Outcome bands (align with engine's residual tree). Tune the thresholds as
-// the definition of each branch firms up.
+const TIER_A = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
+const DIRT_DAMSIRE = ['street cry', 'shamardal', "medaglia d'oro", 'dubai millennium'];
+
 const BANDS = {
-  breakthrough: { label: 'group/listed or 110+ or Meydan black type', value: 350000 },
-  winner:       { label: 'won & reprized to 100+',                     value: 120000 },
-  mid:          { label: 'competitive, stayed 80-99',                  value: 30000 },
-  flop:         { label: 'declined / injured / disappeared',           value: 8000 },
+  breakthrough: { label: 'group/listed, 110+, or Meydan black type', value: 350000 },
+  winner:       { label: 'won & reprized to 100+',                   value: 120000 },
+  mid:          { label: 'competitive, stayed 80-99',                value: 30000 },
+  flop:         { label: 'declined / injured / disappeared',         value: 8000 },
 };
 
 const lc = (s) => String(s || '').toLowerCase();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const iso = (d) => d.toISOString().slice(0, 10);
+const dirtLine = (sire, damsire) =>
+  TIER_A.some((x) => lc(sire).includes(x)) || DIRT_DAMSIRE.some((x) => lc(damsire).includes(x));
 
 async function api(path) {
   const res = await fetch(API + path, {
@@ -61,59 +69,80 @@ function classify(runsAfter, saleOR) {
   return 'flop';
 }
 
-/* ---------- gather ---------- */
+const now = new Date();
+const winFrom = new Date(now); winFrom.setMonth(winFrom.getMonth() - COHORT_MONTHS);
+const winTo = new Date(winFrom); winTo.setDate(winTo.getDate() + WINDOW_DAYS);
+
 let lots;
 if (DEMO) {
-  lots = [
-    { outcome: 'breakthrough' }, { outcome: 'winner' }, { outcome: 'winner' },
-    { outcome: 'mid' }, { outcome: 'mid' }, { outcome: 'mid' }, { outcome: 'mid' },
-    { outcome: 'flop' }, { outcome: 'flop' }, { outcome: 'breakthrough' },
-  ];
+  lots = ['breakthrough', 'winner', 'winner', 'mid', 'mid', 'mid', 'mid', 'flop', 'flop', 'breakthrough']
+    .map((o) => ({ outcome: o }));
 } else {
   if (!USER || !PASS) { console.error('RACING_API credentials required'); process.exit(1); }
-  const rows = readFileSync(LOTS, 'utf8').split(/\r?\n/).filter(Boolean);
-  const head = rows.shift().toLowerCase().split(',').map((h) => h.trim());
-  const ni = head.indexOf('name'), di = head.indexOf('sale_date');
+  console.log(`Cohort window: ${iso(winFrom)} … ${iso(winTo)} (tracked +${TRACK_MONTHS}mo)`);
+  const cohort = new Map();
+  for (let page = 0; page < MAX_PAGES; page++) {
+    let batch;
+    try { batch = await api(`/results?start_date=${iso(winFrom)}&end_date=${iso(winTo)}&region=gb&region=ire&limit=50&skip=${page * 50}`); }
+    catch (e) { console.error(`sweep ${page}: ${e.message}`); break; }
+    const races = batch?.results ?? [];
+    if (!races.length) break;
+    for (const race of races) {
+      for (const r of race.runners ?? []) {
+        const or = +(r.or ?? NaN), age = +(r.age ?? 99);
+        if (!Number.isFinite(or) || or < 85 || or > 95 || age > 4) continue;
+        if (!dirtLine(r.sire, r.damsire)) continue;
+        if (!cohort.has(r.horse_id)) cohort.set(r.horse_id, { id: r.horse_id, name: r.horse, cohortDate: race.date, or });
+      }
+    }
+    await sleep(250);
+  }
+  console.log(`${cohort.size} horses matched the profile in the window`);
+
   lots = [];
-  for (const line of rows) {
-    const cols = line.split(',');
-    const name = (cols[ni] || '').trim(), saleDate = (cols[di] || '').trim();
-    if (!name || !saleDate) continue;
+  for (const c of cohort.values()) {
     try {
-      const s = await api(`/horses/search?name=${encodeURIComponent(name)}`);
-      const id = s?.search_results?.[0]?.id ?? s?.horses?.[0]?.id;
-      if (!id) { console.error(`  ? ${name}: not found`); continue; }
-      const res = await api(`/horses/${id}/results`);
+      const res = await api(`/horses/${c.id}/results`);
       const races = res?.results ?? [];
-      const t0 = Date.parse(saleDate), t1 = t0 + 365 * 86400000;
-      let saleOR = 0; const after = [];
+      const t0 = Date.parse(c.cohortDate);
+      const t1 = t0 + TRACK_MONTHS * 30.4 * 86400000;
+      let priorStarts = 0; const after = [];
       for (const race of races) {
-        const me = (race.runners ?? []).find((r) => r.horse_id === id);
+        const me = (race.runners ?? []).find((r) => r.horse_id === c.id);
         if (!me) continue;
         const t = Date.parse(race.date);
-        if (t <= t0) { const or = +(me.or ?? 0); if (or) saleOR = Math.max(saleOR, or); }
-        else if (t <= t1) after.push({ ...me, pattern: race.pattern, race_name: race.race_name });
+        if (t < t0) priorStarts++;
+        else if (t > t0 && t <= t1) after.push({ ...me, pattern: race.pattern, race_name: race.race_name });
       }
-      lots.push({ name, outcome: classify(after, saleOR) });
-      console.log(`  ${name}: ${lots.at(-1).outcome}`);
-      await sleep(400);
-    } catch (e) { console.error(`  ! ${name}: ${e.message}`); }
+      if (priorStarts > 7) continue; // exposed at cohort time — not our profile
+      lots.push({ name: c.name, outcome: classify(after, c.or) });
+      await sleep(300);
+    } catch (e) { console.error(`  ! ${c.name}: ${e.message}`); }
   }
 }
 
-/* ---------- report ---------- */
 const n = lots.length;
-if (!n) { console.error('no trackable lots'); process.exit(1); }
+if (!n) { console.error('no trackable cohort — widen the window'); process.exit(1); }
 const counts = { breakthrough: 0, winner: 0, mid: 0, flop: 0 };
 for (const l of lots) counts[l.outcome]++;
 const freq = Object.fromEntries(Object.entries(counts).map(([k, v]) => [k, v / n]));
-const residual = Object.entries(freq).reduce((sum, [k, p]) => sum + p * BANDS[k].value, 0);
+const residual = Object.entries(freq).reduce((s, [k, p]) => s + p * BANDS[k].value, 0);
 
-console.log(`\n=== Backtest over ${n} lots ===`);
+console.log(`\n=== Measured outcome tree over ${n} profile horses ===`);
 for (const k of Object.keys(BANDS)) {
   console.log(`  ${k.padEnd(13)} ${(freq[k] * 100).toFixed(0).padStart(3)}%  (${counts[k]})  £${BANDS[k].value.toLocaleString()}  — ${BANDS[k].label}`);
 }
 console.log(`\n  MEASURED E[residual] = £${Math.round(residual).toLocaleString()}`);
-console.log(`  Engine's assumed tree (10/20/40/30) → £73,400`);
-console.log(`  Δ ${residual > 73400 ? '+' : ''}£${Math.round(residual - 73400).toLocaleString()} — if negative, current max bids are too generous.`);
-console.log(`\n  To adopt: set engine pTop/pWin base rates from the frequencies above.`);
+console.log(`  Assumed tree (10/20/40/30) → £73,400   Δ ${residual >= 73400 ? '+' : ''}£${Math.round(residual - 73400).toLocaleString()}`);
+console.log(`\n  Engine base rates to adopt:`);
+console.log(`    pTop  ≈ ${freq.breakthrough.toFixed(3)}   (currently 0.04–0.10)`);
+console.log(`    pWin  ≈ ${freq.winner.toFixed(3)}   (currently 0.12–0.20)`);
+console.log(`  If Δ is sharply negative, current max bids are too generous — recalibrate before bidding.`);
+
+if (process.env.OUT) {
+  writeFileSync(process.env.OUT, JSON.stringify({
+    generated: iso(now), n, window: { from: iso(winFrom), to: iso(winTo), trackMonths: TRACK_MONTHS },
+    freq, counts, measuredResidual: Math.round(residual), assumedResidual: 73400,
+  }, null, 2));
+  console.log(`\n  report → ${process.env.OUT}`);
+}
