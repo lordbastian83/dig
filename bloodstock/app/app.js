@@ -226,15 +226,27 @@ function renderParams() {
 
 /* ---------- form handling ---------- */
 
+const TIER_A_SIRES = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
+const TIER_B_DAMSIRES = ['street cry', 'shamardal', "medaglia d'oro", 'dubai millennium'];
+function deriveTier(sire, dam) {
+  const s = String(sire || '').toLowerCase(), d = String(dam || '').toLowerCase();
+  return TIER_A_SIRES.some((x) => s.includes(x)) ? 'A'
+       : TIER_B_DAMSIRES.some((x) => d.includes(x)) ? 'B' : '';
+}
+
 function readForm(form) {
   const f = new FormData(form);
+  const sire = (f.get('sire') || '').trim();
+  const dam = (f.get('dam') || '').trim();
+  const tierSel = f.get('sireTier');
   return {
     name: (f.get('name') || '').trim(),
     sale: f.get('sale'), lot: (f.get('lot') || '').trim(),
-    sire: (f.get('sire') || '').trim(), dam: (f.get('dam') || '').trim(),
+    sire, dam,
     vendor: (f.get('vendor') || '').trim(),
     rating: +f.get('rating'), starts: +f.get('starts'),
-    sireTier: f.get('sireTier'), vet: f.get('vet'),
+    sireTier: tierSel === 'auto' ? deriveTier(sire, dam) : tierSel,
+    vet: f.get('vet'),
     powerhouse: f.has('powerhouse'), blackType: f.has('blackType'),
     awForm: f.has('awForm'),
     notes: (f.get('notes') || '').trim(),
@@ -263,7 +275,7 @@ $('#demo-btn').addEventListener('click', () => {
   form.vendor.value = 'Godolphin';
   form.rating.value = 90;
   form.starts.value = 5;
-  form.sireTier.value = 'A';
+  form.sireTier.value = 'auto';
   form.vet.value = 'clean';
   form.powerhouse.checked = true;
   form.blackType.checked = true;

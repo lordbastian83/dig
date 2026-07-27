@@ -16,89 +16,88 @@
 <body>
 
 <header class="site-header">
-  <h1>va<span class="shoe-u">u</span>lt <span class="sub">racing</span></h1>
-  <span class="tagline">the imperial emperor screen &mdash; form, sectionals, and where the money went</span>
+  <svg class="logo-mark" viewBox="0 0 128 128" aria-hidden="true">
+    <rect width="128" height="128" rx="28" fill="#12203A"/>
+    <path d="M42 38 v34 a22 22 0 0 0 44 0 v-34"
+          fill="none" stroke="#DCB64A" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="42" cy="46" r="2.6" fill="#12203A"/>
+    <circle cx="42" cy="60" r="2.6" fill="#12203A"/>
+    <circle cx="86" cy="46" r="2.6" fill="#12203A"/>
+    <circle cx="86" cy="60" r="2.6" fill="#12203A"/>
+  </svg>
+  <div class="lockup">
+    <h1>va<span class="shoe-u">u</span>lt <span class="sub">racing</span></h1>
+    <span class="tagline">form, sectionals, and where the money went</span>
+  </div>
 </header>
 
 <main>
 
-  <!-- ============ Sales calendar ============ -->
-  <section class="card">
-    <h2>Sales calendar &mdash; UK &middot; Ireland &middot; Europe &middot; USA &middot; UAE</h2>
-    <div id="region-chips" class="chips"></div>
-    <div id="calendar" class="calendar"></div>
-  </section>
-
-  <!-- ============ The shopping list ============ -->
-  <section class="card">
-    <h2>The shopping list &mdash; 6 hard filters</h2>
-    <p class="hint">Every filter must pass. The screen's job is to find the elite-pedigree
-    cast-off with dirt upside <em>before</em> the ring prices it in. Full model:
-    <code>bloodstock/imperial-emperor-replication-screen.md</code>.</p>
-    <ol class="filters">
-      <li><b>Powerhouse cast-off</b> — Godolphin / Juddmonte / Shadwell (or equivalent) draft</li>
-      <li><b>Dirt-translating sire line</b> — Dubawi, Night Of Thunder, Too Darn Hot, New Bay, Blue Point; or Street Cry / Shamardal / Medaglia d'Oro damsire cluster</li>
-      <li><b>Black type in the first two dams</b> — the residual-value floor, non-negotiable</li>
-      <li><b>Official rating 85&ndash;95</b> — proven ability, unpriced ceiling</li>
-      <li><b>&le; 7 career starts</b> — unexposed, still progressive</li>
-      <li><b>All-weather form signal</b> — a win or best-figure on Tapeta/Polytrack (cheapest dirt proxy)</li>
-    </ol>
-  </section>
-
-  <!-- ============ Score a horse ============ -->
+  <!-- ============ 1 · Score a lot — THE action ============ -->
   <section class="card">
     <h2>Score a lot</h2>
+    <p class="hint">Type the horse in, tick what the catalogue shows, get a verdict
+    and a hard max bid. The sire tier is worked out from the pedigree automatically.</p>
     <form id="horse-form" autocomplete="off">
-      <div class="grid">
-        <label>Horse name <input name="name" required placeholder="e.g. Lot 1234"></label>
-        <label>Sale / venue
-          <select name="sale">
-            <option>Tattersalls Autumn HIT 2026</option>
-            <option>Tattersalls Online</option>
-            <option>Goffs UK Premier 2026</option>
-            <option>ERA Dubai</option>
-            <option>Other</option>
-          </select>
-        </label>
-        <label>Lot # <input name="lot" placeholder="optional"></label>
+      <div class="grid essentials">
+        <label>Horse <input name="name" required placeholder="name or lot"></label>
         <label>Sire <input name="sire" placeholder="e.g. Night Of Thunder"></label>
-        <label>Dam (damsire) <input name="dam" placeholder="e.g. Zhukova (Fastnet Rock)"></label>
-        <label>Vendor / breeder <input name="vendor" placeholder="e.g. Godolphin"></label>
         <label>Official rating <input name="rating" type="number" min="0" max="130" required></label>
         <label>Career starts <input name="starts" type="number" min="0" max="50" required></label>
-        <label>Sire tier
-          <select name="sireTier">
-            <option value="A">A — proven dirt line (Dubawi etc.)</option>
-            <option value="B">B — dirt influence via damsire</option>
-            <option value="">None / turf-only</option>
-          </select>
-        </label>
-        <label>Vet file
+      </div>
+
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" name="powerhouse"><span>Powerhouse cast-off</span></label>
+        <label class="toggle"><input type="checkbox" name="blackType"><span>Black type, first two dams</span></label>
+        <label class="toggle"><input type="checkbox" name="awForm"><span>All-weather win</span></label>
+        <label class="toggle vet-toggle">
           <select name="vet">
-            <option value="clean">Clean — full file reviewed</option>
-            <option value="incomplete">Incomplete (&minus;20% mandatory)</option>
-            <option value="unknown" selected>Not yet ordered (&minus;20% until clean)</option>
+            <option value="unknown" selected>Vet: not yet ordered (−20%)</option>
+            <option value="clean">Vet: clean file</option>
+            <option value="incomplete">Vet: incomplete (−20%)</option>
           </select>
         </label>
       </div>
-      <div class="checks">
-        <label><input type="checkbox" name="powerhouse"> Powerhouse cast-off vendor</label>
-        <label><input type="checkbox" name="blackType"> Black type in first two dams</label>
-        <label><input type="checkbox" name="awForm"> AW win / best figure</label>
-      </div>
-      <label class="notes-label">Notes <input name="notes" placeholder="conformation, wind history, trip…"></label>
+
+      <details class="more">
+        <summary>More details (sale, dam, vendor, notes)</summary>
+        <div class="grid">
+          <label>Sale / venue
+            <select name="sale">
+              <option>Tattersalls Autumn HIT 2026</option>
+              <option>Tattersalls Online</option>
+              <option>Goffs UK Premier 2026</option>
+              <option>Arqana Autumn 2026</option>
+              <option>Keeneland Nov HORA 2026</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label>Lot # <input name="lot"></label>
+          <label>Dam (damsire) <input name="dam" placeholder="e.g. Zhukova (Fastnet Rock)"></label>
+          <label>Vendor / breeder <input name="vendor" placeholder="e.g. Godolphin"></label>
+          <label>Sire tier
+            <select name="sireTier">
+              <option value="auto" selected>Auto — from pedigree</option>
+              <option value="A">A — proven dirt line</option>
+              <option value="B">B — dirt damsire</option>
+              <option value="">None / turf-only</option>
+            </select>
+          </label>
+          <label>Notes <input name="notes" placeholder="conformation, wind, trip…"></label>
+        </div>
+      </details>
+
       <div class="form-actions">
-        <button type="submit" class="primary">Score &amp; add to watchlist</button>
-        <button type="button" id="demo-btn" title="Fill the form with a hypothetical example">Demo example</button>
+        <button type="submit" class="primary">Score it</button>
+        <button type="button" id="demo-btn" title="Fill with a worked example">Show me an example</button>
       </div>
     </form>
     <div id="score-result" class="score-result" hidden></div>
   </section>
 
-  <!-- ============ Watchlist ============ -->
+  <!-- ============ 2 · Watchlist ============ -->
   <section class="card">
     <h2>Watchlist</h2>
-    <p class="hint">Stored in this browser (localStorage). Export before clearing your cache.</p>
     <div class="table-wrap">
       <table id="watchlist">
         <thead>
@@ -113,38 +112,50 @@
     <div class="form-actions">
       <button id="rank-gap" class="primary" title="Screen-passers first, widest value gap on top">Rank by value gap</button>
       <button id="export-csv">Export CSV</button>
-      <button id="export-json">Backup JSON</button>
-      <label class="file-btn">Restore JSON<input type="file" id="import-json" accept=".json" hidden></label>
+      <button id="export-json">Backup</button>
+      <label class="file-btn">Restore<input type="file" id="import-json" accept=".json" hidden></label>
       <label class="file-btn">Import catalogue CSV<input type="file" id="import-csv" accept=".csv" hidden></label>
     </div>
+    <p class="hint">Saved in this browser. Bulk-scan a whole catalogue with Import CSV
+    (columns in <code>DATA.md</code>).</p>
   </section>
 
-  <!-- ============ Data feeds ============ -->
+  <!-- ============ 3 · Sales calendar ============ -->
   <section class="card">
-    <h2>Data feeds</h2>
-    <p class="hint">Bulk-scan a whole catalogue: build a CSV with columns
-    <code>name,lot,sale,sire,dam,vendor,rating,starts,sireTier,vet,powerhouse,blackType,awForm,notes</code>
-    and use <b>Import catalogue CSV</b> above — every row is scored instantly.
-    To automate the feeds (BHA ratings are free; The Racing API covers starts and
-    AW form; catalogues need a per-house scraper), see
-    <code>bloodstock/DATA.md</code> and the <code>ingest.mjs</code> pipeline —
-    same Actions-secret pattern as budsignal. Vet data has no API and never
-    will: the &minus;20% rule stays until your vet clears the file.</p>
+    <details open>
+      <summary><h2>Sales calendar</h2></summary>
+      <div id="region-chips" class="chips"></div>
+      <div id="calendar" class="calendar"></div>
+    </details>
   </section>
 
-  <!-- ============ Model parameters ============ -->
+  <!-- ============ 4 · The screen, the data, the model ============ -->
+  <section class="card">
+    <details>
+      <summary><h2>The 6-filter shopping list</h2></summary>
+      <ol class="filters">
+        <li><b>Powerhouse cast-off</b> — Godolphin / Juddmonte / Shadwell draft</li>
+        <li><b>Dirt-translating sire line</b> — Dubawi, Night Of Thunder, Too Darn Hot, New Bay, Blue Point; or Street Cry / Shamardal / Medaglia d'Oro damsire</li>
+        <li><b>Black type in the first two dams</b> — the residual-value floor</li>
+        <li><b>Official rating 85&ndash;95</b> — proven ability, unpriced ceiling</li>
+        <li><b>&le; 7 career starts</b> — unexposed, still progressive</li>
+        <li><b>All-weather form</b> — the cheapest dirt proxy (French PSF counts)</li>
+      </ol>
+      <p class="hint">Full reasoning: <code>bloodstock/imperial-emperor-replication-screen.md</code>.
+      Data feeds and automation: <code>bloodstock/DATA.md</code>.</p>
+    </details>
+  </section>
+
   <section class="card">
     <details id="model-details">
       <summary><h2>Valuation model (editable)</h2></summary>
-      <p class="hint">Max bid = (prize EV + probability-weighted residual &minus; campaign costs)
-      &divide; (1 + margin) &divide; 1.05 frictions&rarr;gns, then &minus;20% if the vet file
-      isn't clean, floored to the nearest 1,000 gns and capped at budget. The upside-branch
-      probability scales from 4% to 10% with the lot's quality score &mdash; a perfect-score
-      lot reproduces the committed 56,000 gns limit exactly.</p>
+      <p class="hint">Max bid = (prize EV + probability-weighted residual &minus; costs)
+      &divide; margin &divide; frictions, &minus;20% without a clean vet file, capped at
+      budget. A perfect-score lot lands on the committed 56,000 gns limit.</p>
       <div class="grid" id="params-grid"></div>
       <div class="form-actions">
-        <button id="params-save" class="primary">Save parameters</button>
-        <button id="params-reset">Reset to defaults</button>
+        <button id="params-save" class="primary">Save</button>
+        <button id="params-reset">Reset defaults</button>
       </div>
     </details>
   </section>
@@ -152,8 +163,8 @@
 </main>
 
 <footer>
-  Model assumptions are stated, editable and committed to the repo so they can be
-  challenged &mdash; this is analysis, not financial advice.
+  Model assumptions are stated, editable and version-controlled so they can be
+  challenged &mdash; analysis, not financial advice.
 </footer>
 
 <script src="engine.js"></script>
