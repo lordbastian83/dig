@@ -70,21 +70,18 @@ function classify(runsAfter, saleOR) {
 }
 
 const now = new Date();
-const winFrom = new Date(now); winFrom.setMonth(winFrom.getMonth() - COHORT_MONTHS);
-const winTo = new Date(winFrom); winTo.setDate(winTo.getDate() + WINDOW_DAYS);
+const MIN_MONTHS = +(process.env.MIN_MONTHS || 9);   // shortest usable horizon
+const monthsAgo = (m) => { const d = new Date(now); d.setMonth(d.getMonth() - m); return d; };
 
-let lots;
-if (DEMO) {
-  lots = ['breakthrough', 'winner', 'winner', 'mid', 'mid', 'mid', 'mid', 'flop', 'flop', 'breakthrough']
-    .map((o) => ({ outcome: o }));
-} else {
-  if (!USER || !PASS) { console.error('RACING_API credentials required'); process.exit(1); }
-  console.log(`Cohort window: ${iso(winFrom)} … ${iso(winTo)} (tracked +${TRACK_MONTHS}mo)`);
+async function sweepWindow(from, to) {
   const cohort = new Map();
   for (let page = 0; page < MAX_PAGES; page++) {
     let batch;
-    try { batch = await api(`/results?start_date=${iso(winFrom)}&end_date=${iso(winTo)}&region=gb&region=ire&limit=50&skip=${page * 50}`); }
-    catch (e) { console.error(`sweep ${page}: ${e.message}`); break; }
+    try { batch = await api(`/results?start_date=${iso(from)}&end_date=${iso(to)}&region=gb&region=ire&limit=50&skip=${page * 50}`); }
+    catch (e) {
+      if (String(e.message).startsWith('422')) return null; // window beyond API history
+      console.error(`sweep ${page}: ${e.message}`); break;
+    }
     const races = batch?.results ?? [];
     if (!races.length) break;
     for (const race of races) {
@@ -97,7 +94,30 @@ if (DEMO) {
     }
     await sleep(250);
   }
-  console.log(`${cohort.size} horses matched the profile in the window`);
+  return cohort;
+}
+
+let lots, usedFrom, usedTo, horizonMonths = TRACK_MONTHS;
+if (DEMO) {
+  lots = ['breakthrough', 'winner', 'winner', 'mid', 'mid', 'mid', 'mid', 'flop', 'flop', 'breakthrough']
+    .map((o) => ({ outcome: o }));
+  usedFrom = monthsAgo(COHORT_MONTHS); usedTo = monthsAgo(COHORT_MONTHS - 1);
+} else {
+  if (!USER || !PASS) { console.error('RACING_API credentials required'); process.exit(1); }
+  // Adaptive: walk the window from the requested age toward recent until the
+  // API actually serves data (it 422s on dates beyond the plan's history).
+  let cohort = null;
+  for (let m = COHORT_MONTHS; m >= MIN_MONTHS; m--) {
+    const from = monthsAgo(m), to = monthsAgo(m - 1.5);
+    process.stdout.write(`trying window ${iso(from)}…${iso(to)} `);
+    const c = await sweepWindow(from, to);
+    if (c === null) { console.log('→ 422 (beyond API history)'); continue; }
+    console.log(`→ ${c.size} profile matches`);
+    if (c.size >= 8) { cohort = c; usedFrom = from; usedTo = to; horizonMonths = m; break; }
+    if (c.size > 0 && !cohort) { cohort = c; usedFrom = from; usedTo = to; horizonMonths = m; }
+  }
+  if (!cohort || cohort.size === 0) { console.error('no trackable cohort within API history'); process.exit(1); }
+  console.log(`Using window ${iso(usedFrom)}…${iso(usedTo)} — ${cohort.size} horses, tracked to now (~${horizonMonths}mo)`);
 
   lots = [];
   for (const c of cohort.values()) {
@@ -105,7 +125,7 @@ if (DEMO) {
       const res = await api(`/horses/${c.id}/results`);
       const races = res?.results ?? [];
       const t0 = Date.parse(c.cohortDate);
-      const t1 = t0 + TRACK_MONTHS * 30.4 * 86400000;
+      const t1 = now.getTime(); // track to now (horizon = window age)
       let priorStarts = 0; const after = [];
       for (const race of races) {
         const me = (race.runners ?? []).find((r) => r.horse_id === c.id);
@@ -122,7 +142,7 @@ if (DEMO) {
 }
 
 const n = lots.length;
-if (!n) { console.error('no trackable cohort — widen the window'); process.exit(1); }
+if (!n) { console.error('no trackable cohort'); process.exit(1); }
 const counts = { breakthrough: 0, winner: 0, mid: 0, flop: 0 };
 for (const l of lots) counts[l.outcome]++;
 const freq = Object.fromEntries(Object.entries(counts).map(([k, v]) => [k, v / n]));
@@ -141,7 +161,7 @@ console.log(`  If Δ is sharply negative, current max bids are too generous — 
 
 if (process.env.OUT) {
   writeFileSync(process.env.OUT, JSON.stringify({
-    generated: iso(now), n, window: { from: iso(winFrom), to: iso(winTo), trackMonths: TRACK_MONTHS },
+    generated: iso(now), n, window: { from: iso(usedFrom), to: iso(usedTo), trackMonths: horizonMonths },
     freq, counts, measuredResidual: Math.round(residual), assumedResidual: 73400,
   }, null, 2));
   console.log(`\n  report → ${process.env.OUT}`);

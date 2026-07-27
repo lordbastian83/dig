@@ -146,12 +146,14 @@ async function damProduction(damId, damName) {
 async function deepCheck(c) {
   const res = await api(`/horses/${c.id}/results`);
   const races = res?.results ?? [];
-  let starts = 0, awForm = false, bestRPR = null, damId = null;
+  let starts = 0, awForm = false, bestRPR = null, bestTSR = null, damId = null;
+  let careerHigh = null, wins = 0, placed = 0, bestWin = null, bestWinCls = 99, earnings = 0;
   const orsNewestFirst = [];
   const furlongs = [];      // distance aptitude
   const goings = new Set(); // ground aptitude
+  const surfaces = new Set();
   const classesNewestFirst = []; // class-drop signal
-  let bestDistF = null, bestPos = 99, placed = 0;
+  let bestDistF = null, bestPos = 99;
   for (const race of races) {
     const me = (race.runners ?? []).find((r) => r.horse_id === c.id);
     if (!me) continue;
@@ -159,12 +161,21 @@ async function deepCheck(c) {
     if (!damId && me.dam_id) damId = me.dam_id;
     const pos = +(me.position ?? 99);
     if (pos <= 3) placed++;
+    if (pos === 1) {
+      wins++;
+      const cls = +(String(race.class || '').replace(/[^0-9]/g, '') || 99);
+      if (cls < bestWinCls) { bestWinCls = cls; bestWin = race.race_name || `Class ${cls}`; }
+    }
+    earnings += +(me.prize ?? 0) || 0;
     const isAW = AW_HINTS.some((h) => lc(race.surface).includes(h));
+    if (race.surface) surfaces.add(lc(race.surface).split(' ')[0]);
     if (isAW && String(me.position) === '1') awForm = true;
     const rpr = +(me.rpr ?? NaN);
     if (Number.isFinite(rpr) && (bestRPR === null || rpr > bestRPR)) bestRPR = rpr;
+    const tsr = +(me.tsr ?? NaN);
+    if (Number.isFinite(tsr) && (bestTSR === null || tsr > bestTSR)) bestTSR = tsr;
     const or = +(me.or ?? NaN);
-    if (Number.isFinite(or) && or > 0) orsNewestFirst.push(or);
+    if (Number.isFinite(or) && or > 0) { orsNewestFirst.push(or); if (careerHigh === null || or > careerHigh) careerHigh = or; }
     const cls = +(String(race.class || '').replace(/[^0-9]/g, '') || NaN);
     if (Number.isFinite(cls)) classesNewestFirst.push(cls);
     const f = +(race.dist_f ?? NaN);
@@ -193,6 +204,9 @@ async function deepCheck(c) {
 
   // Consistency: placed rate over its career (reliability of the mark).
   const consistency = starts ? +(placed / starts).toFixed(2) : null;
+  const winPct = starts ? +(wins / starts).toFixed(2) : null;
+  const goingList = [...goings].filter(Boolean).slice(0, 4);
+  const surfaceList = [...surfaces].filter(Boolean);
   // Class-drop: a lower class number is a higher grade, so newest < oldest
   // means DROPPING in grade — often well-in and ready to strike.
   const clsFirst = classesNewestFirst[0], clsLast = classesNewestFirst.at(-1);
@@ -202,7 +216,9 @@ async function deepCheck(c) {
   const dam = await damProduction(damId, (c.dam || '').replace(/\(.*?\)/g, '').trim());
 
   return { starts, awForm, rprEdge, trend, distMin, distMax, distBest, racePlan,
-           versatile, consistency, classMove, dam };
+           versatile, consistency, classMove, dam,
+           bestRPR, bestTSR, careerHigh, wins, placed, winPct, bestWin,
+           earnings: Math.round(earnings), goingList, surfaceList };
 }
 
 /* ---------- telegram ---------- */
@@ -270,6 +286,8 @@ for (const m of ranked) {
   if (DEMO) deep = { starts: 4, awForm: true, rprEdge: 7, trend: 'improving',
     distBest: 8, racePlan: 'miler (7–8f) — the Imperial Emperor lane, Carnival handicaps→G-races',
     distMin: 7, distMax: 9, versatile: false, consistency: 0.75, classMove: 'dropping',
+    bestRPR: 98, bestTSR: 92, careerHigh: 91, wins: 2, placed: 3, winPct: 0.5,
+    bestWin: 'Class 3 Handicap', earnings: 24800, goingList: ['good', 'soft'], surfaceList: ['turf', 'aw'],
     dam: { score: 0.8, label: '2 black-type from 5 foals', blackType: true } };
   else if (deepUsed >= MAX_DEEP) { console.log(`  · ${m.name}: deep-check budget spent, stored from sweep`); }
   else {
@@ -291,7 +309,10 @@ for (const m of ranked) {
     distBest: deep.distBest, distMin: deep.distMin, distMax: deep.distMax,
     racePlan: deep.racePlan, versatile: deep.versatile,
     consistency: deep.consistency, classMove: deep.classMove,
-    trainerSR: trainerSR(m.trainer),
+    trainerSR: trainerSR(m.trainer), trainer: m.trainer,
+    bestRPR: deep.bestRPR, bestTSR: deep.bestTSR, careerHigh: deep.careerHigh,
+    wins: deep.wins, placed: deep.placed, winPct: deep.winPct, bestWin: deep.bestWin,
+    earnings: deep.earnings, goingList: deep.goingList, surfaceList: deep.surfaceList,
     damScore: deep.dam?.score ?? null, damLabel: deep.dam?.label ?? null,
     // dam production, when found, is stronger evidence than the manual flag
     blackType: deep.dam?.blackType ?? false,
