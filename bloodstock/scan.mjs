@@ -32,7 +32,8 @@ const API = 'https://api.theracingapi.com/v1';
 
 const TIER_A = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
 const DIRT_DAMSIRE = ['street cry', 'shamardal', "medaglia d'oro", 'dubai millennium'];
-const POWERHOUSE = ['godolphin', 'juddmonte', 'shadwell', 'darley'];
+const POWERHOUSE = ['godolphin', 'juddmonte', 'shadwell', 'darley',
+  'sheikh mohammed', 'sheikh hamdan', 'coolmore', 'wathnan'];
 const AW_HINTS = ['aw', 'tapeta', 'polytrack', 'fibresand', 'psf', 'dirt', 'sand'];
 
 const lc = (s) => String(s || '').toLowerCase();

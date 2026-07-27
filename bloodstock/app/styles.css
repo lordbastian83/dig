@@ -71,6 +71,33 @@ code {
 
 main { max-width: 980px; margin: 0 auto; padding: 1.2rem; display: grid; gap: 1.2rem; }
 
+/* ---------- hero: the horse this system chases ---------- */
+.hero {
+  display: flex; align-items: center; gap: 1.5rem;
+  background: linear-gradient(120deg, #0066CC 0%, #1A2B4A 55%, var(--navy-2) 100%);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.6rem 1.8rem; box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.hero-text { flex: 1; }
+.hero-text h2 {
+  font-size: 1.9rem; line-height: 1.1; font-weight: 700;
+  text-transform: lowercase; margin-bottom: .6rem;
+}
+.hero-line { margin: .2rem 0; font-size: .92rem; color: var(--cloud); }
+.hero-line.dim { color: rgba(247, 248, 250, 0.65); font-size: .82rem; }
+.hero-media { flex: none; margin: 0; width: 180px; height: 150px; position: relative; }
+.hero-media img {
+  width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.hero-media img + .hero-horse { display: none; }  /* photo wins when present */
+.hero-horse { width: 100%; height: 100%; }
+@media (max-width: 640px) {
+  .hero { flex-direction: column; text-align: center; }
+  .hero-media { width: 140px; height: 120px; }
+}
+
 .card {
   background: var(--navy-2);
   border: 1px solid var(--border);
@@ -196,6 +223,30 @@ td b { font-weight: 500; }
 
 /* numerals are Plex Mono, everywhere they carry meaning */
 td:nth-child(3) { font-family: var(--mono); }
+
+/* ---------- scoring, grades & notes ---------- */
+.score-chip {
+  font-family: var(--mono); font-size: .68rem; font-weight: 600;
+  color: var(--gold); background: var(--gold-wash);
+  padding: .15em .55em; border-radius: 4px; margin-left: .6em; vertical-align: middle;
+}
+.grade-badge {
+  font-family: var(--mono); font-size: .72rem; font-weight: 600;
+  color: var(--navy); background: var(--gold);
+  padding: .05em .45em; border-radius: 4px; margin-left: .3em;
+}
+.note-preview { display: block; color: var(--ink-muted); font-style: italic; }
+.row-tools { white-space: nowrap; }
+.edit-btn { padding: .2rem .55rem; color: var(--ink-muted); }
+.edit-btn:hover { color: var(--gold); }
+.editor-row td { background: var(--navy-3); }
+.editor { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; padding: .3rem 0; }
+.editor-notes { flex: 1; min-width: 220px; }
+.editor textarea {
+  background: var(--navy); color: var(--cloud); width: 100%;
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: .45rem .6rem; font: inherit; font-size: .9rem; resize: vertical;
+}
 
 /* ---------- radar finds ---------- */
 .find-row {
