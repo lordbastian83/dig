@@ -754,19 +754,35 @@ function renderFinds() {
   const tier = (s) => s >= 0.85 ? ['★ diamond', 'tier-diamond']
     : s >= 0.7 ? ['strong', 'tier-strong']
     : s >= 0.5 ? ['live', 'tier-live'] : ['watch', 'tier-watch'];
+  // Compact, scannable spec pills — the key facts at a glance
+  const findTags = (h) => {
+    const t = [`<span class="ftag">OR ${h.rating}</span>`];
+    if (h.trend === 'improving') t.push('<span class="ftag ftag-good">▲ improving</span>');
+    else if (h.trend === 'declining') t.push('<span class="ftag ftag-down">▼ declining</span>');
+    if (+h.rprEdge >= 5) t.push(`<span class="ftag ftag-good">RPR +${h.rprEdge}</span>`);
+    if (h.distBest != null) t.push(`<span class="ftag">${h.distBest}f best</span>`);
+    if (h.awForm) t.push('<span class="ftag ftag-gold">AW win</span>');
+    if (h.wins != null) t.push(`<span class="ftag">${h.wins}W · ${h.starts} runs</span>`);
+    if (h.classMove === 'dropping') t.push('<span class="ftag ftag-good">class ↓ well-in</span>');
+    if (h.damLabel) t.push(`<span class="ftag">dam: ${h.damLabel}</span>`);
+    return t.join('');
+  };
   $('#finds').innerHTML = header + rows.map(({ h, r }, i) => {
     const [tl, tc] = tier(r.score);
     return `
     <div class="find-row">
       <div class="find-score ${tc}"><span class="fs-num">${Math.round(r.score * 100)}</span><span class="fs-lab">${tl}</span></div>
       <div class="find-main">
-        <b class="find-name" data-i="${i}" title="Click for full profile">${h.name}</b> <small>${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
-        <small>OR <span class="mono">${h.rating}</span>${h.trend && h.trend !== 'flat' ? ` <span class="trend-${h.trend}">${h.trend === 'improving' ? '▲' : '▼'}</span>` : ''}${+h.rprEdge >= 5 ? ` · <span class="rpr-edge">RPR +${h.rprEdge}</span>` : ''} · ${h.starts} starts${h.awForm ? ' · AW win' : ''}${h.distBest ? ` · ${h.distBest}f` : ''}</small>
+        <b class="find-name" data-i="${i}" title="Click for full profile">${h.name}</b>
+        <small class="find-ped">${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
+        <div class="find-tags">${findTags(h)}</div>
         ${h.racePlan ? `<small class="race-plan">🏁 ${h.racePlan}</small>` : ''}
         <button class="find-profile" data-i="${i}">view full profile →</button>
       </div>
-      <div class="find-bid">${fmt(r.gns)} <small>gns max</small></div>
-      <button class="find-add" data-i="${i}">→ watchlist</button>
+      <div class="find-actions">
+        <div class="find-bid">${fmt(r.gns)} <small>gns max</small></div>
+        <button class="find-add" data-i="${i}">＋ watchlist</button>
+      </div>
     </div>`; }).join('');
   $('#finds').dataset.rows = JSON.stringify(rows.map((x) => x.h));
   card.hidden = false;
