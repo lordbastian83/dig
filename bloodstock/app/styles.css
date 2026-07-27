@@ -119,13 +119,8 @@ main { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.2rem 2rem; display: 
 }
 .hero-line { margin: .2rem 0; font-size: .95rem; color: var(--cloud); }
 .hero-line.dim { color: rgba(247, 248, 250, 0.65); font-size: .82rem; }
-.hero-media { flex: none; margin: 0; width: 200px; height: 175px; position: relative; display: flex; align-items: center; justify-content: center; }
-/* soft glow anchoring the silhouette */
-.hero-media::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(circle at 60% 45%, rgba(247,248,250,.16), transparent 62%);
-  pointer-events: none;
-}
+.hero-media { flex: none; margin: 0; width: 170px; height: 170px; position: relative; display: flex; align-items: center; justify-content: center; }
+.hero-media .hero-horse { width: 100%; height: 100%; filter: drop-shadow(0 6px 18px rgba(0,0,0,.35)); }
 .hero-media img {
   width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
   border: 1px solid var(--border);
@@ -134,15 +129,16 @@ main { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.2rem 2rem; display: 
 .hero-media img + .hero-horse { display: none; }  /* photo wins when present */
 .hero-horse { width: 100%; height: 100%; }
 #hero-set {
-  position: absolute; bottom: 4px; right: 4px;
-  font-size: .62rem; padding: .15rem .45rem; opacity: .5;
-  background: rgba(18,32,58,.8); color: var(--cloud); border: 1px solid var(--border);
-  border-radius: 5px; cursor: pointer;
+  position: absolute; bottom: -6px; right: -6px;
+  font-size: .6rem; padding: .15rem .5rem; opacity: 0;
+  background: rgba(10,18,30,.9); color: var(--ink-muted); border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; transition: opacity .15s ease;
 }
-#hero-set:hover { opacity: 1; }
+.hero-media:hover #hero-set { opacity: 1; }
+#hero-set:hover { color: var(--cloud); }
 @media (max-width: 640px) {
   .hero { flex-direction: column; text-align: center; }
-  .hero-media { width: 140px; height: 120px; }
+  .hero-media { width: 150px; height: 150px; }
 }
 
 .card {
