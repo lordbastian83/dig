@@ -55,6 +55,12 @@
     // an improving mark or an RPR edge is ability the market hasn't repriced.
     if (h.trend === 'improving') s += 0.05;
     if (+h.rprEdge >= 5) s += 0.05;
+    // Dam production: a proven black-type family is the residual-value floor
+    // made real — stronger than the manual tickbox when the radar found it.
+    if (+h.damScore >= 0.6) s += 0.06;
+    else if (+h.damScore >= 0.3) s += 0.03;
+    if (h.classMove === 'dropping') s += 0.03;   // well-in, ready to strike
+    if (+h.consistency >= 0.5) s += 0.02;        // reliable mark
     s = Math.min(1, s);
 
     // Outcome tree: upside probability scales with quality score.
