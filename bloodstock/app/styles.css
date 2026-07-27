@@ -197,4 +197,23 @@ td b { font-weight: 500; }
 /* numerals are Plex Mono, everywhere they carry meaning */
 td:nth-child(3) { font-family: var(--mono); }
 
+/* ---------- radar finds ---------- */
+.find-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .6rem .75rem; border-radius: 8px; background: var(--navy-3);
+  margin-bottom: .45rem;
+}
+.find-main { flex: 1; display: grid; line-height: 1.4; }
+.find-main small { color: var(--ink-muted); }
+.mono { font-family: var(--mono); }
+.radar-pass {
+  font-family: var(--mono); font-size: .68rem; font-weight: 600;
+  color: var(--green); background: var(--green-wash);
+  padding: .1em .5em; border-radius: 4px; margin-left: .4em;
+}
+.find-bid { font-family: var(--mono); color: var(--gold); font-weight: 600; font-size: 1.05rem; text-align: right; }
+.find-bid small { display: block; color: var(--ink-muted); font-size: .68rem; font-weight: 400; }
+.find-add { flex: none; padding: .35rem .7rem; font-size: .82rem; }
+@media (max-width: 560px) { .find-row { flex-wrap: wrap; } }
+
 footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: var(--ink-muted); font-size: .78rem; }

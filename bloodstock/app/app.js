@@ -439,6 +439,56 @@ $('#params-reset').addEventListener('click', () => {
   renderList();
 });
 
+/* ---------- radar finds (published daily by scan.mjs) ---------- */
+
+// NOTE: when the project moves to the private vault-racing repo, this raw
+// URL needs auth — serve candidates.json alongside the app instead.
+const CANDIDATES_URL =
+  'https://raw.githubusercontent.com/lordbastian83/dig/bloodstock-data/candidates.json';
+
+let RADAR = [];
+function renderFinds() {
+  const card = $('#finds-card');
+  if (!RADAR.length) { card.hidden = true; return; }
+  const P = loadParams();
+  const rows = RADAR
+    .map((h) => ({ h, r: evaluate(h, P) }))
+    .sort((a, b) => (b.h.radarPass === true) - (a.h.radarPass === true) || b.r.gns - a.r.gns)
+    .slice(0, 20);
+  $('#finds').innerHTML = rows.map(({ h, r }, i) => `
+    <div class="find-row">
+      <div class="find-main">
+        <b>${h.name}</b> <small>${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
+        <small>OR <span class="mono">${h.rating}</span> · ${h.starts} starts${h.awForm ? ' · AW win' : ''}
+        ${h.radarPass ? '<span class="radar-pass">RADAR PASS</span>' : ''}</small>
+      </div>
+      <div class="find-bid">${fmt(r.gns)} <small>gns max</small></div>
+      <button class="find-add" data-i="${i}">→ watchlist</button>
+    </div>`).join('');
+  $('#finds').dataset.rows = JSON.stringify(rows.map((x) => x.h));
+  card.hidden = false;
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.matches('.find-add')) return;
+  const rows = JSON.parse($('#finds').dataset.rows || '[]');
+  const h = rows[+e.target.dataset.i];
+  if (!h) return;
+  const list = loadList();
+  if (list.some((x) => x.name.toLowerCase() === h.name.toLowerCase())) {
+    alert(`${h.name} is already on the watchlist.`); return;
+  }
+  list.unshift(h);
+  saveList(list);
+  renderList();
+  e.target.textContent = '✓ added';
+});
+
+fetch(CANDIDATES_URL)
+  .then((r) => (r.ok ? r.json() : null))
+  .then((j) => { if (j?.candidates) { RADAR = j.candidates; renderFinds(); } })
+  .catch(() => {}); // offline / not yet published — card stays hidden
+
 /* ---------- init ---------- */
 
 renderCalendar();

@@ -18,15 +18,12 @@
 <header class="site-header">
   <svg class="logo-mark" viewBox="0 0 128 128" aria-hidden="true">
     <rect width="128" height="128" rx="28" fill="#12203A"/>
-    <path d="M42 38 v34 a22 22 0 0 0 44 0 v-34"
-          fill="none" stroke="#DCB64A" stroke-width="13" stroke-linecap="round"/>
-    <circle cx="42" cy="46" r="2.6" fill="#12203A"/>
-    <circle cx="42" cy="60" r="2.6" fill="#12203A"/>
-    <circle cx="86" cy="46" r="2.6" fill="#12203A"/>
-    <circle cx="86" cy="60" r="2.6" fill="#12203A"/>
+    <path fill="#F7F8FA" fill-rule="evenodd" d="
+      M34 28 H94 V64 A30 30 0 0 1 34 64 Z
+      M46 38 V60 A18 18 0 0 0 82 60 V38 H74 V60 A10 10 0 0 1 54 60 V38 Z"/>
   </svg>
   <div class="lockup">
-    <h1>va<span class="shoe-u">u</span>lt <span class="sub">racing</span></h1>
+    <h1>vault <span class="sub">racing</span></h1>
     <span class="tagline">form, sectionals, and where the money went</span>
   </div>
 </header>
@@ -95,7 +92,16 @@
     <div id="score-result" class="score-result" hidden></div>
   </section>
 
-  <!-- ============ 2 · Watchlist ============ -->
+  <!-- ============ 2 · Radar finds ============ -->
+  <section class="card" id="finds-card" hidden>
+    <h2>💎 Radar finds</h2>
+    <p class="hint">Auto-scanned daily from live UK/IRE results: rated 85&ndash;95,
+    unexposed, dirt-line pedigree. These horses are <b>in training, not at a sale</b>
+    &mdash; the radar finds them first; black type and availability need a human check.</p>
+    <div id="finds"></div>
+  </section>
+
+  <!-- ============ 3 · Watchlist ============ -->
   <section class="card">
     <h2>Watchlist</h2>
     <div class="table-wrap">
