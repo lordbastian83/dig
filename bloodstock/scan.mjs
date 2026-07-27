@@ -167,9 +167,18 @@ async function damProduction(damId, damName, selfId) {
   } catch (e) { console.error(`  dam ${damName}: ${e.message}`); return null; }
 }
 
+let debugSample = null;
 async function deepCheck(c) {
   const res = await api(`/horses/${c.id}/results`);
   const races = res?.results ?? [];
+  if (DEBUG && !debugSample && races[0]) {
+    const race0 = races[0];
+    const me0 = (race0.runners ?? []).find((r) => r.horse_id === c.id) || race0.runners?.[0] || race0;
+    debugSample = { horse: c.name, raceKeys: Object.keys(race0),
+      runnerKeys: me0 ? Object.keys(me0) : [],
+      raceSample: { dist_f: race0.dist_f, dist_m: race0.dist_m, dist: race0.dist, class: race0.class, type: race0.type },
+      runnerSample: me0 ? { position: me0.position, or: me0.or, rpr: me0.rpr, tsr: me0.tsr, prize: me0.prize } : {} };
+  }
   let starts = 0, awForm = false, bestRPR = null, bestTSR = null, damId = null;
   let careerHigh = null, wins = 0, placed = 0, bestWin = null, bestWinCls = 99, earnings = 0;
   const orsNewestFirst = [];
@@ -202,8 +211,18 @@ async function deepCheck(c) {
     if (Number.isFinite(or) && or > 0) { orsNewestFirst.push(or); if (careerHigh === null || or > careerHigh) careerHigh = or; }
     const cls = +(String(race.class || '').replace(/[^0-9]/g, '') || NaN);
     if (Number.isFinite(cls)) classesNewestFirst.push(cls);
-    const f = +(race.dist_f ?? NaN);
-    if (Number.isFinite(f)) {
+    // Distance in furlongs — try the numeric field, then metres/yards, then
+    // parse a "1m2f"/"7f" string.
+    let f = +(race.dist_f ?? NaN);
+    if (!Number.isFinite(f)) {
+      const m = +(race.dist_m ?? NaN), y = +(race.dist_y ?? NaN);
+      if (Number.isFinite(m)) f = +(m / 201.168).toFixed(1);
+      else if (Number.isFinite(y)) f = +(y / 220).toFixed(1);
+      else { const s = String(race.dist ?? race.distance ?? '');
+        const mi = /(\d+)m/.exec(s), fu = /(\d+)f/.exec(s);
+        if (mi || fu) f = (mi ? +mi[1] * 8 : 0) + (fu ? +fu[1] : 0); }
+    }
+    if (Number.isFinite(f) && f > 0) {
       furlongs.push(f);
       if (pos < bestPos) { bestPos = pos; bestDistF = f; } // trip of best run
     }
@@ -357,7 +376,8 @@ for (const m of ranked) {
 }
 
 const all = [...fresh, ...existing.candidates].slice(0, 200);
-writeFileSync(OUT, JSON.stringify({ generated: day(0), candidates: all }, null, 2));
+writeFileSync(OUT, JSON.stringify({ generated: day(0), candidates: all,
+  ...(DEBUG && debugSample ? { _debugSample: debugSample } : {}) }, null, 2));
 console.log(`${fresh.length} new, ${all.length} total → ${OUT}`);
 
 await alert(fresh.filter((f) => f.radarPass));
