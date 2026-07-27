@@ -824,6 +824,7 @@ function openHorseModal(h) {
       row('Suggested plan', h.racePlan),
       row('Going', (h.goingList || []).join(', ') || null),
       row('Surfaces', (h.surfaceList || []).join(', ') || null),
+      row('Courses run', (h.coursesList || []).join(', ') || null),
       row('Versatile', h.versatile ? 'yes — wide trip range' : null),
     ])}
     ${section('Achievement &amp; record', [
@@ -831,6 +832,8 @@ function openHorseModal(h) {
       row('Win %', h.winPct != null ? `${Math.round(h.winPct * 100)}%` : null),
       row('Consistency (placed)', h.consistency != null ? `${Math.round(h.consistency * 100)}%` : null),
       row('Best win', h.bestWin), row('Prize money', money(h.earnings)),
+      row('Prize per start', money(h.earningsPerStart)),
+      row('Days since last run', h.lastRunDays != null ? `${h.lastRunDays} days` : null),
       row('AW win', h.awForm ? 'yes' : 'no'), row('Class', h.classMove === 'dropping' ? 'dropping (well-in)' : h.classMove),
     ])}
     ${section('Pedigree &amp; connections', [

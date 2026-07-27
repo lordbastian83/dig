@@ -29,6 +29,11 @@ const DAYS = +(process.env.DAYS || 7);
 const OUT = process.env.OUT || 'candidates.json';
 const EXISTING = process.env.EXISTING || OUT;
 const MAX_PAGES = +(process.env.MAX_PAGES || 60); // Pro tier — deeper sweep
+// Regions swept for candidates. France is the cheapest dirt proxy — Deauville
+// and Cagnes PSF form translates straight to Meydan dirt — so it's in by
+// default alongside GB/IRE. Override with REGIONS=gb,ire,fr,usa etc.
+const REGIONS = (process.env.REGIONS || 'gb,ire,fr')
+  .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 const API = 'https://api.theracingapi.com/v1';
 
 const TIER_A = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
@@ -57,6 +62,20 @@ function tierOf(sire, damsire) {
        : DIRT_DAMSIRE.some((x) => lc(damsire).includes(x)) ? 'B' : '';
 }
 
+// Normalise the API's region/course into a clean GB / IRE / FR / USA label.
+function regionOf(race) {
+  const r = lc(race.region).trim();
+  if (r.startsWith('fr')) return 'FR';
+  if (r === 'ire' || r === 'ir' || r.startsWith('ire')) return 'IRE';
+  if (r.startsWith('us')) return 'USA';
+  if (r.startsWith('gb') || r.startsWith('uk')) return 'GB';
+  // fall back to well-known course hints when the code is missing
+  const c = lc(race.course);
+  if (/deauville|chantilly|cagnes|marseille|pau|saint-cloud|lyon|vichy/.test(c)) return 'FR';
+  if (/curragh|leopardstown|naas|cork|gowran|dundalk|navan|fairyhouse|galway/.test(c)) return 'IRE';
+  return 'GB';
+}
+
 // Trainer strike-rate accumulated across the whole sweep — no extra API
 // calls, and a trainer who wins often is one whose cast-offs improved under
 // good handling: a real quality signal on the horses they're now letting go.
@@ -71,15 +90,16 @@ async function sweep() {
   const prelim = new Map(); // horse_id -> runner snapshot
   for (let page = 0; page < MAX_PAGES; page++) {
     let batch;
+    const regionQuery = REGIONS.map((r) => `region=${r}`).join('&');
     try {
-      batch = await api(`/results?start_date=${day(DAYS)}&end_date=${day(0)}&region=gb&region=ire&limit=50&skip=${page * 50}`);
+      batch = await api(`/results?start_date=${day(DAYS)}&end_date=${day(0)}&${regionQuery}&limit=50&skip=${page * 50}`);
     } catch (e) { console.error(`results page ${page}: ${e.message}`); break; }
     const races = batch?.results ?? [];
     if (!races.length) break;
     for (const race of races) {
       // Dirt targets are FLAT horses — skip jumps races entirely.
       if (race.jumps || /hurdle|chase|nh flat|bumper/.test(lc(race.type) + lc(race.race_name))) continue;
-      const region = /ire|irish/.test(lc(race.region) + lc(race.course)) ? 'IRE' : 'GB';
+      const region = regionOf(race);
       for (const r of race.runners ?? []) {
         const tk = lc(r.trainer);
         if (tk) { const e = trainerStats.get(tk) || { runs: 0, wins: 0 };
@@ -185,9 +205,12 @@ async function deepCheck(c) {
   const furlongs = [];      // distance aptitude
   const goings = new Set(); // ground aptitude
   const surfaces = new Set();
+  const courses = new Set(); // where it has run
   const classesNewestFirst = []; // class-drop signal
-  let bestDistF = null, bestPos = 99;
+  let bestDistF = null, bestPos = 99, lastDate = null;
   for (const race of races) {
+    if (race.date && (!lastDate || race.date > lastDate)) lastDate = race.date;
+    if (race.course) courses.add(String(race.course).replace(/\s*\(.*?\)\s*/g, '').trim());
     const me = (race.runners ?? []).find((r) => r.horse_id === c.id);
     if (!me) continue;
     starts++;
@@ -264,10 +287,17 @@ async function deepCheck(c) {
 
   const dam = await damProduction(damId, (c.dam || '').replace(/\(.*?\)/g, '').trim(), c.id);
 
+  // Freshness: days since the last run (a soundness / readiness proxy).
+  const lastRunDays = lastDate
+    ? Math.round((Date.now() - Date.parse(lastDate)) / 86400000) : null;
+  const earningsPerStart = starts ? Math.round(earnings / starts) : null;
+  const coursesList = [...courses].filter(Boolean).slice(0, 5);
+
   return { starts, awForm, rprEdge, trend, distMin, distMax, distBest, racePlan,
            versatile, consistency, classMove, dam,
            bestRPR, bestTSR, careerHigh, wins, placed, winPct, bestWin,
-           earnings: Math.round(earnings), goingList, surfaceList };
+           earnings: Math.round(earnings), earningsPerStart, goingList, surfaceList,
+           coursesList, lastRunDays };
 }
 
 /* ---------- telegram ---------- */
@@ -336,7 +366,9 @@ for (const m of ranked) {
     distBest: 8, racePlan: 'miler (7–8f) — the Imperial Emperor lane, Carnival handicaps→G-races',
     distMin: 7, distMax: 9, versatile: false, consistency: 0.75, classMove: 'dropping',
     bestRPR: 98, bestTSR: 92, careerHigh: 91, wins: 2, placed: 3, winPct: 0.5,
-    bestWin: 'Class 3 Handicap', earnings: 24800, goingList: ['good', 'soft'], surfaceList: ['turf', 'aw'],
+    bestWin: 'Class 3 Handicap', earnings: 24800, earningsPerStart: 6200,
+    goingList: ['good', 'soft'], surfaceList: ['turf', 'aw'],
+    coursesList: ['Kempton', 'Chelmsford', 'Newcastle'], lastRunDays: 21,
     dam: { score: 0.8, label: '2 black-type from 5 foals', blackType: true } };
   else if (deepUsed >= MAX_DEEP) { console.log(`  · ${m.name}: deep-check budget spent, stored from sweep`); }
   else {
@@ -361,7 +393,9 @@ for (const m of ranked) {
     trainerSR: trainerSR(m.trainer), trainer: m.trainer,
     bestRPR: deep.bestRPR, bestTSR: deep.bestTSR, careerHigh: deep.careerHigh,
     wins: deep.wins, placed: deep.placed, winPct: deep.winPct, bestWin: deep.bestWin,
-    earnings: deep.earnings, goingList: deep.goingList, surfaceList: deep.surfaceList,
+    earnings: deep.earnings, earningsPerStart: deep.earningsPerStart,
+    goingList: deep.goingList, surfaceList: deep.surfaceList,
+    coursesList: deep.coursesList, lastRunDays: deep.lastRunDays,
     damScore: deep.dam?.score ?? null, damLabel: deep.dam?.label ?? null,
     // dam production, when found, is stronger evidence than the manual flag
     blackType: deep.dam?.blackType ?? false,

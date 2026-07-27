@@ -43,24 +43,36 @@
     ];
     const fails = checks.filter(([, ok]) => !ok).map(([n]) => n);
 
-    // Quality score 0..1 — soft grading inside the hard filters.
+    // Quality score 0..1 — soft grading inside the hard filters, weighted to
+    // what actually matters for a Meydan dirt campaign. An elite Dubai-profile
+    // lot tops out near 1.0; a decent-but-ordinary one lands ~0.6–0.75.
     let s = 0;
-    s += h.sireTier === 'A' ? 0.30 : h.sireTier === 'B' ? 0.18 : 0;
-    s += h.blackType ? 0.20 : 0;
-    s += h.awForm ? 0.15 : 0;
-    s += h.powerhouse ? 0.15 : 0;
-    if (h.rating >= 88 && h.rating <= 93) s += 0.20;        // sweet spot
-    else if (h.rating >= P.ratingMin && h.rating <= P.ratingMax) s += 0.12;
-    // Form-trajectory bonus (radar-supplied; absent for hand-entered lots):
-    // an improving mark or an RPR edge is ability the market hasn't repriced.
+    // --- pedigree & connections (the residual-value engine) ---
+    s += h.sireTier === 'A' ? 0.26 : h.sireTier === 'B' ? 0.15 : 0;
+    // family floor: radar-measured dam production beats the manual tickbox
+    const damQ = +h.damScore >= 0.6 ? 0.14 : +h.damScore >= 0.3 ? 0.08 : 0;
+    s += Math.max(damQ, h.blackType ? 0.10 : 0);
+    s += h.powerhouse ? 0.13 : 0;
+    // --- dirt / all-weather proof: Dubai runs on dirt ---
+    const dirtSurf = /aw|tapeta|polytrack|fibresand|dirt|sand|psf/
+      .test(String(h.surfaceList || '').toLowerCase());
+    if (h.awForm) s += 0.13;                       // a win on the surface
+    else if (dirtSurf) s += 0.06;                  // has at least run on it
+    // --- ability: proven mark with unpriced ceiling ---
+    if (h.rating >= 88 && h.rating <= 93) s += 0.16;       // sweet spot
+    else if (h.rating >= P.ratingMin && h.rating <= P.ratingMax) s += 0.10;
+    if (+h.careerHigh > +h.rating) s += 0.03;      // has been rated higher
+    // --- form trajectory the market hasn't repriced ---
     if (h.trend === 'improving') s += 0.05;
     if (+h.rprEdge >= 5) s += 0.05;
-    // Dam production: a proven black-type family is the residual-value floor
-    // made real — stronger than the manual tickbox when the radar found it.
-    if (+h.damScore >= 0.6) s += 0.06;
-    else if (+h.damScore >= 0.3) s += 0.03;
-    if (h.classMove === 'dropping') s += 0.03;   // well-in, ready to strike
-    if (+h.consistency >= 0.5) s += 0.02;        // reliable mark
+    // --- proven winner: strike rate is hard evidence of a will to win ---
+    if (+h.winPct >= 0.33) s += 0.06;
+    else if (+h.winPct >= 0.20) s += 0.03;
+    // --- suited to the Carnival dirt lane (6–9.5f) ---
+    if (h.distBest != null && h.distBest >= 6 && h.distBest <= 9.5) s += 0.05;
+    // --- well-in & reliable ---
+    if (h.classMove === 'dropping') s += 0.03;     // ready to strike
+    if (+h.consistency >= 0.5) s += 0.02;          // reliable mark
     s = Math.min(1, s);
 
     // Outcome tree: upside probability scales with quality score.
