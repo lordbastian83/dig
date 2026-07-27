@@ -15,6 +15,9 @@
     "rewrite": "/index.html",
     "exclude": ["/*.{css,js,mjs,json,svg,png}"]
   },
+  "globalHeaders": {
+    "cache-control": "no-cache"
+  },
   "mimeTypes": {
     ".json": "application/json",
     ".svg": "image/svg+xml"
