@@ -169,10 +169,24 @@ function renderScore(h, r) {
       : `<p class="max-bid">Fails: ${r.fails.join('; ')}. Reference value if filters cleared: ${fmt(r.gns)} gns.</p>`}
     ${(() => {
       const exp = expectedPrice(h);
-      if (!exp) return '<p class="hint">No sire comp yet — expected price unavailable (add via comps pipeline).</p>';
+      const P2 = loadParams();
+      const top = Math.max(P2.budgetGns, exp ? exp.gns * 1.15 : 0, r.gns * 1.15, 1);
+      const pct = (v) => Math.min(100, (v / top) * 100).toFixed(1);
+      const scale = `
+        <div class="price-scale">
+          <div class="ps-fill" style="width:${pct(r.gns)}%"></div>
+          ${exp ? `<div class="ps-tick ps-exp" style="left:${pct(exp.gns)}%"></div>` : ''}
+          <div class="ps-tick ps-budget" style="left:${pct(P2.budgetGns)}%"></div>
+        </div>
+        <div class="ps-legend">
+          <span><i class="ps-dot ps-dot-bid"></i>max bid ${fmt(r.gns)}</span>
+          ${exp ? `<span><i class="ps-dot ps-dot-exp"></i>expected ${fmt(exp.gns)}${exp.est ? ' (est)' : ''}</span>` : ''}
+          <span><i class="ps-dot ps-dot-budget"></i>budget ${fmt(P2.budgetGns)}</span>
+          <span class="ps-unit">gns</span>
+        </div>`;
+      if (!exp) return scale + '<p class="hint">No sire comp yet — expected price unavailable.</p>';
       const gap = r.gns - exp.gns;
-      return `<p>Expected hammer: ~${fmt(exp.gns)} gns${exp.est ? ' (est)' : ''} →
-        value gap <b class="${gap >= 0 ? 'verdict-bid' : 'verdict-reject'}">${gap >= 0 ? '+' : ''}${fmt(gap)} gns</b>
+      return scale + `<p>Value gap <b class="${gap >= 0 ? 'verdict-bid' : 'verdict-reject'}">${gap >= 0 ? '+' : ''}${fmt(gap)} gns</b>
         ${gap >= 0 ? '— the ring should hand it to you inside the limit' : '— expect to be outbid; walk away at the limit'}</p>`;
     })()}
     ${vetNote}${clampNote}
