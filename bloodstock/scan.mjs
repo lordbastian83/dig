@@ -27,7 +27,7 @@ const DEMO = process.env.DEMO === '1';
 const DAYS = +(process.env.DAYS || 7);
 const OUT = process.env.OUT || 'candidates.json';
 const EXISTING = process.env.EXISTING || OUT;
-const MAX_PAGES = +(process.env.MAX_PAGES || 20);
+const MAX_PAGES = +(process.env.MAX_PAGES || 60); // Pro tier — deeper sweep
 const API = 'https://api.theracingapi.com/v1';
 
 const TIER_A = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
@@ -67,17 +67,20 @@ async function sweep() {
     const races = batch?.results ?? [];
     if (!races.length) break;
     for (const race of races) {
+      const region = /ire|irish/.test(lc(race.region) + lc(race.course)) ? 'IRE' : 'GB';
       for (const r of race.runners ?? []) {
         const or = +(r.or ?? NaN);
         const tier = tierOf(r.sire, r.damsire);
         const age = +(r.age ?? 99);
-        if (!Number.isFinite(or) || or < 85 || or > 95) continue;
-        if (!tier) continue;
-        if (age > 4) continue;
+        // Wide collection net so CUSTOM profiles have data to filter — the
+        // Imperial Emperor default (85-95, dirt line, age<=4) is applied
+        // client-side, not here. Keep anything plausibly interesting.
+        if (!Number.isFinite(or) || or < 70 || or > 105) continue;
+        if (age > 6) continue;
         if (!prelim.has(r.horse_id)) {
           prelim.set(r.horse_id, {
             id: r.horse_id, name: r.horse, sire: r.sire, dam: r.dam,
-            damsire: r.damsire, rating: or, age,
+            damsire: r.damsire, rating: or, age, region,
             owner: r.owner || '', trainer: r.trainer || '',
             lastRun: race.date, tier,
           });
@@ -98,6 +101,9 @@ async function deepCheck(c) {
   const races = res?.results ?? [];
   let starts = 0, awForm = false, bestRPR = null;
   const orsNewestFirst = [];
+  const furlongs = [];      // distance aptitude
+  const goings = new Set(); // ground aptitude
+  let bestDistF = null, bestPos = 99;
   for (const race of races) {
     const me = (race.runners ?? []).find((r) => r.horse_id === c.id);
     if (!me) continue;
@@ -108,12 +114,32 @@ async function deepCheck(c) {
     if (Number.isFinite(rpr) && (bestRPR === null || rpr > bestRPR)) bestRPR = rpr;
     const or = +(me.or ?? NaN);
     if (Number.isFinite(or) && or > 0) orsNewestFirst.push(or);
+    const f = +(race.dist_f ?? NaN);
+    if (Number.isFinite(f)) {
+      furlongs.push(f);
+      const pos = +(me.position ?? 99);
+      if (pos < bestPos) { bestPos = pos; bestDistF = f; } // trip of best run
+    }
+    if (race.going) goings.add(lc(race.going).split(' ')[0]);
   }
   const rprEdge = bestRPR !== null ? bestRPR - c.rating : null;
   const last3 = orsNewestFirst.slice(0, 3);
   const slope = last3.length >= 2 ? last3[0] - last3[last3.length - 1] : 0;
   const trend = slope >= 3 ? 'improving' : slope <= -3 ? 'declining' : 'flat';
-  return { starts, awForm, rprEdge, trend };
+
+  // Distance aptitude + a plain-language race plan from the trip band.
+  const distMin = furlongs.length ? Math.min(...furlongs) : null;
+  const distMax = furlongs.length ? Math.max(...furlongs) : null;
+  const distBest = bestDistF ?? (furlongs.length
+    ? +(furlongs.reduce((a, b) => a + b, 0) / furlongs.length).toFixed(1) : null);
+  const racePlan = distBest == null ? null
+    : distBest <= 6 ? 'sprint (5–6f) — Meydan dirt sprints, quick from the gate'
+    : distBest <= 8 ? 'miler (7–8f) — the Imperial Emperor lane, Carnival handicaps→G-races'
+    : distBest <= 11 ? 'middle distance (9–11f) — Meydan 1900m handicaps, World Cup night undercard'
+    : 'staying (12f+) — dirt options thin; better as a turf/AW campaigner';
+  const versatile = distMin != null && distMax - distMin >= 3; // ran a wide trip range
+
+  return { starts, awForm, rprEdge, trend, distMin, distMax, distBest, racePlan, versatile };
 }
 
 /* ---------- telegram ---------- */
@@ -136,7 +162,7 @@ async function alert(finds) {
   } catch (e) { console.error('getUpdates:', e.message); }
   const fmt = (n) => n.toLocaleString('en-GB', { maximumFractionDigits: 0 });
   const lines = finds.map((f) =>
-    `• ${f.name} (${f.sire}) — OR ${f.rating} ${f.trend}${f.rprEdge > 0 ? `, RPR +${f.rprEdge}` : ''}, ${f.starts} starts${f.awForm ? ', AW win' : ''}\n  owner ${f.vendor || '?'} · max bid ~${fmt(f.maxBidGns)} gns\n  ⚠ verify black type + whether buyable`);
+    `• ${f.name} (${f.sire}) — OR ${f.rating} ${f.trend}${f.rprEdge > 0 ? `, RPR +${f.rprEdge}` : ''}, ${f.starts} starts${f.awForm ? ', AW win' : ''}${f.distBest ? `, best ${f.distBest}f` : ''}\n  owner ${f.vendor || '?'} · max bid ~${fmt(f.maxBidGns)} gns${f.racePlan ? `\n  plan: ${f.racePlan}` : ''}\n  ⚠ verify black type + whether buyable`);
   const msg = [`🐎💎 vault racing radar — ${finds.length} new candidate${finds.length === 1 ? '' : 's'}:`, '', ...lines].join('\n');
   for (const chat of ids) {
     try { await tg('sendMessage', { chat_id: chat, text: msg }); console.log(`alerted ${chat}`); }
@@ -160,12 +186,29 @@ if (DEMO) {
 }
 console.log(`${matches.length} profile matches in the last ${DAYS} days`);
 
+// Deep-check budget: the wide net can surface many matches, so prioritise
+// the ones nearest the diamond profile (dirt line + in-band rating) and cap
+// the per-run API spend. The rest are still stored from stage-1 data.
+const MAX_DEEP = +(process.env.MAX_DEEP || 150); // Pro tier — check more lots
+const ranked = matches
+  .filter((m) => !known.has(lc(m.name)))
+  .sort((a, b) => {
+    const score = (m) => (m.tier === 'A' ? 2 : m.tier === 'B' ? 1 : 0)
+      + (m.rating >= 85 && m.rating <= 95 ? 1 : 0);
+    return score(b) - score(a);
+  });
+
 const fresh = [];
-for (const m of matches) {
-  if (known.has(lc(m.name))) continue;
-  let deep = { starts: 99, awForm: false, rprEdge: null, trend: 'flat' };
-  if (DEMO) deep = { starts: 4, awForm: true, rprEdge: 7, trend: 'improving' };
+let deepUsed = 0;
+for (const m of ranked) {
+  let deep = { starts: 99, awForm: false, rprEdge: null, trend: 'flat',
+    distBest: null, racePlan: null, distMin: null, distMax: null, versatile: false };
+  if (DEMO) deep = { starts: 4, awForm: true, rprEdge: 7, trend: 'improving',
+    distBest: 8, racePlan: 'miler (7–8f) — the Imperial Emperor lane, Carnival handicaps→G-races',
+    distMin: 7, distMax: 9, versatile: false };
+  else if (deepUsed >= MAX_DEEP) { console.log(`  · ${m.name}: deep-check budget spent, stored from sweep`); }
   else {
+    deepUsed++;
     try { deep = await deepCheck(m); await sleep(400); }
     catch (e) { console.error(`  ! ${m.name}: ${e.message}`); continue; }
   }
@@ -180,9 +223,15 @@ for (const m of matches) {
     blackType: false, // cannot be proven from form data — human check
     awForm: deep.awForm,
     rprEdge: deep.rprEdge, trend: deep.trend,
+    region: m.region,
+    distBest: deep.distBest, distMin: deep.distMin, distMax: deep.distMax,
+    racePlan: deep.racePlan, versatile: deep.versatile,
     notes: `[RADAR ${day(0)}] trainer ${m.trainer} · last ran ${m.lastRun}`
       + (deep.rprEdge > 0 ? ` · RPR +${deep.rprEdge} over OR` : '')
-      + ` · OR ${deep.trend} · VERIFY black type + availability`,
+      + ` · OR ${deep.trend}`
+      + (deep.distBest ? ` · best trip ${deep.distBest}f` : '')
+      + (deep.racePlan ? ` · plan: ${deep.racePlan}` : '')
+      + ` · VERIFY black type + availability`,
     status: 'watch', added: day(0),
   };
   const r = E.evaluate(horse, E.PARAM_DEFAULTS);
