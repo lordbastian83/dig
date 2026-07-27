@@ -699,6 +699,8 @@ function editorProfile() {
 
 let RADAR = [];
 let RADAR_META = {};
+let findsExpanded = false;   // radar shows a top few by default, expands on demand
+const FINDS_LIMIT = 6;
 function navShow(id, on) {
   const a = document.querySelector(`.quicknav a[href="#${id}"]`);
   if (a) a.hidden = !on;
@@ -767,10 +769,13 @@ function renderFinds() {
     if (h.damLabel) t.push(`<span class="ftag">dam: ${h.damLabel}</span>`);
     return t.join('');
   };
-  $('#finds').innerHTML = header + rows.map(({ h, r }, i) => {
+  const shown = findsExpanded ? rows : rows.slice(0, FINDS_LIMIT);
+  const rowHTML = shown.map(({ h, r }, i) => {
     const [tl, tc] = tier(r.score);
+    const top = i === 0 && r.score >= 0.7;
     return `
-    <div class="find-row">
+    <div class="find-row ${tc}-edge${top ? ' find-top' : ''}">
+      ${top ? '<span class="top-tag">★ top pick</span>' : ''}
       <div class="find-score ${tc}"><span class="fs-num">${Math.round(r.score * 100)}</span><span class="fs-lab">${tl}</span></div>
       <div class="find-main">
         <b class="find-name" data-i="${i}" title="Click for full profile">${h.name}</b>
@@ -784,6 +789,11 @@ function renderFinds() {
         <button class="find-add" data-i="${i}">＋ watchlist</button>
       </div>
     </div>`; }).join('');
+  const more = rows.length > FINDS_LIMIT
+    ? `<button class="finds-more" id="finds-more">${findsExpanded
+        ? '▴ Show fewer' : `▾ Show all ${rows.length} finds`}</button>`
+    : '';
+  $('#finds').innerHTML = header + rowHTML + more;
   $('#finds').dataset.rows = JSON.stringify(rows.map((x) => x.h));
   card.hidden = false;
 }
@@ -858,6 +868,7 @@ function openHorseModal(h) {
 }
 
 $('#finds').addEventListener('click', (e) => {
+  if (e.target.id === 'finds-more') { findsExpanded = !findsExpanded; renderFinds(); return; }
   const t = e.target.closest('.find-name, .find-profile');
   if (!t) return;
   const rows = JSON.parse($('#finds').dataset.rows || '[]');

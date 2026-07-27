@@ -28,7 +28,7 @@
 
 body {
   margin: 0;
-  background: var(--navy);
+  background: #0E1930;   /* a touch darker than the cards so surfaces separate */
   color: var(--cloud);
   font-family: var(--sans);
   font-size: 16px;
@@ -138,9 +138,9 @@ main { max-width: 980px; margin: 0 auto; padding: 1.2rem; display: grid; gap: 1.
 .card {
   background: var(--navy-2);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.2rem 1.4rem;
-  box-shadow: var(--shadow-card);
+  border-radius: 14px;
+  padding: 1.3rem 1.5rem;
+  box-shadow: inset 0 1px 0 rgba(247, 248, 250, 0.05), var(--shadow-card);
 }
 /* consistent gold accent on top-level section headings — easy to scan */
 .card > h2 { position: relative; padding-left: .72rem; }
@@ -244,8 +244,9 @@ details summary h2 { display: inline; margin: 0; }
 details[open] > summary { margin-bottom: .7rem; }
 
 /* ---------- watchlist ---------- */
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+#watchlist { min-width: 640px; } /* scroll rather than squish on phones */
 th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
 th {
   color: var(--ink-muted); font-weight: 500; font-size: .72rem;
@@ -461,13 +462,37 @@ td:nth-child(3) { font-family: var(--mono); }
 .tier-strong { background: var(--green-wash); color: var(--green); }
 .tier-live { background: rgba(0,102,204,.16); color: #5EA3E8; }
 .tier-watch { background: var(--navy); color: var(--ink-muted); }
-.find-score .fs-num { font-size: 1.5rem; }
+.find-score { width: 3.5rem; padding: .5rem .2rem; border-radius: 10px; }
+.find-score .fs-num { font-size: 1.6rem; }
 .find-row {
+  position: relative;
   display: flex; align-items: center; gap: 1rem;
-  padding: .75rem .85rem; border-radius: 10px; background: var(--navy-3);
-  margin-bottom: .5rem; border: 1px solid transparent; transition: border-color .12s ease;
+  padding: .8rem .9rem .8rem 1rem; border-radius: 10px; background: var(--navy-3);
+  margin-bottom: .55rem; border: 1px solid var(--border); border-left: 3px solid var(--border);
+  transition: border-color .12s ease, transform .12s ease, background .12s ease;
 }
-.find-row:hover { border-color: var(--border); }
+.find-row:hover { background: #263a5e; transform: translateY(-1px); }
+/* tier accent down the left edge gives the list rhythm */
+.tier-diamond-edge { border-left-color: var(--gold); }
+.tier-strong-edge { border-left-color: var(--green); }
+.tier-live-edge   { border-left-color: #5EA3E8; }
+.tier-watch-edge  { border-left-color: var(--ink-muted); }
+/* the standout — the single best find */
+.find-top {
+  background: linear-gradient(100deg, rgba(220,182,74,.10), var(--navy-3) 55%);
+  border-color: var(--gold-deep); box-shadow: 0 0 0 1px rgba(220,182,74,.25), var(--shadow-card);
+  padding-top: 1.5rem;
+}
+.top-tag {
+  position: absolute; top: .5rem; left: 1rem;
+  font-family: var(--mono); font-size: .6rem; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gold);
+}
+.finds-more {
+  width: 100%; margin-top: .3rem; padding: .6rem; color: var(--ink-muted);
+  background: var(--navy-3); border: 1px dashed var(--border); border-radius: 8px; font-weight: 500;
+}
+.finds-more:hover { color: var(--cloud); border-color: var(--ink-muted); }
 .find-main { flex: 1; display: grid; gap: .12rem; line-height: 1.4; min-width: 0; }
 .find-main small { color: var(--ink-muted); }
 .find-name { font-size: 1.05rem; font-weight: 600; color: var(--cloud); }
