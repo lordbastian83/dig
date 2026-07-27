@@ -277,6 +277,43 @@ td:nth-child(3) { font-family: var(--mono); }
   padding: .45rem .6rem; font: inherit; font-size: .9rem; resize: vertical;
 }
 
+/* ---------- budget bar ---------- */
+.budget-bar {
+  display: flex; align-items: center; gap: .8rem; flex-wrap: wrap;
+  background: var(--navy-2); border: 1px solid var(--border); border-radius: 12px;
+  padding: .8rem 1.2rem; box-shadow: var(--shadow-card);
+}
+.budget-label { font-weight: 600; color: var(--cloud); }
+.budget-step {
+  width: 2rem; height: 2rem; border-radius: 8px; font-size: 1.2rem; line-height: 1;
+  background: var(--navy); color: var(--gold); border: 1px solid var(--border); cursor: pointer;
+}
+.budget-step:hover { border-color: var(--gold); }
+.budget-value { font-family: var(--mono); font-size: 1.25rem; color: var(--gold); font-weight: 600; min-width: 6.5em; text-align: center; }
+.budget-range, #budget-range { flex: 1; min-width: 140px; accent-color: var(--gold); }
+.budget-hint { color: var(--ink-muted); font-size: .78rem; }
+@media (max-width: 560px) { .budget-hint { display: none; } }
+
+/* ---------- radar profiles ---------- */
+.profile-bar { display: flex; gap: .6rem; align-items: center; margin: .3rem 0 .8rem; flex-wrap: wrap; }
+#profile-select {
+  flex: 1; min-width: 180px; background: var(--navy); color: var(--cloud);
+  border: 1px solid var(--border); border-radius: 8px; padding: .45rem .6rem; font: inherit;
+}
+#profile-edit { padding: .45rem .8rem; }
+.profile-editor { margin: 0 0 1rem; background: var(--navy-3); border-radius: 10px; padding: .3rem .9rem; }
+.profile-editor summary { color: var(--ink-muted); cursor: pointer; padding: .5rem 0; }
+.profile-editor .grid { margin: .6rem 0; }
+.pf-check { flex-direction: row; align-items: center; gap: .5rem; color: var(--cloud); }
+.pf-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--gold); }
+
+/* ---------- race plan & full stats on finds ---------- */
+.race-plan { color: var(--green); font-size: .82rem; }
+.find-stats { margin-top: .3rem; }
+.find-stats summary { color: var(--ink-muted); font-size: .76rem; cursor: pointer; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .2rem .9rem; margin: .4rem 0 .2rem; font-size: .82rem; }
+.stat-grid .sk { color: var(--ink-muted); }
+
 /* ---------- intel ---------- */
 .intel-row {
   display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap;
