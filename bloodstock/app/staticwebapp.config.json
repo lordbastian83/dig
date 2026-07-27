@@ -3,7 +3,7 @@
     { "route": "/.auth/login/twitter", "statusCode": 404 },
     { "route": "/.auth/login/github", "statusCode": 404 },
     { "route": "/.auth/*", "allowedRoles": ["anonymous", "authenticated"] },
-    { "route": "/*", "allowedRoles": ["vault"] }
+    { "route": "/*", "allowedRoles": ["vault", "admin"] }
   ],
   "responseOverrides": {
     "401": {
