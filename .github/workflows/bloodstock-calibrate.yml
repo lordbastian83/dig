@@ -1,0 +1,55 @@
+name: Bloodstock calibration (backtest)
+
+# Measures the real outcome-tree probabilities by building a historical
+# cohort of profile-matching horses from ~13-15 months ago and following
+# each 12 months forward via The Racing API. Publishes backtest.json to the
+# bloodstock-data branch; the app's model section reads it and shows the
+# measured tree beside the assumed one. Run manually, or monthly.
+
+on:
+  schedule:
+    - cron: '30 5 1 * *'   # 05:30 UTC on the 1st monthly
+  workflow_dispatch:
+    inputs:
+      cohort_months:
+        description: 'How many months back the cohort window opens'
+        required: false
+        default: '15'
+
+permissions:
+  contents: write
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run backtest
+        env:
+          RACING_API_USERNAME: ${{ secrets.RACING_API_USERNAME }}
+          RACING_API_PASSWORD: ${{ secrets.RACING_API_PASSWORD }}
+          COHORT_MONTHS: ${{ inputs.cohort_months || '15' }}
+          OUT: backtest.json
+        run: node bloodstock/backtest.mjs
+
+      - name: Publish to bloodstock-data branch
+        run: |
+          git config user.name 'bloodstock-calibrate[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch origin bloodstock-data:refs/remotes/origin/bloodstock-data || true
+          if git rev-parse --verify refs/remotes/origin/bloodstock-data >/dev/null 2>&1; then
+            git worktree add data origin/bloodstock-data
+            cd data && git checkout -B bloodstock-data
+          else
+            git worktree add --orphan -b bloodstock-data data 2>/dev/null \
+              || { git worktree add --detach data && cd data && git checkout --orphan bloodstock-data && git rm -rf --quiet . 2>/dev/null; cd ..; }
+            cd data
+          fi
+          cp ../backtest.json .
+          git add backtest.json
+          git commit -m "backtest $(date -u +%F)" || exit 0
+          git push origin bloodstock-data

@@ -44,11 +44,12 @@
       <p class="hero-line dim">the radar hunts his profile daily &mdash; before the ring prices it in</p>
     </div>
     <figure class="hero-media">
-      <!-- Drop a licensed photo at img/imperial-emperor.jpg and it replaces
-           the silhouette automatically. Press/agency photos are copyrighted —
-           use one you own or have licensed. -->
-      <img src="img/imperial-emperor.jpg" alt="Imperial Emperor"
+      <!-- Image priority: saved URL (set via the app) → bundled photo at
+           img/imperial-emperor.jpg → SVG silhouette. Paste any image
+           address (Unsplash "copy image address", or your own photo). -->
+      <img id="hero-img" src="img/imperial-emperor.jpg" alt="Racehorse"
            onerror="this.remove()">
+      <button id="hero-set" title="Set the hero image from a URL">set image</button>
       <svg class="hero-horse" viewBox="0 0 200 200" aria-hidden="true">
         <!-- elegant thoroughbred head-and-neck profile silhouette -->
         <path fill="#F7F8FA" fill-opacity="0.95" d="
@@ -84,7 +85,7 @@
     <button id="budget-down" class="budget-step" title="−5,000 gns">−</button>
     <span class="budget-value"><span id="budget-num">60,000</span> gns</span>
     <button id="budget-up" class="budget-step" title="+5,000 gns">+</button>
-    <input id="budget-range" type="range" min="10000" max="250000" step="5000" value="60000">
+    <input id="budget-range" type="range" min="10000" max="1000000" step="5000" value="60000">
     <span class="budget-hint">every max bid is capped here</span>
   </section>
 
@@ -176,6 +177,15 @@
             <option value="A">A only</option>
           </select>
         </label>
+        <label>Sire contains <input id="pf-sire" placeholder="e.g. Dubawi"></label>
+        <label>Damsire contains <input id="pf-damsire" placeholder="e.g. Galileo"></label>
+        <label>Sex / type
+          <select id="pf-sex">
+            <option value="any">Any</option>
+            <option value="colt">Colts / geldings</option>
+            <option value="filly">Fillies / mares</option>
+          </select>
+        </label>
         <label>Region
           <select id="pf-region">
             <option value="any">Any</option>
@@ -190,8 +200,20 @@
           </select>
         </label>
         <label>Min RPR edge <input id="pf-rpr" type="number" min="0" max="40" placeholder="0"></label>
+        <label>Trip from (f) <input id="pf-distmin" type="number" min="4" max="20" placeholder="any"></label>
+        <label>Trip to (f) <input id="pf-distmax" type="number" min="4" max="20" placeholder="any"></label>
+        <label>Race plan
+          <select id="pf-plan">
+            <option value="any">Any</option>
+            <option value="sprint">Sprint (≤6f)</option>
+            <option value="miler">Miler (7–8f)</option>
+            <option value="middle">Middle (9–11f)</option>
+            <option value="staying">Staying (12f+)</option>
+          </select>
+        </label>
         <label class="pf-check"><input type="checkbox" id="pf-aw"> Require AW win</label>
         <label class="pf-check"><input type="checkbox" id="pf-ph"> Require powerhouse owner</label>
+        <label class="pf-check"><input type="checkbox" id="pf-vers"> Versatile trip only</label>
       </div>
       <div class="form-actions">
         <button id="pf-save" class="primary">Save profile</button>

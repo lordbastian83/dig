@@ -569,6 +569,7 @@ function activeProfile() {
   const { active, list } = loadProfiles();
   return list.find((p) => p.name === active) || IMPERIAL;
 }
+const PLAN_BANDS = { sprint: [0, 6], miler: [6.5, 8], middle: [8.5, 11], staying: [11.5, 99] };
 function matchesProfile(h, p) {
   if (h.rating < p.rmin || h.rating > p.rmax) return false;
   if (h.starts > p.starts) return false;
@@ -579,6 +580,23 @@ function matchesProfile(h, p) {
   if (+p.rpr > 0 && !(+h.rprEdge >= +p.rpr)) return false;
   if (p.aw && !h.awForm) return false;
   if (p.ph && !h.powerhouse) return false;
+  if (p.vers && !h.versatile) return false;
+  if (p.sire && !String(h.sire || '').toLowerCase().includes(p.sire.toLowerCase())) return false;
+  if (p.damsire && !String(h.dam || '').toLowerCase().includes(p.damsire.toLowerCase())) return false;
+  if (p.sex && p.sex !== 'any' && h.sex) {
+    const isFilly = /f|m/i.test(h.sex);
+    if (p.sex === 'filly' && !isFilly) return false;
+    if (p.sex === 'colt' && isFilly) return false;
+  }
+  // distance: the horse's best trip must fall in the requested window
+  if ((p.distmin || p.distmax) && h.distBest != null) {
+    if (p.distmin && h.distBest < +p.distmin) return false;
+    if (p.distmax && h.distBest > +p.distmax) return false;
+  }
+  if (p.plan && p.plan !== 'any' && h.distBest != null) {
+    const [lo, hi] = PLAN_BANDS[p.plan] || [0, 99];
+    if (h.distBest < lo || h.distBest > hi) return false;
+  }
   return true;
 }
 
@@ -657,6 +675,10 @@ function fillEditor(p) {
   $('#pf-starts').value = p.starts; $('#pf-tier').value = p.tier;
   $('#pf-region').value = p.region; $('#pf-trend').value = p.trend;
   $('#pf-rpr').value = p.rpr; $('#pf-aw').checked = p.aw; $('#pf-ph').checked = p.ph;
+  $('#pf-distmin').value = p.distmin || ''; $('#pf-distmax').value = p.distmax || '';
+  $('#pf-plan').value = p.plan || 'any'; $('#pf-vers').checked = !!p.vers;
+  $('#pf-sire').value = p.sire || ''; $('#pf-damsire').value = p.damsire || '';
+  $('#pf-sex').value = p.sex || 'any';
 }
 $('#profile-select').addEventListener('change', (e) => {
   const { list } = loadProfiles();
@@ -676,6 +698,10 @@ $('#pf-save').addEventListener('click', () => {
     starts: +$('#pf-starts').value || 50, tier: $('#pf-tier').value,
     region: $('#pf-region').value, trend: $('#pf-trend').value,
     rpr: +$('#pf-rpr').value || 0, aw: $('#pf-aw').checked, ph: $('#pf-ph').checked,
+    distmin: +$('#pf-distmin').value || 0, distmax: +$('#pf-distmax').value || 0,
+    plan: $('#pf-plan').value, vers: $('#pf-vers').checked,
+    sire: ($('#pf-sire').value || '').trim(), damsire: ($('#pf-damsire').value || '').trim(),
+    sex: $('#pf-sex').value,
   };
   const custom = loadProfiles().list.filter((p) => !p.builtin && p.name !== name);
   custom.push(prof);
@@ -713,6 +739,22 @@ fetch(NEWS_URL)
   })
   .catch(() => {});
 
+/* ---------- hero image (paste a URL, saved in this browser) ---------- */
+(function heroImage() {
+  const saved = localStorage.getItem('bloodstock.heroImg');
+  const img = $('#hero-img');
+  if (saved && img) img.src = saved;
+  const setBtn = $('#hero-set');
+  if (setBtn) setBtn.addEventListener('click', () => {
+    const url = prompt('Paste an image address (Unsplash → right-click → Copy image address, or any https image URL). Leave blank to clear.',
+      saved || '');
+    if (url === null) return;
+    if (!url.trim()) { localStorage.removeItem('bloodstock.heroImg'); location.reload(); return; }
+    localStorage.setItem('bloodstock.heroImg', url.trim());
+    location.reload();
+  });
+})();
+
 /* ---------- budget control ---------- */
 function syncBudgetUI() {
   const P = loadParams();
@@ -721,7 +763,7 @@ function syncBudgetUI() {
 }
 function setBudget(v) {
   const P = loadParams();
-  P.budgetGns = Math.max(10000, Math.min(250000, Math.round(v / 1000) * 1000));
+  P.budgetGns = Math.max(5000, Math.min(1000000, Math.round(v / 1000) * 1000));
   saveParams(P);
   syncBudgetUI();
   renderParams();
@@ -729,8 +771,10 @@ function setBudget(v) {
   renderFinds();
   $('#score-result').hidden = true; // stale — rescore to refresh the scale
 }
-$('#budget-up').addEventListener('click', () => setBudget(loadParams().budgetGns + 5000));
-$('#budget-down').addEventListener('click', () => setBudget(loadParams().budgetGns - 5000));
+// Step scales with size: ±5k up to 100k, ±25k above — usable to £1m.
+const budgetStep = (v) => (v >= 100000 ? 25000 : 5000);
+$('#budget-up').addEventListener('click', () => { const b = loadParams().budgetGns; setBudget(b + budgetStep(b)); });
+$('#budget-down').addEventListener('click', () => { const b = loadParams().budgetGns; setBudget(b - budgetStep(b - 1)); });
 $('#budget-range').addEventListener('input', (e) => setBudget(+e.target.value));
 
 /* ---------- init ---------- */

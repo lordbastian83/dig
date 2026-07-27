@@ -80,7 +80,7 @@ async function sweep() {
         if (!prelim.has(r.horse_id)) {
           prelim.set(r.horse_id, {
             id: r.horse_id, name: r.horse, sire: r.sire, dam: r.dam,
-            damsire: r.damsire, rating: or, age, region,
+            damsire: r.damsire, rating: or, age, region, sex: r.sex || '',
             owner: r.owner || '', trainer: r.trainer || '',
             lastRun: race.date, tier,
           });
@@ -223,7 +223,7 @@ for (const m of ranked) {
     blackType: false, // cannot be proven from form data — human check
     awForm: deep.awForm,
     rprEdge: deep.rprEdge, trend: deep.trend,
-    region: m.region,
+    region: m.region, sex: m.sex,
     distBest: deep.distBest, distMin: deep.distMin, distMax: deep.distMax,
     racePlan: deep.racePlan, versatile: deep.versatile,
     notes: `[RADAR ${day(0)}] trainer ${m.trainer} · last ran ${m.lastRun}`
