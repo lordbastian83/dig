@@ -2,14 +2,22 @@
    the app shell (and your watchlist UI) opens offline at the sales ground.
    Same pattern as budsignal's worker. */
 
-const CACHE = 'bloodstock-v2';
+const CACHE = 'bloodstock-v3';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
-  // drop any stale caches from earlier versions, then take control
+  // drop any stale caches from earlier versions
   const keys = await caches.keys();
+  const hadOld = keys.some((k) => k !== CACHE);
   await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
   await self.clients.claim();
+  // If this is an UPDATE (old caches existed), the open app is showing a stale
+  // shell — reload every window once so it picks up the fresh HTML/CSS/JS.
+  // Guarded by hadOld so a first install never triggers a reload loop.
+  if (hadOld) {
+    const wins = await self.clients.matchAll({ type: 'window' });
+    for (const w of wins) { try { w.navigate(w.url); } catch (_) {} }
+  }
 })()));
 
 self.addEventListener('fetch', (e) => {
