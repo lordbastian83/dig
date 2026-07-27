@@ -45,23 +45,29 @@ code {
   font-family: var(--mono); font-size: .82em;
 }
 
-/* ---------- header: wordmark ---------- */
+/* ---------- header: logo lockup ---------- */
 .site-header {
   position: sticky; top: 0; z-index: 20;
-  display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
-  padding: .85rem 1.2rem;
+  display: flex; align-items: center; gap: .8rem;
+  padding: .7rem 1.2rem;
   background: rgba(18, 32, 58, 0.94); backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border);
 }
+.logo-mark {
+  width: 42px; height: 42px; flex: none;
+  border-radius: 10px; border: 1px solid var(--border);
+}
+.lockup { display: grid; line-height: 1.25; }
 .site-header h1 {
-  font-size: 1.3rem; margin: 0; font-weight: 700;
+  font-size: 1.35rem; margin: 0; font-weight: 700;
   letter-spacing: -0.01em; text-transform: lowercase;
 }
 .site-header h1 .shoe-u { color: var(--gold); }
 .site-header h1 .sub {
   color: var(--gold); font-weight: 500; font-size: .72em; margin-left: .15em;
 }
-.tagline { color: var(--ink-muted); font-size: .82rem; }
+.tagline { color: var(--ink-muted); font-size: .78rem; }
+@media (max-width: 480px) { .tagline { display: none; } }
 
 main { max-width: 980px; margin: 0 auto; padding: 1.2rem; display: grid; gap: 1.2rem; }
 
@@ -122,10 +128,24 @@ input, select {
 }
 input[type=number] { font-family: var(--mono); }
 input:focus, select:focus { outline: 1px solid var(--blue); }
-.checks { display: flex; gap: 1.4rem; flex-wrap: wrap; margin: .9rem 0; }
-.checks label { display: flex; align-items: center; gap: .45rem; font-size: .9rem; color: var(--cloud); font-weight: 300; }
-.checks input { width: 1.05rem; height: 1.05rem; accent-color: var(--gold); }
-.notes-label { margin-bottom: .9rem; }
+/* Big tap-target toggle chips — tick what the catalogue shows */
+.toggles { display: flex; gap: .6rem; flex-wrap: wrap; margin: 1rem 0 .4rem; }
+.toggle { display: inline-flex; cursor: pointer; }
+.toggle input[type=checkbox] { position: absolute; opacity: 0; pointer-events: none; }
+.toggle span, .toggle select {
+  padding: .55rem 1rem; border-radius: 999px; font-size: .9rem; font-weight: 500;
+  background: var(--navy); color: var(--ink-muted);
+  border: 1px solid var(--border);
+}
+.toggle input:checked + span {
+  background: var(--gold-wash); color: var(--gold);
+  border-color: var(--gold-deep);
+}
+.toggle input:checked + span::before { content: '✓ '; }
+.vet-toggle select { cursor: pointer; }
+details.more { margin: .6rem 0 .2rem; }
+details.more summary { color: var(--ink-muted); font-size: .85rem; cursor: pointer; }
+details.more .grid { margin-top: .8rem; }
 
 .form-actions { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .8rem; }
 button, .file-btn {
@@ -148,9 +168,10 @@ button.primary:hover { filter: brightness(1.06); }
 .verdict-bid { color: var(--green); }
 .verdict-reject { color: var(--ink-muted); }
 .max-bid { font-size: 1rem; color: var(--cloud); }
-.max-bid b { color: var(--gold); font-family: var(--mono); font-size: 1.6rem; font-weight: 600; }
-details summary { cursor: pointer; color: var(--ink-muted); }
-details summary h2 { display: inline; }
+.max-bid b { color: var(--gold); font-family: var(--mono); font-size: 2rem; font-weight: 600; }
+details summary { cursor: pointer; color: var(--ink-muted); list-style-position: outside; }
+details summary h2 { display: inline; margin: 0; }
+details[open] > summary { margin-bottom: .7rem; }
 
 /* ---------- watchlist ---------- */
 .table-wrap { overflow-x: auto; }
