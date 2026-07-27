@@ -77,6 +77,8 @@ async function sweep() {
     const races = batch?.results ?? [];
     if (!races.length) break;
     for (const race of races) {
+      // Dirt targets are FLAT horses — skip jumps races entirely.
+      if (race.jumps || /hurdle|chase|nh flat|bumper/.test(lc(race.type) + lc(race.race_name))) continue;
       const region = /ire|irish/.test(lc(race.region) + lc(race.course)) ? 'IRE' : 'GB';
       for (const r of race.runners ?? []) {
         const tk = lc(r.trainer);
@@ -132,15 +134,20 @@ async function damProduction(damId, damName, selfId) {
     if (DEBUG && races[0]) console.error(`  ? dam ${damName} result keys: ${Object.keys(races[0]).join(',').slice(0, 200)}`);
     if (!races.length) return null;
 
-    // Aggregate per offspring: best OR, and whether it hit black type.
+    // Aggregate per offspring: best OR, and whether it hit black type. Each
+    // race's runners include ALL horses in that race, so keep ONLY the dam's
+    // own foals — the runner whose dam_id matches this dam.
     const foals = new Map(); // offspring horse_id -> {bestOR, blackType}
     for (const race of races) {
       const runners = Array.isArray(race.runners) ? race.runners : [race];
       const pat = lc(race.pattern) + ' ' + lc(race.race_name) + ' ' + lc(race.class);
       const isBT = /group|listed|\bg[123]\b|stakes/.test(pat);
       for (const r of runners) {
+        const isOffspring = String(r.dam_id ?? '') === String(id)
+          || lc(r.dam) === lc(damName);
+        if (!isOffspring) continue;              // skip rivals in the race
         const hid = r.horse_id ?? r.id ?? r.horse;
-        if (!hid || hid === selfId) continue;   // exclude the candidate itself
+        if (!hid || hid === selfId) continue;    // exclude the candidate itself
         const e = foals.get(hid) || { bestOR: 0, blackType: false };
         const or = +(r.or ?? r.official_rating ?? NaN);
         if (Number.isFinite(or)) e.bestOR = Math.max(e.bestOR, or);
@@ -149,7 +156,7 @@ async function damProduction(damId, damName, selfId) {
       }
     }
     const n = foals.size;
-    if (!n) return null;
+    if (!n || n > 20) return null;   // >20 "foals" = matched rivals, discard
     let rated90 = 0, blackType = 0;
     for (const f of foals.values()) { if (f.bestOR >= 90) rated90++; if (f.blackType) blackType++; }
     const rate90 = rated90 / n;
