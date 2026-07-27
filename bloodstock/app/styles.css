@@ -115,7 +115,13 @@ main { max-width: 980px; margin: 0 auto; padding: 1.2rem; display: grid; gap: 1.
 }
 .hero-line { margin: .2rem 0; font-size: .92rem; color: var(--cloud); }
 .hero-line.dim { color: rgba(247, 248, 250, 0.65); font-size: .82rem; }
-.hero-media { flex: none; margin: 0; width: 180px; height: 150px; position: relative; }
+.hero-media { flex: none; margin: 0; width: 200px; height: 175px; position: relative; display: flex; align-items: center; justify-content: center; }
+/* soft glow anchoring the silhouette */
+.hero-media::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 60% 45%, rgba(247,248,250,.16), transparent 62%);
+  pointer-events: none;
+}
 .hero-media img {
   width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
   border: 1px solid var(--border);
