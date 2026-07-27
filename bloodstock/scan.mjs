@@ -203,11 +203,15 @@ async function deepCheck(c) {
     const isAW = AW_HINTS.some((h) => lc(race.surface).includes(h));
     if (race.surface) surfaces.add(lc(race.surface).split(' ')[0]);
     if (isAW && String(me.position) === '1') awForm = true;
-    const rpr = +(me.rpr ?? NaN);
+    // Fields arrive as strings and are often empty ("") — treat blank as
+    // absent. RPR/TSR are empty on this endpoint; the real speed figures
+    // live in performance_rating and speed_rating (Pro).
+    const num = (x) => { const n = +x; return (x === '' || x == null || Number.isNaN(n)) ? NaN : n; };
+    const rpr = num(me.performance_rating ?? me.rpr);
     if (Number.isFinite(rpr) && (bestRPR === null || rpr > bestRPR)) bestRPR = rpr;
-    const tsr = +(me.tsr ?? NaN);
+    const tsr = num(me.speed_rating ?? me.tsr);
     if (Number.isFinite(tsr) && (bestTSR === null || tsr > bestTSR)) bestTSR = tsr;
-    const or = +(me.or ?? NaN);
+    const or = num(me.or);
     if (Number.isFinite(or) && or > 0) { orsNewestFirst.push(or); if (careerHigh === null || or > careerHigh) careerHigh = or; }
     const cls = +(String(race.class || '').replace(/[^0-9]/g, '') || NaN);
     if (Number.isFinite(cls)) classesNewestFirst.push(cls);
