@@ -28,10 +28,7 @@
 
 body {
   margin: 0;
-  background:
-    radial-gradient(1100px 520px at 50% -10%, rgba(0,102,204,.16), transparent 70%),
-    #0C1728;   /* a touch darker than the cards so surfaces separate */
-  background-attachment: fixed;
+  background: #0C1728;   /* a touch darker than the cards so surfaces separate */
   color: var(--cloud);
   font-family: var(--sans);
   font-size: 16px;

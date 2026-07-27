@@ -1098,8 +1098,14 @@ renderParams();
 renderList();
 syncBudgetUI();
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+// Service worker intentionally NOT registered — it caused stale-cache and
+// reload problems and the app is online-only. Any previously-installed worker
+// unregisters itself (see sw.js) and we proactively clear it here too so
+// devices that still hold one recover on this load.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations?.()
+    .then((rs) => rs.forEach((r) => r.unregister()))
+    .catch(() => {});
 }
 
 /* ---------- quick-nav scroll-spy: highlight the section you're in ------- */
