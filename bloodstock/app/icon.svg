@@ -1,10 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- vault racing app icon per Brand Guidelines v0.1: navy plate, the u
-       letterform bowl (square shoulders, semicircular foot) with the shoe
-       KNOCKED OUT of it — never filled with an accent colour. Heels up so
-       the luck stays in. No nails at icon size. -->
+  <!-- vault racing app icon — the toolkit's exact letterform construction
+       (bowl + round-capped shoe stroke + six nails), colours inverted for
+       the navy plate per the knockout rule. -->
   <rect width="128" height="128" rx="28" fill="#12203A"/>
-  <path fill="#F7F8FA" fill-rule="evenodd" d="
-    M32 30 H96 V62 A32 32 0 0 1 32 62 Z
-    M45 39 V62 A19 19 0 0 0 83 62 V39 H74 V62 A10 10 0 0 1 54 62 V39 Z"/>
+  <g transform="translate(32,30) scale(1.28)">
+    <path d="M0 0 L0 27 A25 25 0 0 0 50 27 L50 0 Z" fill="#F7F8FA"/>
+    <path d="M13 9 L13 25 A12 12 0 0 0 37 25 L37 9" fill="none" stroke="#12203A" stroke-width="9" stroke-linecap="round"/>
+    <g fill="#F7F8FA">
+      <circle cx="13" cy="13" r="1.9"/><circle cx="13" cy="19" r="1.9"/>
+      <circle cx="16.5" cy="33.5" r="1.9"/><circle cx="33.5" cy="33.5" r="1.9"/>
+      <circle cx="37" cy="19" r="1.9"/><circle cx="37" cy="13" r="1.9"/>
+    </g>
+  </g>
 </svg>
