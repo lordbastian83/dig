@@ -224,6 +224,30 @@ td b { font-weight: 500; }
 /* numerals are Plex Mono, everywhere they carry meaning */
 td:nth-child(3) { font-family: var(--mono); }
 
+/* ---------- scoring, grades & notes ---------- */
+.score-chip {
+  font-family: var(--mono); font-size: .68rem; font-weight: 600;
+  color: var(--gold); background: var(--gold-wash);
+  padding: .15em .55em; border-radius: 4px; margin-left: .6em; vertical-align: middle;
+}
+.grade-badge {
+  font-family: var(--mono); font-size: .72rem; font-weight: 600;
+  color: var(--navy); background: var(--gold);
+  padding: .05em .45em; border-radius: 4px; margin-left: .3em;
+}
+.note-preview { display: block; color: var(--ink-muted); font-style: italic; }
+.row-tools { white-space: nowrap; }
+.edit-btn { padding: .2rem .55rem; color: var(--ink-muted); }
+.edit-btn:hover { color: var(--gold); }
+.editor-row td { background: var(--navy-3); }
+.editor { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; padding: .3rem 0; }
+.editor-notes { flex: 1; min-width: 220px; }
+.editor textarea {
+  background: var(--navy); color: var(--cloud); width: 100%;
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: .45rem .6rem; font: inherit; font-size: .9rem; resize: vertical;
+}
+
 /* ---------- radar finds ---------- */
 .find-row {
   display: flex; align-items: center; gap: 1rem;

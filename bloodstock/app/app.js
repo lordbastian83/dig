@@ -161,7 +161,8 @@ function renderScore(h, r) {
   const clampNote = r.clamped ?
     '<p class="warn">Model cap exceeds budget ceiling — bid limited to budget.</p>' : '';
   el.innerHTML = `
-    <h3>${h.name} — <span class="${r.verdict === 'BID' ? 'verdict-bid' : 'verdict-reject'}">${r.verdict}</span></h3>
+    <h3>${h.name} — <span class="${r.verdict === 'BID' ? 'verdict-bid' : 'verdict-reject'}">${r.verdict}</span>
+      <span class="score-chip" title="Quality score — drives the upside probability in the EV tree">vault score ${Math.round(r.score * 100)}</span></h3>
     <ul class="check-list">${checkRows}</ul>
     ${r.verdict === 'BID'
       ? `<p class="max-bid">Hard max bid: <b>${fmt(r.gns)} gns</b></p>`
@@ -201,18 +202,40 @@ function renderList() {
     const opts = STATUSES.map((s) =>
       `<option ${h.status === s ? 'selected' : ''}>${s}</option>`).join('');
     return `<tr class="${r.verdict === 'BID' ? '' : 'row-reject'}">
-      <td><b>${h.name}</b>${h.lot ? ' (lot ' + h.lot + ')' : ''}<br>
-          <small>${h.sire || '?'} × ${h.dam || '?'} · ${h.vendor || '?'}</small></td>
+      <td><b>${h.name}</b>${h.lot ? ' (lot ' + h.lot + ')' : ''}${h.grade ? ` <span class="grade-badge">${h.grade}</span>` : ''}<br>
+          <small>${h.sire || '?'} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
+          ${h.notes ? `<small class="note-preview">✎ ${h.notes.slice(0, 70)}${h.notes.length > 70 ? '…' : ''}</small>` : ''}</td>
       <td>${h.sale}</td>
       <td>${h.rating}</td>
       <td class="${r.verdict === 'BID' ? 'verdict-bid' : 'verdict-reject'}">
-          ${r.verdict === 'BID' ? 'PASS 6/6' : (6 - r.fails.length) + '/6'}</td>
+          ${r.verdict === 'BID' ? 'PASS 6/6' : (6 - r.fails.length) + '/6'}<br>
+          <small class="mono">vs ${Math.round(r.score * 100)}</small></td>
       <td class="bid-cell">${fmt(r.gns)}${r.vetClean ? '' : ' ⚠'}</td>
       <td class="gap-cell">${gap == null ? '<small>no comp</small>'
         : `<span class="${gap >= 0 ? 'verdict-bid' : 'verdict-reject'}">${gap >= 0 ? '+' : ''}${fmt(gap)}</span>
            <small>exp ${fmt(exp.gns)}${exp.est ? ' est' : ''}</small>`}</td>
       <td><select data-i="${i}" class="status-sel">${opts}</select></td>
-      <td><button data-i="${i}" class="del-btn" title="Remove">✕</button></td>
+      <td class="row-tools">
+        <button data-i="${i}" class="edit-btn" title="Grade &amp; notes">✎</button>
+        <button data-i="${i}" class="del-btn" title="Remove">✕</button>
+      </td>
+    </tr>
+    <tr class="editor-row" data-editor="${i}" hidden>
+      <td colspan="8">
+        <div class="editor">
+          <label>My grade
+            <select class="edit-grade">
+              ${['', 'A+', 'A', 'B', 'C', 'D'].map((g) =>
+                `<option value="${g}" ${h.grade === g ? 'selected' : ''}>${g || '—'}</option>`).join('')}
+            </select>
+          </label>
+          <label class="editor-notes">Notes
+            <textarea class="edit-notes" rows="3"
+              placeholder="physical inspection, wind, walk, who else was looking…">${h.notes || ''}</textarea>
+          </label>
+          <button class="primary edit-save" data-i="${i}">Save</button>
+        </div>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -293,6 +316,21 @@ $('#watchlist').addEventListener('change', (e) => {
 });
 
 $('#watchlist').addEventListener('click', (e) => {
+  if (e.target.matches('.edit-btn')) {
+    const row = $(`#watchlist .editor-row[data-editor="${e.target.dataset.i}"]`);
+    if (row) row.hidden = !row.hidden;
+    return;
+  }
+  if (e.target.matches('.edit-save')) {
+    const i = +e.target.dataset.i;
+    const row = $(`#watchlist .editor-row[data-editor="${i}"]`);
+    const list = loadList();
+    list[i].grade = row.querySelector('.edit-grade').value;
+    list[i].notes = row.querySelector('.edit-notes').value.trim();
+    saveList(list);
+    renderList();
+    return;
+  }
   if (!e.target.matches('.del-btn')) return;
   const list = loadList();
   const h = list[+e.target.dataset.i];
@@ -331,13 +369,13 @@ $('#rank-gap').addEventListener('click', () => {
 $('#export-csv').addEventListener('click', () => {
   const P = loadParams();
   const head = ['name','lot','sale','sire','dam','vendor','rating','starts',
-    'sireTier','vet','powerhouse','blackType','awForm','screen','maxBidGns','status','notes'];
+    'sireTier','vet','powerhouse','blackType','awForm','screen','vaultScore','maxBidGns','status','grade','notes'];
   const rows = loadList().map((h) => {
     const r = evaluate(h, P);
     return [h.name, h.lot, h.sale, h.sire, h.dam, h.vendor, h.rating, h.starts,
       h.sireTier, h.vet, h.powerhouse, h.blackType, h.awForm,
       r.verdict === 'BID' ? 'PASS' : 'FAIL: ' + r.fails.join('|'),
-      r.gns, h.status, h.notes]
+      Math.round(r.score * 100), r.gns, h.status, h.grade || '', h.notes]
       .map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',');
   });
   download('bloodstock-watchlist.csv', 'text/csv', [head.join(','), ...rows].join('\n'));
