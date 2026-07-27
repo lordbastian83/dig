@@ -15,6 +15,7 @@
 </head>
 <body>
 
+<div class="topbar">
 <header class="site-header">
   <!-- Logotype exactly per the brand toolkit (colours inverted for navy):
        bowl filled, shoe as round-capped stroke knockout, six nails. -->
@@ -32,6 +33,14 @@
   </div>
   <span class="tagline">the horse the market hasn't priced yet</span>
 </header>
+<nav class="quicknav" aria-label="Jump to section">
+  <a href="#finds-card" data-nav hidden>💎 Radar</a>
+  <a href="#score" data-nav>🎯 Score</a>
+  <a href="#watchlist-card" data-nav>📋 Watchlist</a>
+  <a href="#calendar-card" data-nav>🗓 Sales</a>
+  <a href="#model" data-nav>⚙ Model</a>
+</nav>
+</div>
 
 <main>
 
@@ -90,7 +99,7 @@
   </section>
 
   <!-- ============ 1 · Score a lot — THE action ============ -->
-  <section class="card">
+  <section class="card" id="score">
     <h2>Score a lot</h2>
     <p class="hint">Type the horse in, tick what the catalogue shows, get a verdict
     and a hard max bid. The sire tier is worked out from the pedigree automatically.</p>
@@ -293,7 +302,7 @@
   </section>
 
   <!-- ============ 3 · Watchlist ============ -->
-  <section class="card">
+  <section class="card" id="watchlist-card">
     <h2>Watchlist</h2>
     <div class="table-wrap">
       <table id="watchlist">
@@ -319,7 +328,7 @@
   </section>
 
   <!-- ============ 3 · Sales calendar ============ -->
-  <section class="card">
+  <section class="card" id="calendar-card">
     <details open>
       <summary><h2>Sales calendar</h2></summary>
       <div id="region-chips" class="chips"></div>
@@ -344,7 +353,7 @@
     </details>
   </section>
 
-  <section class="card">
+  <section class="card" id="model">
     <details id="model-details">
       <summary><h2>Valuation model (editable)</h2></summary>
       <p class="hint">Max bid = (prize EV + probability-weighted residual &minus; costs)

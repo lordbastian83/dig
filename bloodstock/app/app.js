@@ -699,9 +699,14 @@ function editorProfile() {
 
 let RADAR = [];
 let RADAR_META = {};
+function navShow(id, on) {
+  const a = document.querySelector(`.quicknav a[href="#${id}"]`);
+  if (a) a.hidden = !on;
+}
 function renderFinds() {
   const card = $('#finds-card');
-  if (!RADAR.length) { card.hidden = true; return; }
+  if (!RADAR.length) { card.hidden = true; navShow('finds-card', false); return; }
+  navShow('finds-card', true);
   const P = loadParams();
   const prof = previewProfile || activeProfile();
   const rows = RADAR
@@ -1066,6 +1071,24 @@ syncBudgetUI();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+/* ---------- quick-nav scroll-spy: highlight the section you're in ------- */
+(function quickNav() {
+  const links = [...document.querySelectorAll('.quicknav a[data-nav]')];
+  if (!links.length || !('IntersectionObserver' in window)) return;
+  const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+  const spy = new IntersectionObserver((entries) => {
+    // pick the entry nearest the top of the viewport that's on screen
+    const visible = entries.filter((e) => e.isIntersecting)
+      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+    if (!visible.length) return;
+    const a = byId.get(visible[0].target.id);
+    if (!a) return;
+    links.forEach((l) => l.classList.remove('active'));
+    a.classList.add('active');
+  }, { rootMargin: '-100px 0px -55% 0px', threshold: 0 });
+  byId.forEach((_, id) => { const el = document.getElementById(id); if (el) spy.observe(el); });
+})();
 
 // Signed-in identity (SWA platform auth) — silent no-op when running locally.
 fetch('/.auth/me')
