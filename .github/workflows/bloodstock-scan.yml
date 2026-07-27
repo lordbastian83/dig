@@ -1,0 +1,69 @@
+name: Bloodstock diamond radar
+
+# Daily sweep of recent UK/IRE results via The Racing API for horses that
+# match the Imperial Emperor profile before they reach a sale. New finds
+# are merged into candidates.json on the bloodstock-data branch (the app's
+# Radar finds card reads it) and Telegrammed when they pass every filter
+# form data can prove.
+
+on:
+  schedule:
+    - cron: '10 6 * * *'   # 06:10 UTC daily, before the page watcher
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Lookback window in days'
+        required: false
+        default: '7'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bloodstock-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore candidates from bloodstock-data branch
+        run: |
+          git fetch origin bloodstock-data --depth 1 || true
+          git show origin/bloodstock-data:candidates.json > candidates.json 2>/dev/null || echo '{"candidates":[]}' > candidates.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run radar scan
+        env:
+          RACING_API_USERNAME: ${{ secrets.RACING_API_USERNAME }}
+          RACING_API_PASSWORD: ${{ secrets.RACING_API_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_HANDLE: 'Lordbastian83'
+          DAYS: ${{ inputs.days || '7' }}
+          OUT: candidates.json
+          EXISTING: candidates.json
+        run: node bloodstock/scan.mjs
+
+      - name: Publish candidates to bloodstock-data branch
+        run: |
+          git config user.name 'bloodstock-radar[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch origin bloodstock-data:refs/remotes/origin/bloodstock-data || true
+          if git rev-parse --verify refs/remotes/origin/bloodstock-data >/dev/null 2>&1; then
+            git worktree add data origin/bloodstock-data
+            cd data && git checkout -B bloodstock-data
+          else
+            git worktree add --orphan -b bloodstock-data data 2>/dev/null \
+              || { git worktree add --detach data && cd data && git checkout --orphan bloodstock-data && git rm -rf --quiet . 2>/dev/null; cd ..; }
+            cd data
+          fi
+          cp ../candidates.json .
+          git add candidates.json
+          git commit -m "radar $(date -u +%F)" || exit 0
+          git push origin bloodstock-data
