@@ -680,10 +680,10 @@ function renderFinds() {
     <div class="find-row">
       <div class="find-score ${tc}"><span class="fs-num">${Math.round(r.score * 100)}</span><span class="fs-lab">${tl}</span></div>
       <div class="find-main">
-        <b>${h.name}</b> <small>${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
+        <b class="find-name" data-i="${i}" title="Click for full profile">${h.name}</b> <small>${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
         <small>OR <span class="mono">${h.rating}</span>${h.trend && h.trend !== 'flat' ? ` <span class="trend-${h.trend}">${h.trend === 'improving' ? '▲' : '▼'}</span>` : ''}${+h.rprEdge >= 5 ? ` · <span class="rpr-edge">RPR +${h.rprEdge}</span>` : ''} · ${h.starts} starts${h.awForm ? ' · AW win' : ''}${h.distBest ? ` · ${h.distBest}f` : ''}</small>
         ${h.racePlan ? `<small class="race-plan">🏁 ${h.racePlan}</small>` : ''}
-        <details class="find-stats"><summary>full stats</summary><div class="stat-grid">${statLine(h)}</div></details>
+        <button class="find-profile" data-i="${i}">view full profile →</button>
       </div>
       <div class="find-bid">${fmt(r.gns)} <small>gns max</small></div>
       <button class="find-add" data-i="${i}">→ watchlist</button>
@@ -691,6 +691,94 @@ function renderFinds() {
   $('#finds').dataset.rows = JSON.stringify(rows.map((x) => x.h));
   card.hidden = false;
 }
+
+/* ---------- horse profile modal — everything we know ---------- */
+function openHorseModal(h) {
+  const P = loadParams();
+  const r = evaluate(h, P);
+  const exp = expectedPrice(h);
+  const gap = exp ? r.gns - exp.gns : null;
+  const row = (k, v) => v == null || v === '' ? '' : `<div class="mp-row"><span class="mp-k">${k}</span><span class="mp-v">${v}</span></div>`;
+  const section = (title, rows) => rows.filter(Boolean).length
+    ? `<h4>${title}</h4><div class="mp-grid">${rows.join('')}</div>` : '';
+  const money = (n) => n ? '£' + fmt(n) : null;
+  $('#modal-body').innerHTML = `
+    <div class="mp-head">
+      <h3>${h.name}</h3>
+      <span class="mp-score">vault score ${Math.round(r.score * 100)}</span>
+    </div>
+    <p class="mp-sub">${h.sire || '?'} × ${h.dam || '?'} · ${h.vendor || '?'}${h.trainer ? ` · ${h.trainer}` : ''}</p>
+
+    <div class="mp-headline">
+      <div><span class="mp-big">${fmt(r.gns)}</span><span class="mp-lab">max bid (gns)</span></div>
+      <div><span class="mp-big">${h.rating ?? '?'}</span><span class="mp-lab">official rating</span></div>
+      <div><span class="mp-big">${h.bestRPR ?? '—'}</span><span class="mp-lab">best RPR (speed)</span></div>
+      <div><span class="mp-big ${r.verdict === 'BID' ? 'ok' : ''}">${r.verdict === 'BID' ? 'PASS' : (6 - r.fails.length) + '/6'}</span><span class="mp-lab">screen</span></div>
+    </div>
+
+    ${section('Ability &amp; speed', [
+      row('Official rating', h.rating), row('Career-high OR', h.careerHigh),
+      row('Best RPR', h.bestRPR), row('Best topspeed (TSR)', h.bestTSR),
+      row('RPR edge over OR', h.rprEdge ? `${h.rprEdge > 0 ? '+' : ''}${h.rprEdge}` : null),
+      row('OR trend', h.trend),
+    ])}
+    ${section('Distance &amp; ground', [
+      row('Best trip', h.distBest ? `${h.distBest}f` : null),
+      row('Trip range', h.distMin != null ? `${h.distMin}–${h.distMax}f` : null),
+      row('Suggested plan', h.racePlan),
+      row('Going', (h.goingList || []).join(', ') || null),
+      row('Surfaces', (h.surfaceList || []).join(', ') || null),
+      row('Versatile', h.versatile ? 'yes — wide trip range' : null),
+    ])}
+    ${section('Achievement &amp; record', [
+      row('Starts', h.starts), row('Wins', h.wins), row('Placed', h.placed),
+      row('Win %', h.winPct != null ? `${Math.round(h.winPct * 100)}%` : null),
+      row('Consistency (placed)', h.consistency != null ? `${Math.round(h.consistency * 100)}%` : null),
+      row('Best win', h.bestWin), row('Prize money', money(h.earnings)),
+      row('AW win', h.awForm ? 'yes' : 'no'), row('Class', h.classMove === 'dropping' ? 'dropping (well-in)' : h.classMove),
+    ])}
+    ${section('Pedigree &amp; connections', [
+      row('Sire', h.sire), row('Sire tier', h.sireTier === 'A' ? 'A — proven dirt' : h.sireTier === 'B' ? 'B — dirt damsire' : '—'),
+      row('Dam', h.dam), row('Dam production', h.damLabel),
+      row('Owner', h.vendor), row('Powerhouse', h.powerhouse ? 'yes' : 'no'),
+      row('Trainer', h.trainer), row('Trainer strike-rate', h.trainerSR != null ? `${Math.round(h.trainerSR * 100)}%` : null),
+      row('Region', h.region), row('Sex', h.sex),
+    ])}
+    ${section('Valuation', [
+      row('Max bid', `${fmt(r.gns)} gns`), row('Expected hammer', exp ? `${fmt(exp.gns)} gns${exp.est ? ' (est)' : ''}` : '—'),
+      row('Value gap', gap == null ? '—' : `${gap >= 0 ? '+' : ''}${fmt(gap)} gns`),
+      row('Vet', h.vet === 'clean' ? 'clean' : '−20% applied (not clean)'),
+    ])}
+
+    <div class="mp-flags">
+      ${r.fails.length ? `<b>Fails:</b> ${r.fails.join('; ')}. ` : '<b class="ok">Passes all six filters.</b> '}
+      Black type &amp; availability need a human check.
+    </div>
+    <button class="primary mp-add" data-name="${encodeURIComponent(h.name)}">→ add to watchlist</button>`;
+  $('#horse-modal').hidden = false;
+}
+
+$('#finds').addEventListener('click', (e) => {
+  const t = e.target.closest('.find-name, .find-profile');
+  if (!t) return;
+  const rows = JSON.parse($('#finds').dataset.rows || '[]');
+  const h = rows[+t.dataset.i];
+  if (h) openHorseModal(h);
+});
+$('#modal-close').addEventListener('click', () => { $('#horse-modal').hidden = true; });
+$('#horse-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'horse-modal') $('#horse-modal').hidden = true; // click backdrop
+  if (e.target.matches('.mp-add')) {
+    const name = decodeURIComponent(e.target.dataset.name);
+    const rows = JSON.parse($('#finds').dataset.rows || '[]');
+    const h = rows.find((x) => x.name === name);
+    if (!h) return;
+    const list = loadList();
+    if (list.some((x) => x.name.toLowerCase() === h.name.toLowerCase())) { alert(`${h.name} is already on the watchlist.`); return; }
+    list.unshift(h); saveList(list); renderList();
+    e.target.textContent = '✓ added to watchlist';
+  }
+});
 
 document.addEventListener('click', (e) => {
   if (!e.target.matches('.find-add')) return;
