@@ -45,26 +45,28 @@ code {
   font-family: var(--mono); font-size: .82em;
 }
 
-/* ---------- header: logo lockup ---------- */
+/* ---------- header: the wordmark IS the mark — shoe knocked out of the u */
 .site-header {
   position: sticky; top: 0; z-index: 20;
-  display: flex; align-items: center; gap: .8rem;
-  padding: .7rem 1.2rem;
+  display: flex; align-items: center; gap: 1rem;
+  padding: .6rem 1.2rem;
   background: rgba(18, 32, 58, 0.94); backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border);
 }
-.logo-mark {
-  width: 42px; height: 42px; flex: none;
-  border-radius: 10px; border: 1px solid var(--border);
-}
-.lockup { display: grid; line-height: 1.25; }
+.lockup { display: grid; line-height: 1; }
 .site-header h1 {
-  font-size: 1.35rem; margin: 0; font-weight: 700;
+  font-size: 1.6rem; margin: 0; font-weight: 700; color: var(--cloud);
   letter-spacing: -0.01em; text-transform: lowercase;
+  display: flex; align-items: baseline;
 }
-.site-header h1 .shoe-u { color: var(--gold); }
-.site-header h1 .sub {
-  color: var(--gold); font-weight: 500; font-size: .72em; margin-left: .15em;
+.u-glyph {
+  height: .56em; width: .56em; color: var(--cloud);
+  margin: 0 .03em; align-self: flex-end; transform: translateY(-0.032em);
+}
+.sub-line {
+  color: var(--gold); font-weight: 500; font-size: .8rem;
+  text-transform: lowercase; letter-spacing: .18em; justify-self: end;
+  margin-top: .1rem;
 }
 .tagline { color: var(--ink-muted); font-size: .78rem; }
 @media (max-width: 480px) { .tagline { display: none; } }
@@ -223,6 +225,32 @@ td b { font-weight: 500; }
 
 /* numerals are Plex Mono, everywhere they carry meaning */
 td:nth-child(3) { font-family: var(--mono); }
+
+/* ---------- price scale ---------- */
+.price-scale {
+  position: relative; height: 14px; margin: .9rem 0 .3rem;
+  background: var(--navy); border: 1px solid var(--border); border-radius: 999px;
+  overflow: visible;
+}
+.ps-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold));
+}
+.ps-tick {
+  position: absolute; top: -4px; width: 3px; height: 22px; border-radius: 2px;
+}
+.ps-exp { background: var(--blue); }
+.ps-budget { background: var(--cloud); }
+.ps-legend {
+  display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: center;
+  font-family: var(--mono); font-size: .72rem; color: var(--ink-muted);
+  margin-bottom: .6rem;
+}
+.ps-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: .35em; }
+.ps-dot-bid { background: var(--gold); }
+.ps-dot-exp { background: var(--blue); }
+.ps-dot-budget { background: var(--cloud); }
+.ps-unit { margin-left: auto; }
 
 /* ---------- scoring, grades & notes ---------- */
 .score-chip {
