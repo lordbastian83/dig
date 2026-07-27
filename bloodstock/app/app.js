@@ -960,6 +960,8 @@ const TYPE_MAP = {
   improving:  { el: '#pf-trend',   on: 'improving',off: 'any' },
   powerhouse: { el: '#pf-ph',      on: true,       off: false, check: true },
   winner:     { el: '#pf-wins',    on: '2',        off: '' },
+  versatile:  { el: '#pf-vers',    on: true,       off: false, check: true },
+  soft:       { el: '#pf-going',   on: 'soft',     off: 'any' },
 };
 function chipIsOn(type) {
   const m = TYPE_MAP[type]; if (!m) return false;
