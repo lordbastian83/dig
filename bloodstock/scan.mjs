@@ -56,6 +56,15 @@ function tierOf(sire, damsire) {
        : DIRT_DAMSIRE.some((x) => lc(damsire).includes(x)) ? 'B' : '';
 }
 
+// Trainer strike-rate accumulated across the whole sweep — no extra API
+// calls, and a trainer who wins often is one whose cast-offs improved under
+// good handling: a real quality signal on the horses they're now letting go.
+const trainerStats = new Map(); // trainer -> {runs, wins}
+function trainerSR(name) {
+  const e = trainerStats.get(lc(name));
+  return e && e.runs >= 10 ? +(e.wins / e.runs).toFixed(3) : null;
+}
+
 /* ---------- stage 1: sweep recent results for profile matches ---------- */
 async function sweep() {
   const prelim = new Map(); // horse_id -> runner snapshot
@@ -68,6 +77,11 @@ async function sweep() {
     if (!races.length) break;
     for (const race of races) {
       const region = /ire|irish/.test(lc(race.region) + lc(race.course)) ? 'IRE' : 'GB';
+      for (const r of race.runners ?? []) {
+        const tk = lc(r.trainer);
+        if (tk) { const e = trainerStats.get(tk) || { runs: 0, wins: 0 };
+          e.runs++; if (String(r.position) === '1') e.wins++; trainerStats.set(tk, e); }
+      }
       for (const r of race.runners ?? []) {
         const or = +(r.or ?? NaN);
         const tier = tierOf(r.sire, r.damsire);
@@ -96,28 +110,66 @@ async function sweep() {
    starts, AW win, RPR edge (best Racing Post Rating minus official rating —
    ability the handicapper hasn't repriced), and OR momentum over the last
    three marks (improving / flat / declining). */
+// Dam production quality — the family's real record, not just a black-type
+// tickbox. Looks up the dam and her other offspring; returns a 0-1 score and
+// a label. VERIFY the progeny endpoint against the API once live; degrades to
+// null (falls back to the manual blackType flag) if unavailable.
+async function damProduction(damId, damName) {
+  if (!damId && !damName) return null;
+  try {
+    const id = damId || (await api(`/horses/search?name=${encodeURIComponent(damName)}`))
+      ?.search_results?.[0]?.id;
+    if (!id) return null;
+    // Try a progeny endpoint; shapes vary, so read tolerantly.
+    let prog = null;
+    for (const path of [`/dams/${id}/results`, `/horses/${id}/progeny`, `/dams/${id}/progeny`]) {
+      try { prog = await api(path); if (prog) break; } catch { /* try next */ }
+    }
+    const foals = prog?.progeny ?? prog?.results ?? (Array.isArray(prog) ? prog : []);
+    if (!foals.length) return null;
+    let rated90 = 0, blackType = 0, n = 0;
+    for (const f of foals) {
+      n++;
+      const or = +(f.or ?? f.best_or ?? NaN);
+      if (Number.isFinite(or) && or >= 90) rated90++;
+      const bt = lc(f.black_type ?? '') + lc(f.pattern ?? '');
+      if (/group|listed|\bg[123]\b|stakes/.test(bt)) blackType++;
+    }
+    const rate90 = n ? rated90 / n : 0;
+    const score = Math.min(1, blackType * 0.4 + rate90);
+    const label = blackType ? `${blackType} black-type from ${n} foals`
+      : `${rated90}/${n} foals rated 90+`;
+    return { score: +score.toFixed(2), label, blackType: blackType > 0 };
+  } catch (e) { console.error(`  dam ${damName}: ${e.message}`); return null; }
+}
+
 async function deepCheck(c) {
   const res = await api(`/horses/${c.id}/results`);
   const races = res?.results ?? [];
-  let starts = 0, awForm = false, bestRPR = null;
+  let starts = 0, awForm = false, bestRPR = null, damId = null;
   const orsNewestFirst = [];
   const furlongs = [];      // distance aptitude
   const goings = new Set(); // ground aptitude
-  let bestDistF = null, bestPos = 99;
+  const classesNewestFirst = []; // class-drop signal
+  let bestDistF = null, bestPos = 99, placed = 0;
   for (const race of races) {
     const me = (race.runners ?? []).find((r) => r.horse_id === c.id);
     if (!me) continue;
     starts++;
+    if (!damId && me.dam_id) damId = me.dam_id;
+    const pos = +(me.position ?? 99);
+    if (pos <= 3) placed++;
     const isAW = AW_HINTS.some((h) => lc(race.surface).includes(h));
     if (isAW && String(me.position) === '1') awForm = true;
     const rpr = +(me.rpr ?? NaN);
     if (Number.isFinite(rpr) && (bestRPR === null || rpr > bestRPR)) bestRPR = rpr;
     const or = +(me.or ?? NaN);
     if (Number.isFinite(or) && or > 0) orsNewestFirst.push(or);
+    const cls = +(String(race.class || '').replace(/[^0-9]/g, '') || NaN);
+    if (Number.isFinite(cls)) classesNewestFirst.push(cls);
     const f = +(race.dist_f ?? NaN);
     if (Number.isFinite(f)) {
       furlongs.push(f);
-      const pos = +(me.position ?? 99);
       if (pos < bestPos) { bestPos = pos; bestDistF = f; } // trip of best run
     }
     if (race.going) goings.add(lc(race.going).split(' ')[0]);
@@ -139,7 +191,18 @@ async function deepCheck(c) {
     : 'staying (12f+) — dirt options thin; better as a turf/AW campaigner';
   const versatile = distMin != null && distMax - distMin >= 3; // ran a wide trip range
 
-  return { starts, awForm, rprEdge, trend, distMin, distMax, distBest, racePlan, versatile };
+  // Consistency: placed rate over its career (reliability of the mark).
+  const consistency = starts ? +(placed / starts).toFixed(2) : null;
+  // Class-drop: a lower class number is a higher grade, so newest < oldest
+  // means DROPPING in grade — often well-in and ready to strike.
+  const clsFirst = classesNewestFirst[0], clsLast = classesNewestFirst.at(-1);
+  const classMove = classesNewestFirst.length >= 2
+    ? (clsFirst > clsLast ? 'dropping' : clsFirst < clsLast ? 'rising' : 'level') : null;
+
+  const dam = await damProduction(damId, (c.dam || '').replace(/\(.*?\)/g, '').trim());
+
+  return { starts, awForm, rprEdge, trend, distMin, distMax, distBest, racePlan,
+           versatile, consistency, classMove, dam };
 }
 
 /* ---------- telegram ---------- */
@@ -202,10 +265,12 @@ const fresh = [];
 let deepUsed = 0;
 for (const m of ranked) {
   let deep = { starts: 99, awForm: false, rprEdge: null, trend: 'flat',
-    distBest: null, racePlan: null, distMin: null, distMax: null, versatile: false };
+    distBest: null, racePlan: null, distMin: null, distMax: null, versatile: false,
+    consistency: null, classMove: null, dam: null };
   if (DEMO) deep = { starts: 4, awForm: true, rprEdge: 7, trend: 'improving',
     distBest: 8, racePlan: 'miler (7–8f) — the Imperial Emperor lane, Carnival handicaps→G-races',
-    distMin: 7, distMax: 9, versatile: false };
+    distMin: 7, distMax: 9, versatile: false, consistency: 0.75, classMove: 'dropping',
+    dam: { score: 0.8, label: '2 black-type from 5 foals', blackType: true } };
   else if (deepUsed >= MAX_DEEP) { console.log(`  · ${m.name}: deep-check budget spent, stored from sweep`); }
   else {
     deepUsed++;
@@ -220,12 +285,16 @@ for (const m of ranked) {
     vendor: m.owner, rating: m.rating, starts: deep.starts,
     sireTier: m.tier, vet: 'unknown',
     powerhouse: POWERHOUSE.some((p) => lc(m.owner).includes(p)),
-    blackType: false, // cannot be proven from form data — human check
     awForm: deep.awForm,
     rprEdge: deep.rprEdge, trend: deep.trend,
     region: m.region, sex: m.sex,
     distBest: deep.distBest, distMin: deep.distMin, distMax: deep.distMax,
     racePlan: deep.racePlan, versatile: deep.versatile,
+    consistency: deep.consistency, classMove: deep.classMove,
+    trainerSR: trainerSR(m.trainer),
+    damScore: deep.dam?.score ?? null, damLabel: deep.dam?.label ?? null,
+    // dam production, when found, is stronger evidence than the manual flag
+    blackType: deep.dam?.blackType ?? false,
     notes: `[RADAR ${day(0)}] trainer ${m.trainer} · last ran ${m.lastRun}`
       + (deep.rprEdge > 0 ? ` · RPR +${deep.rprEdge} over OR` : '')
       + ` · OR ${deep.trend}`

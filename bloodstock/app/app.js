@@ -629,6 +629,10 @@ function renderFinds() {
     if (h.racePlan) bits.push(['Suggested', h.racePlan]);
     if (+h.rprEdge) bits.push(['RPR edge', `${h.rprEdge > 0 ? '+' : ''}${h.rprEdge} over OR`]);
     if (h.trend) bits.push(['OR trend', h.trend]);
+    if (h.damLabel) bits.push(['Dam production', h.damLabel]);
+    if (h.classMove) bits.push(['Class', h.classMove === 'dropping' ? 'dropping (well-in)' : h.classMove]);
+    if (h.consistency != null) bits.push(['Consistency', `${Math.round(h.consistency * 100)}% placed`]);
+    if (h.trainerSR != null) bits.push(['Trainer SR', `${Math.round(h.trainerSR * 100)}%`]);
     if (h.versatile) bits.push(['Note', 'versatile over a wide trip range']);
     return bits.map(([k, v]) => `<div><span class="sk">${k}</span> ${v}</div>`).join('');
   };
