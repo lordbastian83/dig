@@ -230,7 +230,9 @@ async function deepCheck(c) {
       furlongs.push(f);
       if (pos < bestPos) { bestPos = pos; bestDistF = f; } // trip of best run
     }
-    if (race.going) goings.add(lc(race.going).split(' ')[0]);
+    // keep the full going phrase ("good to soft"), not just the first word,
+    // so the app's going filter can tell soft-ground from quick-ground horses
+    if (race.going) goings.add(lc(race.going).trim());
   }
   const rprEdge = bestRPR !== null ? bestRPR - c.rating : null;
   const last3 = orsNewestFirst.slice(0, 3);

@@ -158,18 +158,87 @@
     with a saved profile, or keep the Imperial Emperor default. Black type and
     availability always need a human check.</p>
 
+    <!-- One-tap horse types — each toggles the matching filter below -->
+    <div class="type-chips" id="type-chips" aria-label="Quick horse types">
+      <button type="button" class="tchip" data-type="dirt">🏜 Dirt-proven</button>
+      <button type="button" class="tchip" data-type="sprint">💨 Sprinter</button>
+      <button type="button" class="tchip" data-type="miler">🎯 Miler</button>
+      <button type="button" class="tchip" data-type="middle">🧭 Middle-dist</button>
+      <button type="button" class="tchip" data-type="dropping">📉 Dropping in class</button>
+      <button type="button" class="tchip" data-type="powerhouse">👑 Powerhouse cast-off</button>
+      <button type="button" class="tchip" data-type="improving">✨ Improving</button>
+      <button type="button" class="tchip" data-type="winner">🏆 Multiple winner</button>
+      <button type="button" class="tchip chip-reset" data-type="reset">♻ Reset</button>
+    </div>
+
     <div class="profile-bar">
       <select id="profile-select" title="Custom radar profile"></select>
-      <button id="profile-edit" title="Edit or create a profile">⚙ Profiles</button>
+      <button id="profile-edit" title="Edit or create a profile">⚙ All filters</button>
     </div>
 
     <details id="profile-editor" class="profile-editor">
       <summary>Edit filters</summary>
+
+      <p class="pf-section">Ability &amp; momentum</p>
       <div class="grid">
-        <label>Profile name <input id="pf-name" placeholder="e.g. Sprint value"></label>
         <label>Rating min <input id="pf-rmin" type="number" min="0" max="130"></label>
         <label>Rating max <input id="pf-rmax" type="number" min="0" max="130"></label>
+        <label>Min career-high OR <input id="pf-orhigh" type="number" min="0" max="130" placeholder="any"></label>
         <label>Max starts <input id="pf-starts" type="number" min="0" max="50"></label>
+        <label>Momentum
+          <select id="pf-trend">
+            <option value="any">Any</option>
+            <option value="improving">Improving only</option>
+          </select>
+        </label>
+        <label>Min RPR edge <input id="pf-rpr" type="number" min="0" max="40" placeholder="0"></label>
+      </div>
+
+      <p class="pf-section">Type: distance, surface &amp; going</p>
+      <div class="grid">
+        <label>Race plan
+          <select id="pf-plan">
+            <option value="any">Any</option>
+            <option value="sprint">Sprint (≤6f)</option>
+            <option value="miler">Miler (7–8f)</option>
+            <option value="middle">Middle (9–11f)</option>
+            <option value="staying">Staying (12f+)</option>
+          </select>
+        </label>
+        <label>Trip from (f) <input id="pf-distmin" type="number" min="4" max="20" placeholder="any"></label>
+        <label>Trip to (f) <input id="pf-distmax" type="number" min="4" max="20" placeholder="any"></label>
+        <label>Surface aptitude
+          <select id="pf-surface">
+            <option value="any">Any</option>
+            <option value="aw">AW / dirt proven (Dubai)</option>
+            <option value="turf">Turf</option>
+          </select>
+        </label>
+        <label>Going
+          <select id="pf-going">
+            <option value="any">Any</option>
+            <option value="soft">Handles soft / heavy</option>
+            <option value="quick">Wants good / firm</option>
+          </select>
+        </label>
+        <label class="pf-check"><input type="checkbox" id="pf-vers"> Versatile trip only</label>
+      </div>
+
+      <p class="pf-section">Form &amp; class</p>
+      <div class="grid">
+        <label>Min wins <input id="pf-wins" type="number" min="0" max="30" placeholder="any"></label>
+        <label>Min win % <input id="pf-winpct" type="number" min="0" max="100" placeholder="any"></label>
+        <label>Class angle
+          <select id="pf-class">
+            <option value="any">Any</option>
+            <option value="dropping">Dropping in class (well-in)</option>
+          </select>
+        </label>
+        <label class="pf-check"><input type="checkbox" id="pf-aw"> Require AW win</label>
+      </div>
+
+      <p class="pf-section">Breeding &amp; connections</p>
+      <div class="grid">
         <label>Sire tier
           <select id="pf-tier">
             <option value="any">Any</option>
@@ -179,6 +248,7 @@
         </label>
         <label>Sire contains <input id="pf-sire" placeholder="e.g. Dubawi"></label>
         <label>Damsire contains <input id="pf-damsire" placeholder="e.g. Galileo"></label>
+        <label>Owner / vendor contains <input id="pf-owner" placeholder="e.g. Godolphin"></label>
         <label>Sex / type
           <select id="pf-sex">
             <option value="any">Any</option>
@@ -193,31 +263,17 @@
             <option value="IRE">IRE</option>
           </select>
         </label>
-        <label>Momentum
-          <select id="pf-trend">
-            <option value="any">Any</option>
-            <option value="improving">Improving only</option>
-          </select>
-        </label>
-        <label>Min RPR edge <input id="pf-rpr" type="number" min="0" max="40" placeholder="0"></label>
-        <label>Trip from (f) <input id="pf-distmin" type="number" min="4" max="20" placeholder="any"></label>
-        <label>Trip to (f) <input id="pf-distmax" type="number" min="4" max="20" placeholder="any"></label>
-        <label>Race plan
-          <select id="pf-plan">
-            <option value="any">Any</option>
-            <option value="sprint">Sprint (≤6f)</option>
-            <option value="miler">Miler (7–8f)</option>
-            <option value="middle">Middle (9–11f)</option>
-            <option value="staying">Staying (12f+)</option>
-          </select>
-        </label>
-        <label class="pf-check"><input type="checkbox" id="pf-aw"> Require AW win</label>
         <label class="pf-check"><input type="checkbox" id="pf-ph"> Require powerhouse owner</label>
-        <label class="pf-check"><input type="checkbox" id="pf-vers"> Versatile trip only</label>
       </div>
-      <div class="form-actions">
-        <button id="pf-save" class="primary">Save profile</button>
-        <button id="pf-delete">Delete this profile</button>
+
+      <div class="pf-save-row">
+        <label class="pf-name-field">Save this search as
+          <input id="pf-name" placeholder="e.g. Sprint value">
+        </label>
+        <div class="form-actions">
+          <button id="pf-save" class="primary">Save search</button>
+          <button id="pf-delete">Delete this search</button>
+        </div>
       </div>
     </details>
 

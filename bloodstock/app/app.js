@@ -605,6 +605,7 @@ const LS_PROFILES = 'bloodstock.profiles.v1';
 const IMPERIAL = {
   name: 'Imperial Emperor (default)', rmin: 85, rmax: 95, starts: 7,
   tier: 'AB', region: 'any', trend: 'any', rpr: 0, aw: false, ph: false, builtin: true,
+  surface: 'any', going: 'any', wins: 0, winpct: 0, orhigh: 0, cls: 'any', owner: '',
 };
 function loadProfiles() {
   const stored = JSON.parse(localStorage.getItem(LS_PROFILES) || '{}');
@@ -647,6 +648,32 @@ function matchesProfile(h, p) {
     const [lo, hi] = PLAN_BANDS[p.plan] || [0, 99];
     if (h.distBest < lo || h.distBest > hi) return false;
   }
+  // surface aptitude — Dubai runs on dirt, so "AW/dirt proven" is a real type.
+  // AW form is the reliable signal; the surface list backs it up when present.
+  if (p.surface === 'aw') {
+    const sl = (h.surfaceList || []).join(' ').toLowerCase();
+    const dirtish = h.awForm || /aw|tapeta|polytrack|fibresand|dirt|all|standard/.test(sl);
+    if (!dirtish) return false;
+  }
+  if (p.surface === 'turf') {
+    const sl = (h.surfaceList || []).join(' ').toLowerCase();
+    if (sl && !/turf/.test(sl)) return false; // only exclude when we know it isn't turf
+  }
+  // going — matched against the ground the horse has actually run on
+  if (p.going === 'soft') {
+    const gl = (h.goingList || []).join(' ').toLowerCase();
+    if (gl && !/soft|heavy|yielding|holding/.test(gl)) return false;
+  }
+  if (p.going === 'quick') {
+    const gl = (h.goingList || []).join(' ').toLowerCase();
+    if (gl && !/good|firm|fast|standard/.test(gl)) return false;
+  }
+  // form quality
+  if (+p.wins > 0 && !(+(h.wins || 0) >= +p.wins)) return false;
+  if (+p.winpct > 0 && !((h.winPct || 0) * 100 >= +p.winpct)) return false;
+  if (+p.orhigh > 0 && !((h.careerHigh || h.rating || 0) >= +p.orhigh)) return false;
+  if (p.cls === 'dropping' && h.classMove !== 'dropping') return false;
+  if (p.owner && !String(h.vendor || '').toLowerCase().includes(p.owner.toLowerCase())) return false;
   return true;
 }
 
@@ -663,6 +690,10 @@ function editorProfile() {
     plan: $('#pf-plan').value, vers: $('#pf-vers').checked,
     sire: ($('#pf-sire').value || '').trim(), damsire: ($('#pf-damsire').value || '').trim(),
     sex: $('#pf-sex').value,
+    surface: $('#pf-surface').value, going: $('#pf-going').value,
+    wins: +$('#pf-wins').value || 0, winpct: +$('#pf-winpct').value || 0,
+    orhigh: +$('#pf-orhigh').value || 0, cls: $('#pf-class').value,
+    owner: ($('#pf-owner').value || '').trim(),
   };
 }
 
@@ -855,6 +886,11 @@ function fillEditor(p) {
   $('#pf-plan').value = p.plan || 'any'; $('#pf-vers').checked = !!p.vers;
   $('#pf-sire').value = p.sire || ''; $('#pf-damsire').value = p.damsire || '';
   $('#pf-sex').value = p.sex || 'any';
+  $('#pf-surface').value = p.surface || 'any'; $('#pf-going').value = p.going || 'any';
+  $('#pf-wins').value = p.wins || ''; $('#pf-winpct').value = p.winpct || '';
+  $('#pf-orhigh').value = p.orhigh || ''; $('#pf-class').value = p.cls || 'any';
+  $('#pf-owner').value = p.owner || '';
+  syncChips();
 }
 $('#profile-select').addEventListener('change', (e) => {
   const { list } = loadProfiles();
@@ -874,6 +910,7 @@ $('#profile-edit').addEventListener('click', () => {
     if (e.target.id === 'pf-name') return;         // name isn't a filter
     if (e.target.closest('.form-actions')) return; // buttons handled separately
     previewProfile = editorProfile();
+    syncChips();
     renderFinds();
   }));
 $('#pf-save').addEventListener('click', () => {
@@ -888,6 +925,10 @@ $('#pf-save').addEventListener('click', () => {
     plan: $('#pf-plan').value, vers: $('#pf-vers').checked,
     sire: ($('#pf-sire').value || '').trim(), damsire: ($('#pf-damsire').value || '').trim(),
     sex: $('#pf-sex').value,
+    surface: $('#pf-surface').value, going: $('#pf-going').value,
+    wins: +$('#pf-wins').value || 0, winpct: +$('#pf-winpct').value || 0,
+    orhigh: +$('#pf-orhigh').value || 0, cls: $('#pf-class').value,
+    owner: ($('#pf-owner').value || '').trim(),
   };
   const custom = loadProfiles().list.filter((p) => !p.builtin && p.name !== name);
   custom.push(prof);
@@ -904,6 +945,53 @@ $('#pf-delete').addEventListener('click', () => {
   const custom = loadProfiles().list.filter((p) => !p.builtin && p.name !== active.name);
   saveProfiles(IMPERIAL.name, custom);
   fillEditor(IMPERIAL);
+  renderFinds();
+});
+
+/* ---------- one-tap horse types ---------- */
+// Each chip toggles a single editor field on/off. A chip is "on" when its
+// field currently holds the chip's value; clicking again clears it.
+const TYPE_MAP = {
+  dirt:       { el: '#pf-surface', on: 'aw',       off: 'any' },
+  sprint:     { el: '#pf-plan',    on: 'sprint',   off: 'any' },
+  miler:      { el: '#pf-plan',    on: 'miler',    off: 'any' },
+  middle:     { el: '#pf-plan',    on: 'middle',   off: 'any' },
+  dropping:   { el: '#pf-class',   on: 'dropping', off: 'any' },
+  improving:  { el: '#pf-trend',   on: 'improving',off: 'any' },
+  powerhouse: { el: '#pf-ph',      on: true,       off: false, check: true },
+  winner:     { el: '#pf-wins',    on: '2',        off: '' },
+};
+function chipIsOn(type) {
+  const m = TYPE_MAP[type]; if (!m) return false;
+  const node = $(m.el);
+  return m.check ? node.checked : String(node.value) === String(m.on);
+}
+function syncChips() {
+  document.querySelectorAll('.tchip[data-type]').forEach((c) => {
+    if (c.dataset.type === 'reset') return;
+    c.classList.toggle('on', chipIsOn(c.dataset.type));
+  });
+}
+$('#type-chips').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tchip'); if (!btn) return;
+  const type = btn.dataset.type;
+  $('#profile-editor').open = true;
+  fillEditor(previewProfile || activeProfile()); // keep edits in progress, else active search
+  if (type === 'reset') {
+    previewProfile = null;
+    saveProfiles(IMPERIAL.name, loadProfiles().list.filter((p) => !p.builtin));
+    fillEditor(IMPERIAL);
+    renderProfileBar();
+    renderFinds();
+    return;
+  }
+  const m = TYPE_MAP[type]; if (!m) return;
+  const node = $(m.el);
+  const turnOn = !chipIsOn(type);
+  if (m.check) node.checked = turnOn ? m.on : m.off;
+  else node.value = turnOn ? m.on : m.off;
+  previewProfile = editorProfile();
+  syncChips();
   renderFinds();
 });
 
