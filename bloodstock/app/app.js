@@ -599,6 +599,8 @@ $('#params-reset').addEventListener('click', () => {
 // URL needs auth — serve candidates.json alongside the app instead.
 const CANDIDATES_URL =
   'https://raw.githubusercontent.com/lordbastian83/dig/bloodstock-data/candidates.json';
+const PROSPECTS_URL =
+  'https://raw.githubusercontent.com/lordbastian83/dig/bloodstock-data/prospects.json';
 
 /* ---------- custom radar profiles ---------- */
 const LS_PROFILES = 'bloodstock.profiles.v1';
@@ -703,6 +705,55 @@ let findsExpanded = false;   // radar shows a top few by default, expands on dem
 let radarSort = 'vault';     // 'vault' = best value/EV · 'dubai' = best Meydan fit
 const FINDS_LIMIT = 6;
 const dubaiPct = (r) => Math.round((r.dubai?.pct ?? 0) * 100);
+
+/* ---------- shared radar/prospect row rendering ---------- */
+const tierOf = (s) => s >= 0.85 ? ['★ diamond', 'tier-diamond']
+  : s >= 0.7 ? ['strong', 'tier-strong']
+  : s >= 0.5 ? ['live', 'tier-live'] : ['watch', 'tier-watch'];
+const dubaiClassOf = (p) => p >= 75 ? 'df-hot' : p >= 55 ? 'df-warm' : 'df-cool';
+function findTagsHTML(h) {
+  const t = [`<span class="ftag">OR ${h.rating}</span>`];
+  if (h.trend === 'improving') t.push('<span class="ftag ftag-good">▲ improving</span>');
+  else if (h.trend === 'declining') t.push('<span class="ftag ftag-down">▼ declining</span>');
+  if (+h.rprEdge >= 5) t.push(`<span class="ftag ftag-good">RPR +${h.rprEdge}</span>`);
+  if (h.distBest != null) t.push(`<span class="ftag">${h.distBest}f best</span>`);
+  if (h.awForm) t.push('<span class="ftag ftag-gold">AW win</span>');
+  if (h.wins != null) t.push(`<span class="ftag">${h.wins}W · ${h.starts} runs</span>`);
+  if (h.classMove === 'dropping') t.push('<span class="ftag ftag-good">class ↓ well-in</span>');
+  if (h.lastRunDays != null && h.lastRunDays >= 30) t.push(`<span class="ftag">${h.lastRunDays}d dormant</span>`);
+  if (h.damLabel) t.push(`<span class="ftag">dam: ${h.damLabel}</span>`);
+  return t.join('');
+}
+// One horse row. `topLabel` non-null marks it the top pick.
+function horseRowHTML(h, r, i, topLabel) {
+  const [tl, tc] = tierOf(r.score);
+  const dp = dubaiPct(r);
+  return `
+    <div class="find-row ${tc}-edge${topLabel ? ' find-top' : ''}">
+      ${topLabel ? `<span class="top-tag">${topLabel}</span>` : ''}
+      <div class="find-score ${tc}"><span class="fs-num">${Math.round(r.score * 100)}</span><span class="fs-lab">${tl}</span></div>
+      <div class="find-main">
+        <b class="find-name" data-i="${i}" title="Click for full profile">${h.name}</b>
+        <small class="find-ped">${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
+        <div class="find-tags">${findTagsHTML(h)}</div>
+        <div class="dubai-meter ${dubaiClassOf(dp)}" title="How well this horse suits a Meydan dirt campaign">
+          <span class="dm-lab">🏜 Dubai fit</span>
+          <span class="dm-bar"><span class="dm-fill" style="width:${dp}%"></span></span>
+          <span class="dm-num">${dp}</span>
+        </div>
+        ${h.racePlan ? `<small class="race-plan">🏁 ${h.racePlan}</small>` : ''}
+        <button class="find-profile" data-i="${i}">view full profile →</button>
+      </div>
+      <div class="find-actions">
+        <div class="find-bid">${fmt(r.gns)} <small>gns max</small></div>
+        <button class="find-add" data-i="${i}">＋ watchlist</button>
+      </div>
+    </div>`;
+}
+function rowsFrom(el) {
+  const c = el.closest('[data-rows]');
+  try { return c ? JSON.parse(c.dataset.rows || '[]') : []; } catch { return []; }
+}
 function navShow(id, on) {
   const a = document.querySelector(`.quicknav a[href="#${id}"]`);
   if (a) a.hidden = !on;
@@ -742,68 +793,10 @@ function renderFinds() {
     card.hidden = false;
     return;
   }
-  const statLine = (h) => {
-    const bits = [];
-    if (h.trainer || /trainer ([^·]+)/.exec(h.notes || '')) {
-      const t = h.trainer || (/trainer ([^·]+)/.exec(h.notes)?.[1] || '').trim();
-      if (t) bits.push(['Trainer', t]);
-    }
-    if (h.region) bits.push(['Region', h.region]);
-    if (h.distMin != null) bits.push(['Trip range', `${h.distMin}–${h.distMax}f`]);
-    if (h.distBest != null) bits.push(['Best trip', `${h.distBest}f`]);
-    if (h.racePlan) bits.push(['Suggested', h.racePlan]);
-    if (+h.rprEdge) bits.push(['RPR edge', `${h.rprEdge > 0 ? '+' : ''}${h.rprEdge} over OR`]);
-    if (h.trend) bits.push(['OR trend', h.trend]);
-    if (h.damLabel) bits.push(['Dam production', h.damLabel]);
-    if (h.classMove) bits.push(['Class', h.classMove === 'dropping' ? 'dropping (well-in)' : h.classMove]);
-    if (h.consistency != null) bits.push(['Consistency', `${Math.round(h.consistency * 100)}% placed`]);
-    if (h.trainerSR != null) bits.push(['Trainer SR', `${Math.round(h.trainerSR * 100)}%`]);
-    if (h.versatile) bits.push(['Note', 'versatile over a wide trip range']);
-    return bits.map(([k, v]) => `<div><span class="sk">${k}</span> ${v}</div>`).join('');
-  };
-  const tier = (s) => s >= 0.85 ? ['★ diamond', 'tier-diamond']
-    : s >= 0.7 ? ['strong', 'tier-strong']
-    : s >= 0.5 ? ['live', 'tier-live'] : ['watch', 'tier-watch'];
-  // Compact, scannable spec pills — the key facts at a glance
-  const findTags = (h) => {
-    const t = [`<span class="ftag">OR ${h.rating}</span>`];
-    if (h.trend === 'improving') t.push('<span class="ftag ftag-good">▲ improving</span>');
-    else if (h.trend === 'declining') t.push('<span class="ftag ftag-down">▼ declining</span>');
-    if (+h.rprEdge >= 5) t.push(`<span class="ftag ftag-good">RPR +${h.rprEdge}</span>`);
-    if (h.distBest != null) t.push(`<span class="ftag">${h.distBest}f best</span>`);
-    if (h.awForm) t.push('<span class="ftag ftag-gold">AW win</span>');
-    if (h.wins != null) t.push(`<span class="ftag">${h.wins}W · ${h.starts} runs</span>`);
-    if (h.classMove === 'dropping') t.push('<span class="ftag ftag-good">class ↓ well-in</span>');
-    if (h.damLabel) t.push(`<span class="ftag">dam: ${h.damLabel}</span>`);
-    return t.join('');
-  };
-  const dubaiClass = (p) => p >= 75 ? 'df-hot' : p >= 55 ? 'df-warm' : 'df-cool';
   const shown = findsExpanded ? rows : rows.slice(0, FINDS_LIMIT);
-  const rowHTML = shown.map(({ h, r }, i) => {
-    const [tl, tc] = tier(r.score);
-    const top = i === 0 && r.score >= 0.7;
-    const dp = dubaiPct(r);
-    return `
-    <div class="find-row ${tc}-edge${top ? ' find-top' : ''}">
-      ${top ? `<span class="top-tag">★ top pick${radarSort === 'dubai' ? ' for dubai' : ''}</span>` : ''}
-      <div class="find-score ${tc}"><span class="fs-num">${Math.round(r.score * 100)}</span><span class="fs-lab">${tl}</span></div>
-      <div class="find-main">
-        <b class="find-name" data-i="${i}" title="Click for full profile">${h.name}</b>
-        <small class="find-ped">${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
-        <div class="find-tags">${findTags(h)}</div>
-        <div class="dubai-meter ${dubaiClass(dp)}" title="How well this horse suits a Meydan dirt campaign">
-          <span class="dm-lab">🏜 Dubai fit</span>
-          <span class="dm-bar"><span class="dm-fill" style="width:${dp}%"></span></span>
-          <span class="dm-num">${dp}</span>
-        </div>
-        ${h.racePlan ? `<small class="race-plan">🏁 ${h.racePlan}</small>` : ''}
-        <button class="find-profile" data-i="${i}">view full profile →</button>
-      </div>
-      <div class="find-actions">
-        <div class="find-bid">${fmt(r.gns)} <small>gns max</small></div>
-        <button class="find-add" data-i="${i}">＋ watchlist</button>
-      </div>
-    </div>`; }).join('');
+  const rowHTML = shown.map(({ h, r }, i) =>
+    horseRowHTML(h, r, i, (i === 0 && r.score >= 0.7)
+      ? `★ top pick${radarSort === 'dubai' ? ' for dubai' : ''}` : null)).join('');
   const more = rows.length > FINDS_LIMIT
     ? `<button class="finds-more" id="finds-more">${findsExpanded
         ? '▴ Show fewer' : `▾ Show all ${rows.length} finds`}</button>`
@@ -851,7 +844,9 @@ $('#sort-toggle').addEventListener('click', (e) => {
 });
 
 /* ---------- horse profile modal — everything we know ---------- */
+let modalHorse = null;
 function openHorseModal(h) {
+  modalHorse = h;
   const P = loadParams();
   const r = evaluate(h, P);
   const exp = expectedPrice(h);
@@ -925,43 +920,46 @@ function openHorseModal(h) {
   $('#horse-modal').hidden = false;
 }
 
-$('#finds').addEventListener('click', (e) => {
-  if (e.target.id === 'finds-more') { findsExpanded = !findsExpanded; renderFinds(); return; }
-  const t = e.target.closest('.find-name, .find-profile');
-  if (!t) return;
-  const rows = JSON.parse($('#finds').dataset.rows || '[]');
-  const h = rows[+t.dataset.i];
-  if (h) openHorseModal(h);
-});
-$('#modal-close').addEventListener('click', () => { $('#horse-modal').hidden = true; });
-$('#horse-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'horse-modal') $('#horse-modal').hidden = true; // click backdrop
-  if (e.target.matches('.mp-add')) {
-    const name = decodeURIComponent(e.target.dataset.name);
-    const rows = JSON.parse($('#finds').dataset.rows || '[]');
-    const h = rows.find((x) => x.name === name);
-    if (!h) return;
-    const list = loadList();
-    if (list.some((x) => x.name.toLowerCase() === h.name.toLowerCase())) { alert(`${h.name} is already on the watchlist.`); return; }
-    list.unshift(h); saveList(list); renderList();
-    e.target.textContent = '✓ added to watchlist';
-  }
-});
-
-document.addEventListener('click', (e) => {
-  if (!e.target.matches('.find-add')) return;
-  const rows = JSON.parse($('#finds').dataset.rows || '[]');
-  const h = rows[+e.target.dataset.i];
+function addToWatchlist(h, btn, doneText) {
   if (!h) return;
   const list = loadList();
   if (list.some((x) => x.name.toLowerCase() === h.name.toLowerCase())) {
     alert(`${h.name} is already on the watchlist.`); return;
   }
-  list.unshift(h);
-  saveList(list);
-  renderList();
-  e.target.textContent = '✓ added';
+  list.unshift(h); saveList(list); renderList();
+  if (btn) btn.textContent = doneText;
+}
+// One delegated click handler covers the radar AND the prospects list.
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'finds-more') { findsExpanded = !findsExpanded; renderFinds(); return; }
+  const open = e.target.closest('.find-name, .find-profile');
+  if (open) { const h = rowsFrom(open)[+open.dataset.i]; if (h) openHorseModal(h); return; }
+  const add = e.target.closest('.find-add');
+  if (add) { addToWatchlist(rowsFrom(add)[+add.dataset.i], add, '✓ added'); return; }
 });
+$('#modal-close').addEventListener('click', () => { $('#horse-modal').hidden = true; });
+$('#horse-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'horse-modal') $('#horse-modal').hidden = true; // click backdrop
+  if (e.target.matches('.mp-add')) addToWatchlist(modalHorse, e.target, '✓ added to watchlist');
+});
+
+/* ---------- off-market prospects ---------- */
+let PROSPECTS = [];
+function renderProspects() {
+  const card = $('#prospects-card'); const list = $('#prospects-list');
+  if (!card || !list) return;
+  if (!PROSPECTS.length) { card.hidden = true; return; }
+  const P = loadParams();
+  const rows = PROSPECTS
+    .map((h) => ({ h, r: evaluate(h, P) }))
+    .sort((a, b) => dubaiPct(b.r) - dubaiPct(a.r) || b.r.score - a.r.score)
+    .slice(0, 12);
+  const cnt = $('#prospects-count'); if (cnt) cnt.textContent = `${PROSPECTS.length} leads`;
+  list.innerHTML = rows.map(({ h, r }, i) =>
+    horseRowHTML(h, r, i, i === 0 ? '★ best off-market lead' : null)).join('');
+  list.dataset.rows = JSON.stringify(rows.map((x) => x.h));
+  card.hidden = false;
+}
 
 function renderProfileBar() {
   const { list } = loadProfiles();
@@ -1090,10 +1088,31 @@ $('#type-chips').addEventListener('click', (e) => {
   renderFinds();
 });
 
-fetch(CANDIDATES_URL)
-  .then((r) => (r.ok ? r.json() : null))
-  .then((j) => { if (j?.candidates) { RADAR = j.candidates; RADAR_META = { generated: j.generated }; renderFinds(); } })
-  .catch(() => {}); // offline / not yet published — card stays hidden
+// Pull the radar + off-market prospects feeds. Refresh re-pulls on demand
+// (cache-busted) so a fresh scan shows without reloading the whole app.
+async function loadFeeds(bust) {
+  const q = bust ? `?t=${Date.now()}` : '';
+  try {
+    const r = await fetch(CANDIDATES_URL + q, { cache: 'no-store' });
+    const j = r.ok ? await r.json() : null;
+    if (j?.candidates) { RADAR = j.candidates; RADAR_META = { generated: j.generated }; renderFinds(); }
+  } catch {}
+  try {
+    const r = await fetch(PROSPECTS_URL + q, { cache: 'no-store' });
+    const j = r.ok ? await r.json() : null;
+    if (j?.prospects) { PROSPECTS = j.prospects; renderProspects(); }
+  } catch {}
+}
+loadFeeds(false);
+
+const refreshBtn = document.getElementById('refresh-btn');
+if (refreshBtn) refreshBtn.addEventListener('click', async () => {
+  refreshBtn.disabled = true; const label = refreshBtn.textContent;
+  refreshBtn.textContent = '↻ refreshing…';
+  await loadFeeds(true);
+  refreshBtn.textContent = '✓ up to date';
+  setTimeout(() => { refreshBtn.textContent = label; refreshBtn.disabled = false; }, 1600);
+});
 
 const NEWS_URL =
   'https://raw.githubusercontent.com/lordbastian83/dig/bloodstock-data/news.json';

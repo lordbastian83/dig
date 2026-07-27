@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260727f">
+<link rel="stylesheet" href="styles.css?v=20260727g">
 </head>
 <body>
 
@@ -158,10 +158,13 @@
 
   <!-- ============ 2 · Radar finds ============ -->
   <section class="card" id="finds-card" hidden>
-    <h2>💎 Radar finds</h2>
-    <p class="hint">Auto-scanned daily from live UK/IRE results. Filter the feed
-    with a saved profile, or keep the Imperial Emperor default. Black type and
-    availability always need a human check.</p>
+    <div class="card-head">
+      <h2>💎 Radar finds</h2>
+      <button id="refresh-btn" class="refresh-btn" title="Re-pull the latest scan">↻ Refresh</button>
+    </div>
+    <p class="hint">Horses currently <b>in training</b>, auto-scanned daily from live
+    UK/IRE/France results. Filter with a saved profile, or keep the Imperial Emperor
+    default. Black type and availability always need a human check.</p>
 
     <!-- One-tap horse types — each toggles the matching filter below -->
     <div class="type-chips" id="type-chips" aria-label="Quick horse types">
@@ -293,6 +296,19 @@
     <div id="finds"></div>
   </section>
 
+  <!-- ============ 2a · Off-market prospects ============ -->
+  <section class="card" id="prospects-card" hidden>
+    <div class="card-head">
+      <h2>🎯 Off-market prospects</h2>
+      <span class="prospects-count" id="prospects-count"></span>
+    </div>
+    <p class="hint">Horses that fit the Dubai profile but are <b>not actively
+    campaigning and not on a sale catalogue</b> — dormant for a while, so a
+    <b>private approach</b> to connections, not a ring buy. Same scoring; ranked by
+    Dubai fit. Availability is unknown until you ask — treat as leads.</p>
+    <div id="prospects-list" class="prospects-list"></div>
+  </section>
+
   <!-- ============ 2b · Intel ============ -->
   <section class="card" id="intel-card" hidden>
     <details>
@@ -385,7 +401,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260727f"></script>
-<script src="app.js?v=20260727f"></script>
+<script src="engine.js?v=20260727g"></script>
+<script src="app.js?v=20260727g"></script>
 </body>
 </html>

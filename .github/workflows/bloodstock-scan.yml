@@ -53,6 +53,7 @@ jobs:
           DEBUG: ${{ inputs.debug || '0' }}
           OUT: candidates.json
           EXISTING: candidates.json
+          PROSPECTS_OUT: prospects.json
         run: node bloodstock/scan.mjs
 
       - name: Publish candidates to bloodstock-data branch
@@ -69,6 +70,7 @@ jobs:
             cd data
           fi
           cp ../candidates.json .
-          git add candidates.json
+          cp ../prospects.json . 2>/dev/null || true
+          git add candidates.json prospects.json
           git commit -m "radar $(date -u +%F)" || exit 0
           git push origin bloodstock-data
