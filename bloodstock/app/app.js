@@ -623,6 +623,7 @@ function editorProfile() {
 }
 
 let RADAR = [];
+let RADAR_META = {};
 function renderFinds() {
   const card = $('#finds-card');
   if (!RADAR.length) { card.hidden = true; return; }
@@ -631,11 +632,23 @@ function renderFinds() {
   const rows = RADAR
     .filter((h) => matchesProfile(h, prof))
     .map((h) => ({ h, r: evaluate(h, P) }))
-    .sort((a, b) => (b.h.radarPass === true) - (a.h.radarPass === true) || b.r.gns - a.r.gns)
-    .slice(0, 30);
+    // Rank by vault score (the intelligence), then value gap, then bid —
+    // so the best horse floats to the top and the order is meaningful.
+    .sort((a, b) => {
+      if (Math.round(b.r.score * 100) !== Math.round(a.r.score * 100))
+        return b.r.score - a.r.score;
+      const ga = a.r.gns - (expectedPrice(a.h)?.gns ?? a.r.gns);
+      const gb = b.r.gns - (expectedPrice(b.h)?.gns ?? b.r.gns);
+      return gb - ga;
+    })
+    .slice(0, 40);
   renderProfileBar();
+  const scanDate = RADAR_META.generated || '—';
+  const header = `<p class="finds-meta">Scanned <b>${scanDate}</b> · ${RADAR.length} horses swept ·
+    showing ${rows.length} for "${prof.name}" ranked by vault score</p>`;
   if (!rows.length) {
-    $('#finds').innerHTML = `<p class="empty">No radar finds match "${prof.name}". Loosen the filters or wait for tomorrow's scan.</p>`;
+    $('#finds').innerHTML = header +
+      `<p class="empty">No radar finds match "${prof.name}". Loosen the filters (⚙ Profiles) or wait for tomorrow's scan.</p>`;
     card.hidden = false;
     return;
   }
@@ -658,18 +671,23 @@ function renderFinds() {
     if (h.versatile) bits.push(['Note', 'versatile over a wide trip range']);
     return bits.map(([k, v]) => `<div><span class="sk">${k}</span> ${v}</div>`).join('');
   };
-  $('#finds').innerHTML = rows.map(({ h, r }, i) => `
+  const tier = (s) => s >= 0.85 ? ['★ diamond', 'tier-diamond']
+    : s >= 0.7 ? ['strong', 'tier-strong']
+    : s >= 0.5 ? ['live', 'tier-live'] : ['watch', 'tier-watch'];
+  $('#finds').innerHTML = header + rows.map(({ h, r }, i) => {
+    const [tl, tc] = tier(r.score);
+    return `
     <div class="find-row">
+      <div class="find-score ${tc}"><span class="fs-num">${Math.round(r.score * 100)}</span><span class="fs-lab">${tl}</span></div>
       <div class="find-main">
         <b>${h.name}</b> <small>${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
-        <small>OR <span class="mono">${h.rating}</span>${h.trend && h.trend !== 'flat' ? ` <span class="trend-${h.trend}">${h.trend === 'improving' ? '▲' : '▼'}</span>` : ''}${+h.rprEdge >= 5 ? ` · <span class="rpr-edge">RPR +${h.rprEdge}</span>` : ''} · ${h.starts} starts${h.awForm ? ' · AW win' : ''}${h.distBest ? ` · ${h.distBest}f` : ''}
-        ${h.radarPass ? '<span class="radar-pass">RADAR PASS</span>' : ''}</small>
+        <small>OR <span class="mono">${h.rating}</span>${h.trend && h.trend !== 'flat' ? ` <span class="trend-${h.trend}">${h.trend === 'improving' ? '▲' : '▼'}</span>` : ''}${+h.rprEdge >= 5 ? ` · <span class="rpr-edge">RPR +${h.rprEdge}</span>` : ''} · ${h.starts} starts${h.awForm ? ' · AW win' : ''}${h.distBest ? ` · ${h.distBest}f` : ''}</small>
         ${h.racePlan ? `<small class="race-plan">🏁 ${h.racePlan}</small>` : ''}
         <details class="find-stats"><summary>full stats</summary><div class="stat-grid">${statLine(h)}</div></details>
       </div>
       <div class="find-bid">${fmt(r.gns)} <small>gns max</small></div>
       <button class="find-add" data-i="${i}">→ watchlist</button>
-    </div>`).join('');
+    </div>`; }).join('');
   $('#finds').dataset.rows = JSON.stringify(rows.map((x) => x.h));
   card.hidden = false;
 }
@@ -759,7 +777,7 @@ $('#pf-delete').addEventListener('click', () => {
 
 fetch(CANDIDATES_URL)
   .then((r) => (r.ok ? r.json() : null))
-  .then((j) => { if (j?.candidates) { RADAR = j.candidates; renderFinds(); } })
+  .then((j) => { if (j?.candidates) { RADAR = j.candidates; RADAR_META = { generated: j.generated }; renderFinds(); } })
   .catch(() => {}); // offline / not yet published — card stays hidden
 
 const NEWS_URL =

@@ -344,6 +344,18 @@ td:nth-child(3) { font-family: var(--mono); }
 .rpr-edge { color: var(--green); font-family: var(--mono); font-size: .82em; }
 
 /* ---------- radar finds ---------- */
+.finds-meta { color: var(--ink-muted); font-size: .8rem; margin: 0 0 .7rem; }
+.finds-meta b { color: var(--cloud); font-family: var(--mono); }
+.find-score {
+  flex: none; width: 3.2rem; text-align: center; border-radius: 8px;
+  padding: .35rem .2rem; display: grid; gap: .1rem;
+}
+.find-score .fs-num { font-family: var(--mono); font-size: 1.3rem; font-weight: 600; line-height: 1; }
+.find-score .fs-lab { font-size: .58rem; text-transform: uppercase; letter-spacing: .04em; }
+.tier-diamond { background: var(--gold-wash); color: var(--gold); border: 1px solid var(--gold-deep); }
+.tier-strong { background: var(--green-wash); color: var(--green); }
+.tier-live { background: rgba(0,102,204,.16); color: #5EA3E8; }
+.tier-watch { background: var(--navy); color: var(--ink-muted); }
 .find-row {
   display: flex; align-items: center; gap: 1rem;
   padding: .6rem .75rem; border-radius: 8px; background: var(--navy-3);
