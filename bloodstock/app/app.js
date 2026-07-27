@@ -511,7 +511,7 @@ function renderFinds() {
     <div class="find-row">
       <div class="find-main">
         <b>${h.name}</b> <small>${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
-        <small>OR <span class="mono">${h.rating}</span> · ${h.starts} starts${h.awForm ? ' · AW win' : ''}
+        <small>OR <span class="mono">${h.rating}</span>${h.trend && h.trend !== 'flat' ? ` <span class="trend-${h.trend}">${h.trend === 'improving' ? '▲' : '▼'}</span>` : ''}${+h.rprEdge >= 5 ? ` · <span class="rpr-edge">RPR +${h.rprEdge}</span>` : ''} · ${h.starts} starts${h.awForm ? ' · AW win' : ''}
         ${h.radarPass ? '<span class="radar-pass">RADAR PASS</span>' : ''}</small>
       </div>
       <div class="find-bid">${fmt(r.gns)} <small>gns max</small></div>
@@ -540,6 +540,22 @@ fetch(CANDIDATES_URL)
   .then((r) => (r.ok ? r.json() : null))
   .then((j) => { if (j?.candidates) { RADAR = j.candidates; renderFinds(); } })
   .catch(() => {}); // offline / not yet published — card stays hidden
+
+const NEWS_URL =
+  'https://raw.githubusercontent.com/lordbastian83/dig/bloodstock-data/news.json';
+fetch(NEWS_URL)
+  .then((r) => (r.ok ? r.json() : null))
+  .then((j) => {
+    if (!j?.items?.length) return;
+    $('#intel').innerHTML = j.items.map((it) => `
+      <a class="intel-row" href="${it.url}" target="_blank" rel="noopener">
+        <span class="intel-src">${it.source}</span>
+        <span class="intel-title">${it.title}</span>
+        ${(it.matched || []).slice(0, 3).map((m) => `<span class="intel-tag">${m}</span>`).join('')}
+      </a>`).join('');
+    $('#intel-card').hidden = false;
+  })
+  .catch(() => {});
 
 /* ---------- init ---------- */
 

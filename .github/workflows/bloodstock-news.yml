@@ -1,0 +1,56 @@
+name: Bloodstock intel scraper
+
+# Daily bloodstock news sweep, keyword-matched to the programme (radar
+# candidates, target sires, sale houses, Dubai pipeline). Publishes
+# news.json to the bloodstock-data branch; the app's Intel card reads it.
+
+on:
+  schedule:
+    - cron: '50 6 * * *'   # 06:50 UTC daily, after the radar scan
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bloodstock-news
+  cancel-in-progress: false
+
+jobs:
+  intel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore candidates for name keywords
+        run: |
+          git fetch origin bloodstock-data --depth 1 || true
+          git show origin/bloodstock-data:candidates.json > candidates.json 2>/dev/null || echo '{"candidates":[]}' > candidates.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Scrape and match
+        env:
+          CANDIDATES: candidates.json
+          OUT: news.json
+        run: node bloodstock/news.mjs
+
+      - name: Publish to bloodstock-data branch
+        run: |
+          git config user.name 'bloodstock-intel[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch origin bloodstock-data:refs/remotes/origin/bloodstock-data || true
+          if git rev-parse --verify refs/remotes/origin/bloodstock-data >/dev/null 2>&1; then
+            git worktree add data origin/bloodstock-data
+            cd data && git checkout -B bloodstock-data
+          else
+            git worktree add --orphan -b bloodstock-data data 2>/dev/null \
+              || { git worktree add --detach data && cd data && git checkout --orphan bloodstock-data && git rm -rf --quiet . 2>/dev/null; cd ..; }
+            cd data
+          fi
+          cp ../news.json .
+          git add news.json
+          git commit -m "intel $(date -u +%F)" || exit 0
+          git push origin bloodstock-data

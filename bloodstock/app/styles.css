@@ -277,6 +277,26 @@ td:nth-child(3) { font-family: var(--mono); }
   padding: .45rem .6rem; font: inherit; font-size: .9rem; resize: vertical;
 }
 
+/* ---------- intel ---------- */
+.intel-row {
+  display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap;
+  padding: .5rem .3rem; border-bottom: 1px solid var(--border);
+  text-decoration: none; color: var(--cloud);
+}
+.intel-row:hover { background: var(--navy-3); }
+.intel-src {
+  font-family: var(--mono); font-size: .68rem; color: var(--blue);
+  flex: none; min-width: 5.5em;
+}
+.intel-title { flex: 1; font-size: .9rem; }
+.intel-tag {
+  font-family: var(--mono); font-size: .64rem; color: var(--gold-deep);
+  background: var(--gold-wash); padding: .05em .4em; border-radius: 3px;
+}
+.trend-improving { color: var(--green); }
+.trend-declining { color: var(--down, #d03b3b); }
+.rpr-edge { color: var(--green); font-family: var(--mono); font-size: .82em; }
+
 /* ---------- radar finds ---------- */
 .find-row {
   display: flex; align-items: center; gap: 1rem;

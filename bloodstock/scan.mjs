@@ -89,19 +89,31 @@ async function sweep() {
   return [...prelim.values()];
 }
 
-/* ---------- stage 2: deep-check each match (starts, AW win) ---------- */
+/* ---------- stage 2: deep-check each match ----------
+   starts, AW win, RPR edge (best Racing Post Rating minus official rating —
+   ability the handicapper hasn't repriced), and OR momentum over the last
+   three marks (improving / flat / declining). */
 async function deepCheck(c) {
   const res = await api(`/horses/${c.id}/results`);
   const races = res?.results ?? [];
-  let starts = 0, awForm = false;
+  let starts = 0, awForm = false, bestRPR = null;
+  const orsNewestFirst = [];
   for (const race of races) {
     const me = (race.runners ?? []).find((r) => r.horse_id === c.id);
     if (!me) continue;
     starts++;
     const isAW = AW_HINTS.some((h) => lc(race.surface).includes(h));
     if (isAW && String(me.position) === '1') awForm = true;
+    const rpr = +(me.rpr ?? NaN);
+    if (Number.isFinite(rpr) && (bestRPR === null || rpr > bestRPR)) bestRPR = rpr;
+    const or = +(me.or ?? NaN);
+    if (Number.isFinite(or) && or > 0) orsNewestFirst.push(or);
   }
-  return { starts, awForm };
+  const rprEdge = bestRPR !== null ? bestRPR - c.rating : null;
+  const last3 = orsNewestFirst.slice(0, 3);
+  const slope = last3.length >= 2 ? last3[0] - last3[last3.length - 1] : 0;
+  const trend = slope >= 3 ? 'improving' : slope <= -3 ? 'declining' : 'flat';
+  return { starts, awForm, rprEdge, trend };
 }
 
 /* ---------- telegram ---------- */
@@ -124,7 +136,7 @@ async function alert(finds) {
   } catch (e) { console.error('getUpdates:', e.message); }
   const fmt = (n) => n.toLocaleString('en-GB', { maximumFractionDigits: 0 });
   const lines = finds.map((f) =>
-    `• ${f.name} (${f.sire}) — OR ${f.rating}, ${f.starts} starts${f.awForm ? ', AW win' : ''}\n  owner ${f.vendor || '?'} · max bid ~${fmt(f.maxBidGns)} gns\n  ⚠ verify black type + whether buyable`);
+    `• ${f.name} (${f.sire}) — OR ${f.rating} ${f.trend}${f.rprEdge > 0 ? `, RPR +${f.rprEdge}` : ''}, ${f.starts} starts${f.awForm ? ', AW win' : ''}\n  owner ${f.vendor || '?'} · max bid ~${fmt(f.maxBidGns)} gns\n  ⚠ verify black type + whether buyable`);
   const msg = [`🐎💎 vault racing radar — ${finds.length} new candidate${finds.length === 1 ? '' : 's'}:`, '', ...lines].join('\n');
   for (const chat of ids) {
     try { await tg('sendMessage', { chat_id: chat, text: msg }); console.log(`alerted ${chat}`); }
@@ -151,8 +163,8 @@ console.log(`${matches.length} profile matches in the last ${DAYS} days`);
 const fresh = [];
 for (const m of matches) {
   if (known.has(lc(m.name))) continue;
-  let deep = { starts: 99, awForm: false };
-  if (DEMO) deep = { starts: 4, awForm: true };
+  let deep = { starts: 99, awForm: false, rprEdge: null, trend: 'flat' };
+  if (DEMO) deep = { starts: 4, awForm: true, rprEdge: 7, trend: 'improving' };
   else {
     try { deep = await deepCheck(m); await sleep(400); }
     catch (e) { console.error(`  ! ${m.name}: ${e.message}`); continue; }
@@ -167,7 +179,10 @@ for (const m of matches) {
     powerhouse: POWERHOUSE.some((p) => lc(m.owner).includes(p)),
     blackType: false, // cannot be proven from form data — human check
     awForm: deep.awForm,
-    notes: `[RADAR ${day(0)}] trainer ${m.trainer} · last ran ${m.lastRun} · VERIFY black type + availability`,
+    rprEdge: deep.rprEdge, trend: deep.trend,
+    notes: `[RADAR ${day(0)}] trainer ${m.trainer} · last ran ${m.lastRun}`
+      + (deep.rprEdge > 0 ? ` · RPR +${deep.rprEdge} over OR` : '')
+      + ` · OR ${deep.trend} · VERIFY black type + availability`,
     status: 'watch', added: day(0),
   };
   const r = E.evaluate(horse, E.PARAM_DEFAULTS);
@@ -175,7 +190,7 @@ for (const m of matches) {
   // "diamond" = fails nothing that form data can prove (black type pends)
   horse.radarPass = r.fails.every((f) => f.startsWith('Black type'));
   fresh.push(horse);
-  console.log(`  + ${m.name} — OR ${m.rating}, ${deep.starts} starts, AW ${deep.awForm}, ${horse.radarPass ? 'RADAR PASS' : 'partial'} → ${r.gns} gns`);
+  console.log(`  + ${m.name} — OR ${m.rating} (${deep.trend}${deep.rprEdge > 0 ? `, RPR +${deep.rprEdge}` : ''}), ${deep.starts} starts, AW ${deep.awForm}, ${horse.radarPass ? 'RADAR PASS' : 'partial'} → ${r.gns} gns`);
 }
 
 const all = [...fresh, ...existing.candidates].slice(0, 200);
