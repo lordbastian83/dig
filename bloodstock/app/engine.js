@@ -51,6 +51,10 @@
     s += h.powerhouse ? 0.15 : 0;
     if (h.rating >= 88 && h.rating <= 93) s += 0.20;        // sweet spot
     else if (h.rating >= P.ratingMin && h.rating <= P.ratingMax) s += 0.12;
+    // Form-trajectory bonus (radar-supplied; absent for hand-entered lots):
+    // an improving mark or an RPR edge is ability the market hasn't repriced.
+    if (h.trend === 'improving') s += 0.05;
+    if (+h.rprEdge >= 5) s += 0.05;
     s = Math.min(1, s);
 
     // Outcome tree: upside probability scales with quality score.
