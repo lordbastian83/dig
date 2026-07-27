@@ -756,7 +756,7 @@ function openHorseModal(h) {
     <div class="mp-headline">
       <div><span class="mp-big">${fmt(r.gns)}</span><span class="mp-lab">max bid (gns)</span></div>
       <div><span class="mp-big">${h.rating ?? '?'}</span><span class="mp-lab">official rating</span></div>
-      <div><span class="mp-big">${h.bestRPR ?? '—'}</span><span class="mp-lab">best RPR (speed)</span></div>
+      <div><span class="mp-big">${h.bestRPR ?? h.careerHigh ?? '—'}</span><span class="mp-lab">${h.bestRPR != null ? 'best RPR (speed)' : 'career-high OR'}</span></div>
       <div><span class="mp-big ${r.verdict === 'BID' ? 'ok' : ''}">${r.verdict === 'BID' ? 'PASS' : (6 - r.fails.length) + '/6'}</span><span class="mp-lab">screen</span></div>
     </div>
 
