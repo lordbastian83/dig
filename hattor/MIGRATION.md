@@ -63,18 +63,49 @@ the domain/DNS cutover (Phase 6) comes **last**, after everything is running on 
 - [ ] Fix outbound email: App Services often can't send raw SMTP reliably — configure an email
       service (e.g. Azure Communication Services, SendGrid, or SMTP2GO) for form/notification mail.
 
-## Phase 4 — Migrate the CRM
+## Phase 4 — CRM on Azure, linked to the website
 
-**If self-hosted CRM:**
-- [ ] Deploy the CRM application to its Azure App Service/VM.
-- [ ] Import the CRM database; copy attachment/upload directories (to Blob Storage or app storage).
-- [ ] Update the CRM config: site URL (`crm.hattor.com`), DB connection, SMTP settings.
-- [ ] Recreate cron jobs / scheduled tasks (App Service WebJobs, or Azure Functions timer).
-- [ ] Test: login, contact search, email send/receive, workflows, any website→CRM form feeds.
+Target architecture: the CRM runs on Azure alongside the website, in the **same resource
+group**, and the two are linked — website forms/leads feed the CRM, and both share the
+domain, storage, and (optionally) the database server.
 
-**If SaaS CRM (HubSpot/Zoho/Dynamics/etc.):**
-- [ ] Nothing moves to Azure. Just re-verify domain ownership DNS records (CNAME/TXT) in the
-      new DNS zone, and update any tracking scripts/form embeds on the new site if URLs changed.
+```
+rg-hattor-prod
+├── App Service Plan (one plan, two apps — cheapest way to run both)
+│   ├── app-hattor-web   →  hattor.com / www.hattor.com
+│   └── app-hattor-crm   →  crm.hattor.com
+├── Database server (one server, two databases: hattor_web, hattor_crm)
+├── Storage account sthattorprod (blob: web media, CRM attachments, backups)
+└── Key Vault (DB passwords, CRM API key, SMTP creds)
+```
+
+**Deploy the CRM:**
+- [ ] Create `app-hattor-crm` as a second app on the same App Service Plan (no extra compute
+      cost) — or its own plan if the CRM is heavy and shouldn't compete with the website.
+- [ ] Create the `hattor_crm` database on the same database server as the website's.
+- [ ] Deploy the CRM code, import the CRM database dump, copy attachments/uploads to Blob
+      Storage (or the app's file storage).
+- [ ] Update CRM config: site URL `https://crm.hattor.com`, DB connection string, SMTP settings
+      (use the email service from Phase 3 — same sender domain as the website).
+- [ ] Recreate CRM cron jobs / schedulers (App Service WebJobs, or an Azure Functions timer)
+      — CRMs like SuiteCRM/EspoCRM silently break workflows and email queues without them.
+
+**Link the website to the CRM:**
+- [ ] **Lead capture**: point website contact/quote forms at the CRM's API or web-to-lead
+      endpoint (e.g. `https://crm.hattor.com/api/v1/leads`). Store the CRM API key in
+      Key Vault / App Service settings — never in front-end code.
+- [ ] **Test the feed end-to-end**: submit a form on the staging site, confirm the lead/contact
+      appears in the CRM, and confirm the notification email fires.
+- [ ] **Tracking**: if the CRM provides a tracking/analytics script or email-open pixel, update
+      its embed on the website to the new `crm.hattor.com` URL.
+- [ ] **Lock the CRM down**: the website is public, the CRM is not. Enforce HTTPS-only, enable
+      App Service Authentication (Entra ID login) or at minimum IP restrictions / strong
+      passwords + 2FA on the CRM app. Keep the CRM admin panel off search engines
+      (`robots.txt`, `X-Robots-Tag: noindex`).
+- [ ] **Private networking (optional hardening)**: put the database behind a Private Endpoint /
+      VNet integration so only the two App Services can reach it; disable public DB access.
+- [ ] Test the CRM itself: login, contact search, email send/receive, workflows, reports,
+      user accounts and permissions carried over correctly.
 
 ## Phase 5 — Move the GoDaddy domain to the new GoDaddy account
 
