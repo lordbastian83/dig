@@ -1,0 +1,9 @@
+{
+  "name": "vault-racing-api",
+  "version": "1.0.0",
+  "description": "Per-user sync store for the vault racing scanner",
+  "main": "data/index.js",
+  "dependencies": {
+    "@azure/data-tables": "^13.3.1"
+  }
+}

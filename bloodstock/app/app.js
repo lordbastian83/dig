@@ -90,10 +90,53 @@ function loadParams() {
   }
   return p;
 }
-function saveParams(p) { localStorage.setItem(LS_PARAMS, JSON.stringify(p)); }
+function saveParams(p) { localStorage.setItem(LS_PARAMS, JSON.stringify(p)); syncPush(); }
+
+/* ---------- cross-device sync (Azure Function + your Microsoft login) ----
+   Pull on load and merge with local; push (debounced) on every save. Silent
+   no-op when signed out or the sync API isn't configured, so the app still
+   works per-device offline. */
+let SYNC_ON = false, syncTimer = null;
+function currentBlob() {
+  return { v: 1, updated: Date.now(),
+    watchlist: loadList(),
+    params: JSON.parse(localStorage.getItem(LS_PARAMS) || '{}'),
+    profiles: JSON.parse(localStorage.getItem(LS_PROFILES) || '{}'),
+    heroImg: localStorage.getItem('bloodstock.heroImg') || '' };
+}
+function applyBlob(b) {
+  if (!b || typeof b !== 'object') return false;
+  if (Array.isArray(b.watchlist)) localStorage.setItem(LS_LIST, JSON.stringify(b.watchlist));
+  if (b.params) localStorage.setItem(LS_PARAMS, JSON.stringify(b.params));
+  if (b.profiles) localStorage.setItem(LS_PROFILES, JSON.stringify(b.profiles));
+  if (b.heroImg) localStorage.setItem('bloodstock.heroImg', b.heroImg);
+  return true;
+}
+function syncPush() {
+  localStorage.setItem('bloodstock.lastLocal', String(Date.now()));
+  if (!SYNC_ON) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    fetch('/api/data', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(currentBlob()) }).catch(() => {});
+  }, 1200); // debounce bursts of edits into one write
+}
+async function syncPull() {
+  try {
+    const r = await fetch('/api/data');
+    if (!r.ok) return; // 401 signed out / 503 not configured → stay local
+    const remote = await r.json();
+    if (!remote || !remote.updated) { SYNC_ON = true; syncPush(); return; } // first device seeds the cloud
+    // Most-recent-wins at the blob level (small data, single user per login).
+    const localUpdated = +(JSON.parse(localStorage.getItem('bloodstock.lastLocal') || '0'));
+    if ((remote.updated || 0) >= localUpdated) applyBlob(remote);
+    SYNC_ON = true;
+    renderList(); renderParams(); renderFinds(); syncBudgetUI();
+  } catch { /* offline — stay local */ }
+}
 
 function loadList() { return JSON.parse(localStorage.getItem(LS_LIST) || '[]'); }
-function saveList(list) { localStorage.setItem(LS_LIST, JSON.stringify(list)); }
+function saveList(list) { localStorage.setItem(LS_LIST, JSON.stringify(list)); syncPush(); }
 
 /* ---------- comps / expected-price model ---------- */
 
@@ -570,6 +613,7 @@ function loadProfiles() {
 }
 function saveProfiles(active, custom) {
   localStorage.setItem(LS_PROFILES, JSON.stringify({ active, list: custom }));
+  syncPush();
 }
 function activeProfile() {
   const { active, list } = loadProfiles();
@@ -941,5 +985,6 @@ fetch('/.auth/me')
     if (!p) return;
     $('#whoami').textContent = `signed in as ${p.userDetails} · `;
     $('#logout-link').hidden = false;
+    syncPull(); // signed in → pull saved data from the cloud and enable sync
   })
   .catch(() => {});

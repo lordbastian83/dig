@@ -97,6 +97,24 @@ feed is fetched from the public `bloodstock-data` branch, so the login
 protects the app UI but the data stays public until the private-repo
 migration.
 
+## 5. Cross-device sync (watchlist follows your login)
+
+The watchlist, notes, grades, saved searches and settings sync across phone
+and laptop once a storage account is attached. Without it the app still
+works, just per-device.
+
+1. Azure portal → **Create a resource → Storage account** → any name, same
+   region, cheapest redundancy (LRS). Create.
+2. On the storage account → **Access keys** → copy **Connection string**.
+3. Static Web App `vault-racing-www-swa` → **Settings → Environment
+   variables** (Application settings) → **+ Add** → name
+   `AZURE_STORAGE_CONNECTION`, value = the connection string → Save.
+4. Re-run the deploy workflow (it now builds the `api/` function).
+
+Data is keyed to your Microsoft login id and stored one row per user, so
+each syndicate member sees only their own. Sign in on any device → your
+saved board loads automatically.
+
 ## Checklist
 
 - [ ] SWA created (Free plan), hostname noted
