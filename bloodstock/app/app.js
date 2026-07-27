@@ -397,7 +397,8 @@ $('#export-csv').addEventListener('click', () => {
 
 $('#export-json').addEventListener('click', () =>
   download('bloodstock-watchlist.json', 'application/json',
-    JSON.stringify({ params: loadParams(), watchlist: loadList() }, null, 2)));
+    JSON.stringify({ params: loadParams(), watchlist: loadList(),
+      profiles: loadProfiles().list.filter((p) => !p.builtin) }, null, 2)));
 
 // PDF export — print-styled window the browser saves as PDF (no libraries,
 // works offline; the vault-racing header + brand styling carry through).
@@ -518,8 +519,13 @@ $('#import-json').addEventListener('change', async (e) => {
     const data = JSON.parse(await file.text());
     if (Array.isArray(data.watchlist)) saveList(data.watchlist);
     if (data.params) saveParams({ ...loadParams(), ...data.params });
+    if (Array.isArray(data.profiles)) {
+      saveProfiles(loadProfiles().active, data.profiles);
+      renderProfileBar();
+    }
     renderParams();
     renderList();
+    renderFinds();
   } catch {
     alert('Could not parse that file — expected a backup JSON from this app.');
   }
@@ -600,12 +606,28 @@ function matchesProfile(h, p) {
   return true;
 }
 
+// While the editor is open, the radar filters live against the in-progress
+// field values — no Save needed. null = use the saved active profile.
+let previewProfile = null;
+function editorProfile() {
+  return {
+    name: 'preview', rmin: +$('#pf-rmin').value || 0, rmax: +$('#pf-rmax').value || 130,
+    starts: +$('#pf-starts').value || 50, tier: $('#pf-tier').value,
+    region: $('#pf-region').value, trend: $('#pf-trend').value,
+    rpr: +$('#pf-rpr').value || 0, aw: $('#pf-aw').checked, ph: $('#pf-ph').checked,
+    distmin: +$('#pf-distmin').value || 0, distmax: +$('#pf-distmax').value || 0,
+    plan: $('#pf-plan').value, vers: $('#pf-vers').checked,
+    sire: ($('#pf-sire').value || '').trim(), damsire: ($('#pf-damsire').value || '').trim(),
+    sex: $('#pf-sex').value,
+  };
+}
+
 let RADAR = [];
 function renderFinds() {
   const card = $('#finds-card');
   if (!RADAR.length) { card.hidden = true; return; }
   const P = loadParams();
-  const prof = activeProfile();
+  const prof = previewProfile || activeProfile();
   const rows = RADAR
     .filter((h) => matchesProfile(h, prof))
     .map((h) => ({ h, r: evaluate(h, P) }))
@@ -693,7 +715,17 @@ $('#profile-select').addEventListener('change', (e) => {
 $('#profile-edit').addEventListener('click', () => {
   const ed = $('#profile-editor'); ed.open = !ed.open;
   fillEditor(activeProfile());
+  previewProfile = ed.open ? editorProfile() : null;
+  renderFinds();
 });
+// Live preview — any editor field change re-filters the radar immediately.
+['input', 'change'].forEach((ev) =>
+  $('#profile-editor').addEventListener(ev, (e) => {
+    if (e.target.id === 'pf-name') return;         // name isn't a filter
+    if (e.target.closest('.form-actions')) return; // buttons handled separately
+    previewProfile = editorProfile();
+    renderFinds();
+  }));
 $('#pf-save').addEventListener('click', () => {
   const name = ($('#pf-name').value || '').trim();
   if (!name) { alert('Give the profile a name.'); return; }
@@ -710,8 +742,11 @@ $('#pf-save').addEventListener('click', () => {
   const custom = loadProfiles().list.filter((p) => !p.builtin && p.name !== name);
   custom.push(prof);
   saveProfiles(name, custom);
+  previewProfile = null;
+  $('#profile-editor').open = false;
+  renderProfileBar();
   renderFinds();
-  alert(`Saved "${name}".`);
+  alert(`Saved search "${name}". It's now in the dropdown and included in your backup.`);
 });
 $('#pf-delete').addEventListener('click', () => {
   const active = activeProfile();
