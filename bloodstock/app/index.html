@@ -30,6 +30,39 @@
 
 <main>
 
+  <!-- ============ 0 · Hero: the horse this whole system chases ============ -->
+  <section class="hero">
+    <div class="hero-text">
+      <h2>find the next<br>imperial emperor</h2>
+      <p class="hero-line">dubawi &times; zhukova &middot; sold for $300,000 &middot;
+      won the G1 al maktoum challenge at meydan</p>
+      <p class="hero-line dim">the radar hunts his profile daily &mdash; before the ring prices it in</p>
+    </div>
+    <figure class="hero-media">
+      <!-- Drop a licensed photo at img/imperial-emperor.jpg and it replaces
+           the silhouette automatically. Press/agency photos are copyrighted —
+           use one you own or have licensed. -->
+      <img src="img/imperial-emperor.jpg" alt="Imperial Emperor"
+           onerror="this.remove()">
+      <svg class="hero-horse" viewBox="0 0 200 200" aria-hidden="true">
+        <path fill="#F7F8FA" fill-opacity="0.92" d="
+          M38 186
+          C40 138 50 100 74 78
+          L82 54 L94 68
+          C106 56 128 56 146 74
+          C158 86 165 102 170 118
+          L178 132
+          C180 140 176 146 168 146
+          L154 142
+          C144 138 138 128 130 122
+          C112 112 96 122 88 142
+          C82 158 80 172 80 186
+          Z"/>
+        <circle cx="138" cy="86" r="4" fill="#12203A"/>
+      </svg>
+    </figure>
+  </section>
+
   <!-- ============ 1 · Score a lot — THE action ============ -->
   <section class="card">
     <h2>Score a lot</h2>
@@ -169,8 +202,10 @@
 </main>
 
 <footer>
+  <span id="whoami"></span>
   Model assumptions are stated, editable and version-controlled so they can be
   challenged &mdash; analysis, not financial advice.
+  <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
 <script src="engine.js"></script>

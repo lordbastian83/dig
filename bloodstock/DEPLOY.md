@@ -75,6 +75,27 @@ GoDaddy — but the final ALIAS step still needs a DNS host that supports
 ALIAS/ANAME, which GoDaddy is not. The www + 301 setup above is the normal
 GoDaddy answer and costs nothing.
 
+## 4. Locking the app behind login
+
+The app requires the custom role **`vault`** on every route
+(`staticwebapp.config.json`). Anyone without it is redirected to GitHub
+sign-in, and even a signed-in stranger gets 403 — only invited accounts see
+the scanner. To invite yourself and each syndicate member:
+
+1. Azure portal → `vault-racing-www-swa` → **Settings → Role management**
+   → **Invite**.
+2. Authorization provider: **GitHub** (or Microsoft Entra ID for members
+   without GitHub — also delete the `aad` 404 route from the config if you
+   enable it). Invitee: their GitHub username. Domain: your app's domain.
+   Role: **`vault`** (type it exactly). Generate.
+3. Send them the invitation link — they open it, sign in, done. The link
+   expires (hours), the membership doesn't.
+
+Sign-out link is in the app footer. Note: the radar's `candidates.json`
+feed is fetched from the public `bloodstock-data` branch, so the login
+protects the app UI but the data stays public until the private-repo
+migration.
+
 ## Checklist
 
 - [ ] SWA created (Free plan), hostname noted

@@ -498,3 +498,14 @@ renderList();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+// Signed-in identity (SWA platform auth) — silent no-op when running locally.
+fetch('/.auth/me')
+  .then((r) => (r.ok ? r.json() : null))
+  .then((j) => {
+    const p = j?.clientPrincipal;
+    if (!p) return;
+    $('#whoami').textContent = `signed in as ${p.userDetails} · `;
+    $('#logout-link').hidden = false;
+  })
+  .catch(() => {});
