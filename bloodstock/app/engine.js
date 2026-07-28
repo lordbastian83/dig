@@ -217,6 +217,53 @@
     return { pct, label, flags, assessed: n };
   }
 
+  // Distance aptitude by sire (centre trip, furlongs) — a curated map of where
+  // each sire's stock is bred to be best. Used for a dosage-style speed↔stamina
+  // read from pedigree, blended with the horse's own form when we have it.
+  const SIRE_APTITUDE = {
+    'dubawi': 9, 'night of thunder': 7.5, 'too darn hot': 7.5, 'new bay': 9,
+    'blue point': 6, 'kingman': 8, 'dark angel': 6.5, 'no nay never': 6,
+    'kodiac': 6, 'invincible spirit': 7, 'galileo': 11, 'sea the stars': 10,
+    'frankel': 9, 'lope de vega': 8.5, 'wootton bassett': 8, 'mehmas': 6,
+    'churchill': 9, 'starspangledbanner': 6, 'havana grey': 5.5, 'sioux nation': 6,
+    'ten sovereigns': 6, 'space blues': 7, 'palace pier': 8, 'pinatubo': 8,
+    'harry angel': 6, 'showcasing': 6, 'exceed and excel': 6, 'zoustar': 6.5,
+    'siyouni': 7.5, 'shamardal': 8, 'street cry': 9, "medaglia d'oro": 9,
+    'tapit': 8.5, 'into mischief': 6.5, 'curlin': 9.5, 'american pharoah': 9,
+  };
+  function aptitudeIndex(h) {
+    const s = String(h.sire || '').toLowerCase().replace(/\(.*?\)/g, '').trim();
+    let centre = SIRE_APTITUDE[s];
+    if (centre == null) {
+      const k = Object.keys(SIRE_APTITUDE).find((x) => s && (s.includes(x) || x.includes(s)));
+      centre = k ? SIRE_APTITUDE[k] : null;
+    }
+    const source = centre != null ? 'pedigree' : (h.distBest != null ? 'form' : null);
+    if (centre == null) centre = h.distBest != null ? +h.distBest : null;
+    if (centre == null) return null;
+    if (h.distBest != null && source === 'pedigree') centre = (centre + +h.distBest) / 2; // blend
+    centre = +centre.toFixed(1);
+    const speed = Math.max(0, Math.min(100, Math.round((12 - centre) / 7 * 100)));
+    const band = centre <= 6 ? 'sprint (5–6f)' : centre <= 8 ? 'mile (7–8f)'
+      : centre <= 11 ? 'middle (9–11f)' : 'staying (12f+)';
+    return { centre, speed, stamina: 100 - speed, band, source };
+  }
+  // Female-family strength (0..1) — the damside quality, from radar-measured dam
+  // production plus verified/likely black type.
+  function femaleFamily(h) {
+    let f = 0; const notes = [];
+    if (+h.damScore >= 0.6) { f += 0.6; notes.push(h.damLabel || 'strong producer'); }
+    else if (+h.damScore >= 0.3) { f += 0.35; notes.push(h.damLabel || 'some black type'); }
+    else if (h.damScore != null) { f += 0.12; }
+    if (h.blackType) { f += 0.3; notes.push('black type in first two dams'); }
+    const damsire = damsireOf(h);
+    if (DIRT_DAMSIRES.find((d) => damsire.toLowerCase().includes(d))) { f += 0.12; notes.push(`${damsire} damsire`); }
+    if (f === 0) return null;
+    const pct = Math.min(1, +f.toFixed(2));
+    return { pct, label: pct >= 0.7 ? 'strong female family' : pct >= 0.45 ? 'useful family' : 'modest family', notes };
+  }
+
   globalThis.VaultRacingEngine = { PARAM_DEFAULTS, ratingMult, expectedPrice, evaluate, dubaiFit,
-    nickScore, damsireOf, marketEstimate, roiOutlook, conformationScore, CONF_ITEMS };
+    nickScore, damsireOf, marketEstimate, roiOutlook, conformationScore, CONF_ITEMS,
+    aptitudeIndex, femaleFamily };
 })();

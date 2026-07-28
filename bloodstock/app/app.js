@@ -162,7 +162,7 @@ fetch('data/sire-medians.json')
 /* ---------- valuation engine (shared with the pipeline) ---------- */
 
 const { evaluate, expectedPrice: engineExpectedPrice, nickScore, damsireOf,
-  roiOutlook, conformationScore, CONF_ITEMS } = globalThis.VaultRacingEngine;
+  roiOutlook, conformationScore, CONF_ITEMS, aptitudeIndex, femaleFamily } = globalThis.VaultRacingEngine;
 const engineMarketEstimate = globalThis.VaultRacingEngine.marketEstimate;
 const expectedPrice = (h) => engineExpectedPrice(h, MEDIANS);
 const marketEstimate = (h) => engineMarketEstimate(h, MEDIANS);
@@ -880,6 +880,7 @@ function renderFinds() {
     .slice(0, 40);
   renderProfileBar();
   renderStats(rows);
+  renderMarketIntel();
   const scanDate = RADAR_META.generated || '—';
   const rankLabel = radarSort === 'dubai' ? 'Dubai Carnival fit' : 'vault value score';
   const header = `<p class="finds-meta">Scanned <b>${scanDate}</b> · ${RADAR.length} horses swept ·
@@ -931,6 +932,33 @@ function renderStats(rows) {
   strip.hidden = false;
 }
 
+/* ---------- market intelligence: distributions across the swept pool ------ */
+function renderMarketIntel() {
+  const host = $('#mktintel'), card = $('#mktintel-card');
+  if (!host || !card) return;
+  if (!RADAR.length) { card.hidden = true; return; }
+  const P = loadParams();
+  const scored = RADAR.map((h) => ({ h, r: evaluate(h, P) }));
+  const bucket = (items, bins, pick) => bins.map(([label, lo, hi]) =>
+    [label, items.filter((x) => { const v = pick(x); return v != null && v >= lo && v < hi; }).length]);
+  const chart = (title, pairs, accent) => {
+    const max = Math.max(1, ...pairs.map((p) => p[1]));
+    const bars = pairs.map(([label, n]) => `<div class="mi-row"><span class="mi-lab">${label}</span>
+      <span class="mi-track"><span class="mi-fill ${accent}" style="width:${Math.round(n / max * 100)}%"></span></span>
+      <span class="mi-n">${n}</span></div>`).join('');
+    return `<div class="mi-chart"><h4>${title}</h4>${bars}</div>`;
+  };
+  const ratings = bucket(scored, [['70–79', 70, 80], ['80–84', 80, 85], ['85–89', 85, 90], ['90–94', 90, 95], ['95+', 95, 999]], (x) => +x.h.rating);
+  const fits = bucket(scored, [['0–39', 0, 40], ['40–54', 40, 55], ['55–69', 55, 70], ['70–84', 70, 85], ['85+', 85, 101]], (x) => dubaiPct(x.r));
+  const regions = ['GB', 'IRE', 'FR', 'USA'].map((rg) => [rg, scored.filter((x) => (x.h.region || '') === rg).length]).filter((p) => p[1]);
+  const tiers = [['A — dirt sire', scored.filter((x) => x.h.sireTier === 'A').length], ['B — dirt damsire', scored.filter((x) => x.h.sireTier === 'B').length], ['turf / other', scored.filter((x) => !x.h.sireTier).length]];
+  host.innerHTML = chart('Official rating', ratings, 'mi-blue')
+    + chart('🏜 Dubai fit', fits, 'mi-gold')
+    + chart('Region', regions, 'mi-green')
+    + chart('Sire tier', tiers, 'mi-blue');
+  card.hidden = false;
+}
+
 $('#sort-toggle').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-sort]'); if (!b) return;
   radarSort = b.dataset.sort;
@@ -947,6 +975,8 @@ function openHorseModal(h) {
   const P = loadParams();
   const r = evaluate(h, P);
   const nk = nickScore(h);
+  const apt = aptitudeIndex(h);
+  const fam = femaleFamily(h);
   const mkt = marketEstimate(h);
   const roi = roiOutlook(h, P, r.gns);
   const conf = loadConf()[h.name];
@@ -1011,6 +1041,14 @@ function openHorseModal(h) {
       row('Region', h.region), row('Sex', h.sex),
     ])}
     ${nk.notes.length ? `<div class="mp-dubai-why"><b>🧬 Pedigree nick (${Math.round(nk.pct * 100)}/100):</b> ${nk.notes.join(' · ')}.</div>` : ''}
+    ${section('Pedigree analysis', [
+      row('Dirt nick', `${Math.round(nk.pct * 100)}/100 — ${nk.label}`),
+      apt ? row('Distance aptitude', `${apt.band} · centre ${apt.centre}f (${apt.source})`) : '',
+      apt ? row('Speed ↔ stamina', `${apt.speed}% speed · ${apt.stamina}% stamina`) : '',
+      fam ? row('Female family', `${Math.round(fam.pct * 100)}/100 — ${fam.label}`) : '',
+      fam && fam.notes.length ? row('Family notes', fam.notes.join('; ')) : '',
+    ])}
+    ${apt ? `<div class="apt-bar" title="Speed ↔ stamina from pedigree"><span class="apt-fill" style="width:${apt.speed}%"></span><span class="apt-mark speed">speed</span><span class="apt-mark stay">stamina</span></div>` : ''}
     ${section('Valuation', [
       row('Max bid', `${fmt(r.gns)} gns`), row('Expected hammer', exp ? `${fmt(exp.gns)} gns${exp.est ? ' (est)' : ''}` : '—'),
       row('Value gap', gap == null ? '—' : `${gap >= 0 ? '+' : ''}${fmt(gap)} gns`),

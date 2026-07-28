@@ -634,4 +634,21 @@ td:nth-child(3) { font-family: var(--mono); }
 .conf-grid select { width: 100%; }
 @media (max-width: 520px) { .mkt-bands { grid-template-columns: 1fr; } }
 
+/* pedigree speed↔stamina bar */
+.apt-bar { position: relative; height: 8px; border-radius: 999px; margin: .5rem 0 1rem;
+  background: linear-gradient(90deg, var(--gold-deep), var(--navy-3)); overflow: visible; }
+.apt-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 999px; background: var(--gold); }
+.apt-mark { position: absolute; top: 10px; font-size: .6rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
+.apt-mark.speed { left: 0; } .apt-mark.stay { right: 0; }
+
+/* market intelligence charts */
+.mktintel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.2rem 1.6rem; }
+.mi-chart h4 { margin: 0 0 .5rem; }
+.mi-row { display: grid; grid-template-columns: 5.5rem 1fr 1.8rem; align-items: center; gap: .5rem; margin: .28rem 0; font-size: .8rem; }
+.mi-lab { color: var(--ink-muted); font-family: var(--mono); font-size: .72rem; text-align: right; }
+.mi-track { height: 9px; border-radius: 999px; background: var(--navy); overflow: hidden; }
+.mi-fill { display: block; height: 100%; border-radius: 999px; }
+.mi-fill.mi-blue { background: #5EA3E8; } .mi-fill.mi-gold { background: var(--gold); } .mi-fill.mi-green { background: var(--green); }
+.mi-n { font-family: var(--mono); color: var(--cloud); font-size: .74rem; }
+
 footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: var(--ink-muted); font-size: .78rem; }
