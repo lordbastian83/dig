@@ -133,5 +133,40 @@
     return { pct: Math.min(1, +f.toFixed(3)), reasons };
   }
 
-  globalThis.VaultRacingEngine = { PARAM_DEFAULTS, ratingMult, expectedPrice, evaluate, dubaiFit };
+  // Broodmare-sire lines that put dirt/all-weather aptitude into a pedigree —
+  // the damside half of a strong Meydan "nick".
+  const DIRT_DAMSIRES = [
+    'street cry', 'shamardal', "medaglia d'oro", 'dubai millennium', 'storm cat',
+    'tapit', 'a.p. indy', 'ap indy', "giant's causeway", 'distorted humor',
+    'speightstown', 'pioneerof the nile', 'curlin', 'bernardini', 'more than ready',
+    'kingmambo', 'unbridled', 'gone west', 'smart strike', 'elusive quality',
+    'ghostzapper', 'candy ride', 'malibu moon', 'uncle mo', 'into mischief',
+    'quality road', 'hard spun', 'exchange rate', 'scat daddy', 'munnings',
+  ];
+  function damsireOf(h) {
+    if (h.damsire) return String(h.damsire);
+    const m = /\(([^)]+)\)\s*$/.exec(String(h.dam || ''));
+    return m ? m[1] : '';
+  }
+  // Pedigree "nick" for dirt (0..1): how well the sire line and the broodmare
+  // sire line combine for a Meydan dirt campaign. Sire dirt-line + a US/dirt
+  // damsire is the classic strong cross.
+  function nickScore(h) {
+    const damsire = damsireOf(h);
+    const ds = damsire.toLowerCase();
+    let n = 0; const notes = [];
+    if (h.sireTier === 'A') { n += 0.38; notes.push('proven dirt sire line'); }
+    else if (h.sireTier === 'B') { n += 0.18; notes.push('dirt-influenced sire'); }
+    const hit = DIRT_DAMSIRES.find((d) => ds && ds.includes(d));
+    if (hit) { n += 0.42; notes.push(`${damsire} — dirt/US broodmare sire`); }
+    else if (ds) { n += 0.05; }
+    // both halves dirt = a genuine dirt cross
+    if (h.sireTier === 'A' && hit) { n += 0.15; notes.push('dirt on both sides — strong cross'); }
+    const pct = Math.min(1, +n.toFixed(3));
+    const label = pct >= 0.75 ? 'strong dirt cross' : pct >= 0.5 ? 'promising cross'
+      : pct >= 0.3 ? 'some dirt influence' : 'turf-leaning pedigree';
+    return { pct, damsire, label, notes };
+  }
+
+  globalThis.VaultRacingEngine = { PARAM_DEFAULTS, ratingMult, expectedPrice, evaluate, dubaiFit, nickScore, damsireOf };
 })();

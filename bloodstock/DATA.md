@@ -57,11 +57,19 @@ have credentials.
 
 ## CSV import format
 
-Header row (same columns the app exports, order-insensitive, extras ignored):
+Header row (order-insensitive, extras ignored). Two importers use it:
+**Import catalogue CSV** on the watchlist (bulk add), and the **Sale shopping
+list** (scores + ranks + BUY/OVER verdict, no auto-add).
 
 ```
-name,lot,sale,sire,dam,vendor,rating,starts,sireTier,vet,powerhouse,blackType,awForm,notes
+name,lot,sale,sire,dam,damsire,vendor,rating,starts,age,sex,sireTier,vet,powerhouse,blackType,awForm,distBest,wins,guide,notes
 ```
 
-`sireTier` = `A`/`B`/empty · `vet` = `clean`/`incomplete`/`unknown` ·
-boolean columns accept `true/yes/1`.
+- `sireTier` = `A`/`B`/empty (auto-derived from sire/damsire if blank)
+- `vet` = `clean`/`incomplete`/`unknown` · booleans accept `true/yes/1`
+- `damsire` — feeds the dirt-nick score (or put it in `dam` as `Name (Damsire)`)
+- `distBest` — best trip in furlongs, if known · `age`, `sex` — for Dubai fit
+- `guide` — expected/guide price (any currency symbols stripped). With a guide,
+  the shopping list grades each lot **BUY** (our max ≥ guide), **STRETCH**
+  (within 10%), or **OVER** (market above our limit). Only the minimum
+  `name` + a `sire`/`dam` is required; everything else sharpens the score.

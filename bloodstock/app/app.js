@@ -156,7 +156,7 @@ fetch('data/sire-medians.json')
 
 /* ---------- valuation engine (shared with the pipeline) ---------- */
 
-const { evaluate, expectedPrice: engineExpectedPrice } = globalThis.VaultRacingEngine;
+const { evaluate, expectedPrice: engineExpectedPrice, nickScore, damsireOf } = globalThis.VaultRacingEngine;
 const expectedPrice = (h) => engineExpectedPrice(h, MEDIANS);
 
 /* ---------- rendering ---------- */
@@ -533,6 +533,95 @@ $('#import-csv').addEventListener('change', async (e) => {
   e.target.value = '';
 });
 
+/* ---------- sale shopping list: score a whole catalogue ---------- */
+const CAT_TIER_A = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
+const CAT_TIER_B_DS = ['street cry', 'shamardal', "medaglia d'oro", 'dubai millennium'];
+function csvRowToLot(r) {
+  const bool = (v) => ['true', 'yes', '1', 'y'].includes(String(v || '').toLowerCase());
+  const t = (r.siretier || '').toUpperCase();
+  const sire = (r.sire || '').toLowerCase(), dam = (r.dam || '').toLowerCase(), ds = (r.damsire || '').toLowerCase();
+  const tier = (t === 'A' || t === 'B') ? t
+    : CAT_TIER_A.some((s) => sire.includes(s)) ? 'A'
+    : CAT_TIER_B_DS.some((s) => dam.includes(s) || ds.includes(s)) ? 'B' : '';
+  const num = (v) => { const n = +String(v ?? '').replace(/[^0-9.]/g, ''); return Number.isFinite(n) && n ? n : null; };
+  return {
+    name: r.name, lot: r.lot || '', sale: r.sale || 'Catalogue',
+    sire: r.sire || '', dam: r.dam || '', damsire: r.damsire || '', vendor: r.vendor || '',
+    rating: +r.rating || 0, starts: r.starts === '' ? 99 : +r.starts, sireTier: tier,
+    vet: ['clean', 'incomplete'].includes(r.vet) ? r.vet : 'unknown',
+    powerhouse: bool(r.powerhouse), blackType: bool(r.blacktype), awForm: bool(r.awform),
+    distBest: num(r.distbest ?? r.bestdist), age: num(r.age), sex: r.sex || '',
+    wins: r.wins === '' || r.wins == null ? null : +r.wins,
+    guide: num(r.guide ?? r.guideprice ?? r.estimate),
+    notes: r.notes || '', status: 'watch', added: new Date().toISOString().slice(0, 10),
+  };
+}
+function catVerdict(h, r) {
+  if (!h.guide) return r.verdict === 'BID' ? ['BUY-fit', 'cv-buy'] : [`${6 - r.fails.length}/6`, 'cv-pass'];
+  if (r.gns >= h.guide) return ['BUY', 'cv-buy'];             // our max ≥ guide → winnable in value
+  if (r.gns >= h.guide * 0.9) return ['STRETCH', 'cv-stretch']; // within 10%
+  return ['OVER', 'cv-over'];                                  // market above our limit
+}
+let CATALOGUE = [];
+function scoreCatalogue() {
+  const P = loadParams();
+  const sort = ($('#cat-sort') && $('#cat-sort').value) || 'dubai';
+  const scored = CATALOGUE.map((h) => ({ h, r: evaluate(h, P), nick: nickScore(h) }));
+  scored.sort((a, b) => {
+    if (sort === 'vault') return b.r.score - a.r.score;
+    if (sort === 'value') { const g = (x) => x.h.guide ? x.r.gns - x.h.guide : -1e12; return g(b) - g(a); }
+    return dubaiPct(b.r) - dubaiPct(a.r) || b.r.score - a.r.score;
+  });
+  return scored;
+}
+function renderCatalogue() {
+  const tbl = $('#catalogue-table'); if (!tbl) return;
+  const tb = tbl.querySelector('tbody'), empty = $('#catalogue-empty'), count = $('#catalogue-count');
+  if (!CATALOGUE.length) { tbl.hidden = true; if (empty) empty.hidden = false; if (count) count.textContent = ''; return; }
+  const scored = scoreCatalogue();
+  tb.innerHTML = scored.map(({ h, r, nick }, i) => {
+    const [vl, vc] = catVerdict(h, r);
+    return `<tr>
+      <td>${h.lot || '—'}</td>
+      <td><b class="cat-name" data-i="${i}" title="Full profile">${h.name}</b></td>
+      <td class="cat-ped">${h.sire || '?'} × ${damsireOf(h) || '?'}</td>
+      <td class="mono">${h.rating || '—'}</td>
+      <td class="mono">${Math.round(r.score * 100)}</td>
+      <td class="mono cat-fit">${dubaiPct(r)}</td>
+      <td class="mono" title="${nick.label}">${Math.round(nick.pct * 100)}</td>
+      <td class="mono">${h.guide ? fmt(h.guide) : '—'}</td>
+      <td class="mono gold">${fmt(r.gns)}</td>
+      <td><span class="cat-verdict ${vc}">${vl}</span></td>
+      <td><button class="cat-add" data-i="${i}" title="Add to watchlist">＋</button></td>
+    </tr>`;
+  }).join('');
+  tbl.hidden = false; if (empty) empty.hidden = true;
+  if (count) count.textContent = `${CATALOGUE.length} lots`;
+  tbl.dataset.rows = JSON.stringify(scored.map((s) => s.h));
+}
+if ($('#cat-csv')) $('#cat-csv').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const rows = parseCSV(await file.text());
+    CATALOGUE = rows.filter((r) => r.name).map(csvRowToLot);
+    if (!CATALOGUE.length) { alert('No rows with a name column — see DATA.md.'); }
+    renderCatalogue();
+    document.getElementById('catalogue-card').scrollIntoView({ behavior: 'smooth' });
+  } catch { alert('Could not parse that CSV — see DATA.md for the columns.'); }
+  e.target.value = '';
+});
+if ($('#cat-sort')) $('#cat-sort').addEventListener('change', renderCatalogue);
+if ($('#cat-clear')) $('#cat-clear').addEventListener('click', () => { CATALOGUE = []; renderCatalogue(); });
+if ($('#cat-addbuys')) $('#cat-addbuys').addEventListener('click', () => {
+  const P = loadParams();
+  const buys = CATALOGUE.filter((h) => { const [v] = catVerdict(h, evaluate(h, P)); return v === 'BUY' || v === 'BUY-fit'; });
+  if (!buys.length) { alert('No BUY-rated lots to add (import guide prices to grade against, or loosen the screen).'); return; }
+  const list = loadList(); const have = new Set(list.map((x) => x.name.toLowerCase()));
+  const added = buys.filter((h) => !have.has(h.name.toLowerCase()));
+  saveList([...added, ...list]); renderList();
+  alert(`Added ${added.length} BUY-rated lot${added.length === 1 ? '' : 's'} to the watchlist.`);
+});
+
 // Minimal CSV parser — quoted fields, the dialect this app exports.
 function parseCSV(text) {
   const rows = [];
@@ -849,6 +938,7 @@ function openHorseModal(h) {
   modalHorse = h;
   const P = loadParams();
   const r = evaluate(h, P);
+  const nk = nickScore(h);
   const exp = expectedPrice(h);
   const gap = exp ? r.gns - exp.gns : null;
   const row = (k, v) => v == null || v === '' ? '' : `<div class="mp-row"><span class="mp-k">${k}</span><span class="mp-v">${v}</span></div>`;
@@ -901,11 +991,14 @@ function openHorseModal(h) {
     ])}
     ${section('Pedigree &amp; connections', [
       row('Sire', h.sire), row('Sire tier', h.sireTier === 'A' ? 'A — proven dirt' : h.sireTier === 'B' ? 'B — dirt damsire' : '—'),
-      row('Dam', h.dam), row('Dam production', h.damLabel),
+      row('Dam', h.dam), row('Damsire', nk.damsire || null),
+      row('Dirt nick', `${Math.round(nk.pct * 100)}/100 — ${nk.label}`),
+      row('Dam production', h.damLabel),
       row('Owner', h.vendor), row('Powerhouse', h.powerhouse ? 'yes' : 'no'),
       row('Trainer', h.trainer), row('Trainer strike-rate', h.trainerSR != null ? `${Math.round(h.trainerSR * 100)}%` : null),
       row('Region', h.region), row('Sex', h.sex),
     ])}
+    ${nk.notes.length ? `<div class="mp-dubai-why"><b>🧬 Pedigree nick (${Math.round(nk.pct * 100)}/100):</b> ${nk.notes.join(' · ')}.</div>` : ''}
     ${section('Valuation', [
       row('Max bid', `${fmt(r.gns)} gns`), row('Expected hammer', exp ? `${fmt(exp.gns)} gns${exp.est ? ' (est)' : ''}` : '—'),
       row('Value gap', gap == null ? '—' : `${gap >= 0 ? '+' : ''}${fmt(gap)} gns`),
@@ -916,8 +1009,57 @@ function openHorseModal(h) {
       ${r.fails.length ? `<b>Fails:</b> ${r.fails.join('; ')}. ` : '<b class="ok">Passes all six filters.</b> '}
       Black type &amp; availability need a human check.
     </div>
-    <button class="primary mp-add" data-name="${encodeURIComponent(h.name)}">→ add to watchlist</button>`;
+    <div class="mp-actions">
+      <button class="primary mp-add" data-name="${encodeURIComponent(h.name)}">→ add to watchlist</button>
+      <button class="mp-report">📄 One-pager PDF</button>
+    </div>`;
   $('#horse-modal').hidden = false;
+}
+
+// A shareable one-page PDF report for a single horse (print dialog → save PDF).
+function horseReport(h) {
+  const P = loadParams();
+  const r = evaluate(h, P), nk = nickScore(h), exp = expectedPrice(h);
+  const gap = exp ? r.gns - exp.gns : null;
+  const today = new Date().toISOString().slice(0, 10);
+  const li = (k, v) => v == null || v === '' ? '' : `<tr><td class="k">${k}</td><td class="v">${v}</td></tr>`;
+  const w = window.open('', '_blank'); if (!w) { alert('Allow pop-ups to generate the PDF.'); return; }
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${h.name} — vault racing</title><style>
+    @page{margin:16mm} body{font-family:'Outfit',system-ui,sans-serif;color:#12203A;font-size:12px}
+    h1{font-size:24px;margin:0;font-weight:800;letter-spacing:-.03em}
+    .sub{color:#6b7688;margin:2px 0 12px}
+    .band{display:flex;gap:10px;margin:12px 0}
+    .tile{flex:1;border:1px solid #dfe3ea;border-radius:8px;padding:8px 10px;text-align:center}
+    .tile b{display:block;font-size:20px;color:#12203A} .tile.gold b{color:#8A6A34} .tile span{font-size:9px;color:#6b7688;text-transform:uppercase;letter-spacing:.04em}
+    h2{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#8A6A34;margin:14px 0 4px;border-bottom:1px solid #dfe3ea;padding-bottom:3px}
+    table{width:100%;border-collapse:collapse} td{padding:3px 0;vertical-align:top} td.k{color:#6b7688;width:45%} td.v{text-align:right;font-variant-numeric:tabular-nums}
+    .why{background:#faf3df;border-left:3px solid #8A6A34;padding:7px 9px;border-radius:5px;margin:8px 0;font-size:11px}
+    .foot{margin-top:16px;color:#8A93A3;font-size:9px}</style></head><body>
+    <h1>${h.name}</h1>
+    <div class="sub">${h.sire || '?'} × ${h.dam || '?'}${nk.damsire ? '' : ''} · ${h.vendor || '?'}${h.trainer ? ' · ' + h.trainer : ''}</div>
+    <div class="band">
+      <div class="tile gold"><b>${fmt(r.gns)}</b><span>max bid (gns)</span></div>
+      <div class="tile"><b>${Math.round(r.score * 100)}</b><span>vault score</span></div>
+      <div class="tile"><b>${dubaiPct(r)}</b><span>Dubai fit</span></div>
+      <div class="tile"><b>${Math.round(nk.pct * 100)}</b><span>dirt nick</span></div>
+    </div>
+    ${(r.dubai?.reasons || []).length ? `<div class="why"><b>Why it fits Dubai:</b> ${r.dubai.reasons.join(' · ')}.</div>` : ''}
+    ${nk.notes.length ? `<div class="why"><b>Pedigree nick:</b> ${nk.notes.join(' · ')}.</div>` : ''}
+    <h2>Ability &amp; form</h2><table>
+      ${li('Official rating', h.rating)}${li('Career-high OR', h.careerHigh)}${li('Best RPR', h.bestRPR)}
+      ${li('OR trend', h.trend)}${li('Wins / starts', (h.wins ?? '?') + ' / ' + (h.starts ?? '?'))}
+      ${li('Win %', h.winPct != null ? Math.round(h.winPct * 100) + '%' : null)}${li('AW / dirt win', h.awForm ? 'yes' : 'no')}</table>
+    <h2>Distance &amp; plan</h2><table>
+      ${li('Best trip', h.distBest ? h.distBest + 'f' : null)}${li('Suggested plan', h.racePlan)}
+      ${li('Surfaces', (h.surfaceList || []).join(', ') || null)}</table>
+    <h2>Valuation</h2><table>
+      ${li('Hard max bid', fmt(r.gns) + ' gns')}${li('Expected hammer', exp ? fmt(exp.gns) + ' gns' + (exp.est ? ' (est)' : '') : '—')}
+      ${li('Value gap', gap == null ? '—' : (gap >= 0 ? '+' : '') + fmt(gap) + ' gns')}${li('Screen', r.verdict === 'BID' ? 'PASS 6/6' : (6 - r.fails.length) + '/6')}
+      ${li('Vet', h.vet === 'clean' ? 'clean' : '−20% applied (not clean)')}</table>
+    <div class="foot">vault racing · ${today} · hard max bids are limit orders — never chase past them · analysis, not financial advice · black type &amp; availability need a human check.</div>
+    </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
 }
 
 function addToWatchlist(h, btn, doneText) {
@@ -936,11 +1078,16 @@ document.addEventListener('click', (e) => {
   if (open) { const h = rowsFrom(open)[+open.dataset.i]; if (h) openHorseModal(h); return; }
   const add = e.target.closest('.find-add');
   if (add) { addToWatchlist(rowsFrom(add)[+add.dataset.i], add, '✓ added'); return; }
+  const catOpen = e.target.closest('.cat-name');
+  if (catOpen) { const h = rowsFrom(catOpen)[+catOpen.dataset.i]; if (h) openHorseModal(h); return; }
+  const catAdd = e.target.closest('.cat-add');
+  if (catAdd) { addToWatchlist(rowsFrom(catAdd)[+catAdd.dataset.i], catAdd, '✓'); return; }
 });
 $('#modal-close').addEventListener('click', () => { $('#horse-modal').hidden = true; });
 $('#horse-modal').addEventListener('click', (e) => {
   if (e.target.id === 'horse-modal') $('#horse-modal').hidden = true; // click backdrop
   if (e.target.matches('.mp-add')) addToWatchlist(modalHorse, e.target, '✓ added to watchlist');
+  if (e.target.matches('.mp-report') && modalHorse) horseReport(modalHorse);
 });
 
 /* ---------- compare the shortlist side by side ---------- */
@@ -953,6 +1100,7 @@ function openCompare() {
   const M = [
     ['Vault score', (h, r) => ({ n: Math.round(r.score * 100), t: Math.round(r.score * 100) }), true],
     ['🏜 Dubai fit', (h, r) => ({ n: dubaiPct(r), t: dubaiPct(r) }), true],
+    ['🧬 Dirt nick', (h) => { const p = Math.round(nickScore(h).pct * 100); return { n: p, t: p }; }, true],
     ['Max bid (gns)', (h, r) => ({ n: r.gns, t: fmt(r.gns) }), true],
     ['Official rating', (h) => ({ n: +h.rating || null, t: h.rating ?? '—' }), true],
     ['Career-high OR', (h) => ({ n: h.careerHigh ?? null, t: h.careerHigh ?? '—' }), true],
@@ -1151,6 +1299,7 @@ async function loadFeeds(bust) {
   } catch {}
 }
 loadFeeds(false);
+renderCatalogue();
 
 const refreshBtn = document.getElementById('refresh-btn');
 if (refreshBtn) refreshBtn.addEventListener('click', async () => {

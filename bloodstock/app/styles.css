@@ -603,4 +603,23 @@ td:nth-child(3) { font-family: var(--mono); }
 .cmp-table td { font-variant-numeric: tabular-nums; }
 .cmp-best { color: var(--gold); font-weight: 600; background: var(--gold-wash); }
 
+/* ---------- sale shopping list ---------- */
+.cat-controls { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; margin: .7rem 0 .3rem; }
+.cat-sort-lab { flex-direction: row; align-items: center; gap: .45rem; color: var(--ink-muted); font-size: .82rem; }
+.cat-table { min-width: 780px; }
+.cat-table th, .cat-table td { padding: .45rem .55rem; }
+.cat-table .mono { font-family: var(--mono); }
+.cat-table .gold { color: var(--gold); font-weight: 600; }
+.cat-name { cursor: pointer; border-bottom: 1px dotted var(--ink-muted); font-weight: 500; }
+.cat-name:hover { color: var(--gold); }
+.cat-ped { color: var(--ink-muted); font-size: .8rem; }
+.cat-add { padding: .12rem .55rem; font-size: 1rem; line-height: 1; }
+.cat-verdict { font-family: var(--mono); font-size: .68rem; font-weight: 600; padding: .14em .5em; border-radius: 5px; white-space: nowrap; }
+.cv-buy { color: var(--green); background: var(--green-wash); }
+.cv-stretch { color: var(--gold); background: var(--gold-wash); }
+.cv-over { color: var(--down, #d03b3b); background: rgba(208, 59, 59, .14); }
+.cv-pass { color: var(--ink-muted); background: var(--navy); }
+.mp-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .4rem; }
+.mp-report { font-size: .85rem; }
+
 footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: var(--ink-muted); font-size: .78rem; }

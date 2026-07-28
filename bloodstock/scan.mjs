@@ -322,9 +322,11 @@ async function alert(finds) {
     }
   } catch (e) { console.error('getUpdates:', e.message); }
   const fmt = (n) => n.toLocaleString('en-GB', { maximumFractionDigits: 0 });
-  const lines = finds.map((f) =>
-    `• ${f.name} (${f.sire}) — OR ${f.rating} ${f.trend}${f.rprEdge > 0 ? `, RPR +${f.rprEdge}` : ''}, ${f.starts} starts${f.awForm ? ', AW win' : ''}${f.distBest ? `, best ${f.distBest}f` : ''}\n  owner ${f.vendor || '?'} · max bid ~${fmt(f.maxBidGns)} gns${f.racePlan ? `\n  plan: ${f.racePlan}` : ''}\n  ⚠ verify black type + whether buyable`);
-  const msg = [`🐎💎 vault racing radar — ${finds.length} new candidate${finds.length === 1 ? '' : 's'}:`, '', ...lines].join('\n');
+  const fit = (f) => Math.round((E.dubaiFit(f).pct || 0) * 100);
+  const ranked = [...finds].sort((a, b) => fit(b) - fit(a));
+  const lines = ranked.map((f) =>
+    `• ${f.name} (${f.sire}) — 🏜 Dubai fit ${fit(f)} · OR ${f.rating} ${f.trend}${f.rprEdge > 0 ? `, RPR +${f.rprEdge}` : ''}, ${f.starts} starts${f.awForm ? ', AW win' : ''}${f.distBest ? `, best ${f.distBest}f` : ''}\n  owner ${f.vendor || '?'} · max bid ~${fmt(f.maxBidGns)} gns${f.racePlan ? `\n  plan: ${f.racePlan}` : ''}\n  ⚠ verify black type + whether buyable`);
+  const msg = [`🐎💎 vault racing radar — ${finds.length} new candidate${finds.length === 1 ? '' : 's'} (best Dubai fit first):`, '', ...lines].join('\n');
   for (const chat of ids) {
     try { await tg('sendMessage', { chat_id: chat, text: msg }); console.log(`alerted ${chat}`); }
     catch (e) { console.error(`send ${chat}: ${e.message}`); }

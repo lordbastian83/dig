@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260727h">
+<link rel="stylesheet" href="styles.css?v=20260727i">
 </head>
 <body>
 
@@ -309,6 +309,41 @@
     <div id="prospects-list" class="prospects-list"></div>
   </section>
 
+  <!-- ============ 2c · Sale shopping list ============ -->
+  <section class="card" id="catalogue-card">
+    <div class="card-head">
+      <h2>🛒 Sale shopping list</h2>
+      <span class="prospects-count" id="catalogue-count"></span>
+    </div>
+    <p class="hint">Import a sale catalogue (CSV) and every lot is auto-scored and
+    ranked for the Dubai plan. If you include a <code>guide</code> price, each lot
+    gets a <b>BUY / STRETCH / OVER</b> verdict against our hard max bid. Columns in
+    <code>DATA.md</code>.</p>
+    <div class="cat-controls">
+      <label class="file-btn primary">⬆ Import catalogue CSV<input type="file" id="cat-csv" accept=".csv" hidden></label>
+      <label class="cat-sort-lab">Rank by
+        <select id="cat-sort">
+          <option value="dubai">🏜 Dubai fit</option>
+          <option value="value">value gap</option>
+          <option value="vault">vault score</option>
+        </select>
+      </label>
+      <button id="cat-addbuys">＋ Add all BUYs to watchlist</button>
+      <button id="cat-clear">Clear</button>
+    </div>
+    <div class="table-wrap">
+      <table id="catalogue-table" class="cat-table" hidden>
+        <thead><tr>
+          <th>Lot</th><th>Horse</th><th>Pedigree</th><th>OR</th>
+          <th>Vault</th><th>🏜 Fit</th><th>Nick</th><th>Guide</th>
+          <th>Max bid</th><th>Verdict</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="empty" id="catalogue-empty">No catalogue loaded yet — import a CSV to score a whole sale at once.</p>
+  </section>
+
   <!-- ============ 2b · Intel ============ -->
   <section class="card" id="intel-card" hidden>
     <details>
@@ -409,7 +444,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260727h"></script>
-<script src="app.js?v=20260727h"></script>
+<script src="engine.js?v=20260727i"></script>
+<script src="app.js?v=20260727i"></script>
 </body>
 </html>
