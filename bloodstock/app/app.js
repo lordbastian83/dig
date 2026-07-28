@@ -97,11 +97,15 @@ function saveParams(p) { localStorage.setItem(LS_PARAMS, JSON.stringify(p)); syn
    no-op when signed out or the sync API isn't configured, so the app still
    works per-device offline. */
 let SYNC_ON = false, syncTimer = null;
+const LS_CONF = 'bloodstock.conf.v1';
+function loadConf() { try { return JSON.parse(localStorage.getItem(LS_CONF) || '{}'); } catch { return {}; } }
+function saveConf(o) { localStorage.setItem(LS_CONF, JSON.stringify(o)); syncPush(); }
 function currentBlob() {
   return { v: 1, updated: Date.now(),
     watchlist: loadList(),
     params: JSON.parse(localStorage.getItem(LS_PARAMS) || '{}'),
     profiles: JSON.parse(localStorage.getItem(LS_PROFILES) || '{}'),
+    conf: loadConf(),
     heroImg: localStorage.getItem('bloodstock.heroImg') || '' };
 }
 function applyBlob(b) {
@@ -109,6 +113,7 @@ function applyBlob(b) {
   if (Array.isArray(b.watchlist)) localStorage.setItem(LS_LIST, JSON.stringify(b.watchlist));
   if (b.params) localStorage.setItem(LS_PARAMS, JSON.stringify(b.params));
   if (b.profiles) localStorage.setItem(LS_PROFILES, JSON.stringify(b.profiles));
+  if (b.conf) localStorage.setItem(LS_CONF, JSON.stringify(b.conf));
   if (b.heroImg) localStorage.setItem('bloodstock.heroImg', b.heroImg);
   return true;
 }
@@ -156,8 +161,11 @@ fetch('data/sire-medians.json')
 
 /* ---------- valuation engine (shared with the pipeline) ---------- */
 
-const { evaluate, expectedPrice: engineExpectedPrice, nickScore, damsireOf } = globalThis.VaultRacingEngine;
+const { evaluate, expectedPrice: engineExpectedPrice, nickScore, damsireOf,
+  roiOutlook, conformationScore, CONF_ITEMS } = globalThis.VaultRacingEngine;
+const engineMarketEstimate = globalThis.VaultRacingEngine.marketEstimate;
 const expectedPrice = (h) => engineExpectedPrice(h, MEDIANS);
+const marketEstimate = (h) => engineMarketEstimate(h, MEDIANS);
 
 /* ---------- rendering ---------- */
 
@@ -939,6 +947,10 @@ function openHorseModal(h) {
   const P = loadParams();
   const r = evaluate(h, P);
   const nk = nickScore(h);
+  const mkt = marketEstimate(h);
+  const roi = roiOutlook(h, P, r.gns);
+  const conf = loadConf()[h.name];
+  const cf = conformationScore({ conf });
   const exp = expectedPrice(h);
   const gap = exp ? r.gns - exp.gns : null;
   const row = (k, v) => v == null || v === '' ? '' : `<div class="mp-row"><span class="mp-k">${k}</span><span class="mp-v">${v}</span></div>`;
@@ -1005,6 +1017,30 @@ function openHorseModal(h) {
       row('Vet', h.vet === 'clean' ? 'clean' : '−20% applied (not clean)'),
     ])}
 
+    <h4>Market estimate &amp; 5-yr outlook</h4>
+    <div class="mkt-bands">
+      <div class="mkt cons"><span class="mkt-lab">conservative</span><span class="mkt-val">${fmt(mkt.conservative)}</span></div>
+      <div class="mkt base"><span class="mkt-lab">base estimate${mkt.est ? ' (est)' : ''}</span><span class="mkt-val">${fmt(mkt.base)}</span></div>
+      <div class="mkt up"><span class="mkt-lab">upside</span><span class="mkt-val">${fmt(mkt.upside)}</span></div>
+    </div>
+    <div class="mp-grid">
+      ${row('Projected return (base)', `${fmt(roi.base)} gns over ${roi.seasons} seasons`)}
+      ${row('ROI on our max bid', `${roi.roiCons}% → ${roi.roiUp}% (base ${roi.roiBase}%)`)}
+    </div>
+    <p class="hint" style="margin:.3rem 0 0">Model projection from the outcome tree (prize EV + probability-weighted residual), not a guarantee.</p>
+
+    <h4>Conformation &amp; biomechanics ${cf ? `<span class="mp-score mp-dubai">${Math.round(cf.pct * 100)}/100 · ${cf.label}</span>` : ''}</h4>
+    <div class="conf-grid" id="conf-grid" data-name="${encodeURIComponent(h.name)}">
+      ${CONF_ITEMS.map(([k, label]) => `<label>${label}
+        <select data-conf="${k}">
+          <option value="">—</option>
+          <option value="ideal"${conf && conf[k] === 'ideal' ? ' selected' : ''}>within ideal</option>
+          <option value="mild"${conf && conf[k] === 'mild' ? ' selected' : ''}>mild deviation</option>
+          <option value="notable"${conf && conf[k] === 'notable' ? ' selected' : ''}>notable deviation</option>
+        </select></label>`).join('')}
+    </div>
+    ${cf && cf.flags.length ? `<p class="hint" style="margin:.4rem 0 0">Flags: ${cf.flags.join(' · ')}.</p>` : '<p class="hint" style="margin:.4rem 0 0">Assess from a photo or inspection — feeds the vet call. Not computer vision (manual entry).</p>'}
+
     <div class="mp-flags">
       ${r.fails.length ? `<b>Fails:</b> ${r.fails.join('; ')}. ` : '<b class="ok">Passes all six filters.</b> '}
       Black type &amp; availability need a human check.
@@ -1020,6 +1056,8 @@ function openHorseModal(h) {
 function horseReport(h) {
   const P = loadParams();
   const r = evaluate(h, P), nk = nickScore(h), exp = expectedPrice(h);
+  const mkt = marketEstimate(h), roi = roiOutlook(h, P, r.gns);
+  const cf = conformationScore({ conf: loadConf()[h.name] });
   const gap = exp ? r.gns - exp.gns : null;
   const today = new Date().toISOString().slice(0, 10);
   const li = (k, v) => v == null || v === '' ? '' : `<tr><td class="k">${k}</td><td class="v">${v}</td></tr>`;
@@ -1056,6 +1094,12 @@ function horseReport(h) {
       ${li('Hard max bid', fmt(r.gns) + ' gns')}${li('Expected hammer', exp ? fmt(exp.gns) + ' gns' + (exp.est ? ' (est)' : '') : '—')}
       ${li('Value gap', gap == null ? '—' : (gap >= 0 ? '+' : '') + fmt(gap) + ' gns')}${li('Screen', r.verdict === 'BID' ? 'PASS 6/6' : (6 - r.fails.length) + '/6')}
       ${li('Vet', h.vet === 'clean' ? 'clean' : '−20% applied (not clean)')}</table>
+    <h2>Market estimate &amp; ROI outlook</h2><table>
+      ${li('Likely hammer', fmt(mkt.conservative) + ' / ' + fmt(mkt.base) + ' / ' + fmt(mkt.upside) + ' gns (cons/base/up)')}
+      ${li('Projected return (base)', fmt(roi.base) + ' gns / ' + roi.seasons + ' seasons')}
+      ${li('ROI on max bid', roi.roiCons + '% → ' + roi.roiUp + '% (base ' + roi.roiBase + '%)')}
+      ${cf ? li('Conformation', Math.round(cf.pct * 100) + '/100 — ' + cf.label) : ''}</table>
+    ${cf && cf.flags.length ? `<div class="why"><b>Conformation flags:</b> ${cf.flags.join(' · ')}.</div>` : ''}
     <div class="foot">vault racing · ${today} · hard max bids are limit orders — never chase past them · analysis, not financial advice · black type &amp; availability need a human check.</div>
     </body></html>`);
   w.document.close();
@@ -1088,6 +1132,15 @@ $('#horse-modal').addEventListener('click', (e) => {
   if (e.target.id === 'horse-modal') $('#horse-modal').hidden = true; // click backdrop
   if (e.target.matches('.mp-add')) addToWatchlist(modalHorse, e.target, '✓ added to watchlist');
   if (e.target.matches('.mp-report') && modalHorse) horseReport(modalHorse);
+});
+// Conformation assessment — save each observation and re-score the modal live.
+$('#horse-modal').addEventListener('change', (e) => {
+  const sel = e.target.closest('select[data-conf]'); if (!sel || !modalHorse) return;
+  const all = loadConf();
+  const cur = all[modalHorse.name] || {};
+  cur[sel.dataset.conf] = sel.value || undefined;
+  all[modalHorse.name] = cur; saveConf(all);
+  openHorseModal(modalHorse); // re-render with the new score
 });
 
 /* ---------- compare the shortlist side by side ---------- */

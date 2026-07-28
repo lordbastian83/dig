@@ -168,5 +168,55 @@
     return { pct, damsire, label, notes };
   }
 
-  globalThis.VaultRacingEngine = { PARAM_DEFAULTS, ratingMult, expectedPrice, evaluate, dubaiFit, nickScore, damsireOf };
+  // Market estimate — Conservative / Base / Upside likely hammer price (gns).
+  function marketEstimate(h, medians) {
+    const exp = expectedPrice(h, medians || {});
+    const base = exp ? exp.gns
+      : Math.round(ratingMult(+h.rating || 0) * 22000 / 500) * 500; // fallback from rating
+    const round = (n) => Math.round(n / 500) * 500;
+    return { conservative: round(base * 0.72), base: round(base), upside: round(base * 1.45),
+      est: exp ? !!exp.est : true };
+  }
+
+  // 5-year outlook — projected total return (residual value at exit + prize
+  // money over ~2 racing seasons) and the ROI on the recommended max bid.
+  function roiOutlook(h, P, purchaseGns) {
+    const r = evaluate(h, P);
+    const buy = purchaseGns || r.gns || 1;
+    const seasons = 2;
+    const prize = P.prizeEV * seasons;
+    const cost = P.costs * seasons;
+    const cons = r.residual * 0.6 + prize * 0.55;
+    const base = r.residual + prize;
+    const up = P.vTop * (r.pTop * 3) + r.residual + prize * 1.4; // breakthrough tilts upside
+    const roi = (v) => Math.round(((v - buy - cost) / buy) * 100);
+    return { buy, seasons, cons: Math.round(cons), base: Math.round(base), up: Math.round(up),
+      roiCons: roi(cons), roiBase: roi(base), roiUp: roi(up) };
+  }
+
+  // Conformation & biomechanics — scores a manual assessment (h.conf) against
+  // ideal ranges. h.conf keys hold 'ideal' | 'mild' | 'notable' (deviation).
+  const CONF_ITEMS = [
+    ['shoulder', 'Shoulder angle'], ['pasterns', 'Pasterns'],
+    ['hoofpastern', 'Hoof-pastern axis'], ['limb', 'Limb / knee'],
+    ['walk', 'Walk / action'], ['balance', 'Overall balance'],
+  ];
+  function conformationScore(h) {
+    const c = h && h.conf; if (!c || typeof c !== 'object') return null;
+    const w = { ideal: 1, mild: 0.6, notable: 0.15 };
+    const flags = []; let sum = 0, n = 0;
+    for (const [k, label] of CONF_ITEMS) {
+      const v = c[k]; if (!v) continue; n++;
+      sum += (w[v] ?? 0.6);
+      if (v === 'notable') flags.push(`${label}: notable deviation`);
+      else if (v === 'mild') flags.push(`${label}: mild`);
+    }
+    if (!n) return null;
+    const pct = +(sum / n).toFixed(2);
+    const label = pct >= 0.85 ? 'correct — excellent' : pct >= 0.7 ? 'good' : pct >= 0.5 ? 'some concerns' : 'significant faults';
+    return { pct, label, flags, assessed: n };
+  }
+
+  globalThis.VaultRacingEngine = { PARAM_DEFAULTS, ratingMult, expectedPrice, evaluate, dubaiFit,
+    nickScore, damsireOf, marketEstimate, roiOutlook, conformationScore, CONF_ITEMS };
 })();

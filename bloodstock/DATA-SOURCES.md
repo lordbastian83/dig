@@ -40,6 +40,32 @@ Priority = impact on finding the right Dubai dirt horse ÷ effort to integrate.
   in a scheduled workflow that publishes JSON to the `bloodstock-data` branch,
   exactly like `candidates.json` / `prospects.json` today.
 
+## Feature parity map — vs a full CV bloodstock platform (e.g. their 7 modules)
+| Their module | Vault racing status | To reach parity |
+|---|---|---|
+| **Sales Intelligence** (catalogue analysis, lot ranking) | ✅ Sale shopping list — every lot scored, ranked, BUY/OVER vs guide | Live catalogue feed so it fills itself (Priority 1) |
+| **Pedigree Analysis** (nicking, dosage, female family) | ◑ dirt-nick score built; dosage + female-family strength to add | Pedigree data licence (Weatherbys/RP) for verified 5-gen + chef-de-race points → true Dosage Index/Profile |
+| **Sale Inspection** (CV conformation/biomechanics) | ◑ manual conformation scorer (enter observations → graded, feeds vet call) | **Computer-vision pose model** — the real moat. Needs an ML service (see below); UI + scoring already in place to receive it |
+| **Training Analysis** (stride, breeze, GPS) | ✗ not built | GPS/sectional feed (TPD, StrideMASTER) + a breeze biomechanics model |
+| **Market Reports / analytics** | ◑ at-a-glance dashboard strip | A market-data feed for trend/avg-price-by-house/ROI-by-cycle charts |
+| **Horse Database** | ◑ radar + prospects + watchlist, synced | The pedigree/sales-history licence turns it into a full searchable DB |
+| **Market Valuation & ROI** | ✅ Conservative/Base/Upside bands + ROI outlook in every profile & PDF | Real sale-price comps sharpen the bands |
+| **Advisory** | — human, out of software scope | — |
+
+## Computer-vision biomechanics (their moat) — how we'd add it honestly
+Pose-estimation of a horse from photos/video (joint angles, stride length,
+extension, symmetry, conformation angles) is a machine-learning task — it
+cannot be faked in the static app. To add it for real:
+- A **horse-pose model** (e.g. an animal-pose estimator such as a
+  DeepLabCut/ViTPose model fine-tuned on horses, or a vendor CV API) running
+  as a service; the app uploads a photo/clip and receives keypoints + angles.
+- We already score conformation from angle inputs, so the model's output
+  drops straight into the existing `conformationScore` and profile section —
+  no UI rework, just swap manual entry for detected angles.
+- **Dosage** (speed/stamina aptitude): computable once we have verified
+  4–5-generation pedigrees with chef-de-race classifications — a data licence,
+  not ML.
+
 ## Credentials needed (when we integrate)
 Add as GitHub Actions secrets, same pattern as `RACING_API_*`:
 - catalogue/results data licence key(s)

@@ -622,4 +622,16 @@ td:nth-child(3) { font-family: var(--mono); }
 .mp-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .4rem; }
 .mp-report { font-size: .85rem; }
 
+/* market estimate bands + conformation */
+.mkt-bands { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin: .5rem 0 .8rem; }
+.mkt { border-radius: 10px; padding: .6rem .7rem; display: grid; gap: .15rem; }
+.mkt-lab { font-size: .62rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); }
+.mkt-val { font-family: var(--mono); font-size: 1.15rem; font-weight: 600; color: var(--cloud); }
+.mkt.cons { background: var(--green-wash); } .mkt.cons .mkt-val { color: var(--green); }
+.mkt.base { background: var(--navy-3); }
+.mkt.up { background: var(--gold-wash); } .mkt.up .mkt-val { color: var(--gold); }
+.conf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: .5rem .8rem; margin: .4rem 0; }
+.conf-grid select { width: 100%; }
+@media (max-width: 520px) { .mkt-bands { grid-template-columns: 1fr; } }
+
 footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: var(--ink-muted); font-size: .78rem; }
