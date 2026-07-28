@@ -943,6 +943,53 @@ $('#horse-modal').addEventListener('click', (e) => {
   if (e.target.matches('.mp-add')) addToWatchlist(modalHorse, e.target, '✓ added to watchlist');
 });
 
+/* ---------- compare the shortlist side by side ---------- */
+function openCompare() {
+  const list = loadList();
+  if (!list.length) { alert('Add horses to your watchlist first, then Compare.'); return; }
+  const P = loadParams();
+  const horses = list.slice(0, 5).map((h) => ({ h, r: evaluate(h, P) }));
+  // [label, valueFn -> {n, t}, higherIsBetter]
+  const M = [
+    ['Vault score', (h, r) => ({ n: Math.round(r.score * 100), t: Math.round(r.score * 100) }), true],
+    ['🏜 Dubai fit', (h, r) => ({ n: dubaiPct(r), t: dubaiPct(r) }), true],
+    ['Max bid (gns)', (h, r) => ({ n: r.gns, t: fmt(r.gns) }), true],
+    ['Official rating', (h) => ({ n: +h.rating || null, t: h.rating ?? '—' }), true],
+    ['Career-high OR', (h) => ({ n: h.careerHigh ?? null, t: h.careerHigh ?? '—' }), true],
+    ['Best RPR (speed)', (h) => ({ n: h.bestRPR ?? null, t: h.bestRPR ?? '—' }), true],
+    ['Best trip', (h) => ({ n: h.distBest ?? null, t: h.distBest != null ? h.distBest + 'f' : '—' }), null],
+    ['AW / dirt win', (h) => ({ n: h.awForm ? 1 : 0, t: h.awForm ? '✓ yes' : '—' }), true],
+    ['Wins / starts', (h) => ({ n: h.wins ?? null, t: (h.wins ?? '?') + ' / ' + (h.starts ?? '?') }), true],
+    ['Win %', (h) => ({ n: h.winPct != null ? h.winPct : null, t: h.winPct != null ? Math.round(h.winPct * 100) + '%' : '—' }), true],
+    ['Class angle', (h) => ({ n: h.classMove === 'dropping' ? 1 : 0, t: h.classMove === 'dropping' ? 'dropping ✓' : (h.classMove || '—') }), true],
+    ['Dam production', (h) => ({ n: h.damScore ?? null, t: h.damLabel || '—' }), true],
+    ['Sire tier', (h) => ({ n: h.sireTier === 'A' ? 2 : h.sireTier === 'B' ? 1 : 0, t: h.sireTier ? `tier ${h.sireTier}` : '—' }), true],
+    ['Trainer', (h) => ({ n: null, t: h.trainer || '—' }), null],
+    ['Suggested plan', (h) => ({ n: null, t: h.racePlan ? h.racePlan.split('—')[0].trim() : '—' }), null],
+  ];
+  const thead = '<th>Metric</th>' + horses.map(({ h }) => `<th>${h.name}</th>`).join('');
+  const body = M.map(([label, fn, better]) => {
+    const cells = horses.map(({ h, r }) => fn(h, r));
+    const hi = new Set();
+    if (better) {
+      const nums = cells.map((c) => c.n).filter((n) => n != null);
+      if (nums.length) {
+        const max = Math.max(...nums), min = Math.min(...nums);
+        if (max > min) cells.forEach((c, i) => { if (c.n === max) hi.add(i); });
+      }
+    }
+    const tds = cells.map((c, i) => `<td class="${hi.has(i) ? 'cmp-best' : ''}">${c.t}</td>`).join('');
+    return `<tr><td class="cmp-metric">${label}</td>${tds}</tr>`;
+  }).join('');
+  $('#compare-body').innerHTML = `<h3>⚖ Compare shortlist</h3>
+    <p class="hint">The leader in each row is highlighted gold. Showing ${horses.length}${list.length > 5 ? ` of ${list.length}` : ''} watchlist ${horses.length === 1 ? 'horse' : 'horses'} (first 5).</p>
+    <div class="cmp-wrap"><table class="cmp-table"><thead><tr>${thead}</tr></thead><tbody>${body}</tbody></table></div>`;
+  $('#compare-modal').hidden = false;
+}
+$('#compare-btn').addEventListener('click', openCompare);
+$('#compare-close').addEventListener('click', () => { $('#compare-modal').hidden = true; });
+$('#compare-modal').addEventListener('click', (e) => { if (e.target.id === 'compare-modal') $('#compare-modal').hidden = true; });
+
 /* ---------- off-market prospects ---------- */
 let PROSPECTS = [];
 function renderProspects() {

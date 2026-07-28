@@ -591,4 +591,16 @@ td:nth-child(3) { font-family: var(--mono); }
 }
 .mp-dubai-why b { color: var(--gold); }
 
+/* ---------- compare shortlist ---------- */
+.modal-card.modal-wide { max-width: 920px; }
+#compare-body h3 { margin: 0 0 .3rem; font-size: 1.35rem; }
+.cmp-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: .6rem; }
+.cmp-table { width: 100%; border-collapse: collapse; font-size: .86rem; min-width: 460px; }
+.cmp-table th, .cmp-table td { padding: .5rem .7rem; border-bottom: 1px solid var(--border); text-align: center; white-space: nowrap; }
+.cmp-table thead th { color: var(--cloud); font-weight: 600; background: var(--navy-3); position: sticky; top: 0; }
+.cmp-table thead th:first-child { text-align: left; }
+.cmp-metric { text-align: left !important; color: var(--ink-muted); font-family: var(--mono); font-size: .74rem; }
+.cmp-table td { font-variant-numeric: tabular-nums; }
+.cmp-best { color: var(--gold); font-weight: 600; background: var(--gold-wash); }
+
 footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: var(--ink-muted); font-size: .78rem; }

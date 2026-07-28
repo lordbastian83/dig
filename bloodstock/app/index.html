@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260727g">
+<link rel="stylesheet" href="styles.css?v=20260727h">
 </head>
 <body>
 
@@ -335,6 +335,7 @@
     </div>
     <div class="form-actions">
       <button id="rank-gap" class="primary" title="Screen-passers first, widest value gap on top">Rank by value gap</button>
+      <button id="compare-btn" title="Line the shortlist up side by side">⚖ Compare</button>
       <button id="export-pdf">Export PDF</button>
       <button id="export-csv">Export CSV</button>
       <button id="export-json">Backup</button>
@@ -394,6 +395,13 @@
   </div>
 </div>
 
+<div id="compare-modal" class="modal" hidden>
+  <div class="modal-card modal-wide">
+    <button id="compare-close" class="modal-close" aria-label="Close">✕</button>
+    <div id="compare-body"></div>
+  </div>
+</div>
+
 <footer>
   <span id="whoami"></span>
   Model assumptions are stated, editable and version-controlled so they can be
@@ -401,7 +409,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260727g"></script>
-<script src="app.js?v=20260727g"></script>
+<script src="engine.js?v=20260727h"></script>
+<script src="app.js?v=20260727h"></script>
 </body>
 </html>
