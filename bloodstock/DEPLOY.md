@@ -115,6 +115,39 @@ Data is keyed to your Microsoft login id and stored one row per user, so
 each syndicate member sees only their own. Sign in on any device → your
 saved board loads automatically.
 
+## 6. AI photo inspection (conformation first pass)
+
+Each horse profile has a **📷 Analyse photo (AI)** button. It resizes a
+conformation photo in the browser and sends it to a vision model, which
+grades the six conformation items (shoulder, pasterns, hoof-pastern axis,
+limb, walk, balance) and writes a one-line read — you then adjust the grid
+by eye. The model key stays server-side; the browser never sees it. Until
+it's configured the button just says "AI inspection not enabled yet" and the
+manual grid still works.
+
+To turn it on, add these Static Web App **Application settings** (same place
+as `AZURE_STORAGE_CONNECTION`):
+
+| Setting | Value |
+|---|---|
+| `INSPECT_API_URL` | The OpenAI-compatible chat/completions URL |
+| `INSPECT_API_KEY` | The API key |
+| `INSPECT_MODEL` | Model name (default `gpt-4o-mini`) |
+| `INSPECT_AUTH` | `bearer` (OpenAI, default) or `api-key` (Azure OpenAI) |
+
+**OpenAI:** `INSPECT_API_URL=https://api.openai.com/v1/chat/completions`,
+`INSPECT_MODEL=gpt-4o-mini` (or `gpt-4o` for a sharper read), `INSPECT_AUTH=bearer`.
+
+**Azure OpenAI:** deploy a vision model (e.g. `gpt-4o-mini`), then
+`INSPECT_API_URL=https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions?api-version=2024-08-01-preview`,
+`INSPECT_API_KEY=<key>`, `INSPECT_AUTH=api-key` (the model comes from the
+deployment URL, so `INSPECT_MODEL` is ignored).
+
+Re-run the deploy workflow after adding them. Cost is a few US cents per
+photo on `gpt-4o-mini`. This is an assistive first pass, **not** the
+biomechanics pose model — that's a separate ML service (see
+`DATA-SOURCES.md`); the scorer here is ready to receive its output too.
+
 ## Checklist
 
 - [ ] SWA created (Free plan), hostname noted

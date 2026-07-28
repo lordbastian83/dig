@@ -171,6 +171,8 @@ const marketEstimate = (h) => engineMarketEstimate(h, MEDIANS);
 
 const $ = (sel) => document.querySelector(sel);
 const fmt = (n) => n.toLocaleString('en-GB', { maximumFractionDigits: 0 });
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pct = (p) => (p * 100).toFixed(0) + '%';
 
 function renderCalendar() {
@@ -1077,7 +1079,14 @@ function openHorseModal(h) {
           <option value="notable"${conf && conf[k] === 'notable' ? ' selected' : ''}>notable deviation</option>
         </select></label>`).join('')}
     </div>
-    ${cf && cf.flags.length ? `<p class="hint" style="margin:.4rem 0 0">Flags: ${cf.flags.join(' · ')}.</p>` : '<p class="hint" style="margin:.4rem 0 0">Assess from a photo or inspection — feeds the vet call. Not computer vision (manual entry).</p>'}
+    ${cf && cf.flags.length ? `<p class="hint" style="margin:.4rem 0 0">Flags: ${cf.flags.join(' · ')}.</p>` : ''}
+    <div class="conf-ai">
+      <button type="button" class="conf-shoot" id="conf-shoot">📷 Analyse photo (AI)</button>
+      <input type="file" id="conf-photo" accept="image/*" hidden>
+      <span class="conf-status" id="conf-status"></span>
+    </div>
+    ${conf && conf._summary ? `<p class="hint conf-summary" style="margin:.4rem 0 0"><b>AI read:</b> ${esc(conf._summary)}</p>`
+      : '<p class="hint" style="margin:.4rem 0 0">Grade from a photo or inspection — feeds the vet call. Upload a conformation shot for an AI first pass, then adjust.</p>'}
 
     <div class="mp-flags">
       ${r.fails.length ? `<b>Fails:</b> ${r.fails.join('; ')}. ` : '<b class="ok">Passes all six filters.</b> '}
@@ -1170,9 +1179,16 @@ $('#horse-modal').addEventListener('click', (e) => {
   if (e.target.id === 'horse-modal') $('#horse-modal').hidden = true; // click backdrop
   if (e.target.matches('.mp-add')) addToWatchlist(modalHorse, e.target, '✓ added to watchlist');
   if (e.target.matches('.mp-report') && modalHorse) horseReport(modalHorse);
+  if (e.target.id === 'conf-shoot') { const f = $('#conf-photo'); if (f) f.click(); }
 });
 // Conformation assessment — save each observation and re-score the modal live.
 $('#horse-modal').addEventListener('change', (e) => {
+  if (e.target.id === 'conf-photo') {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (file) inspectPhoto(file);
+    return;
+  }
   const sel = e.target.closest('select[data-conf]'); if (!sel || !modalHorse) return;
   const all = loadConf();
   const cur = all[modalHorse.name] || {};
@@ -1180,6 +1196,69 @@ $('#horse-modal').addEventListener('change', (e) => {
   all[modalHorse.name] = cur; saveConf(all);
   openHorseModal(modalHorse); // re-render with the new score
 });
+
+// AI photo inspection — resize a chosen photo, POST it to /api/inspect, and
+// fold the returned grades into the conformation scorer. Degrades cleanly when
+// the endpoint isn't configured (503) — the manual grid still works.
+function resizeImage(file, maxPx = 1024) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(cv.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+
+let inspecting = false;
+async function inspectPhoto(file) {
+  if (!file || !modalHorse || inspecting) return;
+  const status = $('#conf-status');
+  const setStatus = (t) => { if (status) status.textContent = t; };
+  inspecting = true;
+  setStatus('reading photo…');
+  try {
+    const dataUrl = await resizeImage(file);
+    setStatus('analysing…');
+    const res = await fetch('/api/inspect', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl }),
+    });
+    if (res.status === 503) { setStatus('AI inspection not enabled yet — grade manually below.'); return; }
+    if (res.status === 401) { setStatus('sign in to use AI inspection.'); return; }
+    if (!res.ok) {
+      let msg = 'inspection failed';
+      try { msg = (await res.json()).error || msg; } catch { /* ignore */ }
+      setStatus(msg); return;
+    }
+    const out = await res.json();
+    const all = loadConf();
+    const cur = all[modalHorse.name] || {};
+    let applied = 0;
+    for (const [k] of CONF_ITEMS) {
+      if (out.conf && out.conf[k]) { cur[k] = out.conf[k]; applied++; }
+    }
+    if (out.summary) cur._summary = out.summary;
+    all[modalHorse.name] = cur; saveConf(all);
+    openHorseModal(modalHorse); // re-render with AI grades + new score
+    const s2 = $('#conf-status');
+    if (s2) s2.textContent = applied ? `AI graded ${applied}/6 — review & adjust below.` : 'AI could not grade clearly — grade manually.';
+  } catch (err) {
+    setStatus('could not process photo.');
+  } finally {
+    inspecting = false;
+  }
+}
 
 /* ---------- compare the shortlist side by side ---------- */
 function openCompare() {

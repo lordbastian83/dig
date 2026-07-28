@@ -632,6 +632,13 @@ td:nth-child(3) { font-family: var(--mono); }
 .mkt.up { background: var(--gold-wash); } .mkt.up .mkt-val { color: var(--gold); }
 .conf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: .5rem .8rem; margin: .4rem 0; }
 .conf-grid select { width: 100%; }
+.conf-ai { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin: .5rem 0 .2rem; }
+.conf-shoot { font-size: .85rem; background: var(--navy-3); border: 1px solid var(--gold-deep);
+  color: var(--gold); border-radius: 8px; padding: .4rem .7rem; cursor: pointer; }
+.conf-shoot:hover { background: var(--gold-deep); color: #fff; }
+.conf-shoot:disabled { opacity: .5; cursor: default; }
+.conf-status { font-size: .78rem; color: var(--ink-muted); }
+.conf-summary { border-left: 2px solid var(--gold-deep); padding-left: .5rem; }
 @media (max-width: 520px) { .mkt-bands { grid-template-columns: 1fr; } }
 
 /* pedigree speed↔stamina bar */
