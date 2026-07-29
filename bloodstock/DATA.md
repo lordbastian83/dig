@@ -53,6 +53,35 @@ per-house scraper just needs to write its output CSV into that folder; the
 rest of the pipeline already exists. (`sample-tattersalls-october.csv` ships
 as a worked example — delete it once real catalogues land.)
 
+### Real sale sources (`bloodstock/scrapers/`)
+
+`scrapers/sources.json` is the registry of the real autumn-2026/winter-2027
+sales — Tattersalls Autumn HIT, Arqana Autumn HIT (Deauville), Goffs November,
+Keeneland November HORA — each tagged with its **house, currency and the date
+its catalogue is expected**. `scrapers/index.mjs` is a config-driven,
+fail-safe fetcher: give a source a `url` (CSV or JSON feed) and it ingests it
+in CI; leave `url` empty and it falls back to a CSV in `catalogues/`. With
+`SCRAPE=1` (set in the catalogue workflow) it runs each source and merges the
+results into `catalogue.json`; a CSV file of the same sale name always wins.
+
+Why the `url`s are blank today: the houses publish catalogues as web pages
+with no documented public feed, **and the autumn catalogues haven't dropped
+yet** (see `catalogue_expected` — Tattersalls ~6 Oct, Arqana ~early Nov). So
+there are no real lots to load right now — the framework is wired and
+currency-correct so each sale auto-populates the moment its catalogue is
+available (feed URL, or CSV export into `catalogues/`). The dev sandbox can't
+reach the houses' sites to validate a scraper; CI can, so any feed URL you add
+is confirmed by a workflow run.
+
+### Currency (FX)
+
+Guides are quoted in each sale's own currency — Tattersalls/Goffs UK in
+guineas, Arqana & Irish sales in €, Keeneland in $. The app carries the
+currency per lot (`ccy`, inferred from the sale name if absent) and converts
+the guide into guineas before the BUY/STRETCH/OVER verdict, so foreign-sale
+verdicts compare like-for-like. Rates are user-editable (💱 in the shopping
+list) and synced; max bids always stay in guineas.
+
 ## Pipeline (mirrors budsignal's architecture)
 
 ```

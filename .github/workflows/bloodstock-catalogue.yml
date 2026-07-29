@@ -40,6 +40,7 @@ jobs:
           RACING_API_PASSWORD: ${{ secrets.RACING_API_PASSWORD }}
           CATALOGUE_DIR: bloodstock/catalogues
           OUT: catalogue.json
+          SCRAPE: '1'
         run: node bloodstock/catalogue.mjs
 
       - name: Publish catalogue to bloodstock-data branch

@@ -1,0 +1,45 @@
+{
+  "note": "Real sale sources for the autumn 2026 / winter 2027 buying window. Each entry is one sale. Fill `url` with a CSV or JSON catalogue feed to auto-ingest; leave it empty and drop a hand/exported CSV into ../catalogues/<file> instead (that path already works today). HTML-only catalogues have no feed URL — export to CSV. `map` (JSON feeds only) points at the lot array and the field names to read.",
+  "sources": [
+    {
+      "house": "Tattersalls",
+      "sale": "Tattersalls Autumn Horses-in-Training Sale",
+      "ccy": "gns",
+      "site": "https://www.tattersalls.com",
+      "catalogue_expected": "2026-10-06",
+      "url": "",
+      "format": "csv",
+      "file": "tattersalls-autumn-hit.csv"
+    },
+    {
+      "house": "Arqana",
+      "sale": "Arqana Autumn Sale HIT session, Deauville",
+      "ccy": "EUR",
+      "site": "https://www.arqana.com",
+      "catalogue_expected": "2026-11-04",
+      "url": "",
+      "format": "csv",
+      "file": "arqana-autumn-hit.csv"
+    },
+    {
+      "house": "Goffs",
+      "sale": "Goffs November Sale, Kildare",
+      "ccy": "EUR",
+      "site": "https://www.goffs.com",
+      "catalogue_expected": "2026-10-28",
+      "url": "",
+      "format": "csv",
+      "file": "goffs-november.csv"
+    },
+    {
+      "house": "Keeneland",
+      "sale": "Keeneland November Horses of Racing Age Sale",
+      "ccy": "USD",
+      "site": "https://www.keeneland.com",
+      "catalogue_expected": "2026-10-14",
+      "url": "",
+      "format": "json",
+      "map": { "lots": "hips", "name": "name", "lot": "hip", "sire": "sire", "dam": "dam", "guide": "estimate" }
+    }
+  ]
+}

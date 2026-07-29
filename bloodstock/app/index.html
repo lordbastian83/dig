@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260729a">
+<link rel="stylesheet" href="styles.css?v=20260729b">
 </head>
 <body>
 
@@ -334,6 +334,18 @@
       <button id="cat-addbuys">＋ Add all BUYs to watchlist</button>
       <button id="cat-clear">Clear</button>
     </div>
+    <details class="fx-editor">
+      <summary>💱 Exchange rates <span class="fx-summary" id="fx-summary"></span></summary>
+      <div class="fx-grid">
+        <label>£ per €1 <input type="number" id="fx-EUR" step="0.01" min="0.1"></label>
+        <label>£ per $1 <input type="number" id="fx-USD" step="0.01" min="0.1"></label>
+        <label>£ per guinea <input type="number" id="fx-gns" step="0.01" min="0.5"></label>
+        <button id="fx-reset" type="button">reset</button>
+      </div>
+      <p class="hint">Guides at Arqana (€) and Keeneland ($) convert to guineas at
+      these rates for the BUY / OVER verdict. Max bids always stay in guineas.
+      Rates are indicative — set them to today's before a sale.</p>
+    </details>
     <div class="table-wrap">
       <table id="catalogue-table" class="cat-table" hidden>
         <thead><tr>
@@ -455,7 +467,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260729a"></script>
-<script src="app.js?v=20260729a"></script>
+<script src="engine.js?v=20260729b"></script>
+<script src="app.js?v=20260729b"></script>
 </body>
 </html>

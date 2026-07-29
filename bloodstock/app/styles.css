@@ -606,6 +606,13 @@ td:nth-child(3) { font-family: var(--mono); }
 /* ---------- sale shopping list ---------- */
 .cat-controls { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; margin: .7rem 0 .3rem; }
 .cat-sort-lab { flex-direction: row; align-items: center; gap: .45rem; color: var(--ink-muted); font-size: .82rem; }
+.fx-editor { margin: .3rem 0 .2rem; font-size: .84rem; }
+.fx-editor summary { cursor: pointer; color: var(--ink-muted); }
+.fx-summary { font-family: var(--mono); font-size: .74rem; color: var(--cloud); margin-left: .3rem; }
+.fx-grid { display: flex; gap: .8rem; flex-wrap: wrap; align-items: end; margin: .5rem 0 .3rem; }
+.fx-grid label { display: flex; flex-direction: column; gap: .2rem; color: var(--ink-muted); font-size: .76rem; }
+.fx-grid input { width: 5.5rem; }
+.fx-grid button { align-self: center; }
 .cat-table { min-width: 780px; }
 .cat-table th, .cat-table td { padding: .45rem .55rem; }
 .cat-table .mono { font-family: var(--mono); }

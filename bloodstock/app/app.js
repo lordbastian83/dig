@@ -100,12 +100,48 @@ let SYNC_ON = false, syncTimer = null;
 const LS_CONF = 'bloodstock.conf.v1';
 function loadConf() { try { return JSON.parse(localStorage.getItem(LS_CONF) || '{}'); } catch { return {}; } }
 function saveConf(o) { localStorage.setItem(LS_CONF, JSON.stringify(o)); syncPush(); }
+
+/* ---------- currency / FX ----------
+   The app's money is guineas (gns). Sale guides arrive in the sale's own
+   currency — Tattersalls/Goffs UK in guineas, Arqana/Irish sales in €,
+   Keeneland in $ — so a BUY/OVER verdict must convert the guide into guineas
+   before comparing it to our max bid. Rates are the £-value of one unit and
+   are user-editable (synced). This is DISPLAY + verdict only; the valuation
+   engine never leaves guineas. */
+const LS_FX = 'bloodstock.fx.v1';
+const FX_DEFAULT = { gns: 1.05, GBP: 1, EUR: 0.85, USD: 0.79, AUD: 0.52 }; // £ per 1 unit
+const CCY_SYMBOL = { gns: '', GBP: '£', EUR: '€', USD: '$', AUD: 'A$' };
+const CCY_SUFFIX = { gns: ' gns' };
+function loadFX() { try { return { ...FX_DEFAULT, ...JSON.parse(localStorage.getItem(LS_FX) || '{}') }; } catch { return { ...FX_DEFAULT }; } }
+function saveFX(o) { localStorage.setItem(LS_FX, JSON.stringify(o)); syncPush(); }
+// Which currency a sale quotes its guides in, inferred from the sale name.
+function saleCcy(name) {
+  const s = String(name || '').toLowerCase();
+  if (/arqana|deauville|bbag|baden|france|french/.test(s)) return 'EUR';
+  if (/keeneland|fasig|saratoga|tipton/.test(s)) return 'USD';
+  if (/ireland|orby|kildare|goresbridge/.test(s)) return 'EUR';
+  if (/inglis|magic millions|australia/.test(s)) return 'AUD';
+  return 'gns'; // Tattersalls & Goffs UK trade in guineas
+}
+const ccyOf = (h) => h.ccy || saleCcy(h.sale);
+// amount in `ccy` → guineas, using current rates
+function toGns(amount, ccy) {
+  const fx = loadFX();
+  const gbp = amount * (fx[ccy] ?? 1);
+  return gbp / (fx.gns || 1.05);
+}
+// format an amount in its native currency, e.g. "€180,000" or "180,000 gns"
+function fmtCcy(amount, ccy) {
+  if (amount == null) return '—';
+  return (CCY_SYMBOL[ccy] || '') + fmt(amount) + (CCY_SUFFIX[ccy] || '');
+}
 function currentBlob() {
   return { v: 1, updated: Date.now(),
     watchlist: loadList(),
     params: JSON.parse(localStorage.getItem(LS_PARAMS) || '{}'),
     profiles: JSON.parse(localStorage.getItem(LS_PROFILES) || '{}'),
     conf: loadConf(),
+    fx: JSON.parse(localStorage.getItem(LS_FX) || '{}'),
     heroImg: localStorage.getItem('bloodstock.heroImg') || '' };
 }
 function applyBlob(b) {
@@ -114,6 +150,7 @@ function applyBlob(b) {
   if (b.params) localStorage.setItem(LS_PARAMS, JSON.stringify(b.params));
   if (b.profiles) localStorage.setItem(LS_PROFILES, JSON.stringify(b.profiles));
   if (b.conf) localStorage.setItem(LS_CONF, JSON.stringify(b.conf));
+  if (b.fx && Object.keys(b.fx).length) localStorage.setItem(LS_FX, JSON.stringify(b.fx));
   if (b.heroImg) localStorage.setItem('bloodstock.heroImg', b.heroImg);
   return true;
 }
@@ -563,14 +600,18 @@ function csvRowToLot(r) {
     distBest: num(r.distbest ?? r.bestdist), age: num(r.age), sex: r.sex || '',
     wins: r.wins === '' || r.wins == null ? null : +r.wins,
     guide: num(r.guide ?? r.guideprice ?? r.estimate),
+    ccy: (r.ccy || r.currency || saleCcy(r.sale || '')).toString().replace(/^gns$/i, 'gns'),
     notes: r.notes || '', status: 'watch', added: new Date().toISOString().slice(0, 10),
   };
 }
+// guide converted into guineas, so verdicts compare like-for-like currency
+function guideGns(h) { return h.guide ? Math.round(toGns(h.guide, ccyOf(h))) : null; }
 function catVerdict(h, r) {
-  if (!h.guide) return r.verdict === 'BID' ? ['BUY-fit', 'cv-buy'] : [`${6 - r.fails.length}/6`, 'cv-pass'];
-  if (r.gns >= h.guide) return ['BUY', 'cv-buy'];             // our max ≥ guide → winnable in value
-  if (r.gns >= h.guide * 0.9) return ['STRETCH', 'cv-stretch']; // within 10%
-  return ['OVER', 'cv-over'];                                  // market above our limit
+  const g = guideGns(h);
+  if (!g) return r.verdict === 'BID' ? ['BUY-fit', 'cv-buy'] : [`${6 - r.fails.length}/6`, 'cv-pass'];
+  if (r.gns >= g) return ['BUY', 'cv-buy'];             // our max ≥ guide → winnable in value
+  if (r.gns >= g * 0.9) return ['STRETCH', 'cv-stretch']; // within 10%
+  return ['OVER', 'cv-over'];                            // market above our limit
 }
 let CATALOGUE = [];
 function scoreCatalogue() {
@@ -579,7 +620,7 @@ function scoreCatalogue() {
   const scored = CATALOGUE.map((h) => ({ h, r: evaluate(h, P), nick: nickScore(h) }));
   scored.sort((a, b) => {
     if (sort === 'vault') return b.r.score - a.r.score;
-    if (sort === 'value') { const g = (x) => x.h.guide ? x.r.gns - x.h.guide : -1e12; return g(b) - g(a); }
+    if (sort === 'value') { const g = (x) => x.h.guide ? x.r.gns - guideGns(x.h) : -1e12; return g(b) - g(a); }
     return dubaiPct(b.r) - dubaiPct(a.r) || b.r.score - a.r.score;
   });
   return scored;
@@ -599,7 +640,7 @@ function renderCatalogue() {
       <td class="mono">${Math.round(r.score * 100)}</td>
       <td class="mono cat-fit">${dubaiPct(r)}</td>
       <td class="mono" title="${nick.label}">${Math.round(nick.pct * 100)}</td>
-      <td class="mono">${h.guide ? fmt(h.guide) : '—'}</td>
+      <td class="mono"${h.guide && ccyOf(h) !== 'gns' ? ` title="≈ ${fmt(guideGns(h))} gns"` : ''}>${h.guide ? fmtCcy(h.guide, ccyOf(h)) : '—'}</td>
       <td class="mono gold">${fmt(r.gns)}</td>
       <td><span class="cat-verdict ${vc}">${vl}</span></td>
       <td><button class="cat-add" data-i="${i}" title="Add to watchlist">＋</button></td>
@@ -627,6 +668,28 @@ if ($('#cat-clear')) $('#cat-clear').addEventListener('click', () => {
   const sel = $('#cat-sale'); if (sel) sel.value = '';
   renderCatalogue();
 });
+
+/* ---- FX rate editor (guides → guineas for verdicts) ---- */
+function renderFXEditor() {
+  const fx = loadFX();
+  ['EUR', 'USD', 'gns'].forEach((c) => { const el = $('#fx-' + c); if (el) el.value = fx[c]; });
+  const s = $('#fx-summary');
+  if (s) s.textContent = `€1≈£${fx.EUR} · $1≈£${fx.USD} · 1gn≈£${fx.gns}`;
+}
+['EUR', 'USD', 'gns'].forEach((c) => {
+  const el = $('#fx-' + c); if (!el) return;
+  el.addEventListener('change', () => {
+    const v = parseFloat(el.value);
+    if (!Number.isFinite(v) || v <= 0) { renderFXEditor(); return; }
+    const fx = loadFX(); fx[c] = v; saveFX(fx);
+    renderFXEditor(); renderCatalogue();
+  });
+});
+if ($('#fx-reset')) $('#fx-reset').addEventListener('click', () => {
+  localStorage.removeItem(LS_FX); syncPush();
+  renderFXEditor(); renderCatalogue();
+});
+renderFXEditor();
 
 /* ---- published sale catalogues (auto-loaded from the data branch) ---- */
 const CATALOGUES_URL =
@@ -1111,6 +1174,8 @@ function openHorseModal(h) {
     ${apt ? `<div class="apt-bar" title="Speed ↔ stamina from pedigree"><span class="apt-fill" style="width:${apt.speed}%"></span><span class="apt-mark speed">speed</span><span class="apt-mark stay">stamina</span></div>` : ''}
     ${section('Valuation', [
       row('Max bid', `${fmt(r.gns)} gns`), row('Expected hammer', exp ? `${fmt(exp.gns)} gns${exp.est ? ' (est)' : ''}` : '—'),
+      h.guide ? row('Catalogue guide', `${fmtCcy(h.guide, ccyOf(h))}${ccyOf(h) !== 'gns' ? ` (≈ ${fmt(guideGns(h))} gns)` : ''}`) : '',
+      h.guide ? row('Guide verdict', catVerdict(h, r)[0]) : '',
       row('Value gap', gap == null ? '—' : `${gap >= 0 ? '+' : ''}${fmt(gap)} gns`),
       row('Vet', h.vet === 'clean' ? 'clean' : '−20% applied (not clean)'),
     ])}

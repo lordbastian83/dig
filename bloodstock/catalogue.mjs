@@ -25,6 +25,7 @@
 
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
+import { fetchConfiguredSources } from './scrapers/index.mjs';
 
 const DIR = process.env.CATALOGUE_DIR || 'bloodstock/catalogues';
 const OUT = process.env.OUT || 'catalogue.json';
@@ -58,6 +59,15 @@ function parseCSV(text) {
 // --- map a raw row to the lot shape the app's engine consumes ---
 const TIER_A = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
 const TIER_B_DS = ['street cry', 'shamardal', "medaglia d'oro", 'dubai millennium'];
+// Which currency a sale quotes guides in (matches the app's saleCcy()).
+function saleCcy(name) {
+  const s = String(name || '').toLowerCase();
+  if (/arqana|deauville|bbag|baden|france|french/.test(s)) return 'EUR';
+  if (/keeneland|fasig|saratoga|tipton/.test(s)) return 'USD';
+  if (/ireland|orby|kildare|goresbridge/.test(s)) return 'EUR';
+  if (/inglis|magic millions|australia/.test(s)) return 'AUD';
+  return 'gns';
+}
 function rowToLot(r, saleLabel) {
   const bool = (v) => ['true', 'yes', '1', 'y'].includes(String(v || '').toLowerCase());
   const num = (v) => { const n = +String(v ?? '').replace(/[^0-9.]/g, ''); return Number.isFinite(n) && n ? n : null; };
@@ -75,6 +85,7 @@ function rowToLot(r, saleLabel) {
     distBest: num(r.distbest ?? r.bestdist), age: num(r.age), sex: r.sex || '',
     wins: r.wins === '' || r.wins == null ? null : +r.wins,
     guide: num(r.guide ?? r.guideprice ?? r.estimate),
+    ccy: (r.ccy || r.currency || saleCcy(r.sale || saleLabel)),
     horseid: r.horseid || r.horse_id || '',
     notes: r.notes || '', status: 'watch',
   };
@@ -115,6 +126,7 @@ async function main() {
   }
   const files = readdirSync(DIR).filter((f) => f.toLowerCase().endsWith('.csv')).sort();
   const sales = [];
+  const seenSale = new Set();
   for (const f of files) {
     const rows = parseCSV(readFileSync(join(DIR, f), 'utf8')).filter((r) => r.name);
     if (!rows.length) continue;
@@ -122,7 +134,25 @@ async function main() {
     let lots = rows.map((r) => rowToLot(r, label));
     lots = await Promise.all(lots.map(enrich));
     sales.push({ id: f.replace(/\.csv$/i, ''), label, count: lots.length, lots });
+    seenSale.add(label.toLowerCase());
     console.error(`  ${label}: ${lots.length} lots`);
+  }
+
+  // Optional: pull configured feed sources (real sale houses). Runs in CI,
+  // where there's internet; SCRAPE=1 to enable. Fail-safe — a source that
+  // returns nothing is simply skipped.
+  if (process.env.SCRAPE === '1') {
+    console.error('SCRAPE=1 — fetching configured sale sources…');
+    const fetched = await fetchConfiguredSources();
+    for (const src of fetched) {
+      if (seenSale.has(String(src.sale).toLowerCase())) continue; // CSV file wins
+      const clean = src.rows.filter((r) => r.name);
+      if (!clean.length) continue;
+      let lots = clean.map((r) => rowToLot(r, src.sale));
+      lots = await Promise.all(lots.map(enrich));
+      sales.push({ id: src.sale.replace(/\s+/g, '-').toLowerCase(), label: src.sale, count: lots.length, lots });
+      seenSale.add(String(src.sale).toLowerCase());
+    }
   }
   // Stamp is passed in by the workflow (scripts can't read the clock here in
   // the harness, but Node in CI can) — use ISO now.
