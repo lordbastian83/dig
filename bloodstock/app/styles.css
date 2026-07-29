@@ -7,22 +7,25 @@
    and one call to action per screen. Quiet, numerate, exact. */
 
 :root {
-  /* Restrained ink palette — desaturated navy, one gold accent used sparingly */
-  --ink:         #0B1420;   /* page base */
-  --navy:        #101C2E;
-  --navy-2:      #14202F;   /* card surface (flat) */
-  --navy-3:      #1B2838;   /* raised rows / inputs */
-  --line:        #24313f;   /* hairline rules */
-  --blue:        #6EA8DE;   /* links / live data, muted */
-  --gold:        #C9A24B;   /* single accent */
+  /* Premium midnight-and-gilt palette. Deep warm ink, surfaces with a hint of
+     blue, one gilt-gold accent used with intent. */
+  --ink:         #080F1A;   /* page base, deep */
+  --navy:        #0E1826;
+  --navy-2:      #121E30;   /* card surface */
+  --navy-3:      #18263A;   /* raised rows / inputs */
+  --line:        #263548;   /* hairline rules */
+  --line-soft:   rgba(234,239,246,0.07);
+  --blue:        #74AEE6;   /* links / live data */
+  --gold:        #C79B45;   /* accent, gilt */
+  --gold-bright: #E7C877;   /* display gold, larger sizes */
   --gold-deep:   #8A6A34;
-  --green:       #3FBF9A;
-  --cloud:       #EAEEF3;   /* primary text, off-white */
-  --ink-muted:   #8A98AC;
-  --border:      rgba(234, 238, 243, 0.10);
-  --green-wash:  rgba(63, 191, 154, 0.12);
-  --gold-wash:   rgba(201, 162, 75, 0.12);
-  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.25);
+  --green:       #46C5A0;
+  --cloud:       #EDF1F6;   /* primary text */
+  --ink-muted:   #93A2B6;
+  --border:      rgba(237, 241, 246, 0.09);
+  --green-wash:  rgba(70, 197, 160, 0.12);
+  --gold-wash:   rgba(199, 155, 69, 0.10);
+  --shadow-card: 0 1px 0 rgba(255,255,255,0.02) inset, 0 12px 30px rgba(0,0,0,0.35);
   --serif: 'Spectral', Georgia, 'Times New Roman', serif;
   --sans: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
@@ -41,11 +44,29 @@ body {
   letter-spacing: .002em;
   -webkit-font-smoothing: antialiased;
 }
+/* faint, static backdrop — a whisper of depth behind everything */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(90% 45% at 50% -6%, rgba(35,62,108,0.35), transparent 60%),
+    radial-gradient(60% 40% at 92% 4%, rgba(199,155,69,0.05), transparent 55%);
+}
 
-/* Editorial headings: a real serif for authority, tight and dark */
+/* Editorial headings: a real serif for authority */
 h1, h2, h3 { color: var(--cloud); margin: 0 0 .5em; font-family: var(--serif); font-weight: 600; letter-spacing: 0; }
-h2 { font-size: 1.5rem; line-height: 1.15; }
+h2 { font-size: 1.55rem; line-height: 1.12; }
 a { color: var(--blue); }
+
+/* Tasteful entrance: sections settle in on load, staggered */
+@media (prefers-reduced-motion: no-preference) {
+  main > section, main > .hero { animation: rise .6s cubic-bezier(.22,1,.36,1) both; }
+  main > *:nth-child(2) { animation-delay: .04s; }
+  main > *:nth-child(3) { animation-delay: .08s; }
+  main > *:nth-child(4) { animation-delay: .12s; }
+  main > *:nth-child(5) { animation-delay: .16s; }
+  main > *:nth-child(n+6) { animation-delay: .2s; }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 code {
   background: var(--navy-3); padding: .1em .35em; border-radius: 4px;
   font-family: var(--mono); font-size: .82em;
@@ -110,25 +131,27 @@ main { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.2rem 2rem; display: 
 /* ---------- hero: the horse this system chases ---------- */
 .hero {
   position: relative;
-  display: flex; align-items: center; gap: 2rem;
-  background: var(--navy-2);
-  border: 1px solid var(--border); border-radius: 10px;
-  padding: 2.6rem 2.4rem; box-shadow: var(--shadow-card);
+  display: flex; align-items: center; gap: 2.4rem;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(199,155,69,0.10), transparent 52%),
+    linear-gradient(180deg, #14223A 0%, #101A2C 100%);
+  border: 1px solid rgba(199,155,69,0.18); border-radius: 14px;
+  padding: 3rem 2.8rem; box-shadow: var(--shadow-card);
   overflow: hidden;
 }
-/* a single gold hairline at the top edge — restraint, not decoration */
+/* gilt hairline top and bottom — the masthead frame */
 .hero::before {
   content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px;
-  background: linear-gradient(90deg, var(--gold), rgba(201,162,75,0));
+  background: linear-gradient(90deg, var(--gold-bright), rgba(199,155,69,0));
 }
 .hero-text { flex: 1; }
 .hero-text h2 {
-  font-family: var(--serif); font-size: 2.7rem; line-height: 1.06; font-weight: 600;
-  text-transform: none; margin-bottom: .7rem; letter-spacing: -.01em; color: var(--cloud);
+  font-family: var(--serif); font-size: 3rem; line-height: 1.04; font-weight: 600;
+  text-transform: none; margin: 0 0 1rem; letter-spacing: -.015em; color: #fff;
 }
-.hero-line { margin: .25rem 0; font-size: .98rem; color: var(--ink-muted); max-width: 60ch; }
-.hero-line.dim { color: rgba(234, 238, 243, 0.5); font-size: .84rem; }
-.hero-media { flex: none; margin: 0; width: 170px; height: 170px; position: relative; display: flex; align-items: center; justify-content: center; }
+.hero-line { margin: .3rem 0; font-size: 1rem; color: var(--cloud); max-width: 58ch; }
+.hero-line.dim { color: var(--ink-muted); font-size: .86rem; margin-top: .5rem; }
+.hero-media { flex: none; margin: 0; width: 190px; height: 190px; position: relative; display: flex; align-items: center; justify-content: center; }
 .hero-media .hero-horse { width: 100%; height: 100%; filter: drop-shadow(0 6px 18px rgba(0,0,0,.35)); }
 .hero-media img {
   width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
@@ -157,15 +180,26 @@ main { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.2rem 2rem; display: 
   padding: 1.6rem 1.8rem;
   box-shadow: var(--shadow-card);
 }
-/* editorial section header: serif title over a full-width hairline rule */
+/* editorial section header: serif title over a full-width hairline rule,
+   with a short gilt tab at the left as a quiet signature */
 .card > h2, .card-head > h2 {
-  margin: 0 0 .2em; font-size: 1.55rem; font-weight: 600; letter-spacing: -.005em;
+  margin: 0 0 .2em; font-size: 1.6rem; font-weight: 600; letter-spacing: -.01em;
 }
-.card > h2 { padding-bottom: .55rem; border-bottom: 1px solid var(--line); margin-bottom: .9rem; }
+.card > h2 {
+  position: relative; padding-bottom: .6rem; border-bottom: 1px solid var(--line); margin-bottom: 1rem;
+}
+.card > h2::after {
+  content: ''; position: absolute; left: 0; bottom: -1px; width: 2.4rem; height: 2px;
+  background: var(--gold);
+}
 /* card header row: title + a control on the right, over the same hairline */
 .card-head {
+  position: relative;
   display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  padding-bottom: .55rem; border-bottom: 1px solid var(--line); margin-bottom: .9rem;
+  padding-bottom: .6rem; border-bottom: 1px solid var(--line); margin-bottom: 1rem;
+}
+.card-head::after {
+  content: ''; position: absolute; left: 0; bottom: -1px; width: 2.4rem; height: 2px; background: var(--gold);
 }
 .card-head > h2 { margin: 0; }
 .refresh-btn { flex: none; font-size: .82rem; padding: .42rem .85rem; }
@@ -527,7 +561,7 @@ td:nth-child(3) { font-family: var(--mono); }
 .finds-more:hover { color: var(--cloud); border-color: var(--ink-muted); }
 .find-main { flex: 1; display: grid; gap: .12rem; line-height: 1.4; min-width: 0; }
 .find-main small { color: var(--ink-muted); }
-.find-name { font-size: 1.05rem; font-weight: 600; color: var(--cloud); }
+.find-name { font-family: var(--serif); font-size: 1.28rem; font-weight: 600; color: var(--cloud); letter-spacing: -.01em; }
 .find-ped { font-size: .82rem; }
 .find-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin: .35rem 0 .1rem; }
 .ftag {
@@ -545,8 +579,8 @@ td:nth-child(3) { font-family: var(--mono); }
   color: var(--green); background: var(--green-wash);
   padding: .1em .5em; border-radius: 4px; margin-left: .4em;
 }
-.find-bid { font-family: var(--mono); color: var(--gold); font-weight: 500; font-size: 1.5rem; text-align: right; line-height: 1; letter-spacing: -.01em; }
-.find-bid small { display: block; color: var(--ink-muted); font-size: .62rem; font-weight: 400; text-transform: uppercase; letter-spacing: .07em; margin-top: .25rem; }
+.find-bid { font-family: var(--mono); color: var(--gold-bright); font-weight: 500; font-size: 1.55rem; text-align: right; line-height: 1; letter-spacing: -.02em; }
+.find-bid small { display: block; color: var(--ink-muted); font-size: .6rem; font-weight: 400; text-transform: uppercase; letter-spacing: .1em; margin-top: .3rem; }
 .find-add { flex: none; padding: .4rem .8rem; font-size: .82rem; background: var(--gold-wash); color: var(--gold); border-color: var(--gold-deep); white-space: nowrap; }
 .find-add:hover { background: var(--gold); color: var(--navy); border-color: var(--gold); }
 @media (max-width: 560px) {
