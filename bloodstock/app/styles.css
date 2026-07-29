@@ -88,6 +88,7 @@ main > section, main > .hero { scroll-margin-top: 116px; }
    lowercase x-height and on the baseline like a real 'u'. */
 .lockup { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; width: fit-content; }
 .site-header h1 {
+  font-family: var(--sans);  /* the wordmark is the brand sans, never the heading serif */
   font-size: 1.85rem; margin: 0; font-weight: 800; color: var(--cloud);
   letter-spacing: -0.03em; text-transform: lowercase;
   display: inline-flex; align-items: flex-end;
