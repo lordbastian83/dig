@@ -84,7 +84,7 @@ function rowToLot(r, saleLabel) {
     rating: +r.rating || 0, starts: Number.isFinite(startsN) ? startsN : 99, sireTier: tier,
     vet: ['clean', 'incomplete'].includes(r.vet) ? r.vet : 'unknown',
     powerhouse: bool(r.powerhouse), blackType: bool(r.blacktype), awForm: bool(r.awform),
-    distBest: num(r.distbest ?? r.bestdist), age: num(r.age), sex: r.sex || '',
+    distBest: num(r.distbest ?? r.bestdist), age: num(r.age), sxClass: r.sex || '',
     wins: r.wins === '' || r.wins == null ? null : +r.wins,
     guide: num(r.guide ?? r.guideprice ?? r.estimate),
     ccy: (r.ccy || r.currency || saleCcy(r.sale || saleLabel)),

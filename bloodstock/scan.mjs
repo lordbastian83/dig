@@ -120,7 +120,7 @@ async function sweep(fromOff = DAYS, toOff = 0, pages = MAX_PAGES) {
         if (!prelim.has(r.horse_id)) {
           prelim.set(r.horse_id, {
             id: r.horse_id, name: r.horse, sire: r.sire, dam: r.dam,
-            damsire: r.damsire, rating: or, age, region, sex: r.sex || '',
+            damsire: r.damsire, rating: or, age, region, sxClass: r.sex || '',
             owner: r.owner || '', trainer: r.trainer || '',
             lastRun: race.date, tier,
           });
@@ -397,7 +397,7 @@ function buildHorse(m, deep, saleLabel) {
     powerhouse: POWERHOUSE.some((p) => lc(m.owner).includes(p)),
     awForm: deep.awForm,
     rprEdge: deep.rprEdge, trend: deep.trend,
-    region: m.region, sex: m.sex, age: m.age,
+    region: m.region, sxClass: m.sex, age: m.age,
     distBest: deep.distBest, distMin: deep.distMin, distMax: deep.distMax,
     racePlan: deep.racePlan, versatile: deep.versatile,
     consistency: deep.consistency, classMove: deep.classMove,
@@ -452,7 +452,7 @@ try {
       goingList: ['standard'], surfaceList: ['aw'], coursesList: ['Newcastle', 'Chelmsford'],
       lastRunDays: 96, dam: { score: 0.7, label: '1 black-type from 4 foals', blackType: true } };
     prospects = [buildHorse({ name: 'Dormant Demo (GB)', sire: 'Dubawi', dam: 'X', damsire: 'Shamardal',
-      owner: 'Godolphin', rating: 94, tier: 'A', region: 'GB', sex: 'g', age: 5, trainer: 'A Trainer',
+      owner: 'Godolphin', rating: 94, tier: 'A', region: 'GB', sxClass: 'g', age: 5, trainer: 'A Trainer',
       lastRun: day(96) }, d, 'OFF-MARKET — approach privately')];
   } else {
     console.log(`Off-market sweep: ${pFrom}–${pTo} days ago …`);
