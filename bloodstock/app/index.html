@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260728a">
+<link rel="stylesheet" href="styles.css?v=20260729a">
 </head>
 <body>
 
@@ -320,6 +320,9 @@
     gets a <b>BUY / STRETCH / OVER</b> verdict against our hard max bid. Columns in
     <code>DATA.md</code>.</p>
     <div class="cat-controls">
+      <label class="cat-sort-lab" id="cat-sale-wrap" hidden>Sale
+        <select id="cat-sale"></select>
+      </label>
       <label class="file-btn primary">⬆ Import catalogue CSV<input type="file" id="cat-csv" accept=".csv" hidden></label>
       <label class="cat-sort-lab">Rank by
         <select id="cat-sort">
@@ -341,7 +344,7 @@
         <tbody></tbody>
       </table>
     </div>
-    <p class="empty" id="catalogue-empty">No catalogue loaded yet — import a CSV to score a whole sale at once.</p>
+    <p class="empty" id="catalogue-empty">No catalogue loaded yet — pick a published sale above, or import a CSV to score a whole sale at once.</p>
   </section>
 
   <!-- ============ 2d · Market intelligence ============ -->
@@ -452,7 +455,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260728a"></script>
-<script src="app.js?v=20260728a"></script>
+<script src="engine.js?v=20260729a"></script>
+<script src="app.js?v=20260729a"></script>
 </body>
 </html>

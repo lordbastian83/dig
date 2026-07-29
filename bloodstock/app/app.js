@@ -615,13 +615,55 @@ if ($('#cat-csv')) $('#cat-csv').addEventListener('change', async (e) => {
     const rows = parseCSV(await file.text());
     CATALOGUE = rows.filter((r) => r.name).map(csvRowToLot);
     if (!CATALOGUE.length) { alert('No rows with a name column — see DATA.md.'); }
+    const sel = $('#cat-sale'); if (sel) sel.value = ''; // showing the import, not a published sale
     renderCatalogue();
     document.getElementById('catalogue-card').scrollIntoView({ behavior: 'smooth' });
   } catch { alert('Could not parse that CSV — see DATA.md for the columns.'); }
   e.target.value = '';
 });
 if ($('#cat-sort')) $('#cat-sort').addEventListener('change', renderCatalogue);
-if ($('#cat-clear')) $('#cat-clear').addEventListener('click', () => { CATALOGUE = []; renderCatalogue(); });
+if ($('#cat-clear')) $('#cat-clear').addEventListener('click', () => {
+  CATALOGUE = [];
+  const sel = $('#cat-sale'); if (sel) sel.value = '';
+  renderCatalogue();
+});
+
+/* ---- published sale catalogues (auto-loaded from the data branch) ---- */
+const CATALOGUES_URL =
+  'https://raw.githubusercontent.com/lordbastian83/dig/bloodstock-data/catalogue.json';
+let CAT_SALES = [];        // [{ id, label, count, lots }]
+let CAT_GENERATED = null;
+function renderSalePicker() {
+  const wrap = $('#cat-sale-wrap'), sel = $('#cat-sale');
+  if (!wrap || !sel) return;
+  if (!CAT_SALES.length) { wrap.hidden = true; return; }
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— choose a sale —</option>' +
+    CAT_SALES.map((s, i) => `<option value="${i}">${s.label} (${s.count})</option>`).join('');
+  // keep the current pick if still valid
+  if (cur && CAT_SALES[+cur]) sel.value = cur;
+  wrap.hidden = false;
+}
+function applyCatalogueFeed(j) {
+  if (!j || !Array.isArray(j.sales)) return;
+  CAT_SALES = j.sales.filter((s) => s && Array.isArray(s.lots) && s.lots.length);
+  CAT_GENERATED = j.generated || null;
+  renderSalePicker();
+  // auto-load the first sale if nothing is showing yet
+  const sel = $('#cat-sale');
+  if (CAT_SALES.length && sel && !sel.value && !CATALOGUE.length) {
+    sel.value = '0';
+    CATALOGUE = CAT_SALES[0].lots;
+    renderCatalogue();
+  }
+}
+if ($('#cat-sale')) $('#cat-sale').addEventListener('change', (e) => {
+  const i = e.target.value;
+  if (i === '' || !CAT_SALES[+i]) { CATALOGUE = []; renderCatalogue(); return; }
+  CATALOGUE = CAT_SALES[+i].lots;
+  renderCatalogue();
+  document.getElementById('catalogue-card').scrollIntoView({ behavior: 'smooth' });
+});
 if ($('#cat-addbuys')) $('#cat-addbuys').addEventListener('click', () => {
   const P = loadParams();
   const buys = CATALOGUE.filter((h) => { const [v] = catVerdict(h, evaluate(h, P)); return v === 'BUY' || v === 'BUY-fit'; });
@@ -954,10 +996,26 @@ function renderMarketIntel() {
   const fits = bucket(scored, [['0–39', 0, 40], ['40–54', 40, 55], ['55–69', 55, 70], ['70–84', 70, 85], ['85+', 85, 101]], (x) => dubaiPct(x.r));
   const regions = ['GB', 'IRE', 'FR', 'USA'].map((rg) => [rg, scored.filter((x) => (x.h.region || '') === rg).length]).filter((p) => p[1]);
   const tiers = [['A — dirt sire', scored.filter((x) => x.h.sireTier === 'A').length], ['B — dirt damsire', scored.filter((x) => x.h.sireTier === 'B').length], ['turf / other', scored.filter((x) => !x.h.sireTier).length]];
+  // Best-value leaderboard — the finds where fit × ability is highest, so the
+  // eye goes straight to where to focus, not just how the pool is distributed.
+  const ranked = scored
+    .map((x) => ({ ...x, blend: dubaiPct(x.r) * (x.r.score || 0) }))
+    .sort((a, b) => b.blend - a.blend)
+    .slice(0, 6);
+  const lb = ranked.map(({ h, r }, i) => `<div class="mi-lb-row">
+    <span class="mi-lb-rank">${i + 1}</span>
+    <span class="mi-lb-name">${esc(h.name)}</span>
+    <span class="mi-lb-fit" title="Dubai fit">🏜 ${dubaiPct(r)}</span>
+    <span class="mi-lb-vault" title="vault score">${Math.round(r.score * 100)}</span>
+    <span class="mi-lb-bid" title="max bid">${fmt(r.gns)}</span>
+  </div>`).join('');
   host.innerHTML = chart('Official rating', ratings, 'mi-blue')
     + chart('🏜 Dubai fit', fits, 'mi-gold')
     + chart('Region', regions, 'mi-green')
-    + chart('Sire tier', tiers, 'mi-blue');
+    + chart('Sire tier', tiers, 'mi-blue')
+    + `<div class="mi-chart mi-lb"><h4>🏆 Best-value shortlist</h4>
+        <div class="mi-lb-head"><span></span><span>horse</span><span>fit</span><span>vault</span><span>max bid</span></div>
+        ${lb}</div>`;
   card.hidden = false;
 }
 
@@ -1466,6 +1524,11 @@ async function loadFeeds(bust) {
     const r = await fetch(PROSPECTS_URL + q, { cache: 'no-store' });
     const j = r.ok ? await r.json() : null;
     if (j?.prospects) { PROSPECTS = j.prospects; renderProspects(); }
+  } catch {}
+  try {
+    const r = await fetch(CATALOGUES_URL + q, { cache: 'no-store' });
+    const j = r.ok ? await r.json() : null;
+    if (j?.sales) applyCatalogueFeed(j);
   } catch {}
 }
 loadFeeds(false);

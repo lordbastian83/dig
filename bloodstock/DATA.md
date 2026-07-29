@@ -40,6 +40,19 @@ ingest feed exists) a generated `lots.json`.
    Until that exists, the app's **Import CSV** button does the same job from
    a hand-built sheet in minutes.
 
+## Auto-loading catalogues (live now)
+
+Drop a sale's catalogue as a CSV into **`bloodstock/catalogues/`** (one file
+per sale, same columns as the CSV import below). On push — and daily — the
+`bloodstock-catalogue.yml` workflow runs `bloodstock/catalogue.mjs`, which
+parses each file, maps every row to a scored lot, optionally enriches rating
+& form via The Racing API (for rows with a `horseid`), and publishes
+`catalogue.json` to the `bloodstock-data` branch. The app fetches it on load
+and fills the **Sale shopping list** with a sale picker — no typing. A future
+per-house scraper just needs to write its output CSV into that folder; the
+rest of the pipeline already exists. (`sample-tattersalls-october.csv` ships
+as a worked example — delete it once real catalogues land.)
+
 ## Pipeline (mirrors budsignal's architecture)
 
 ```
