@@ -242,8 +242,11 @@ const marketEstimate = (h) => engineMarketEstimate(h, MEDIANS);
 
 const $ = (sel) => document.querySelector(sel);
 const fmt = (n) => n.toLocaleString('en-GB', { maximumFractionDigits: 0 });
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Chained single-character replaces (& first) — the idiom static analysers
+// recognise as a complete HTML sanitizer.
+const esc = (s) => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 // Only allow http(s) links from feed data — blocks javascript:/data: hrefs.
 const safeUrl = (u) => /^https?:\/\//i.test(String(u || '')) ? esc(u) : '#';
 const pct = (p) => (p * 100).toFixed(0) + '%';
@@ -287,7 +290,7 @@ function renderScore(h, r) {
   const clampNote = r.clamped ?
     '<p class="warn">Model cap exceeds budget ceiling — bid limited to budget.</p>' : '';
   el.innerHTML = `
-    <h3>${h.name} — <span class="${r.verdict === 'BID' ? 'verdict-bid' : 'verdict-reject'}">${r.verdict}</span>
+    <h3>${esc(h.name)} — <span class="${r.verdict === 'BID' ? 'verdict-bid' : 'verdict-reject'}">${r.verdict}</span>
       <span class="score-chip" title="Quality score — drives the upside probability in the EV tree">vault score ${Math.round(r.score * 100)}</span></h3>
     <ul class="check-list">${checkRows}</ul>
     ${r.verdict === 'BID'
@@ -614,10 +617,10 @@ $('#export-pdf').addEventListener('click', () => {
     const exp = expectedPrice(h);
     const gap = exp ? r.gns - exp.gns : null;
     return `<tr>
-      <td><b>${h.name}</b>${h.grade ? ` <span class="g">${h.grade}</span>` : ''}<br>
-        <span class="sub">${h.sire || '?'} × ${h.dam || '?'} · ${h.vendor || '?'}</span>
-        ${h.racePlan ? `<br><span class="sub">🏁 ${h.racePlan}</span>` : ''}
-        ${h.notes ? `<br><span class="note">${h.notes}</span>` : ''}</td>
+      <td><b>${esc(h.name)}</b>${h.grade ? ` <span class="g">${esc(h.grade)}</span>` : ''}<br>
+        <span class="sub">${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}</span>
+        ${h.racePlan ? `<br><span class="sub">🏁 ${esc(h.racePlan)}</span>` : ''}
+        ${h.notes ? `<br><span class="note">${esc(h.notes)}</span>` : ''}</td>
       <td class="n">${h.rating}${h.rprEdge >= 5 ? `<br><span class="sub">RPR +${h.rprEdge}</span>` : ''}</td>
       <td>${r.verdict === 'BID' ? 'PASS 6/6' : (6 - r.fails.length) + '/6'}<br><span class="sub">vs ${Math.round(r.score * 100)}</span></td>
       <td class="n gold">${fmt(r.gns)}</td>
@@ -1043,7 +1046,7 @@ function findTagsHTML(h) {
   if (h.wins != null) t.push(`<span class="ftag">${h.wins}W · ${h.starts} runs</span>`);
   if (h.classMove === 'dropping') t.push('<span class="ftag ftag-good">class ↓ well-in</span>');
   if (h.lastRunDays != null && h.lastRunDays >= 30) t.push(`<span class="ftag">${h.lastRunDays}d dormant</span>`);
-  if (h.damLabel) t.push(`<span class="ftag">dam: ${h.damLabel}</span>`);
+  if (h.damLabel) t.push(`<span class="ftag">dam: ${esc(h.damLabel)}</span>`);
   return t.join('');
 }
 // One horse row. `topLabel` non-null marks it the top pick.
@@ -1063,7 +1066,7 @@ function horseRowHTML(h, r, i, topLabel) {
           <span class="dm-bar"><span class="dm-fill" style="width:${dp}%"></span></span>
           <span class="dm-num">${dp}</span>
         </div>
-        ${h.racePlan ? `<small class="race-plan">🏁 ${h.racePlan}</small>` : ''}
+        ${h.racePlan ? `<small class="race-plan">🏁 ${esc(h.racePlan)}</small>` : ''}
         <button class="find-profile" data-i="${i}">view full profile →</button>
       </div>
       <div class="find-actions">
@@ -1152,7 +1155,7 @@ function renderStats(rows) {
     cell(dubaiReady, '🏜 Dubai-ready', dubaiReady ? 'stat-green' : '') +
     cell(daysToCarnival(), '⏱ days to Carnival') +
     (top ? `<div class="stat stat-top"><span class="stat-lab">top ${radarSort === 'dubai' ? 'for Dubai' : 'value'}</span>` +
-      `<span class="stat-topname">${top.h.name}</span>` +
+      `<span class="stat-topname">${esc(top.h.name)}</span>` +
       `<span class="stat-topsub">vault ${Math.round(top.r.score * 100)} · Dubai fit ${dubaiPct(top.r)}</span></div>` : '');
   strip.hidden = false;
 }
@@ -1228,7 +1231,7 @@ function openHorseModal(h) {
   const cf = conformationScore({ conf });
   const exp = expectedPrice(h);
   const gap = exp ? r.gns - exp.gns : null;
-  const row = (k, v) => v == null || v === '' ? '' : `<div class="mp-row"><span class="mp-k">${k}</span><span class="mp-v">${v}</span></div>`;
+  const row = (k, v) => v == null || v === '' ? '' : `<div class="mp-row"><span class="mp-k">${esc(k)}</span><span class="mp-v">${esc(v)}</span></div>`;
   const section = (title, rows) => rows.filter(Boolean).length
     ? `<h4>${title}</h4><div class="mp-grid">${rows.join('')}</div>` : '';
   const money = (n) => n ? '£' + fmt(n) : null;
@@ -1379,9 +1382,9 @@ function horseReport(h) {
   const cf = conformationScore({ conf: loadConf()[h.name] });
   const gap = exp ? r.gns - exp.gns : null;
   const today = new Date().toISOString().slice(0, 10);
-  const li = (k, v) => v == null || v === '' ? '' : `<tr><td class="k">${k}</td><td class="v">${v}</td></tr>`;
+  const li = (k, v) => v == null || v === '' ? '' : `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`;
   const w = window.open('', '_blank'); if (!w) { alert('Allow pop-ups to generate the PDF.'); return; }
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${h.name} — vault racing</title><style>
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(h.name)} — vault racing</title><style>
     @page{margin:16mm} body{font-family:'Outfit',system-ui,sans-serif;color:#12203A;font-size:12px}
     h1{font-size:24px;margin:0;font-weight:800;letter-spacing:-.03em}
     .sub{color:#6b7688;margin:2px 0 12px}
@@ -1392,16 +1395,16 @@ function horseReport(h) {
     table{width:100%;border-collapse:collapse} td{padding:3px 0;vertical-align:top} td.k{color:#6b7688;width:45%} td.v{text-align:right;font-variant-numeric:tabular-nums}
     .why{background:#faf3df;border-left:3px solid #8A6A34;padding:7px 9px;border-radius:5px;margin:8px 0;font-size:11px}
     .foot{margin-top:16px;color:#8A93A3;font-size:9px}</style></head><body>
-    <h1>${h.name}</h1>
-    <div class="sub">${h.sire || '?'} × ${h.dam || '?'}${nk.damsire ? '' : ''} · ${h.vendor || '?'}${h.trainer ? ' · ' + h.trainer : ''}</div>
+    <h1>${esc(h.name)}</h1>
+    <div class="sub">${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}${h.trainer ? ' · ' + esc(h.trainer) : ''}</div>
     <div class="band">
       <div class="tile gold"><b>${fmt(r.gns)}</b><span>max bid (gns)</span></div>
       <div class="tile"><b>${Math.round(r.score * 100)}</b><span>vault score</span></div>
       <div class="tile"><b>${dubaiPct(r)}</b><span>Dubai fit</span></div>
       <div class="tile"><b>${Math.round(nk.pct * 100)}</b><span>dirt nick</span></div>
     </div>
-    ${(r.dubai?.reasons || []).length ? `<div class="why"><b>Why it fits Dubai:</b> ${r.dubai.reasons.join(' · ')}.</div>` : ''}
-    ${nk.notes.length ? `<div class="why"><b>Pedigree nick:</b> ${nk.notes.join(' · ')}.</div>` : ''}
+    ${(r.dubai?.reasons || []).length ? `<div class="why"><b>Why it fits Dubai:</b> ${esc(r.dubai.reasons.join(' · '))}.</div>` : ''}
+    ${nk.notes.length ? `<div class="why"><b>Pedigree nick:</b> ${esc(nk.notes.join(' · '))}.</div>` : ''}
     <h2>Ability &amp; form</h2><table>
       ${li('Official rating', h.rating)}${li('Career-high OR', h.careerHigh)}${li('Best RPR', h.bestRPR)}
       ${li('OR trend', h.trend)}${li('Wins / starts', (h.wins ?? '?') + ' / ' + (h.starts ?? '?'))}
@@ -1418,7 +1421,7 @@ function horseReport(h) {
       ${li('Projected return (base)', fmt(roi.base) + ' gns / ' + roi.seasons + ' seasons')}
       ${li('ROI on max bid', roi.roiCons + '% → ' + roi.roiUp + '% (base ' + roi.roiBase + '%)')}
       ${cf ? li('Conformation', Math.round(cf.pct * 100) + '/100 — ' + cf.label) : ''}</table>
-    ${cf && cf.flags.length ? `<div class="why"><b>Conformation flags:</b> ${cf.flags.join(' · ')}.</div>` : ''}
+    ${cf && cf.flags.length ? `<div class="why"><b>Conformation flags:</b> ${esc(cf.flags.join(' · '))}.</div>` : ''}
     <div class="foot">vault racing · ${today} · hard max bids are limit orders — never chase past them · analysis, not financial advice · black type &amp; availability need a human check.</div>
     </body></html>`);
   w.document.close();
@@ -1576,7 +1579,7 @@ function openCompare() {
     ['Trainer', (h) => ({ n: null, t: h.trainer || '—' }), null],
     ['Suggested plan', (h) => ({ n: null, t: h.racePlan ? h.racePlan.split('—')[0].trim() : '—' }), null],
   ];
-  const thead = '<th>Metric</th>' + horses.map(({ h }) => `<th>${h.name}</th>`).join('');
+  const thead = '<th>Metric</th>' + horses.map(({ h }) => `<th>${esc(h.name)}</th>`).join('');
   const body = M.map(([label, fn, better]) => {
     const cells = horses.map(({ h, r }) => fn(h, r));
     const hi = new Set();
@@ -1587,7 +1590,7 @@ function openCompare() {
         if (max > min) cells.forEach((c, i) => { if (c.n === max) hi.add(i); });
       }
     }
-    const tds = cells.map((c, i) => `<td class="${hi.has(i) ? 'cmp-best' : ''}">${c.t}</td>`).join('');
+    const tds = cells.map((c, i) => `<td class="${hi.has(i) ? 'cmp-best' : ''}">${esc(c.t)}</td>`).join('');
     return `<tr><td class="cmp-metric">${label}</td>${tds}</tr>`;
   }).join('');
   $('#compare-body').innerHTML = `<h3>⚖ Compare shortlist</h3>
@@ -1621,7 +1624,7 @@ function renderProfileBar() {
   const { list } = loadProfiles();
   const active = activeProfile();
   $('#profile-select').innerHTML = list.map((p) =>
-    `<option ${p.name === active.name ? 'selected' : ''}>${p.name}</option>`).join('');
+    `<option ${p.name === active.name ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
 }
 function fillEditor(p) {
   $('#pf-name').value = p.builtin ? '' : p.name;
