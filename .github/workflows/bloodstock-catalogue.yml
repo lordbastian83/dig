@@ -9,7 +9,7 @@ name: Bloodstock sale catalogues
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'bloodstock/catalogues/**'
       - 'bloodstock/catalogue.mjs'
