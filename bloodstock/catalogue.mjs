@@ -86,6 +86,7 @@ function rowToLot(r, saleLabel) {
     wins: r.wins === '' || r.wins == null ? null : +r.wins,
     guide: num(r.guide ?? r.guideprice ?? r.estimate),
     ccy: (r.ccy || r.currency || saleCcy(r.sale || saleLabel)),
+    ped: r.ped || r.pedigree || '',
     horseid: r.horseid || r.horse_id || '',
     notes: r.notes || '', status: 'watch',
   };

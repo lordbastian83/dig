@@ -109,6 +109,31 @@ name,lot,sale,sire,dam,damsire,vendor,rating,starts,age,sex,sireTier,vet,powerho
 
 - `sireTier` = `A`/`B`/empty (auto-derived from sire/damsire if blank)
 - `vet` = `clean`/`incomplete`/`unknown` · booleans accept `true/yes/1`
+- `ccy` = `gns`/`EUR`/`USD`/… (inferred from the sale name if blank) — the
+  guide's currency; converted to guineas for the verdict (see FX above)
+- `ped` = optional 4-generation pedigree for a real Dosage Index, as
+  `name:generation` pairs, e.g. `Galileo:1, Danehill:2, Mr. Prospector:3,
+  Northern Dancer:4`. Only recognised chefs-de-race count. Can also be pasted
+  per-horse in the profile modal (synced).
+
+## Dosage Index (live now, pedigree-limited)
+
+The engine computes a real **Dosage Profile, Dosage Index (DI) and Centre of
+Distribution (CD)** by Steven Roman's method: chef-de-race ancestors in the
+first four generations score into five aptitude categories (Brilliant →
+Professional), weighted 16/8/4/2 by generation. The chef-de-race table
+(`CHEFS` in `engine.js`) follows Roman's published classifications, extended
+with recent influential sires — a curated, extensible subset.
+
+- With **sire + damsire only** (what the radar/catalogue carry) the DI is
+  shown as *indicative*.
+- Paste (or import via the `ped` column) the **full 4-generation pedigree**
+  and it becomes the real figure. Pedigree source: Weatherbys GSB / Racing
+  Post Bloodstock / Equibase (US) — none free, all licensed; **Equibase**
+  (equibase.com) is the strongest for US dirt pedigrees & form but is a
+  paid/licensed feed with no open API, so it's a copy-in or licence, not a
+  scrape. The math and UI are complete and update the instant a fuller
+  pedigree is supplied.
 - `damsire` — feeds the dirt-nick score (or put it in `dam` as `Name (Damsire)`)
 - `distBest` — best trip in furlongs, if known · `age`, `sex` — for Dubai fit
 - `guide` — expected/guide price (any currency symbols stripped). With a guide,

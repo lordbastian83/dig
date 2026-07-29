@@ -263,7 +263,104 @@
     return { pct, label: pct >= 0.7 ? 'strong female family' : pct >= 0.45 ? 'useful family' : 'modest family', notes };
   }
 
+  /* ---------- Dosage (speed↔stamina from chef-de-race ancestors) ----------
+     A real implementation of Steven Roman's Dosage method: chef-de-race
+     ancestors in the first four generations contribute points to five
+     aptitude categories (Brilliant→Professional), weighted by generation
+     (16/8/4/2, halving each generation back). From the resulting Dosage
+     Profile we compute the Dosage Index (DI) and Centre of Distribution (CD).
+
+     CHEFS follows Roman's published chef-de-race classifications, extended
+     with a few recent influential sires by aptitude so modern pedigrees light
+     up. It is a curated, extensible subset — misclassifying or omitting a
+     name only affects horses carrying it. The DI/CD math is exact; the output
+     is only as complete as the pedigree supplied (sire+damsire alone is
+     "indicative"; a full 4-generation pedigree gives the real figure). */
+  const CHEFS = {
+    // Brilliant (B) — pure speed
+    'nasrullah': ['B'], 'bold ruler': ['B'], 'raise a native': ['B'], 'habitat': ['B'],
+    'grey sovereign': ['B'], 'red god': ['B'], 'mr. prospector': ['B', 'C'], 'mr prospector': ['B', 'C'],
+    'gone west': ['B', 'I'], 'sharpen up': ['B', 'C'], 'seeking the gold': ['B', 'C'],
+    'green desert': ['B', 'I'], 'dr. fager': ['B', 'I'], 'in reality': ['B', 'C'],
+    'nearctic': ['B'], 'turn-to': ['B', 'I'], 'tom fool': ['B', 'C'], 'never bend': ['B', 'C'],
+    // Intermediate (I)
+    'native dancer': ['I'], 'danzig': ['I'], 'storm cat': ['I', 'C'], 'halo': ['I', 'C'],
+    'hail to reason': ['I', 'S'], 'lyphard': ['I', 'C'], 'blushing groom': ['I', 'C'],
+    'kris': ['I'], 'diesis': ['I'], 'caro': ['I', 'C'], 'danehill': ['I', 'C'],
+    'fappiano': ['I', 'C'], 'kingmambo': ['I', 'C'], 'dubawi': ['I', 'C'],
+    "giant's causeway": ['I', 'C'], 'secretariat': ['I', 'C'],
+    // Classic (C)
+    'northern dancer': ['C'], 'nijinsky': ['C'], "sadler's wells": ['C'], 'nureyev': ['C'],
+    'sir ivor': ['C'], 'round table': ['C'], 'seattle slew': ['C'], 'mill reef': ['C'],
+    'sea the stars': ['C'], 'street cry': ['C'], "medaglia d'oro": ['C'], 'frankel': ['C'],
+    'buckpasser': ['C', 'S'], 'damascus': ['C', 'S'], 'roberto': ['C', 'P'],
+    'a.p. indy': ['C', 'S'], 'ap indy': ['C', 'S'], 'unbridled': ['C', 'S'],
+    'sunday silence': ['C', 'S'], 'galileo': ['C', 'S'], 'montjeu': ['C', 'S'],
+    'tapit': ['C', 'S'], 'curlin': ['C', 'S'],
+    // Solid (S) / Professional (P) — stamina
+    'ribot': ['C', 'P'], 'graustark': ['C', 'P'], 'sea-bird': ['C', 'P'], 'sea bird': ['C', 'P'],
+    'princequillo': ['S', 'P'], 'darshaan': ['C', 'S'], 'rainbow quest': ['C', 'S'],
+    'shirley heights': ['S'], 'alleged': ['C', 'S'], 'vaguely noble': ['S', 'P'],
+  };
+  const GEN_PTS = { 1: 16, 2: 8, 3: 4, 4: 2 };
+  function chefCats(name) {
+    if (!name) return null;
+    if (CHEFS[name]) return CHEFS[name];
+    const k = Object.keys(CHEFS).find((x) => name.includes(x) || x.includes(name));
+    return k ? CHEFS[k] : null;
+  }
+  // Parse a supplied pedigree into [{name, gen}]. Accepts an array of
+  // {name,gen}, an array of "name:gen" strings, or a "name:gen; name:gen"
+  // string. Missing generation defaults to 3.
+  function parsePed(ped) {
+    if (!ped) return [];
+    let list = ped;
+    if (typeof ped === 'string') list = ped.split(/[;,]/).map((s) => s.trim()).filter(Boolean);
+    if (!Array.isArray(list)) return [];
+    return list.map((item) => {
+      if (item && typeof item === 'object') return { name: String(item.name || '').toLowerCase().trim(), gen: Math.max(1, Math.min(4, +item.gen || 3)) };
+      const p = String(item).split(':');
+      return { name: p[0].toLowerCase().replace(/\(.*?\)/g, '').trim(), gen: p[1] ? Math.max(1, Math.min(4, +p[1])) : 3 };
+    }).filter((a) => a.name);
+  }
+  function dosageOf(h) {
+    let anc = parsePed(h.ped || h.pedigree);
+    let fallback = false;
+    if (anc.length < 3) {
+      const sire = String(h.sire || '').toLowerCase().replace(/\(.*?\)/g, '').trim();
+      const ds = damsireOf(h).toLowerCase();
+      const extra = [];
+      if (sire) extra.push({ name: sire, gen: 1 });
+      if (ds) extra.push({ name: ds, gen: 2 });
+      anc = anc.length ? anc.concat(extra) : extra;
+      fallback = true;
+    }
+    const P = { B: 0, I: 0, C: 0, S: 0, P: 0 };
+    const chefs = [];
+    for (const a of anc) {
+      const cats = chefCats(a.name);
+      if (!cats) continue;
+      const pts = (GEN_PTS[a.gen] || 2) / cats.length;
+      for (const c of cats) P[c] += pts;
+      chefs.push({ name: a.name, gen: a.gen, cats });
+    }
+    const total = P.B + P.I + P.C + P.S + P.P;
+    if (!total) return null;
+    const denom = P.C / 2 + P.S + P.P;
+    const di = denom > 0 ? +((P.B + P.I + P.C / 2) / denom).toFixed(2) : null; // null = pure speed / ∞
+    const cd = +((2 * P.B + P.I - P.S - 2 * P.P) / total).toFixed(2);
+    const centre = +(9 - cd * 2).toFixed(1); // cd +2→5f, 0→9f, −2→13f
+    const aptitude = (di == null || di >= 4) ? 'speed / precocity'
+      : di >= 2 ? 'speed–classic' : di >= 1 ? 'classic' : 'stamina';
+    return {
+      profile: [P.B, P.I, P.C, P.S, P.P].map((x) => +x.toFixed(1)),
+      di, cd, centre, aptitude,
+      chefs, count: chefs.length,
+      partial: fallback || chefs.length < 4,
+    };
+  }
+
   globalThis.VaultRacingEngine = { PARAM_DEFAULTS, ratingMult, expectedPrice, evaluate, dubaiFit,
     nickScore, damsireOf, marketEstimate, roiOutlook, conformationScore, CONF_ITEMS,
-    aptitudeIndex, femaleFamily };
+    aptitudeIndex, femaleFamily, dosageOf };
 })();

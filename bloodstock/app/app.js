@@ -100,6 +100,11 @@ let SYNC_ON = false, syncTimer = null;
 const LS_CONF = 'bloodstock.conf.v1';
 function loadConf() { try { return JSON.parse(localStorage.getItem(LS_CONF) || '{}'); } catch { return {}; } }
 function saveConf(o) { localStorage.setItem(LS_CONF, JSON.stringify(o)); syncPush(); }
+// Per-horse 4-generation pedigree the user pastes in, keyed by name → raw text.
+// Feeds the real Dosage Index; synced like conformation.
+const LS_PED = 'bloodstock.ped.v1';
+function loadPed() { try { return JSON.parse(localStorage.getItem(LS_PED) || '{}'); } catch { return {}; } }
+function savePed(o) { localStorage.setItem(LS_PED, JSON.stringify(o)); syncPush(); }
 
 /* ---------- currency / FX ----------
    The app's money is guineas (gns). Sale guides arrive in the sale's own
@@ -141,6 +146,7 @@ function currentBlob() {
     params: JSON.parse(localStorage.getItem(LS_PARAMS) || '{}'),
     profiles: JSON.parse(localStorage.getItem(LS_PROFILES) || '{}'),
     conf: loadConf(),
+    ped: loadPed(),
     fx: JSON.parse(localStorage.getItem(LS_FX) || '{}'),
     heroImg: localStorage.getItem('bloodstock.heroImg') || '' };
 }
@@ -150,6 +156,7 @@ function applyBlob(b) {
   if (b.params) localStorage.setItem(LS_PARAMS, JSON.stringify(b.params));
   if (b.profiles) localStorage.setItem(LS_PROFILES, JSON.stringify(b.profiles));
   if (b.conf) localStorage.setItem(LS_CONF, JSON.stringify(b.conf));
+  if (b.ped) localStorage.setItem(LS_PED, JSON.stringify(b.ped));
   if (b.fx && Object.keys(b.fx).length) localStorage.setItem(LS_FX, JSON.stringify(b.fx));
   if (b.heroImg) localStorage.setItem('bloodstock.heroImg', b.heroImg);
   return true;
@@ -199,7 +206,7 @@ fetch('data/sire-medians.json')
 /* ---------- valuation engine (shared with the pipeline) ---------- */
 
 const { evaluate, expectedPrice: engineExpectedPrice, nickScore, damsireOf,
-  roiOutlook, conformationScore, CONF_ITEMS, aptitudeIndex, femaleFamily } = globalThis.VaultRacingEngine;
+  roiOutlook, conformationScore, CONF_ITEMS, aptitudeIndex, femaleFamily, dosageOf } = globalThis.VaultRacingEngine;
 const engineMarketEstimate = globalThis.VaultRacingEngine.marketEstimate;
 const expectedPrice = (h) => engineExpectedPrice(h, MEDIANS);
 const marketEstimate = (h) => engineMarketEstimate(h, MEDIANS);
@@ -601,6 +608,7 @@ function csvRowToLot(r) {
     wins: r.wins === '' || r.wins == null ? null : +r.wins,
     guide: num(r.guide ?? r.guideprice ?? r.estimate),
     ccy: (r.ccy || r.currency || saleCcy(r.sale || '')).toString().replace(/^gns$/i, 'gns'),
+    ped: r.ped || r.pedigree || '',
     notes: r.notes || '', status: 'watch', added: new Date().toISOString().slice(0, 10),
   };
 }
@@ -1100,6 +1108,8 @@ function openHorseModal(h) {
   const nk = nickScore(h);
   const apt = aptitudeIndex(h);
   const fam = femaleFamily(h);
+  const pedText = loadPed()[h.name] || '';
+  const dos = dosageOf({ ...h, ped: pedText || h.ped });
   const mkt = marketEstimate(h);
   const roi = roiOutlook(h, P, r.gns);
   const conf = loadConf()[h.name];
@@ -1172,6 +1182,24 @@ function openHorseModal(h) {
       fam && fam.notes.length ? row('Family notes', fam.notes.join('; ')) : '',
     ])}
     ${apt ? `<div class="apt-bar" title="Speed ↔ stamina from pedigree"><span class="apt-fill" style="width:${apt.speed}%"></span><span class="apt-mark speed">speed</span><span class="apt-mark stay">stamina</span></div>` : ''}
+    ${dos ? `<div class="dosage">
+      <div class="dosage-head">
+        <b>Dosage${dos.partial ? ' (indicative)' : ''}</b>
+        <span class="dosage-di" title="Dosage Index — speed vs stamina">DI ${dos.di == null ? '∞' : dos.di.toFixed(2)}</span>
+        <span class="dosage-cd" title="Centre of Distribution (−2 stamina … +2 speed)">CD ${dos.cd >= 0 ? '+' : ''}${dos.cd.toFixed(2)}</span>
+        <span class="dosage-apt">${dos.aptitude} · ~${dos.centre}f</span>
+      </div>
+      <div class="dp" title="Dosage Profile: Brilliant · Intermediate · Classic · Solid · Professional">
+        DP ${dos.profile.join(' · ')}
+      </div>
+      ${dos.chefs.length ? `<div class="hint dosage-chefs">Chefs-de-race read: ${dos.chefs.map((c) => esc(c.name.replace(/\b\w/g, (m) => m.toUpperCase())) + ' (g' + c.gen + ')').join(', ')}.</div>` : ''}
+      ${dos.partial ? `<div class="hint">Indicative — computed from ${dos.chefs.length} recognised ancestor${dos.chefs.length === 1 ? '' : 's'}${pedText ? '' : ' (sire + damsire only)'}. Paste the 4-generation pedigree below for the full figure.</div>` : ''}
+      <details class="ped-editor"><summary>🧬 ${pedText ? 'Edit' : 'Add'} 4-generation pedigree</summary>
+        <textarea id="ped-input" data-name="${encodeURIComponent(h.name)}" rows="3"
+          placeholder="Chef-de-race ancestors as name:generation, e.g. Galileo:1, Danehill:2, Mr. Prospector:3, Northern Dancer:4">${esc(pedText)}</textarea>
+        <p class="hint">List the influential ancestors with their generation (1–4). Only recognised chefs-de-race count; the rest are ignored. Saved &amp; synced.</p>
+      </details>
+    </div>` : ''}
     ${section('Valuation', [
       row('Max bid', `${fmt(r.gns)} gns`), row('Expected hammer', exp ? `${fmt(exp.gns)} gns${exp.est ? ' (est)' : ''}` : '—'),
       h.guide ? row('Catalogue guide', `${fmtCcy(h.guide, ccyOf(h))}${ccyOf(h) !== 'gns' ? ` (≈ ${fmt(guideGns(h))} gns)` : ''}`) : '',
@@ -1310,6 +1338,14 @@ $('#horse-modal').addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     e.target.value = ''; // allow re-selecting the same file
     if (file) inspectPhoto(file);
+    return;
+  }
+  if (e.target.id === 'ped-input' && modalHorse) {
+    const all = loadPed();
+    const v = e.target.value.trim();
+    if (v) all[modalHorse.name] = v; else delete all[modalHorse.name];
+    savePed(all);
+    openHorseModal(modalHorse); // re-render Dosage with the pasted pedigree
     return;
   }
   const sel = e.target.closest('select[data-conf]'); if (!sel || !modalHorse) return;

@@ -655,6 +655,19 @@ td:nth-child(3) { font-family: var(--mono); }
 .apt-mark { position: absolute; top: 10px; font-size: .6rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
 .apt-mark.speed { left: 0; } .apt-mark.stay { right: 0; }
 
+/* Dosage */
+.dosage { border: 1px solid var(--navy-3); border-radius: 10px; padding: .6rem .7rem; margin: .2rem 0 1rem; background: rgba(255,255,255,.02); }
+.dosage-head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.dosage-di, .dosage-cd { font-family: var(--mono); font-weight: 600; color: var(--gold);
+  background: var(--navy-3); border-radius: 6px; padding: .12rem .45rem; font-size: .82rem; }
+.dosage-apt { color: var(--ink-muted); font-size: .82rem; }
+.dp { font-family: var(--mono); font-size: .8rem; color: var(--cloud); margin: .35rem 0 .1rem; letter-spacing: .02em; }
+.dosage-chefs { margin: .2rem 0 0; }
+.ped-editor { margin-top: .45rem; }
+.ped-editor summary { cursor: pointer; color: var(--gold); font-size: .85rem; }
+.ped-editor textarea { width: 100%; margin-top: .4rem; background: var(--navy); color: var(--ink);
+  border: 1px solid var(--navy-3); border-radius: 8px; padding: .5rem; font-family: var(--mono); font-size: .8rem; resize: vertical; }
+
 /* market intelligence charts */
 .mktintel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.2rem 1.6rem; }
 .mi-chart h4 { margin: 0 0 .5rem; }
