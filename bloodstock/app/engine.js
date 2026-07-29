@@ -304,10 +304,10 @@
   };
   const GEN_PTS = { 1: 16, 2: 8, 3: 4, 4: 2 };
   function chefCats(name) {
-    if (!name) return null;
-    if (CHEFS[name]) return CHEFS[name];
-    const k = Object.keys(CHEFS).find((x) => name.includes(x) || x.includes(name));
-    return k ? CHEFS[k] : null;
+    // Exact match only — substring matching misclassifies (e.g. "Kris Kin"
+    // would match chef "Kris"). parsePed already lowercases, trims and strips
+    // "(IRE)"-style suffixes, so a real ancestor name matches its key cleanly.
+    return (name && CHEFS[name]) || null;
   }
   // Parse a supplied pedigree into [{name, gen}]. Accepts an array of
   // {name,gen}, an array of "name:gen" strings, or a "name:gen; name:gen"
@@ -326,13 +326,16 @@
   function dosageOf(h) {
     let anc = parsePed(h.ped || h.pedigree);
     let fallback = false;
-    if (anc.length < 3) {
+    // Only fall back to sire+damsire when NO pedigree was supplied — appending
+    // them onto a short pasted pedigree would double-count an ancestor the user
+    // already listed (e.g. "Galileo:1" + fallback Galileo:1).
+    if (!anc.length) {
       const sire = String(h.sire || '').toLowerCase().replace(/\(.*?\)/g, '').trim();
       const ds = damsireOf(h).toLowerCase();
       const extra = [];
       if (sire) extra.push({ name: sire, gen: 1 });
       if (ds) extra.push({ name: ds, gen: 2 });
-      anc = anc.length ? anc.concat(extra) : extra;
+      anc = extra;
       fallback = true;
     }
     const P = { B: 0, I: 0, C: 0, S: 0, P: 0 };

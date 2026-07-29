@@ -70,7 +70,9 @@ function saleCcy(name) {
 }
 function rowToLot(r, saleLabel) {
   const bool = (v) => ['true', 'yes', '1', 'y'].includes(String(v || '').toLowerCase());
-  const num = (v) => { const n = +String(v ?? '').replace(/[^0-9.]/g, ''); return Number.isFinite(n) && n ? n : null; };
+  // First numeric token only, so a "40,000 - 60,000" range reads as 40000.
+  const num = (v) => { const m = String(v ?? '').match(/[0-9][0-9,. ]*/); if (!m) return null; const n = +m[0].replace(/[^0-9.]/g, ''); return Number.isFinite(n) && n ? n : null; };
+  const startsN = (r.starts == null || r.starts === '') ? 99 : +r.starts;
   const t = (r.siretier || '').toUpperCase();
   const sire = (r.sire || '').toLowerCase(), dam = (r.dam || '').toLowerCase(), ds = (r.damsire || '').toLowerCase();
   const tier = (t === 'A' || t === 'B') ? t
@@ -79,7 +81,7 @@ function rowToLot(r, saleLabel) {
   return {
     name: r.name, lot: r.lot || '', sale: r.sale || saleLabel,
     sire: r.sire || '', dam: r.dam || '', damsire: r.damsire || '', vendor: r.vendor || '',
-    rating: +r.rating || 0, starts: r.starts === '' ? 99 : +r.starts, sireTier: tier,
+    rating: +r.rating || 0, starts: Number.isFinite(startsN) ? startsN : 99, sireTier: tier,
     vet: ['clean', 'incomplete'].includes(r.vet) ? r.vet : 'unknown',
     powerhouse: bool(r.powerhouse), blackType: bool(r.blacktype), awForm: bool(r.awform),
     distBest: num(r.distbest ?? r.bestdist), age: num(r.age), sex: r.sex || '',

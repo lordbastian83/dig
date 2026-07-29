@@ -244,6 +244,8 @@ const $ = (sel) => document.querySelector(sel);
 const fmt = (n) => n.toLocaleString('en-GB', { maximumFractionDigits: 0 });
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Only allow http(s) links from feed data — blocks javascript:/data: hrefs.
+const safeUrl = (u) => /^https?:\/\//i.test(String(u || '')) ? esc(u) : '#';
 const pct = (p) => (p * 100).toFixed(0) + '%';
 
 function renderCalendar() {
@@ -340,11 +342,11 @@ function renderList() {
     const opts = STATUSES.map((s) =>
       `<option ${h.status === s ? 'selected' : ''}>${s}</option>`).join('');
     return `<tr class="${r.verdict === 'BID' ? '' : 'row-reject'}">
-      <td><b>${h.name}</b>${h.lot ? ' (lot ' + h.lot + ')' : ''}${h.grade ? ` <span class="grade-badge">${h.grade}</span>` : ''}${h.bidTarget != null ? ` <span class="bid-target" title="your target bid">🎯 ${fmt(h.bidTarget)}</span>` : ''}<br>
-          <small>${h.sire || '?'} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
+      <td><b>${esc(h.name)}</b>${h.lot ? ' (lot ' + esc(h.lot) + ')' : ''}${h.grade ? ` <span class="grade-badge">${esc(h.grade)}</span>` : ''}${h.bidTarget != null ? ` <span class="bid-target" title="your target bid">🎯 ${fmt(h.bidTarget)}</span>` : ''}<br>
+          <small>${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}</small>
           ${(h.tags || []).length ? `<span class="wl-tags">${h.tags.map((t) => `<span class="wl-tag">${esc(t)}</span>`).join('')}</span>` : ''}
-          ${h.notes ? `<small class="note-preview">✎ ${h.notes.slice(0, 70)}${h.notes.length > 70 ? '…' : ''}</small>` : ''}</td>
-      <td>${h.sale}</td>
+          ${h.notes ? `<small class="note-preview">✎ ${esc(h.notes.slice(0, 70))}${h.notes.length > 70 ? '…' : ''}</small>` : ''}</td>
+      <td>${esc(h.sale)}</td>
       <td>${h.rating}</td>
       <td class="${r.verdict === 'BID' ? 'verdict-bid' : 'verdict-reject'}">
           ${r.verdict === 'BID' ? 'PASS 6/6' : (6 - r.fails.length) + '/6'}<br>
@@ -370,11 +372,11 @@ function renderList() {
           </label>
           <label class="editor-notes">Notes
             <textarea class="edit-notes" rows="3"
-              placeholder="physical inspection, wind, walk, who else was looking…">${h.notes || ''}</textarea>
+              placeholder="physical inspection, wind, walk, who else was looking…">${esc(h.notes || '')}</textarea>
           </label>
           <label>Tags
             <input class="edit-tags" placeholder="e.g. Meydan, dirt cross, filly"
-              value="${(h.tags || []).join(', ')}">
+              value="${esc((h.tags || []).join(', '))}">
           </label>
           <label>Target bid (gns)
             <input class="edit-target" type="number" min="0" value="${h.bidTarget != null ? h.bidTarget : ''}"
@@ -700,11 +702,14 @@ function csvRowToLot(r) {
   const tier = (t === 'A' || t === 'B') ? t
     : CAT_TIER_A.some((s) => sire.includes(s)) ? 'A'
     : CAT_TIER_B_DS.some((s) => dam.includes(s) || ds.includes(s)) ? 'B' : '';
-  const num = (v) => { const n = +String(v ?? '').replace(/[^0-9.]/g, ''); return Number.isFinite(n) && n ? n : null; };
+  // First numeric token only — so a range like "40,000 - 60,000" reads as its
+  // low estimate (40000), not the digits concatenated into 4000060000.
+  const num = (v) => { const m = String(v ?? '').match(/[0-9][0-9,. ]*/); if (!m) return null; const n = +m[0].replace(/[^0-9.]/g, ''); return Number.isFinite(n) && n ? n : null; };
+  const starts = (r.starts == null || r.starts === '') ? 99 : +r.starts;
   return {
     name: r.name, lot: r.lot || '', sale: r.sale || 'Catalogue',
     sire: r.sire || '', dam: r.dam || '', damsire: r.damsire || '', vendor: r.vendor || '',
-    rating: +r.rating || 0, starts: r.starts === '' ? 99 : +r.starts, sireTier: tier,
+    rating: +r.rating || 0, starts: Number.isFinite(starts) ? starts : 99, sireTier: tier,
     vet: ['clean', 'incomplete'].includes(r.vet) ? r.vet : 'unknown',
     powerhouse: bool(r.powerhouse), blackType: bool(r.blacktype), awForm: bool(r.awform),
     distBest: num(r.distbest ?? r.bestdist), age: num(r.age), sex: r.sex || '',
@@ -719,8 +724,10 @@ function csvRowToLot(r) {
 function guideGns(h) { return h.guide ? Math.round(toGns(h.guide, ccyOf(h))) : null; }
 function catVerdict(h, r) {
   const g = guideGns(h);
-  if (!g) return r.verdict === 'BID' ? ['BUY-fit', 'cv-buy'] : [`${6 - r.fails.length}/6`, 'cv-pass'];
-  if (r.gns >= g) return ['BUY', 'cv-buy'];             // our max ≥ guide → winnable in value
+  const passes = r.verdict === 'BID'; // must clear the 6-filter screen to be a BUY
+  if (!passes) return [`${6 - r.fails.length}/6`, 'cv-pass']; // screen-fail is never a BUY, whatever the price
+  if (!g) return ['BUY-fit', 'cv-buy'];
+  if (r.gns >= g) return ['BUY', 'cv-buy'];             // passes screen + our max ≥ guide
   if (r.gns >= g * 0.9) return ['STRETCH', 'cv-stretch']; // within 10%
   return ['OVER', 'cv-over'];                            // market above our limit
 }
@@ -745,8 +752,8 @@ function renderCatalogue() {
     const [vl, vc] = catVerdict(h, r);
     return `<tr>
       <td>${h.lot || '—'}</td>
-      <td><b class="cat-name" data-i="${i}" title="Full profile">${h.name}</b></td>
-      <td class="cat-ped">${h.sire || '?'} × ${damsireOf(h) || '?'}</td>
+      <td><b class="cat-name" data-i="${i}" title="Full profile">${esc(h.name)}</b></td>
+      <td class="cat-ped">${esc(h.sire || '?')} × ${esc(damsireOf(h) || '?')}</td>
       <td class="mono">${h.rating || '—'}</td>
       <td class="mono">${Math.round(r.score * 100)}</td>
       <td class="mono cat-fit">${dubaiPct(r)}</td>
@@ -1048,8 +1055,8 @@ function horseRowHTML(h, r, i, topLabel) {
       ${topLabel ? `<span class="top-tag">${topLabel}</span>` : ''}
       <div class="find-score ${tc}"><span class="fs-num">${Math.round(r.score * 100)}</span><span class="fs-lab">${tl}</span></div>
       <div class="find-main">
-        <b class="find-name" data-i="${i}" title="Click for full profile">${h.name}</b>
-        <small class="find-ped">${h.sire} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
+        <b class="find-name" data-i="${i}" title="Click for full profile">${esc(h.name)}</b>
+        <small class="find-ped">${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}</small>
         <div class="find-tags">${findTagsHTML(h)}</div>
         <div class="dubai-meter ${dubaiClassOf(dp)}" title="How well this horse suits a Meydan dirt campaign">
           <span class="dm-lab">🏜 Dubai fit</span>
@@ -1227,11 +1234,11 @@ function openHorseModal(h) {
   const money = (n) => n ? '£' + fmt(n) : null;
   $('#modal-body').innerHTML = `
     <div class="mp-head">
-      <h3>${h.name}</h3>
+      <h3>${esc(h.name)}</h3>
       <span class="mp-score">vault ${Math.round(r.score * 100)}</span>
       <span class="mp-score mp-dubai">🏜 Dubai fit ${dubaiPct(r)}</span>
     </div>
-    <p class="mp-sub">${h.sire || '?'} × ${h.dam || '?'} · ${h.vendor || '?'}${h.trainer ? ` · ${h.trainer}` : ''}</p>
+    <p class="mp-sub">${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}${h.trainer ? ` · ${esc(h.trainer)}` : ''}</p>
 
     <div class="mp-headline">
       <div><span class="mp-big">${fmt(r.gns)}</span><span class="mp-lab">max bid (gns)</span></div>
@@ -1776,10 +1783,10 @@ fetch(NEWS_URL)
   .then((j) => {
     if (!j?.items?.length) return;
     $('#intel').innerHTML = j.items.map((it) => `
-      <a class="intel-row" href="${it.url}" target="_blank" rel="noopener">
-        <span class="intel-src">${it.source}</span>
-        <span class="intel-title">${it.title}</span>
-        ${(it.matched || []).slice(0, 3).map((m) => `<span class="intel-tag">${m}</span>`).join('')}
+      <a class="intel-row" href="${safeUrl(it.url)}" target="_blank" rel="noopener">
+        <span class="intel-src">${esc(it.source)}</span>
+        <span class="intel-title">${esc(it.title)}</span>
+        ${(it.matched || []).slice(0, 3).map((m) => `<span class="intel-tag">${esc(m)}</span>`).join('')}
       </a>`).join('');
     $('#intel-card').hidden = false;
   })
