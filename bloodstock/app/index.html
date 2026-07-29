@@ -10,8 +10,8 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260729i">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Spectral:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=20260729j">
 </head>
 <body>
 
@@ -34,11 +34,11 @@
   <span class="tagline">the horse the market hasn't priced yet</span>
 </header>
 <nav class="quicknav" aria-label="Jump to section">
-  <a href="#finds-card" data-nav hidden>💎 Radar</a>
-  <a href="#score" data-nav>🎯 Score</a>
-  <a href="#watchlist-card" data-nav>📋 Watchlist</a>
-  <a href="#calendar-card" data-nav>🗓 Sales</a>
-  <a href="#model" data-nav>⚙ Model</a>
+  <a href="#finds-card" data-nav hidden>Radar</a>
+  <a href="#score" data-nav>Score</a>
+  <a href="#watchlist-card" data-nav>Watchlist</a>
+  <a href="#calendar-card" data-nav>Sales</a>
+  <a href="#model" data-nav>Model</a>
 </nav>
 </div>
 
@@ -159,7 +159,7 @@
   <!-- ============ 2 · Radar finds ============ -->
   <section class="card" id="finds-card" hidden>
     <div class="card-head">
-      <h2>💎 Radar finds</h2>
+      <h2>Radar finds</h2>
       <button id="refresh-btn" class="refresh-btn" title="Re-pull the latest scan">↻ Refresh</button>
     </div>
     <p class="hint">Horses currently <b>in training</b>, auto-scanned daily from live
@@ -299,7 +299,7 @@
   <!-- ============ 2a · Off-market prospects ============ -->
   <section class="card" id="prospects-card" hidden>
     <div class="card-head">
-      <h2>🎯 Off-market prospects</h2>
+      <h2>Off-market prospects</h2>
       <span class="prospects-count" id="prospects-count"></span>
     </div>
     <p class="hint">Horses that fit the Dubai profile but are <b>not actively
@@ -312,7 +312,7 @@
   <!-- ============ 2c · Sale shopping list ============ -->
   <section class="card" id="catalogue-card">
     <div class="card-head">
-      <h2>🛒 Sale shopping list</h2>
+      <h2>Sale shopping list</h2>
       <span class="prospects-count" id="catalogue-count"></span>
     </div>
     <p class="hint">Import a sale catalogue (CSV) and every lot is auto-scored and
@@ -361,7 +361,7 @@
 
   <!-- ============ 2d · Market intelligence ============ -->
   <section class="card" id="mktintel-card" hidden>
-    <h2>📊 Market intelligence</h2>
+    <h2>Market intelligence</h2>
     <p class="hint">Distribution of everything the radar has swept — where the
     ability, the Dubai fit and the dirt pedigrees actually sit across the pool.</p>
     <div id="mktintel" class="mktintel-grid"></div>
@@ -370,7 +370,7 @@
   <!-- ============ 2b · Intel ============ -->
   <section class="card" id="intel-card" hidden>
     <details>
-      <summary><h2>📰 Intel</h2></summary>
+      <summary><h2>Intel</h2></summary>
       <p class="hint">Daily bloodstock news, filtered to your radar candidates,
       target sires, sale houses and the Dubai pipeline. Licensed feeds only.</p>
       <div id="intel"></div>
@@ -407,7 +407,7 @@
   <!-- ============ 2e · Portfolio / P&L ============ -->
   <section class="card" id="portfolio-card" hidden>
     <div class="card-head">
-      <h2>💷 Portfolio &amp; P&amp;L</h2>
+      <h2>Portfolio &amp; P&amp;L</h2>
       <span class="prospects-count" id="portfolio-count"></span>
     </div>
     <p class="hint">Every horse you mark <b>bought</b> on the watchlist lands here.
@@ -489,7 +489,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260729i"></script>
-<script src="app.js?v=20260729i"></script>
+<script src="engine.js?v=20260729j"></script>
+<script src="app.js?v=20260729j"></script>
 </body>
 </html>
