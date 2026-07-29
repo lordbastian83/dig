@@ -103,12 +103,21 @@ main { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.2rem 2rem; display: 
 
 /* ---------- hero: the horse this system chases ---------- */
 .hero {
+  position: relative;
   display: flex; align-items: center; gap: 1.5rem;
-  background: linear-gradient(115deg, #0A5BB8 0%, #123A6B 45%, #16233F 100%);
-  border: 1px solid var(--border); border-radius: 16px;
-  padding: 2rem 2.2rem; box-shadow: var(--shadow-card);
+  background:
+    radial-gradient(90% 120% at 88% 20%, rgba(220,182,74,.18), transparent 55%),
+    linear-gradient(115deg, #0A5BB8 0%, #123A6B 45%, #16233F 100%);
+  border: 1px solid rgba(220,182,74,.16); border-radius: 20px;
+  padding: 2.2rem 2.4rem; box-shadow: var(--shadow-card), 0 0 0 1px rgba(255,255,255,.02) inset;
   overflow: hidden;
 }
+/* faint racing-silk diagonal texture, kept very subtle */
+.hero::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background: repeating-linear-gradient(115deg, transparent 0 22px, rgba(255,255,255,.018) 22px 44px);
+}
+.hero > * { position: relative; z-index: 1; }
 .hero-text { flex: 1; }
 .hero-text h2 {
   font-size: 2.4rem; line-height: 1.05; font-weight: 700;
@@ -139,18 +148,18 @@ main { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.2rem 2rem; display: 
 }
 
 .card {
-  background: linear-gradient(180deg, #1D3153 0%, #172741 100%);
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(94, 138, 200, 0.10), transparent 60%),
+    linear-gradient(180deg, #1B2E4E 0%, #15243D 100%);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 1.5rem 1.7rem;
-  box-shadow: inset 0 1px 0 rgba(247, 248, 250, 0.06), var(--shadow-card);
+  box-shadow: inset 0 1px 0 rgba(247, 248, 250, 0.07), var(--shadow-card);
 }
-/* consistent gold accent on top-level section headings — easy to scan */
-.card > h2, .card-head > h2 { position: relative; padding-left: .8rem; margin-bottom: .35em; }
-.card > h2::before, .card-head > h2::before {
-  content: ''; position: absolute; left: 0; top: .1em; bottom: .1em;
-  width: 3px; border-radius: 2px;
-  background: linear-gradient(var(--gold), var(--gold-deep));
+/* section headings: clean, tight, the emoji carries the visual anchor */
+.card > h2, .card-head > h2 {
+  margin-bottom: .4em; font-size: 1.3rem; font-weight: 600; letter-spacing: -.02em;
+  display: flex; align-items: baseline; gap: .5rem;
 }
 /* card header row: title + a control on the right */
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
@@ -236,19 +245,20 @@ details.more .grid { margin-top: .8rem; }
 
 .form-actions { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .8rem; }
 button, .file-btn {
-  background: rgba(247, 248, 250, 0.04); color: var(--cloud);
-  border: 1px solid var(--border); border-radius: 9px;
+  background: rgba(247, 248, 250, 0.05); color: var(--cloud);
+  border: 1px solid var(--border); border-radius: 10px;
   padding: .55rem 1.1rem; font-family: var(--sans); font-size: .9rem;
-  font-weight: 500; cursor: pointer; transition: all .12s ease;
+  font-weight: 500; cursor: pointer;
+  transition: border-color .14s ease, background .14s ease, box-shadow .14s ease, filter .14s ease;
 }
-button:hover, .file-btn:hover { border-color: var(--ink-muted); background: rgba(247, 248, 250, 0.08); }
+button:hover, .file-btn:hover { border-color: var(--ink-muted); background: rgba(247, 248, 250, 0.09); }
 /* gold marks a win and one call to action per screen */
 button.primary {
-  background: linear-gradient(180deg, #E6C25A, var(--gold));
-  color: var(--navy); font-weight: 600; border: none;
-  box-shadow: 0 2px 10px rgba(220, 182, 74, 0.25);
+  background: linear-gradient(180deg, #EBCB63 0%, var(--gold) 55%, #CFA83C 100%);
+  color: #1A130A; font-weight: 700; letter-spacing: .01em; border: none;
+  box-shadow: 0 2px 10px rgba(220, 182, 74, 0.28), inset 0 1px 0 rgba(255,255,255,.35);
 }
-button.primary:hover { filter: brightness(1.05); box-shadow: 0 3px 14px rgba(220, 182, 74, 0.35); }
+button.primary:hover { filter: brightness(1.06); box-shadow: 0 6px 18px rgba(220, 182, 74, 0.4), inset 0 1px 0 rgba(255,255,255,.35); }
 .file-btn { display: inline-flex; align-items: center; }
 
 /* ---------- score result ---------- */
@@ -479,25 +489,25 @@ td:nth-child(3) { font-family: var(--mono); }
 }
 .find-score .fs-num { font-family: var(--mono); font-size: 1.3rem; font-weight: 600; line-height: 1; }
 .find-score .fs-lab { font-size: .58rem; text-transform: uppercase; letter-spacing: .04em; }
-.tier-diamond { background: var(--gold-wash); color: var(--gold); border: 1px solid var(--gold-deep); }
-.tier-strong { background: var(--green-wash); color: var(--green); }
-.tier-live { background: rgba(0,102,204,.16); color: #5EA3E8; }
-.tier-watch { background: var(--navy); color: var(--ink-muted); }
-.find-score { width: 3.5rem; padding: .5rem .2rem; border-radius: 10px; }
-.find-score .fs-num { font-size: 1.6rem; }
+.tier-diamond { background: linear-gradient(160deg, rgba(220,182,74,.26), rgba(220,182,74,.10)); color: var(--gold); border: 1px solid rgba(220,182,74,.45); box-shadow: inset 0 1px 0 rgba(220,182,74,.25); }
+.tier-strong { background: linear-gradient(160deg, rgba(44,193,160,.24), rgba(44,193,160,.08)); color: var(--green); border: 1px solid rgba(44,193,160,.35); }
+.tier-live { background: linear-gradient(160deg, rgba(94,163,232,.22), rgba(94,163,232,.07)); color: #7FB6F0; border: 1px solid rgba(94,163,232,.30); }
+.tier-watch { background: var(--navy); color: var(--ink-muted); border: 1px solid var(--border); }
+.find-score { width: 3.6rem; padding: .55rem .2rem; border-radius: 12px; }
+.find-score .fs-num { font-size: 1.65rem; }
 .find-row {
   position: relative;
   display: flex; align-items: center; gap: 1rem;
-  padding: .8rem .9rem .8rem 1rem; border-radius: 10px; background: var(--navy-3);
-  margin-bottom: .55rem; border: 1px solid var(--border); border-left: 3px solid var(--border);
-  transition: border-color .12s ease, transform .12s ease, background .12s ease;
+  padding: .85rem 1rem; border-radius: 12px; background: var(--navy-3);
+  margin-bottom: .55rem; border: 1px solid var(--border);
+  transition: border-color .18s cubic-bezier(.22,1,.36,1), transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s ease, background .18s ease;
 }
-.find-row:hover { background: #263a5e; transform: translateY(-1px); }
-/* tier accent down the left edge gives the list rhythm */
-.tier-diamond-edge { border-left-color: var(--gold); }
-.tier-strong-edge { border-left-color: var(--green); }
-.tier-live-edge   { border-left-color: #5EA3E8; }
-.tier-watch-edge  { border-left-color: var(--ink-muted); }
+.find-row:hover { background: #263a5e; transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.28); }
+/* tier is carried by the coloured score block; hover firms the border in its hue */
+.tier-diamond-edge:hover { border-color: rgba(220,182,74,.55); }
+.tier-strong-edge:hover  { border-color: rgba(44,193,160,.5); }
+.tier-live-edge:hover    { border-color: rgba(94,163,232,.5); }
+.tier-watch-edge:hover   { border-color: var(--ink-muted); }
 /* the standout — the single best find */
 .find-top {
   background: linear-gradient(100deg, rgba(220,182,74,.10), var(--navy-3) 55%);
@@ -545,16 +555,18 @@ td:nth-child(3) { font-family: var(--mono); }
 
 /* ---------- at-a-glance dashboard strip ---------- */
 .statstrip {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem 1.2rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem 0;
   align-items: center;
-  background: linear-gradient(180deg, #1D3153 0%, #172741 100%);
-  border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem 1.4rem;
-  box-shadow: inset 0 1px 0 rgba(247, 248, 250, .06), var(--shadow-card);
+  background: linear-gradient(180deg, rgba(29,49,83,.6) 0%, rgba(23,39,65,.6) 100%);
+  border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.4rem;
+  box-shadow: inset 0 1px 0 rgba(247, 248, 250, .06);
 }
 .statstrip[hidden] { display: none; }
-.stat { display: grid; gap: .18rem; align-content: center; }
-.stat-num { font-family: var(--mono); font-size: 1.8rem; font-weight: 600; color: var(--cloud); line-height: 1; }
-.stat-lab { font-size: .72rem; color: var(--ink-muted); }
+/* thin dividers between glance metrics for rhythm */
+.stat { display: grid; gap: .2rem; align-content: center; padding: 0 1.1rem; position: relative; }
+.stat + .stat::before { content: ''; position: absolute; left: 0; top: 12%; bottom: 12%; width: 1px; background: var(--border); }
+.stat-num { font-family: var(--mono); font-size: 1.7rem; font-weight: 600; color: var(--cloud); line-height: 1; letter-spacing: -.02em; }
+.stat-lab { font-size: .68rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .05em; }
 .stat-gold .stat-num { color: var(--gold); }
 .stat-green .stat-num { color: var(--green); }
 .stat-top {
@@ -586,8 +598,9 @@ td:nth-child(3) { font-family: var(--mono); }
 /* ---------- Dubai fit in the profile modal ---------- */
 .mp-dubai { background: var(--gold-wash); color: var(--gold); }
 .mp-dubai-why {
-  margin: 0 0 1.1rem; padding: .75rem .95rem; background: var(--navy-3);
-  border-radius: 8px; font-size: .86rem; color: var(--cloud); border-left: 3px solid var(--gold-deep);
+  margin: 0 0 1.1rem; padding: .8rem 1rem; font-size: .86rem; color: var(--cloud);
+  background: linear-gradient(180deg, rgba(220,182,74,.10), rgba(220,182,74,.04));
+  border: 1px solid rgba(220,182,74,.22); border-radius: 10px;
 }
 .mp-dubai-why b { color: var(--gold); }
 
@@ -645,7 +658,7 @@ td:nth-child(3) { font-family: var(--mono); }
 .conf-shoot:hover { background: var(--gold-deep); color: #fff; }
 .conf-shoot:disabled { opacity: .5; cursor: default; }
 .conf-status { font-size: .78rem; color: var(--ink-muted); }
-.conf-summary { border-left: 2px solid var(--gold-deep); padding-left: .5rem; }
+.conf-summary { background: rgba(220,182,74,.07); border: 1px solid rgba(220,182,74,.18); border-radius: 8px; padding: .5rem .65rem; }
 @media (max-width: 520px) { .mkt-bands { grid-template-columns: 1fr; } }
 
 /* pedigree speed↔stamina bar */
