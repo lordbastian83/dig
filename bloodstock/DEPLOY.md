@@ -125,27 +125,41 @@ by eye. The model key stays server-side; the browser never sees it. Until
 it's configured the button just says "AI inspection not enabled yet" and the
 manual grid still works.
 
-To turn it on, add these Static Web App **Application settings** (same place
-as `AZURE_STORAGE_CONNECTION`):
+It works with **Claude (Anthropic)** or **OpenAI / Azure OpenAI**. Add these
+Static Web App **Application settings** (same place as
+`AZURE_STORAGE_CONNECTION`):
 
 | Setting | Value |
 |---|---|
-| `INSPECT_API_URL` | The OpenAI-compatible chat/completions URL |
+| `INSPECT_PROVIDER` | `anthropic` (Claude) or `openai`. Auto-detected from the URL if omitted |
 | `INSPECT_API_KEY` | The API key |
-| `INSPECT_MODEL` | Model name (default `gpt-4o-mini`) |
-| `INSPECT_AUTH` | `bearer` (OpenAI, default) or `api-key` (Azure OpenAI) |
+| `INSPECT_API_URL` | Optional — defaults to the provider's standard endpoint |
+| `INSPECT_MODEL` | Optional — model name (defaults below) |
+| `INSPECT_AUTH` | OpenAI only: `bearer` (default) or `api-key` (Azure) |
 
-**OpenAI:** `INSPECT_API_URL=https://api.openai.com/v1/chat/completions`,
-`INSPECT_MODEL=gpt-4o-mini` (or `gpt-4o` for a sharper read), `INSPECT_AUTH=bearer`.
+**Claude / Anthropic (recommended):** get an API key from
+**console.anthropic.com** (this is the *API*, billed per-use — separate from a
+Claude.ai Pro/Max subscription, which doesn't include API access). Then just:
 
-**Azure OpenAI:** deploy a vision model (e.g. `gpt-4o-mini`), then
+- `INSPECT_PROVIDER=anthropic`
+- `INSPECT_API_KEY=sk-ant-…`
+
+That's it — the URL defaults to `https://api.anthropic.com/v1/messages` and the
+model to a Haiku vision model (cheap/fast). For a sharper read set
+`INSPECT_MODEL=claude-sonnet-5`. Cost is roughly a US cent or two per photo on
+Haiku.
+
+**OpenAI:** `INSPECT_PROVIDER=openai`, `INSPECT_API_KEY=sk-…`. URL defaults to
+`https://api.openai.com/v1/chat/completions`, model to `gpt-4o-mini` (set
+`INSPECT_MODEL=gpt-4o` for a sharper read).
+
+**Azure OpenAI:** deploy a vision model, then `INSPECT_PROVIDER=openai`,
 `INSPECT_API_URL=https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions?api-version=2024-08-01-preview`,
 `INSPECT_API_KEY=<key>`, `INSPECT_AUTH=api-key` (the model comes from the
 deployment URL, so `INSPECT_MODEL` is ignored).
 
-Re-run the deploy workflow after adding them. Cost is a few US cents per
-photo on `gpt-4o-mini`. This is an assistive first pass, **not** the
-biomechanics pose model — that's a separate ML service (see
+Re-run the deploy workflow after adding them. This is an assistive first pass,
+**not** the biomechanics pose model — that's a separate ML service (see
 `DATA-SOURCES.md`); the scorer here is ready to receive its output too.
 
 ## Checklist
