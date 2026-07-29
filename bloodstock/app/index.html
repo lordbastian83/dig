@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260729c">
+<link rel="stylesheet" href="styles.css?v=20260729d">
 </head>
 <body>
 
@@ -404,6 +404,28 @@
     (columns in <code>DATA.md</code>).</p>
   </section>
 
+  <!-- ============ 2e · Portfolio / P&L ============ -->
+  <section class="card" id="portfolio-card" hidden>
+    <div class="card-head">
+      <h2>💷 Portfolio &amp; P&amp;L</h2>
+      <span class="prospects-count" id="portfolio-count"></span>
+    </div>
+    <p class="hint">Every horse you mark <b>bought</b> on the watchlist lands here.
+    Enter what you paid, all-in campaign costs and prize money won — P&amp;L and ROI
+    update live, with current value from the market model. All in guineas, synced.</p>
+    <div class="table-wrap">
+      <table id="portfolio" class="cat-table" hidden>
+        <thead><tr>
+          <th>Horse</th><th>Bought</th><th>Costs</th><th>Prize</th>
+          <th>Value now</th><th>P&amp;L</th><th>ROI</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="portfolio-totals" class="pf-totals" hidden></div>
+    <p class="empty" id="portfolio-empty">No horses bought yet — set a watchlist horse's status to <b>bought</b>.</p>
+  </section>
+
   <!-- ============ 3 · Sales calendar ============ -->
   <section class="card" id="calendar-card">
     <details open>
@@ -467,7 +489,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260729c"></script>
-<script src="app.js?v=20260729c"></script>
+<script src="engine.js?v=20260729d"></script>
+<script src="app.js?v=20260729d"></script>
 </body>
 </html>

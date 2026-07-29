@@ -59,25 +59,42 @@ function mapJson(json, map) {
   });
 }
 
+// Remap a house's own column names to the app's canonical fields. `columns`
+// is { "source header (lower-case)": "appField" } — e.g. Keeneland's
+// { "hip": "lot", "broodmare sire": "damsire", "consignor": "vendor",
+//   "estimate": "guide" }. Unmapped columns pass through untouched, so a
+// header that already matches (sire, dam, …) still works.
+function applyColumns(rows, columns) {
+  if (!columns || !Object.keys(columns).length) return rows;
+  const alias = Object.fromEntries(Object.entries(columns).map(([k, v]) => [k.toLowerCase(), v]));
+  return rows.map((r) => {
+    const out = { ...r };
+    for (const [src, dst] of Object.entries(alias)) {
+      if (r[src] != null && r[src] !== '') out[dst] = r[src];
+    }
+    return out;
+  });
+}
+
 // Fetch + normalise one source into raw catalogue rows (each row is later
 // mapped to a scored lot by catalogue.mjs). Never throws.
 async function fetchSource(src) {
+  const stamp = (rows) => applyColumns(rows, src.columns)
+    .map((r) => ({ ...r, sale: r.sale || src.sale, ccy: r.ccy || src.ccy }));
   try {
     if (src.url) {
       const res = await fetch(src.url, { headers: { 'user-agent': 'vault-racing-catalogue/1.0' } });
       if (!res.ok) { console.error(`  ${src.sale}: feed ${res.status} — skipped`); return []; }
-      if ((src.format || 'csv') === 'json') {
-        const rows = mapJson(await res.json(), src.map || {});
-        return rows.map((r) => ({ ...r, sale: r.sale || src.sale, ccy: r.ccy || src.ccy }));
-      }
-      const rows = parseCSV(await res.text());
-      return rows.map((r) => ({ ...r, sale: r.sale || src.sale, ccy: r.ccy || src.ccy }));
+      if ((src.format || 'csv') === 'json') return stamp(mapJson(await res.json(), src.map || {}));
+      return stamp(parseCSV(await res.text()));
     }
     if (src.file) {
-      const p = join(HERE, '..', 'catalogues', src.file);
-      if (!existsSync(p)) { console.error(`  ${src.sale}: no feed url and no ${src.file} — awaiting catalogue`); return []; }
-      const rows = parseCSV(readFileSync(p, 'utf8'));
-      return rows.map((r) => ({ ...r, sale: r.sale || src.sale, ccy: r.ccy || src.ccy }));
+      // House-native-header exports live in catalogues/sources/ so the raw
+      // directory scan (which expects app-canonical headers) skips them and
+      // the column-alias mapping here applies instead.
+      const p = join(HERE, '..', 'catalogues', 'sources', src.file);
+      if (!existsSync(p)) { console.error(`  ${src.sale}: no feed url and no sources/${src.file} — awaiting catalogue`); return []; }
+      return stamp(parseCSV(readFileSync(p, 'utf8')));
     }
     console.error(`  ${src.sale}: no url or file configured`);
     return [];

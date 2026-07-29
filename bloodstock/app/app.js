@@ -105,6 +105,31 @@ function saveConf(o) { localStorage.setItem(LS_CONF, JSON.stringify(o)); syncPus
 const LS_PED = 'bloodstock.ped.v1';
 function loadPed() { try { return JSON.parse(localStorage.getItem(LS_PED) || '{}'); } catch { return {}; } }
 function savePed(o) { localStorage.setItem(LS_PED, JSON.stringify(o)); syncPush(); }
+// Per-horse training/breeze/sectional times, keyed by name (synced). Manual
+// entry today; ready to receive a TPD/GPS sectional feed later.
+const LS_SECT = 'bloodstock.sect.v1';
+function loadSect() { try { return JSON.parse(localStorage.getItem(LS_SECT) || '{}'); } catch { return {}; } }
+function saveSect(o) { localStorage.setItem(LS_SECT, JSON.stringify(o)); syncPush(); }
+// Reduce breeze/sectional inputs to a pace (sec/furlong) and an indicative read.
+function sectionalRead(s) {
+  if (!s) return null;
+  const out = { notes: [] };
+  const bd = +s.breezeDist, bt = +s.breezeTime;
+  if (bd > 0 && bt > 0) {
+    const spf = bt / bd;
+    out.breezePace = +spf.toFixed(2);
+    out.breezeLabel = spf <= 11.9 ? 'sharp' : spf <= 12.6 ? 'solid' : 'easy';
+    out.notes.push(`${bd}f breeze in ${bt}s → ${out.breezePace}s/f (${out.breezeLabel})`);
+  }
+  const f2 = +s.final2f;
+  if (f2 > 0) {
+    const spf = f2 / 2;
+    out.closePace = +spf.toFixed(2);
+    out.closeLabel = spf <= 11.5 ? 'strong finish' : spf <= 12.2 ? 'fair finish' : 'one-paced';
+    out.notes.push(`closing 2f ${f2}s → ${out.closePace}s/f (${out.closeLabel})`);
+  }
+  return out.notes.length ? out : null;
+}
 
 /* ---------- currency / FX ----------
    The app's money is guineas (gns). Sale guides arrive in the sale's own
@@ -147,6 +172,7 @@ function currentBlob() {
     profiles: JSON.parse(localStorage.getItem(LS_PROFILES) || '{}'),
     conf: loadConf(),
     ped: loadPed(),
+    sect: loadSect(),
     fx: JSON.parse(localStorage.getItem(LS_FX) || '{}'),
     heroImg: localStorage.getItem('bloodstock.heroImg') || '' };
 }
@@ -157,6 +183,7 @@ function applyBlob(b) {
   if (b.profiles) localStorage.setItem(LS_PROFILES, JSON.stringify(b.profiles));
   if (b.conf) localStorage.setItem(LS_CONF, JSON.stringify(b.conf));
   if (b.ped) localStorage.setItem(LS_PED, JSON.stringify(b.ped));
+  if (b.sect) localStorage.setItem(LS_SECT, JSON.stringify(b.sect));
   if (b.fx && Object.keys(b.fx).length) localStorage.setItem(LS_FX, JSON.stringify(b.fx));
   if (b.heroImg) localStorage.setItem('bloodstock.heroImg', b.heroImg);
   return true;
@@ -313,8 +340,9 @@ function renderList() {
     const opts = STATUSES.map((s) =>
       `<option ${h.status === s ? 'selected' : ''}>${s}</option>`).join('');
     return `<tr class="${r.verdict === 'BID' ? '' : 'row-reject'}">
-      <td><b>${h.name}</b>${h.lot ? ' (lot ' + h.lot + ')' : ''}${h.grade ? ` <span class="grade-badge">${h.grade}</span>` : ''}<br>
+      <td><b>${h.name}</b>${h.lot ? ' (lot ' + h.lot + ')' : ''}${h.grade ? ` <span class="grade-badge">${h.grade}</span>` : ''}${h.bidTarget != null ? ` <span class="bid-target" title="your target bid">🎯 ${fmt(h.bidTarget)}</span>` : ''}<br>
           <small>${h.sire || '?'} × ${h.dam || '?'} · ${h.vendor || '?'}</small>
+          ${(h.tags || []).length ? `<span class="wl-tags">${h.tags.map((t) => `<span class="wl-tag">${esc(t)}</span>`).join('')}</span>` : ''}
           ${h.notes ? `<small class="note-preview">✎ ${h.notes.slice(0, 70)}${h.notes.length > 70 ? '…' : ''}</small>` : ''}</td>
       <td>${h.sale}</td>
       <td>${h.rating}</td>
@@ -344,12 +372,83 @@ function renderList() {
             <textarea class="edit-notes" rows="3"
               placeholder="physical inspection, wind, walk, who else was looking…">${h.notes || ''}</textarea>
           </label>
+          <label>Tags
+            <input class="edit-tags" placeholder="e.g. Meydan, dirt cross, filly"
+              value="${(h.tags || []).join(', ')}">
+          </label>
+          <label>Target bid (gns)
+            <input class="edit-target" type="number" min="0" value="${h.bidTarget != null ? h.bidTarget : ''}"
+              placeholder="max ${fmt(evaluate(h, P).gns)}">
+          </label>
           <button class="primary edit-save" data-i="${i}">Save</button>
         </div>
       </td>
     </tr>`;
   }).join('');
+  renderPortfolio();
 }
+
+/* ---------- portfolio / P&L (horses you've bought) ---------- */
+// Portfolio horses are watchlist entries with status 'bought', augmented with
+// financial fields (buyPrice, costs, prize, valueNow) held on the same object.
+function pnlOf(h) {
+  const buy = +h.buyPrice || 0;
+  const costs = +h.costs || 0;
+  const prize = +h.prize || 0;
+  const est = marketEstimate(h);
+  const value = h.valueNow != null && h.valueNow !== '' ? +h.valueNow : (est ? est.base : 0);
+  const pnl = prize + value - buy - costs;
+  const basis = buy + costs;
+  const roi = basis > 0 ? Math.round((pnl / basis) * 100) : null;
+  return { buy, costs, prize, value, valueAuto: h.valueNow == null || h.valueNow === '', pnl, roi };
+}
+function renderPortfolio() {
+  const card = $('#portfolio-card'); if (!card) return;
+  const tbl = $('#portfolio'), tb = tbl.querySelector('tbody');
+  const empty = $('#portfolio-empty'), count = $('#portfolio-count'), totals = $('#portfolio-totals');
+  const list = loadList();
+  const held = list.map((h, i) => ({ h, i })).filter((x) => x.h.status === 'bought');
+  if (!held.length) { card.hidden = true; return; } // hide the whole card until something's bought
+  const num = (v) => v == null ? '' : v;
+  tb.innerHTML = held.map(({ h, i }) => {
+    const p = pnlOf(h);
+    const cls = p.pnl >= 0 ? 'verdict-bid' : 'verdict-reject';
+    return `<tr>
+      <td><b>${esc(h.name)}</b><br><small>${esc(h.sire || '?')} × ${esc(h.dam || '?')}</small></td>
+      <td class="mono"><input class="pf-in" data-i="${i}" data-f="buyPrice" type="number" min="0" value="${num(h.buyPrice)}" placeholder="${fmt(evaluate(h, loadParams()).gns)}"></td>
+      <td class="mono"><input class="pf-in" data-i="${i}" data-f="costs" type="number" min="0" value="${num(h.costs)}" placeholder="0"></td>
+      <td class="mono"><input class="pf-in" data-i="${i}" data-f="prize" type="number" min="0" value="${num(h.prize)}" placeholder="0"></td>
+      <td class="mono"><input class="pf-in" data-i="${i}" data-f="valueNow" type="number" min="0" value="${num(h.valueNow)}" placeholder="${fmt(p.value)}${p.valueAuto ? ' (est)' : ''}"></td>
+      <td class="mono ${cls}">${p.pnl >= 0 ? '+' : ''}${fmt(p.pnl)}</td>
+      <td class="mono ${cls}">${p.roi == null ? '—' : (p.roi >= 0 ? '+' : '') + p.roi + '%'}</td>
+      <td><button class="pf-report" data-i="${i}" title="One-pager">📄</button></td>
+    </tr>`;
+  }).join('');
+  const T = held.reduce((a, { h }) => {
+    const p = pnlOf(h); a.buy += p.buy; a.costs += p.costs; a.prize += p.prize; a.value += p.value; a.pnl += p.pnl; return a;
+  }, { buy: 0, costs: 0, prize: 0, value: 0, pnl: 0 });
+  const basis = T.buy + T.costs;
+  const roi = basis > 0 ? Math.round((T.pnl / basis) * 100) : null;
+  const cls = T.pnl >= 0 ? 'verdict-bid' : 'verdict-reject';
+  totals.innerHTML = `<span>${held.length} held</span>
+    <span>Invested <b>${fmt(T.buy + T.costs)}</b> gns</span>
+    <span>Prize <b>${fmt(T.prize)}</b></span>
+    <span>Value <b>${fmt(T.value)}</b></span>
+    <span class="${cls}">P&amp;L <b>${T.pnl >= 0 ? '+' : ''}${fmt(T.pnl)}</b> gns${roi == null ? '' : ` · ${roi >= 0 ? '+' : ''}${roi}% ROI`}</span>`;
+  tbl.hidden = false; empty.hidden = true; totals.hidden = false; card.hidden = false;
+  if (count) count.textContent = `${held.length} held`;
+}
+if ($('#portfolio')) $('#portfolio').addEventListener('change', (e) => {
+  const inp = e.target.closest('.pf-in'); if (!inp) return;
+  const list = loadList(); const i = +inp.dataset.i;
+  const v = inp.value.trim();
+  list[i][inp.dataset.f] = v === '' ? undefined : +v;
+  saveList(list); renderPortfolio();
+});
+if ($('#portfolio')) $('#portfolio').addEventListener('click', (e) => {
+  const b = e.target.closest('.pf-report'); if (!b) return;
+  const h = loadList()[+b.dataset.i]; if (h) horseReport(h);
+});
 
 function renderParams() {
   const P = loadParams();
@@ -424,6 +523,7 @@ $('#watchlist').addEventListener('change', (e) => {
   const list = loadList();
   list[+e.target.dataset.i].status = e.target.value;
   saveList(list);
+  renderPortfolio(); // 'bought' adds/removes from the P&L card
 });
 
 $('#watchlist').addEventListener('click', (e) => {
@@ -438,6 +538,9 @@ $('#watchlist').addEventListener('click', (e) => {
     const list = loadList();
     list[i].grade = row.querySelector('.edit-grade').value;
     list[i].notes = row.querySelector('.edit-notes').value.trim();
+    list[i].tags = row.querySelector('.edit-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
+    const tgt = row.querySelector('.edit-target').value.trim();
+    list[i].bidTarget = tgt === '' ? undefined : +tgt;
     saveList(list);
     renderList();
     return;
@@ -1110,6 +1213,8 @@ function openHorseModal(h) {
   const fam = femaleFamily(h);
   const pedText = loadPed()[h.name] || '';
   const dos = dosageOf({ ...h, ped: pedText || h.ped });
+  const sect = loadSect()[h.name] || {};
+  const sr = sectionalRead(sect);
   const mkt = marketEstimate(h);
   const roi = roiOutlook(h, P, r.gns);
   const conf = loadConf()[h.name];
@@ -1239,6 +1344,15 @@ function openHorseModal(h) {
     ${conf && conf._summary ? `<p class="hint conf-summary" style="margin:.4rem 0 0"><b>AI read:</b> ${esc(conf._summary)}</p>`
       : '<p class="hint" style="margin:.4rem 0 0">Grade from a photo or inspection — feeds the vet call. Upload a conformation shot for an AI first pass, then adjust.</p>'}
 
+    <h4>Training &amp; sectionals ${sr && sr.breezeLabel ? `<span class="mp-score mp-dubai">${sr.breezeLabel}</span>` : ''}</h4>
+    <div class="sect-grid" data-name="${encodeURIComponent(h.name)}">
+      <label>Breeze distance (f)<input type="number" step="0.5" min="0" data-sect="breezeDist" value="${sect.breezeDist ?? ''}"></label>
+      <label>Breeze time (s)<input type="number" step="0.1" min="0" data-sect="breezeTime" value="${sect.breezeTime ?? ''}"></label>
+      <label>Best closing 2f (s)<input type="number" step="0.1" min="0" data-sect="final2f" value="${sect.final2f ?? ''}"></label>
+    </div>
+    ${sr ? `<p class="hint" style="margin:.3rem 0 0">${sr.notes.join(' · ')}. Indicative — a TPD/GPS sectional feed gives true speed figures.</p>`
+      : '<p class="hint" style="margin:.3rem 0 0">Enter a breeze or closing-sectional time for a pace read. Auto-feed (TPD/GPS sectionals) plugs in here later.</p>'}
+
     <div class="mp-flags">
       ${r.fails.length ? `<b>Fails:</b> ${r.fails.join('; ')}. ` : '<b class="ok">Passes all six filters.</b> '}
       Black type &amp; availability need a human check.
@@ -1346,6 +1460,17 @@ $('#horse-modal').addEventListener('change', (e) => {
     if (v) all[modalHorse.name] = v; else delete all[modalHorse.name];
     savePed(all);
     openHorseModal(modalHorse); // re-render Dosage with the pasted pedigree
+    return;
+  }
+  const sk = e.target.closest('input[data-sect]');
+  if (sk && modalHorse) {
+    const all = loadSect();
+    const cur = all[modalHorse.name] || {};
+    const v = sk.value.trim();
+    if (v === '') delete cur[sk.dataset.sect]; else cur[sk.dataset.sect] = +v;
+    if (Object.keys(cur).length) all[modalHorse.name] = cur; else delete all[modalHorse.name];
+    saveSect(all);
+    openHorseModal(modalHorse); // re-render with the pace read
     return;
   }
   const sel = e.target.closest('select[data-conf]'); if (!sel || !modalHorse) return;

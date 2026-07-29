@@ -668,6 +668,23 @@ td:nth-child(3) { font-family: var(--mono); }
 .ped-editor textarea { width: 100%; margin-top: .4rem; background: var(--navy); color: var(--ink);
   border: 1px solid var(--navy-3); border-radius: 8px; padding: .5rem; font-family: var(--mono); font-size: .8rem; resize: vertical; }
 
+/* training & sectionals */
+.sect-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .5rem .8rem; margin: .4rem 0; }
+.sect-grid label { display: flex; flex-direction: column; gap: .2rem; color: var(--ink-muted); font-size: .78rem; }
+.sect-grid input { width: 100%; }
+
+/* watchlist tags & target bid */
+.wl-tags { display: inline-flex; gap: .3rem; flex-wrap: wrap; margin: .15rem 0; }
+.wl-tag { background: var(--navy-3); color: var(--cloud); border-radius: 999px; padding: .05rem .5rem; font-size: .68rem; }
+.bid-target { color: var(--gold); font-family: var(--mono); font-size: .78rem; }
+
+/* portfolio / P&L */
+.pf-totals { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: .7rem; padding-top: .6rem;
+  border-top: 1px solid var(--navy-3); font-size: .86rem; color: var(--ink-muted); }
+.pf-totals b { color: var(--ink); font-family: var(--mono); }
+#portfolio input.pf-in { width: 6.2rem; font-family: var(--mono); }
+#portfolio .verdict-bid { color: var(--green); } #portfolio .verdict-reject { color: #E8794E; }
+
 /* market intelligence charts */
 .mktintel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.2rem 1.6rem; }
 .mi-chart h4 { margin: 0 0 .5rem; }

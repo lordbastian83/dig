@@ -64,6 +64,15 @@ in CI; leave `url` empty and it falls back to a CSV in `catalogues/`. With
 `SCRAPE=1` (set in the catalogue workflow) it runs each source and merges the
 results into `catalogue.json`; a CSV file of the same sale name always wins.
 
+Each source has a **`columns`** map that translates that house's own header
+names to the app's fields — Keeneland's `Hip` → `lot`, `Broodmare Sire` →
+`damsire`, `Consignor` → `vendor`, `Estimate` → `guide`; Tattersalls' `Sire of
+Dam` → `damsire`; Arqana's French headers (`Père`, `Mère`, `Père de mère`) →
+`sire`/`dam`/`damsire`. So a **raw export ingests without renaming anything**.
+Drop a house's native-header CSV into `catalogues/sources/<file>` (not the
+top-level `catalogues/`, which expects app-canonical headers) and the
+alias-aware scraper maps it.
+
 Why the `url`s are blank today: the houses publish catalogues as web pages
 with no documented public feed, **and the autumn catalogues haven't dropped
 yet** (see `catalogue_expected` — Tattersalls ~6 Oct, Arqana ~early Nov). So
