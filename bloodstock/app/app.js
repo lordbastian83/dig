@@ -625,7 +625,7 @@ $('#export-pdf').addEventListener('click', () => {
       <td>${r.verdict === 'BID' ? 'PASS 6/6' : (6 - r.fails.length) + '/6'}<br><span class="sub">vs ${Math.round(r.score * 100)}</span></td>
       <td class="n gold">${fmt(r.gns)}</td>
       <td class="n">${gap == null ? '—' : (gap >= 0 ? '+' : '') + fmt(gap)}</td>
-      <td>${h.status}</td>
+      <td>${esc(h.status)}</td>
     </tr>`;
   }).join('');
   const w = window.open('', '_blank');
@@ -754,13 +754,13 @@ function renderCatalogue() {
   tb.innerHTML = scored.map(({ h, r, nick }, i) => {
     const [vl, vc] = catVerdict(h, r);
     return `<tr>
-      <td>${h.lot || '—'}</td>
+      <td>${esc(h.lot || '—')}</td>
       <td><b class="cat-name" data-i="${i}" title="Full profile">${esc(h.name)}</b></td>
       <td class="cat-ped">${esc(h.sire || '?')} × ${esc(damsireOf(h) || '?')}</td>
-      <td class="mono">${h.rating || '—'}</td>
+      <td class="mono">${esc(h.rating || '—')}</td>
       <td class="mono">${Math.round(r.score * 100)}</td>
       <td class="mono cat-fit">${dubaiPct(r)}</td>
-      <td class="mono" title="${nick.label}">${Math.round(nick.pct * 100)}</td>
+      <td class="mono" title="${esc(nick.label)}">${Math.round(nick.pct * 100)}</td>
       <td class="mono"${h.guide && ccyOf(h) !== 'gns' ? ` title="≈ ${fmt(guideGns(h))} gns"` : ''}>${h.guide ? fmtCcy(h.guide, ccyOf(h)) : '—'}</td>
       <td class="mono gold">${fmt(r.gns)}</td>
       <td><span class="cat-verdict ${vc}">${vl}</span></td>
@@ -1797,16 +1797,21 @@ fetch(NEWS_URL)
 
 /* ---------- hero image (paste a URL, saved in this browser) ---------- */
 (function heroImage() {
+  // Only accept https image URLs (or an https/data:image) — never javascript:
+  // or other schemes, since this value is set as an <img> src.
+  const okImg = (u) => /^https:\/\//i.test(u) || /^data:image\//i.test(u);
   const saved = localStorage.getItem('bloodstock.heroImg');
   const img = $('#hero-img');
-  if (saved && img) img.src = saved;
+  if (saved && img && okImg(saved)) img.src = saved;
   const setBtn = $('#hero-set');
   if (setBtn) setBtn.addEventListener('click', () => {
-    const url = prompt('Paste an image address (Unsplash → right-click → Copy image address, or any https image URL). Leave blank to clear.',
+    const url = prompt('Paste an https image address (Unsplash → right-click → Copy image address). Leave blank to clear.',
       saved || '');
     if (url === null) return;
-    if (!url.trim()) { localStorage.removeItem('bloodstock.heroImg'); location.reload(); return; }
-    localStorage.setItem('bloodstock.heroImg', url.trim());
+    const clean = url.trim();
+    if (!clean) { localStorage.removeItem('bloodstock.heroImg'); location.reload(); return; }
+    if (!okImg(clean)) { alert('Please use an https:// image URL.'); return; }
+    localStorage.setItem('bloodstock.heroImg', clean);
     location.reload();
   });
 })();
