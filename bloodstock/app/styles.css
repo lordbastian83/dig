@@ -592,6 +592,7 @@ td:nth-child(3) { font-family: var(--mono); }
 .mp-photo-btn:hover::after { opacity: 1; }
 .mp-topline { display: flex; align-items: flex-start; gap: 1rem; }
 .mp-headtext { min-width: 0; flex: 1; }
+.mp-credit { color: var(--ink-muted); font-size: .68rem; margin: -.6rem 0 0; opacity: .85; }
 .find-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin: .35rem 0 .1rem; }
 .ftag {
   font-family: var(--mono); font-size: .68rem; color: var(--cloud);

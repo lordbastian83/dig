@@ -115,12 +115,69 @@ function saveSect(o) { localStorage.setItem(LS_SECT, JSON.stringify(o)); syncPus
 const LS_IMG = 'bloodstock.img.v1';
 function loadImg() { try { return JSON.parse(localStorage.getItem(LS_IMG) || '{}'); } catch { return {}; } }
 function saveImg(o) { localStorage.setItem(LS_IMG, JSON.stringify(o)); syncPush(); }
-// Resolve a horse's photo: user-set (synced) wins, else a catalogue-supplied
-// image URL. Only http(s) or data: URLs are honoured.
+// Local cache of freely-licensed photos found on Wikimedia Commons, keyed by
+// name → { url, credit } or { none: 1 }. A derived cache (not synced).
+const LS_WIKI = 'bloodstock.wiki.v1';
+function loadWiki() { try { return JSON.parse(localStorage.getItem(LS_WIKI) || '{}'); } catch { return {}; } }
+function saveWiki(o) { try { localStorage.setItem(LS_WIKI, JSON.stringify(o)); } catch {} }
+const okUrl = (u) => /^(https?:|data:image\/)/i.test(String(u || ''));
+// Resolve a horse's photo: user-set (synced) wins, then a catalogue image,
+// then a Commons image we found. Only http(s)/data: URLs are honoured.
 function horseImg(h) {
-  const set = loadImg()[h && h.name];
-  const url = set || (h && (h.img || h.image)) || '';
-  return /^(https?:|data:image\/)/i.test(url) ? url : '';
+  const name = h && h.name;
+  const set = loadImg()[name];
+  if (okUrl(set)) return set;
+  const cat = h && (h.img || h.image);
+  if (okUrl(cat)) return cat;
+  const w = loadWiki()[name];
+  return (w && okUrl(w.url)) ? w.url : '';
+}
+// Attribution for the shown photo (empty for the user's own uploads).
+function horseImgCredit(h) {
+  const name = h && h.name;
+  if (loadImg()[name]) return '';
+  if (h && (h.img || h.image)) return h.imgCredit || '';
+  const w = loadWiki()[name];
+  return (w && w.credit) || '';
+}
+// Look a horse up on Wikipedia and return a FREELY-LICENSED lead photo, or
+// null. Guards against namesakes by requiring a horse/racehorse category, and
+// only accepts CC / public-domain licences (never fair-use). CORS-enabled API.
+async function fetchWikiImage(name) {
+  const base = 'https://en.wikipedia.org/w/api.php';
+  const get = async (params) => {
+    const u = base + '?' + new URLSearchParams({ format: 'json', origin: '*', ...params });
+    const r = await fetch(u); if (!r.ok) throw new Error('wiki ' + r.status); return r.json();
+  };
+  const j = await get({ action: 'query', redirects: '1', prop: 'pageimages|categories',
+    piprop: 'thumbnail|name', pithumbsize: '640', cllimit: '50', titles: name });
+  const page = Object.values(j?.query?.pages || {})[0];
+  if (!page || page.missing !== undefined || !page.thumbnail || !page.pageimage) return null;
+  const cats = (page.categories || []).map((c) => (c.title || '').toLowerCase()).join(' ');
+  if (!/racehorse|thoroughbred|\bhorse\b/.test(cats)) return null;         // avoid namesakes
+  const j2 = await get({ action: 'query', prop: 'imageinfo', iiprop: 'extmetadata',
+    titles: 'File:' + page.pageimage });
+  const em = (Object.values(j2?.query?.pages || {})[0]?.imageinfo || [])[0]?.extmetadata || {};
+  const lic = String(em.LicenseShortName?.value || em.License?.value || '');
+  if (!/cc|public domain|cc0|\bpd\b/i.test(lic) || /fair[ -]?use|non[ -]?free/i.test(lic)) return null;
+  const artist = String(em.Artist?.value || em.Credit?.value || '').replace(/<[^>]*>/g, '').trim().slice(0, 60);
+  return { url: page.thumbnail.source, credit: (artist ? artist + ' · ' : '') + lic + ' · Wikimedia Commons' };
+}
+const wikiTried = new Set();
+// Fetch a Commons photo for a horse that has none — once per name, best-effort.
+async function ensureWikiImage(h) {
+  if (!h || !h.name || horseImg(h)) return;
+  const cache = loadWiki();
+  if (cache[h.name] || wikiTried.has(h.name)) return;
+  wikiTried.add(h.name);
+  let found = null;
+  try { found = await fetchWikiImage(h.name); } catch { /* offline / rate-limited */ }
+  cache[h.name] = found || { none: 1 };
+  saveWiki(cache);
+  if (found) {
+    if (modalHorse && modalHorse.name === h.name) openHorseModal(modalHorse);
+    try { renderFinds(); renderList(); } catch {}
+  }
 }
 // Reduce breeze/sectional inputs to a pace (sec/furlong) and an indicative read.
 function sectionalRead(s) {
@@ -1276,6 +1333,7 @@ function openHorseModal(h) {
           <span class="mp-score mp-dubai">🏜 Dubai fit ${dubaiPct(r)}</span>
         </div>
         <p class="mp-sub">${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}${h.trainer ? ` · ${esc(h.trainer)}` : ''}</p>
+        ${horseImgCredit(h) ? `<p class="mp-credit">Photo: ${esc(horseImgCredit(h))}</p>` : ''}
       </div>
     </div>
 
@@ -1408,6 +1466,7 @@ function openHorseModal(h) {
       <button class="mp-report">📄 One-pager PDF</button>
     </div>`;
   $('#horse-modal').hidden = false;
+  ensureWikiImage(h); // if no photo yet, try a free-licensed Commons image
 }
 
 // A shareable one-page PDF report for a single horse (print dialog → save PDF).
