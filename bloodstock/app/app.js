@@ -1201,6 +1201,7 @@ function renderFinds() {
   renderProfileBar();
   renderStats(rows);
   renderMarketIntel();
+  renderTicker(rows);
   const scanDate = RADAR_META.generated || '—';
   const rankLabel = radarSort === 'dubai' ? 'Dubai Carnival fit' : 'vault value score';
   const header = `<p class="finds-meta">Scanned <b>${scanDate}</b> · ${RADAR.length} horses swept ·
@@ -1243,13 +1244,31 @@ function renderStats(rows) {
     `<div class="stat ${cls}"><span class="stat-num">${num}</span><span class="stat-lab">${lab}</span></div>`;
   strip.innerHTML =
     cell(RADAR.length, 'horses swept') +
-    cell(diamonds, '💎 diamonds', diamonds ? 'stat-gold' : '') +
-    cell(dubaiReady, '🏜 Dubai-ready', dubaiReady ? 'stat-green' : '') +
-    cell(daysToCarnival(), '⏱ days to Carnival') +
+    cell(diamonds, 'diamonds', diamonds ? 'stat-gold' : '') +
+    cell(dubaiReady, 'Dubai-ready', dubaiReady ? 'stat-green' : '') +
+    cell(daysToCarnival(), 'days to Carnival') +
     (top ? `<div class="stat stat-top"><span class="stat-lab">top ${radarSort === 'dubai' ? 'for Dubai' : 'value'}</span>` +
       `<span class="stat-topname">${esc(top.h.name)}</span>` +
       `<span class="stat-topsub">vault ${Math.round(top.r.score * 100)} · Dubai fit ${dubaiPct(top.r)}</span></div>` : '');
   strip.hidden = false;
+}
+
+/* ---------- live ticker: top finds + prices scrolling across the top ------- */
+function renderTicker(rows) {
+  const track = document.getElementById('ticker-track');
+  if (!track) return;
+  const items = [];
+  (rows || []).slice(0, 12).forEach(({ h, r }) => {
+    const fit = dubaiPct(r);
+    const cls = fit >= 70 ? 'up' : (fit < 50 ? 'down' : 'amber');
+    items.push(`<span class="tk"><b>${esc((h.name || '').toUpperCase())}</b> ${fmt(r.gns)} <span class="${cls}">${fit}</span></span>`);
+  });
+  const P = loadParams();
+  items.push(`<span class="tk">CARNIVAL <span class="amber">T&minus;${daysToCarnival()}D</span></span>`);
+  items.push(`<span class="tk">SWEPT <b>${RADAR.length}</b></span>`);
+  items.push(`<span class="tk">BUDGET <span class="amber">${fmt(P.budgetGns)}</span></span>`);
+  const seq = items.join('');
+  track.innerHTML = items.length ? seq + seq : ''; // duplicate for a seamless loop
 }
 
 /* ---------- market intelligence: distributions across the swept pool ------ */

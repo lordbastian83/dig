@@ -7,26 +7,29 @@
    and one call to action per screen. Quiet, numerate, exact. */
 
 :root {
-  /* Premium midnight-and-gilt palette. Deep warm ink, surfaces with a hint of
-     blue, one gilt-gold accent used with intent. */
-  --ink:         #080F1A;   /* page base, deep */
-  --navy:        #0E1826;
-  --navy-2:      #121E30;   /* card surface */
-  --navy-3:      #18263A;   /* raised rows / inputs */
-  --line:        #263548;   /* hairline rules */
-  --line-soft:   rgba(234,239,246,0.07);
-  --blue:        #74AEE6;   /* links / live data */
-  --gold:        #C79B45;   /* accent, gilt */
-  --gold-bright: #E7C877;   /* display gold, larger sizes */
+  /* Trading-terminal palette: near-black base, phosphor accents used ONLY to
+     carry meaning (green up, red down, amber alert). Muted, dense, serious. */
+  --ink:         #070A0E;   /* page base, near-black */
+  --navy:        #0B0F15;
+  --navy-2:      #0D131B;   /* panel surface */
+  --navy-3:      #131A24;   /* raised rows / inputs */
+  --line:        #1C2530;   /* grid hairlines */
+  --line-soft:   rgba(198,208,218,0.06);
+  --blue:        #58B6E8;   /* info / links */
+  --cyan:        #56C7D6;
+  --gold:        #D8A93E;   /* amber accent / key figures */
+  --gold-bright: #F0C24E;
   --gold-deep:   #8A6A34;
-  --green:       #46C5A0;
-  --cloud:       #EDF1F6;   /* primary text */
-  --ink-muted:   #93A2B6;
-  --border:      rgba(237, 241, 246, 0.09);
-  --green-wash:  rgba(70, 197, 160, 0.12);
-  --gold-wash:   rgba(199, 155, 69, 0.10);
-  --shadow-card: 0 1px 0 rgba(255,255,255,0.02) inset, 0 12px 30px rgba(0,0,0,0.35);
-  --serif: 'Spectral', Georgia, 'Times New Roman', serif;
+  --green:       #34D07E;   /* up / positive */
+  --red:         #FF5D5D;   /* down / negative */
+  --cloud:       #C7D2DE;   /* primary text, phosphor grey */
+  --ink-muted:   #66727F;   /* labels */
+  --border:      rgba(198, 210, 222, 0.08);
+  --green-wash:  rgba(52, 208, 126, 0.11);
+  --red-wash:    rgba(255, 93, 93, 0.11);
+  --gold-wash:   rgba(216, 169, 62, 0.10);
+  --shadow-card: none;
+  --serif: 'IBM Plex Mono', ui-monospace, monospace;  /* terminal: no serif */
   --sans: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
@@ -37,35 +40,27 @@ body {
   margin: 0;
   background: var(--ink);
   color: var(--cloud);
-  font-family: var(--sans);
-  font-size: 16px;
+  font-family: var(--mono);            /* terminal: monospace-forward */
+  font-size: 13.5px;
   font-weight: 400;
-  line-height: 1.6;
-  letter-spacing: .002em;
+  line-height: 1.5;
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
 }
-/* faint, static backdrop — a whisper of depth behind everything */
+/* faint scanline grid — the CRT/terminal texture, extremely subtle */
 body::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(90% 45% at 50% -6%, rgba(35,62,108,0.35), transparent 60%),
-    radial-gradient(60% 40% at 92% 4%, rgba(199,155,69,0.05), transparent 55%);
+    linear-gradient(rgba(198,210,222,0.014) 1px, transparent 1px) 0 0 / 100% 3px,
+    radial-gradient(80% 50% at 50% 0%, rgba(30,44,64,0.5), transparent 65%);
 }
 
-/* Editorial headings: a real serif for authority */
-h1, h2, h3 { color: var(--cloud); margin: 0 0 .5em; font-family: var(--serif); font-weight: 600; letter-spacing: 0; }
-h2 { font-size: 1.55rem; line-height: 1.12; }
-a { color: var(--blue); }
-
-/* Tasteful entrance: sections settle in on load, staggered */
-@media (prefers-reduced-motion: no-preference) {
-  main > section, main > .hero { animation: rise .6s cubic-bezier(.22,1,.36,1) both; }
-  main > *:nth-child(2) { animation-delay: .04s; }
-  main > *:nth-child(3) { animation-delay: .08s; }
-  main > *:nth-child(4) { animation-delay: .12s; }
-  main > *:nth-child(5) { animation-delay: .16s; }
-  main > *:nth-child(n+6) { animation-delay: .2s; }
-}
+/* Terminal headings: monospace, uppercase, tight */
+h1, h2, h3 { color: var(--cloud); margin: 0 0 .5em; font-family: var(--mono); font-weight: 600; letter-spacing: .01em; }
+h2 { font-size: 1rem; line-height: 1.2; text-transform: uppercase; letter-spacing: .1em; }
+a { color: var(--cyan); }
+/* longer prose stays in the humanist sans for readability */
+.hint, .mp-sub, p.hint { font-family: var(--sans); }
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 code {
   background: var(--navy-3); padding: .1em .35em; border-radius: 4px;
@@ -80,8 +75,33 @@ code {
 }
 .site-header {
   display: flex; align-items: center; gap: 1rem;
-  padding: .6rem 1.2rem;
+  padding: .5rem 1.1rem;
 }
+
+/* ---------- live ticker strip ---------- */
+.ticker {
+  position: sticky; top: 0; z-index: 19;
+  display: flex; align-items: center; gap: 0;
+  background: #05080B; border-bottom: 1px solid var(--line);
+  height: 30px; overflow: hidden; font-family: var(--mono); font-size: .74rem;
+}
+.ticker-live {
+  flex: none; display: inline-flex; align-items: center; gap: .4rem;
+  height: 100%; padding: 0 .8rem; background: var(--navy-3);
+  color: var(--red); font-weight: 600; letter-spacing: .12em; font-size: .68rem;
+  border-right: 1px solid var(--line);
+}
+.ticker-live i { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: blink 1.4s steps(1) infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+.ticker-track { display: inline-flex; align-items: center; white-space: nowrap; will-change: transform;
+  animation: ticker 42s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.tk { display: inline-flex; align-items: center; gap: .5rem; padding: 0 1.1rem; color: var(--ink-muted); }
+.tk b { color: var(--cloud); font-weight: 500; letter-spacing: .04em; }
+.tk .up { color: var(--green); } .tk .down { color: var(--red); } .tk .amber { color: var(--gold); }
+.tk::after { content: ''; width: 1px; height: 11px; background: var(--line); }
+@media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
 
 /* ---------- quick navigation: jump between sections, scroll-spy active ---- */
 .quicknav {
@@ -126,32 +146,25 @@ main > section, main > .hero { scroll-margin-top: 116px; }
 .tagline { color: var(--ink-muted); font-size: .78rem; }
 @media (max-width: 480px) { .tagline { display: none; } }
 
-main { max-width: 1040px; margin: 0 auto; padding: 1.75rem 1.3rem 3rem; display: grid; gap: 1.75rem; }
+main { max-width: 1200px; margin: 0 auto; padding: 1rem 1rem 3rem; display: grid; gap: 1rem; }
 
-/* ---------- hero: the horse this system chases ---------- */
+/* ---------- hero: compact terminal briefing strip ---------- */
 .hero {
   position: relative;
-  display: flex; align-items: center; gap: 2.4rem;
-  background:
-    radial-gradient(120% 140% at 100% 0%, rgba(199,155,69,0.10), transparent 52%),
-    linear-gradient(180deg, #14223A 0%, #101A2C 100%);
-  border: 1px solid rgba(199,155,69,0.18); border-radius: 14px;
-  padding: 3rem 2.8rem; box-shadow: var(--shadow-card);
+  display: flex; align-items: center; gap: 1.4rem;
+  background: var(--navy-2);
+  border: 1px solid var(--line); border-left: 2px solid var(--gold); border-radius: 3px;
+  padding: 1.1rem 1.3rem; box-shadow: var(--shadow-card);
   overflow: hidden;
-}
-/* gilt hairline top and bottom — the masthead frame */
-.hero::before {
-  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px;
-  background: linear-gradient(90deg, var(--gold-bright), rgba(199,155,69,0));
 }
 .hero-text { flex: 1; }
 .hero-text h2 {
-  font-family: var(--serif); font-size: 3rem; line-height: 1.04; font-weight: 600;
-  text-transform: none; margin: 0 0 1rem; letter-spacing: -.015em; color: #fff;
+  font-family: var(--mono); font-size: 1.35rem; line-height: 1.1; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em; margin: 0 0 .5rem; color: var(--cloud);
 }
-.hero-line { margin: .3rem 0; font-size: 1rem; color: var(--cloud); max-width: 58ch; }
-.hero-line.dim { color: var(--ink-muted); font-size: .86rem; margin-top: .5rem; }
-.hero-media { flex: none; margin: 0; width: 190px; height: 190px; position: relative; display: flex; align-items: center; justify-content: center; }
+.hero-line { margin: .18rem 0; font-size: .82rem; color: var(--cloud); max-width: 74ch; font-family: var(--sans); }
+.hero-line.dim { color: var(--ink-muted); font-size: .78rem; margin-top: .3rem; }
+.hero-media { flex: none; margin: 0; width: 84px; height: 84px; position: relative; display: flex; align-items: center; justify-content: center; }
 .hero-media .hero-horse { width: 100%; height: 100%; filter: drop-shadow(0 6px 18px rgba(0,0,0,.35)); }
 .hero-media img {
   width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
@@ -173,41 +186,37 @@ main { max-width: 1040px; margin: 0 auto; padding: 1.75rem 1.3rem 3rem; display:
   .hero-media { width: 150px; height: 150px; }
 }
 
+/* terminal panel: sharp corners, tight, hairline framed */
 .card {
   background: var(--navy-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.7rem 1.9rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1.15rem;
   box-shadow: var(--shadow-card);
 }
-/* editorial section header: serif title over a full-width hairline rule,
-   with a short gilt tab at the left as a quiet signature */
+/* terminal section header: full-bleed strip, mono uppercase, leading marker */
 .card > h2, .card-head > h2 {
-  margin: 0 0 .2em; font-size: 1.6rem; font-weight: 600; letter-spacing: -.01em;
+  margin: 0; font-size: .82rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--cloud);
 }
 .card > h2 {
-  position: relative; padding-bottom: .6rem; border-bottom: 1px solid var(--line); margin-bottom: 1rem;
+  display: flex; align-items: center; margin: -1.15rem -1.15rem 1.1rem; padding: .65rem 1.15rem;
+  background: var(--navy-3); border-bottom: 1px solid var(--line);
 }
-.card > h2::after {
-  content: ''; position: absolute; left: 0; bottom: -1px; width: 2.4rem; height: 2px;
-  background: var(--gold);
+.card > h2::before, .card-head > h2::before {
+  content: '▸'; color: var(--gold); margin-right: .55rem; font-size: .82em; line-height: 1;
 }
-/* card header row: title + a control on the right, over the same hairline */
 .card-head {
-  position: relative;
-  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  padding-bottom: .6rem; border-bottom: 1px solid var(--line); margin-bottom: 1rem;
-}
-.card-head::after {
-  content: ''; position: absolute; left: 0; bottom: -1px; width: 2.4rem; height: 2px; background: var(--gold);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  margin: -1.15rem -1.15rem 1.1rem; padding: .55rem 1.15rem;
+  background: var(--navy-3); border-bottom: 1px solid var(--line);
 }
 .card-head > h2 { margin: 0; }
-.refresh-btn { flex: none; font-size: .82rem; padding: .42rem .85rem; }
+.refresh-btn { flex: none; font-size: .72rem; padding: .3rem .7rem; }
 .refresh-btn:disabled { opacity: .7; cursor: default; }
-.prospects-count { font-family: var(--mono); font-size: .8rem; color: var(--gold); }
+.prospects-count { font-family: var(--mono); font-size: .72rem; color: var(--gold); letter-spacing: .05em; }
 
-.hint { color: var(--ink-muted); font-size: .85rem; margin-top: -0.3em; }
-.warn { color: var(--gold); font-size: .9rem; }
+.hint { color: var(--ink-muted); font-size: .82rem; margin-top: .1em; }
+.warn { color: var(--gold); font-size: .85rem; }
 
 /* ---------- calendar (live data = blue) ---------- */
 .chips { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: .8rem; }
@@ -251,10 +260,10 @@ main { max-width: 1040px; margin: 0 auto; padding: 1.75rem 1.3rem 3rem; display:
 .grid { display: grid; gap: .8rem 1rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
 label { display: grid; gap: .3rem; font-size: .78rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
 input, select, textarea {
-  background: rgba(8, 14, 24, 0.55); color: var(--cloud);
-  border: 1px solid var(--line); border-radius: 8px;
-  padding: .62rem .75rem; font: inherit; font-size: .95rem; text-transform: none; letter-spacing: normal;
-  transition: border-color .14s ease, box-shadow .14s ease;
+  background: #05080B; color: var(--cloud);
+  border: 1px solid var(--line); border-radius: 3px;
+  padding: .5rem .6rem; font-family: var(--mono); font-size: .84rem; text-transform: none; letter-spacing: normal;
+  transition: border-color .12s ease, box-shadow .12s ease;
 }
 input::placeholder { color: rgba(147, 162, 182, 0.6); }
 input[type=number] { font-family: var(--mono); }
@@ -283,19 +292,18 @@ details.more .grid { margin-top: .8rem; }
 
 .form-actions { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .8rem; }
 button, .file-btn {
-  background: transparent; color: var(--cloud);
-  border: 1px solid var(--line); border-radius: 8px;
-  padding: .5rem 1rem; font-family: var(--sans); font-size: .9rem;
-  font-weight: 500; cursor: pointer;
-  transition: border-color .14s ease, background .14s ease, color .14s ease;
+  background: var(--navy-3); color: var(--cloud);
+  border: 1px solid var(--line); border-radius: 3px;
+  padding: .42rem .8rem; font-family: var(--mono); font-size: .76rem;
+  font-weight: 500; letter-spacing: .04em; text-transform: uppercase; cursor: pointer;
+  transition: border-color .12s ease, background .12s ease, color .12s ease;
 }
-button:hover, .file-btn:hover { border-color: var(--ink-muted); background: rgba(234, 238, 243, 0.05); }
-/* one call to action per screen — solid gold, no gloss */
+button:hover, .file-btn:hover { border-color: var(--ink-muted); background: #182230; color: #fff; }
+/* one call to action per screen — amber, terminal */
 button.primary {
-  background: var(--gold); color: #1A130A; font-weight: 600; letter-spacing: .005em;
-  border: 1px solid var(--gold);
+  background: var(--gold); color: #16110A; font-weight: 600; border: 1px solid var(--gold);
 }
-button.primary:hover { background: #D6AE55; border-color: #D6AE55; }
+button.primary:hover { background: var(--gold-bright); border-color: var(--gold-bright); }
 .file-btn { display: inline-flex; align-items: center; }
 
 /* ---------- score result ---------- */
