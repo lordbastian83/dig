@@ -160,7 +160,12 @@ async function fetchWikiImage(name) {
   const em = (Object.values(j2?.query?.pages || {})[0]?.imageinfo || [])[0]?.extmetadata || {};
   const lic = String(em.LicenseShortName?.value || em.License?.value || '');
   if (!/cc|public domain|cc0|\bpd\b/i.test(lic) || /fair[ -]?use|non[ -]?free/i.test(lic)) return null;
-  const artist = String(em.Artist?.value || em.Credit?.value || '').replace(/<[^>]*>/g, '').trim().slice(0, 60);
+  // Strip HTML tags iteratively (a single pass can leave nested/malformed
+  // tags behind), then drop any stray angle brackets so no markup can survive.
+  let artist = String(em.Artist?.value || em.Credit?.value || '');
+  let prev;
+  do { prev = artist; artist = artist.replace(/<[^>]*>/g, ''); } while (artist !== prev);
+  artist = artist.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
   return { url: page.thumbnail.source, credit: (artist ? artist + ' · ' : '') + lic + ' · Wikimedia Commons' };
 }
 const wikiTried = new Set();
