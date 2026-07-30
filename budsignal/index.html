@@ -302,6 +302,33 @@
         </div>
       </div>
 
+      <h3 class="perf-h3">Quant tearsheet</h3>
+      <p class="section-sub">Institutional-style statistics computed from the paper account above — same trades, same edge-weighted sizing, nothing curated. Sharpe and expectancy only mean something once the live sample grows; early numbers lean on backfill.</p>
+      <div class="tiles" id="ts-tiles">
+        <div class="tile"><span class="tile-label">Annualised return</span><span class="tile-value" id="ts-cagr">—</span><span class="tile-note">geometric, from the equity curve</span></div>
+        <div class="tile"><span class="tile-label">Sharpe ratio</span><span class="tile-value" id="ts-sharpe">—</span><span class="tile-note" id="ts-sharpe-note">annualised, per-trade returns</span></div>
+        <div class="tile"><span class="tile-label">Expectancy</span><span class="tile-value" id="ts-expect">—</span><span class="tile-note" id="ts-payoff">—</span></div>
+        <div class="tile"><span class="tile-label">MAR ratio</span><span class="tile-value" id="ts-mar">—</span><span class="tile-note">annualised return ÷ max drawdown</span></div>
+        <div class="tile"><span class="tile-label">Monte Carlo risk</span><span class="tile-value" id="ts-mc">—</span><span class="tile-note">95th-pct drawdown, next 100 trades</span></div>
+        <div class="tile"><span class="tile-label">Trade rate</span><span class="tile-value" id="ts-rate">—</span><span class="tile-note" id="ts-span">—</span></div>
+      </div>
+      <div class="equity-card">
+        <h3>Paper equity &amp; drawdown</h3>
+        <canvas id="ts-curve" height="240"></canvas>
+      </div>
+      <div class="ts-grid">
+        <div class="equity-card">
+          <h3>Trade outcomes (R multiples)</h3>
+          <canvas id="ts-hist" height="170"></canvas>
+        </div>
+        <div class="equity-card">
+          <h3>Monthly returns</h3>
+          <div class="table-wrap ts-monthly-wrap">
+            <table class="record-table ts-monthly"><tbody id="ts-monthly-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+
       <h3 class="perf-h3">Where to improve</h3>
       <p class="section-sub">The same ledger sliced by trade side, confidence, and regime — weak segments are where the rules get tightened next.</p>
       <div class="table-wrap perf-table">

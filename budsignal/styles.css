@@ -432,6 +432,16 @@ a { color: var(--text-primary); }
 .table-empty { text-align: center; color: var(--text-muted); padding: 28px !important; }
 
 .radar-dist { color: var(--text-muted); font-size: 12.5px; }
+
+/* quant tearsheet */
+.ts-grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; margin-top: 16px; }
+.ts-grid > * { min-width: 0; } /* let cards shrink below their table's min-content */
+.ts-monthly { min-width: 560px; }
+#ts-curve, #ts-hist { display: block; width: 100%; }
+.ts-monthly th, .ts-monthly td { padding: 7px 9px; font-size: 12.5px; }
+.ts-monthly th { font-size: 11px; }
+.ts-monthly-wrap { border: none; background: none; }
+@media (max-width: 920px) { .ts-grid { grid-template-columns: 1fr; } }
 .radar-hot {
   color: var(--ema50); font-weight: 700; font-size: 12.5px;
   background: rgba(201, 133, 0, 0.12);

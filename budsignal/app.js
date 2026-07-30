@@ -889,19 +889,24 @@
     const closed = recs.filter((r) => r.outcome !== 'open' && r.entry && r.stop)
       .sort((a, b) => a.t - b.t);
     let equity = start, peak = start, maxDD = 0, best = null, worst = null;
+    const trades = []; // per-trade series feeding the quant tearsheet
     for (const r of closed) {
       const stopPct = Math.abs(r.entry - r.stop) / r.entry * 100;
       if (!stopPct) continue;
       const netMove = r.movePct - (PAPER_COSTS[r.asset] ?? 0.05);
       const R = netMove / stopPct;           // outcome in risk units
-      const pnl = equity * 0.01 * E.riskMultiplier(r) * R; // 1% base, edge-weighted per stream
+      const fret = 0.01 * E.riskMultiplier(r) * R; // fractional account return, 1% base edge-weighted
+      const pnl = equity * fret;
       equity += pnl;
       peak = Math.max(peak, equity);
-      maxDD = Math.max(maxDD, (peak - equity) / peak * 100);
+      const dd = (peak - equity) / peak * 100;
+      maxDD = Math.max(maxDD, dd);
+      trades.push({ t: r.t, R, fret, equity, dd });
       if (best == null || pnl > best) best = pnl;
       if (worst == null || pnl < worst) worst = pnl;
     }
     const ret = (equity / start - 1) * 100;
+    renderTearsheet(trades, start, equity, maxDD);
     $('paper-equity').textContent = `£${fmtUsd(equity)}`;
     $('paper-start').textContent = `started at £${fmtUsd(start)}`;
     const retEl = $('paper-return');
@@ -912,6 +917,182 @@
     $('paper-dd').textContent = `−${maxDD.toFixed(1)}%`;
     $('paper-best').textContent = best != null ? `+£${fmtUsd(Math.max(best, 0))}` : '—';
     $('paper-worst').textContent = worst != null ? `worst −£${fmtUsd(Math.abs(Math.min(worst, 0)))}` : '—';
+  }
+
+  /* ---------------- quant tearsheet ---------------- */
+
+  // Institutional-style statistics over the paper-account trade series.
+  // Everything derives from the same ledger the tiles use — no separate
+  // data source, so the tearsheet can never disagree with the account.
+  function renderTearsheet(trades, start, endEquity, maxDD) {
+    const wrap = $('ts-tiles');
+    if (!wrap || trades.length < 5) return;
+    const n = trades.length;
+    const spanDays = Math.max(1, (trades[n - 1].t - trades[0].t) / 86400000);
+    const years = spanDays / 365;
+    const perYear = n / years;
+
+    const rets = trades.map((x) => x.fret);
+    const mean = rets.reduce((a, b) => a + b, 0) / n;
+    const sd = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, n - 1));
+    const sharpe = sd > 0 ? (mean / sd) * Math.sqrt(perYear) : null;
+
+    const Rs = trades.map((x) => x.R);
+    const expectR = Rs.reduce((a, b) => a + b, 0) / n;
+    const wins = Rs.filter((r) => r > 0), losses = Rs.filter((r) => r <= 0);
+    const avgWin = wins.length ? wins.reduce((a, b) => a + b, 0) / wins.length : 0;
+    const avgLoss = losses.length ? -losses.reduce((a, b) => a + b, 0) / losses.length : 0;
+
+    const cagr = (Math.pow(endEquity / start, 1 / Math.max(years, 0.25)) - 1) * 100;
+    const mar = maxDD > 0 ? (cagr / maxDD) : null;
+
+    // Monte Carlo: resample the observed per-trade returns (seeded, so the
+    // page shows the same figure on every load) over the next 100 trades and
+    // take the 95th-percentile max drawdown across 1,000 paths.
+    let seed = 42;
+    const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const dds = [];
+    for (let p = 0; p < 1000; p++) {
+      let eq = 1, pk = 1, dd = 0;
+      for (let i = 0; i < 100; i++) {
+        eq *= 1 + rets[Math.floor(rand() * n)];
+        pk = Math.max(pk, eq);
+        dd = Math.max(dd, (pk - eq) / pk);
+      }
+      dds.push(dd);
+    }
+    dds.sort((a, b) => a - b);
+    const mc95 = dds[Math.floor(0.95 * dds.length)] * 100;
+
+    $('ts-cagr').textContent = fmtPct(cagr);
+    $('ts-cagr').className = `tile-value ${cagr >= 0 ? 'pos' : 'neg'}`;
+    $('ts-sharpe').textContent = sharpe != null ? sharpe.toFixed(2) : 'n/a';
+    $('ts-expect').textContent = `${expectR >= 0 ? '+' : ''}${expectR.toFixed(2)}R`;
+    $('ts-payoff').textContent = `${((wins.length / n) * 100).toFixed(0)}% win · payoff ${avgLoss > 0 ? (avgWin / avgLoss).toFixed(1) : '∞'}:1`;
+    $('ts-mar').textContent = mar != null ? mar.toFixed(2) : 'n/a';
+    $('ts-mc').textContent = `−${mc95.toFixed(1)}%`;
+    $('ts-rate').textContent = `${perYear.toFixed(0)}/yr`;
+    $('ts-span').textContent = `${n} trades over ${(spanDays / 30.44).toFixed(1)} months`;
+
+    drawTearsheetCurve(trades, start);
+    drawHistogram(Rs);
+    renderMonthly(trades, start);
+  }
+
+  // Shared canvas prep: size to CSS box × devicePixelRatio, clear, return ctx.
+  function canvasCtx(id) {
+    const canvas = $(id);
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const h = +canvas.getAttribute('height');
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.height = `${h}px`;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, rect.width, h);
+    return { ctx, w: rect.width, h };
+  }
+
+  // Equity line (top panel) with the underwater drawdown area beneath it.
+  function drawTearsheetCurve(trades, start) {
+    const c = canvasCtx('ts-curve');
+    if (!c) return;
+    const { ctx, w, h } = c;
+    const padL = 8, padR = 8;
+    const eqH = Math.round(h * 0.62), ddTop = eqH + 14, ddH = h - ddTop - 4;
+    const xs = (i) => padL + (i / Math.max(1, trades.length - 1)) * (w - padL - padR);
+
+    const eqs = [start, ...trades.map((x) => x.equity)];
+    const lo = Math.min(...eqs), hi = Math.max(...eqs);
+    const ye = (v) => 4 + (1 - (v - lo) / Math.max(1e-9, hi - lo)) * (eqH - 8);
+    ctx.strokeStyle = COLORS.grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, ye(start)); ctx.lineTo(w - padR, ye(start)); ctx.stroke();
+    ctx.strokeStyle = COLORS.line;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    trades.forEach((x, i) => { const px = xs(i), py = ye(x.equity); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+    ctx.stroke();
+
+    const maxDD = Math.max(...trades.map((x) => x.dd), 1);
+    const yd = (v) => ddTop + (v / maxDD) * ddH;
+    ctx.fillStyle = 'rgba(208, 59, 59, 0.25)';
+    ctx.strokeStyle = COLORS.down;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xs(0), yd(0));
+    trades.forEach((x, i) => ctx.lineTo(xs(i), yd(x.dd)));
+    ctx.lineTo(xs(trades.length - 1), yd(0));
+    ctx.closePath(); ctx.fill();
+    ctx.font = '11px system-ui';
+    ctx.fillStyle = COLORS.muted;
+    ctx.fillText('equity', padL + 2, 14);
+    ctx.fillText(`drawdown (max −${maxDD.toFixed(1)}%)`, padL + 2, ddTop + 12);
+  }
+
+  // R-multiple distribution: bars left of the zero line are losses (red),
+  // right are wins (green) — the position carries the sign, color echoes it.
+  function drawHistogram(Rs) {
+    const c = canvasCtx('ts-hist');
+    if (!c) return;
+    const { ctx, w, h } = c;
+    const BIN = 0.5, MIN = -2.5, MAX = 6;
+    const bins = new Array(Math.round((MAX - MIN) / BIN)).fill(0);
+    for (const r of Rs) {
+      const i = Math.min(bins.length - 1, Math.max(0, Math.floor((r - MIN) / BIN)));
+      bins[i]++;
+    }
+    const peak = Math.max(...bins, 1);
+    const bw = (w - 16) / bins.length;
+    const baseline = h - 18;
+    bins.forEach((count, i) => {
+      const x = 8 + i * bw;
+      const binLo = MIN + i * BIN;
+      const bh = (count / peak) * (baseline - 10);
+      ctx.fillStyle = binLo + BIN <= 0 ? COLORS.down : binLo >= 0 ? COLORS.up : COLORS.muted;
+      if (count) {
+        ctx.beginPath();
+        ctx.roundRect(x + 1, baseline - bh, Math.max(1, bw - 2), bh, 3);
+        ctx.fill();
+      }
+    });
+    const zeroX = 8 + ((0 - MIN) / BIN) * bw;
+    ctx.strokeStyle = COLORS.baseline;
+    ctx.beginPath(); ctx.moveTo(zeroX, 4); ctx.lineTo(zeroX, baseline); ctx.stroke();
+    ctx.font = '11px system-ui';
+    ctx.fillStyle = COLORS.muted;
+    ctx.fillText('−2R', 8, h - 5);
+    ctx.fillText('0', zeroX - 3, h - 5);
+    ctx.fillText('+6R', w - 32, h - 5);
+  }
+
+  // Month-by-month % change of the paper equity, rows per year. Values wear
+  // pos/neg ink with explicit signs — never color alone.
+  function renderMonthly(trades, start) {
+    const body = $('ts-monthly-body');
+    if (!body) return;
+    const months = new Map(); // 'YYYY-MM' -> end equity
+    for (const x of trades) months.set(new Date(x.t).toISOString().slice(0, 7), x.equity);
+    const keys = [...months.keys()].sort();
+    if (!keys.length) return;
+    let prev = start;
+    const cells = new Map();
+    for (const k of keys) {
+      const eq = months.get(k);
+      cells.set(k, (eq / prev - 1) * 100);
+      prev = eq;
+    }
+    const years = [...new Set(keys.map((k) => k.slice(0, 4)))];
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const head = `<tr><th></th>${MONTHS.map((m) => `<th class="num">${m}</th>`).join('')}</tr>`;
+    const rows = years.map((y) => `<tr><td>${y}</td>${MONTHS.map((_, i) => {
+      const v = cells.get(`${y}-${String(i + 1).padStart(2, '0')}`);
+      return v == null ? '<td class="num radar-dist">·</td>'
+        : `<td class="num ${v >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(v)}</td>`;
+    }).join('')}</tr>`);
+    body.innerHTML = head + rows.join('');
   }
 
   function segmentStats(recs) {
