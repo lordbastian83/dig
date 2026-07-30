@@ -1011,3 +1011,21 @@ th.sk:hover { color: var(--cloud); }
 th.sk[data-sortdir]::after { color: var(--cyan); margin-left: .25rem; font-size: .9em; }
 th.sk[data-sortdir="asc"]::after  { content: '\25B2'; }
 th.sk[data-sortdir="desc"]::after { content: '\25BC'; }
+
+/* saved views bar — pinnable scanner presets */
+.views-bar { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; margin: 0 0 .7rem; }
+.views-lab { font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); margin-right: .1rem; }
+.views-empty { font-size: .68rem; color: var(--ink-muted); font-style: italic; }
+.view-chip {
+  display: inline-flex; align-items: center; gap: .35rem; cursor: pointer;
+  background: var(--navy-3); border: 1px solid var(--line); color: var(--cloud);
+  font-family: var(--mono); font-size: .68rem; padding: .18rem .5rem; border-radius: 2px;
+}
+.view-chip:hover { border-color: var(--cyan); }
+.view-chip .vx { color: var(--ink-muted); font-size: .82rem; line-height: 1; }
+.view-chip .vx:hover { color: var(--red); }
+.view-pin {
+  cursor: pointer; background: transparent; border: 1px dashed var(--line); color: var(--ink-muted);
+  font-family: var(--mono); font-size: .66rem; padding: .18rem .5rem; border-radius: 2px;
+}
+.view-pin:hover { color: var(--cyan); border-color: var(--cyan); }

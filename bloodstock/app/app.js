@@ -249,6 +249,7 @@ function currentBlob() {
     sect: loadSect(),
     img: loadImg(),
     fx: JSON.parse(localStorage.getItem(LS_FX) || '{}'),
+    views: JSON.parse(localStorage.getItem('bloodstock.views.v1') || '[]'),
     heroImg: localStorage.getItem('bloodstock.heroImg') || '' };
 }
 function applyBlob(b) {
@@ -261,6 +262,7 @@ function applyBlob(b) {
   if (b.ped) localStorage.setItem(LS_PED, JSON.stringify(b.ped));
   if (b.sect) localStorage.setItem(LS_SECT, JSON.stringify(b.sect));
   if (b.fx && Object.keys(b.fx).length) localStorage.setItem(LS_FX, JSON.stringify(b.fx));
+  if (Array.isArray(b.views)) localStorage.setItem('bloodstock.views.v1', JSON.stringify(b.views));
   if (b.heroImg) localStorage.setItem('bloodstock.heroImg', b.heroImg);
   return true;
 }
@@ -1395,6 +1397,53 @@ function startLiveSim() {
 }
 function stopLiveSim() { if (scanLiveTimer) { clearInterval(scanLiveTimer); scanLiveTimer = null; } }
 
+/* ---------- saved views: pin a profile + rank + column sort + filter ------- */
+const LS_VIEWS = 'bloodstock.views.v1';
+function loadViews() { try { return JSON.parse(localStorage.getItem(LS_VIEWS) || '[]'); } catch { return []; } }
+function saveViews(v) { localStorage.setItem(LS_VIEWS, JSON.stringify(v)); if (typeof syncPush === 'function') syncPush(); }
+function currentView() {
+  return { profile: activeProfile().name, rank: radarSort, sort: scanSort ? { ...scanSort } : null, q: scanSearch };
+}
+function autoViewName(s) {
+  const bits = [s.profile, s.rank === 'dubai' ? 'Dubai' : 'value'];
+  if (s.sort) bits.push('↕' + s.sort.key);
+  if (s.q) bits.push('“' + s.q + '”');
+  return bits.join(' · ').slice(0, 42);
+}
+function renderViews() {
+  const bar = $('#views-bar'); if (!bar) return;
+  const views = loadViews();
+  const chips = views.map((v, i) =>
+    `<button class="view-chip" data-vi="${i}">${esc(v.name)}<span class="vx" data-del="${i}" role="button" aria-label="Remove view" title="Remove">×</span></button>`).join('');
+  bar.innerHTML = `<span class="views-lab">Views</span>${chips || '<span class="views-empty">none pinned</span>'}` +
+    `<button class="view-pin" id="view-pin" title="Pin the current profile, rank, sort and filter">＋ Pin current</button>`;
+}
+function applyView(v) {
+  const { list } = loadProfiles();
+  if (v.profile) { saveProfiles(v.profile, list.filter((p) => !p.builtin)); renderProfileBar(); }
+  radarSort = v.rank || 'vault';
+  const st = $('#sort-toggle'); if (st) st.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.sort === radarSort));
+  scanSort = v.sort ? { ...v.sort } : null;
+  scanSearch = v.q || '';
+  const s = $('#scan-search'); if (s) s.value = scanSearch;
+  findsExpanded = false;
+  renderFinds();
+}
+document.addEventListener('click', (e) => {
+  const del = e.target.closest('.vx[data-del]');
+  if (del) { e.stopPropagation(); const views = loadViews(); views.splice(+del.dataset.del, 1); saveViews(views); renderViews(); return; }
+  const chip = e.target.closest('.view-chip[data-vi]');
+  if (chip) { const v = loadViews()[+chip.dataset.vi]; if (v) applyView(v); return; }
+  if (e.target.closest('#view-pin')) {
+    const s = currentView(); s.name = autoViewName(s);
+    const views = loadViews();
+    // replace a same-named view rather than pile up duplicates
+    const at = views.findIndex((x) => x.name === s.name);
+    if (at >= 0) views[at] = s; else views.push(s);
+    saveViews(views); renderViews();
+  }
+});
+
 function renderFinds() {
   const card = $('#finds-card');
   if (!RADAR.length) { card.hidden = true; navShow('finds-card', false); return; }
@@ -1455,6 +1504,7 @@ function renderFinds() {
     if (scanActive >= rs.length) scanActive = rs.length - 1;
     rs.forEach((r, idx) => r.classList.toggle('is-active', idx === scanActive));
   }
+  const vb = $('#views-bar'); if (vb && !vb.children.length) renderViews();
   card.hidden = false;
 }
 // Move the keyboard cursor; focus the row so Enter opens it and it scrolls in.
