@@ -395,13 +395,18 @@ table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
 thead th { border-bottom: 1px solid var(--line); padding-bottom: .5rem; }
 th {
-  color: var(--ink-muted); font-weight: 500; font-size: .68rem;
-  font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em;
+  color: var(--ink-muted); font-weight: 600; font-size: .6rem;
+  font-family: var(--sans); text-transform: uppercase; letter-spacing: .1em;
 }
+td.ta-c, th.ta-c { text-align: center; }
+td.ta-r, th.ta-r { text-align: right; }
 td small { color: var(--ink-muted); }
-td { font-weight: 300; }
-td b { font-weight: 500; }
-.bid-cell { font-family: var(--mono); color: var(--gold); font-weight: 600; font-size: .95rem; }
+td { font-weight: 400; }
+td b { font-weight: 600; }
+/* shared grid language: catalogue + watchlist rows behave like scanner rows */
+#catalogue-table tbody tr, #watchlist tbody tr { transition: background .12s ease; }
+#catalogue-table tbody tr:hover, #watchlist tbody tr:hover { background: rgba(56, 189, 248, .05); }
+.bid-cell { font-family: var(--mono); color: var(--cloud); font-weight: 600; font-size: .92rem; font-variant-numeric: tabular-nums; }
 .gap-cell { font-family: var(--mono); font-size: .88rem; }
 .gap-cell small { display: block; font-size: .72rem; }
 .gap-cell .verdict-bid { color: var(--green); }
@@ -830,7 +835,7 @@ td:nth-child(3) { font-family: var(--mono); }
 /* watchlist tags & target bid */
 .wl-tags { display: inline-flex; gap: .3rem; flex-wrap: wrap; margin: .15rem 0; }
 .wl-tag { background: var(--navy-3); color: var(--cloud); border-radius: 999px; padding: .05rem .5rem; font-size: .68rem; }
-.bid-target { color: var(--gold); font-family: var(--mono); font-size: .78rem; }
+.bid-target { color: var(--cyan); font-family: var(--mono); font-size: .72rem; border: 1px solid var(--line); border-radius: 2px; padding: 0 .3rem; }
 
 /* portfolio / P&L */
 .pf-totals { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: .7rem; padding-top: .6rem;

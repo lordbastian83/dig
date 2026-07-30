@@ -427,12 +427,12 @@ function renderList() {
     const opts = STATUSES.map((s) =>
       `<option ${h.status === s ? 'selected' : ''}>${s}</option>`).join('');
     return `<tr class="${r.verdict === 'BID' ? '' : 'row-reject'}">
-      <td><b>${esc(h.name)}</b>${h.lot ? ' (lot ' + esc(h.lot) + ')' : ''}${h.grade ? ` <span class="grade-badge">${esc(h.grade)}</span>` : ''}${h.bidTarget != null ? ` <span class="bid-target" title="your target bid">🎯 ${fmt(h.bidTarget)}</span>` : ''}<br>
+      <td><b>${esc(h.name)}</b>${h.lot ? ' (lot ' + esc(h.lot) + ')' : ''}${h.grade ? ` <span class="grade-badge">${esc(h.grade)}</span>` : ''}${h.bidTarget != null ? ` <span class="bid-target" title="your target bid">TGT ${fmt(h.bidTarget)}</span>` : ''}<br>
           <small>${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}</small>
           ${(h.tags || []).length ? `<span class="wl-tags">${h.tags.map((t) => `<span class="wl-tag">${esc(t)}</span>`).join('')}</span>` : ''}
-          ${h.notes ? `<small class="note-preview">✎ ${esc(h.notes.slice(0, 70))}${h.notes.length > 70 ? '…' : ''}</small>` : ''}</td>
+          ${h.notes ? `<small class="note-preview">${esc(h.notes.slice(0, 70))}${h.notes.length > 70 ? '…' : ''}</small>` : ''}</td>
       <td>${esc(h.sale)}</td>
-      <td>${h.rating}</td>
+      <td class="ta-c">${h.rating ? heatPill(h.rating, 'Official rating') : '—'}</td>
       <td class="${r.verdict === 'BID' ? 'verdict-bid' : 'verdict-reject'}">
           ${r.verdict === 'BID' ? 'PASS 6/6' : (6 - r.fails.length) + '/6'}<br>
           <small class="mono">vs ${Math.round(r.score * 100)}</small></td>
@@ -839,12 +839,12 @@ function renderCatalogue() {
       <td>${esc(h.lot || '—')}</td>
       <td><b class="cat-name" data-i="${i}" title="Full profile">${esc(h.name)}</b></td>
       <td class="cat-ped">${esc(h.sire || '?')} × ${esc(damsireOf(h) || '?')}</td>
-      <td class="mono">${esc(h.rating || '—')}</td>
-      <td class="mono">${Math.round(r.score * 100)}</td>
-      <td class="mono cat-fit">${dubaiPct(r)}</td>
-      <td class="mono" title="${esc(nick.label)}">${Math.round(nick.pct * 100)}</td>
+      <td class="ta-c">${h.rating ? heatPill(h.rating, 'Official rating') : '<span class="pill pill-na">–</span>'}</td>
+      <td class="ta-c">${heatPill(Math.round(r.score * 100), 'Vault score')}</td>
+      <td class="ta-c">${heatPill(dubaiPct(r), 'Dubai fit')}</td>
+      <td class="ta-c" title="${esc(nick.label)}">${heatPill(Math.round(nick.pct * 100), 'Dirt nick')}</td>
       <td class="mono"${h.guide && ccyOf(h) !== 'gns' ? ` title="≈ ${fmt(guideGns(h))} gns"` : ''}>${h.guide ? fmtCcy(h.guide, ccyOf(h)) : '—'}</td>
-      <td class="mono gold">${fmt(r.gns)}</td>
+      <td class="mono sc-bid">${fmt(r.gns)}</td>
       <td><span class="cat-verdict ${vc}">${vl}</span></td>
       <td><button class="cat-add" data-i="${i}" title="Add to watchlist">＋</button></td>
     </tr>`;
