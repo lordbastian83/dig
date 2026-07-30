@@ -38,11 +38,11 @@
   if (!ASSETS[currentAsset]) currentAsset = 'BTC';
 
   const COLORS = {
-    up: '#0ca30c', down: '#d03b3b',
-    ema20: '#3987e5', ema50: '#c98500',
-    line: '#3987e5', lineWash: 'rgba(57, 135, 229, 0.10)',
-    grid: '#2c2c2a', baseline: '#383835',
-    muted: '#898781', ink: '#ffffff', surface: '#1a1a19',
+    up: '#16b616', down: '#e04a4a',
+    ema20: '#4a90e8', ema50: '#c98500',
+    line: '#4a90e8', lineWash: 'rgba(74, 144, 232, 0.10)',
+    grid: '#262215', baseline: '#3b3522',
+    muted: '#8c8570', ink: '#f2eede', surface: '#131109',
   };
 
   const $ = (id) => document.getElementById(id);
@@ -771,9 +771,14 @@
         const daily = E.toDailyCandles(closed);
         while (daily.length && daily[daily.length - 1].t + E.SWING.CANDLE_MS > Date.now()) daily.pop();
         const rd = daily.length > 56 ? E.breakoutRadar(daily) : null;
-        return { a, demo: /demo/i.test(source), price: closed[closed.length - 1].c, r4, rd };
+        const ref = closed[Math.max(0, closed.length - 7)]; // ~24h back on 4h candles
+        return {
+          a, demo: /demo/i.test(source), price: closed[closed.length - 1].c, r4, rd,
+          d24: ((closed[closed.length - 1].c - ref.c) / ref.c) * 100,
+        };
       } catch (e) { return null; }
     }));
+    renderTicker(rows.filter(Boolean));
     const nearer = (r) => (r ? (r.upPct <= r.downPct
       ? { side: '▲', cls: 'move-pos', level: r.up, pct: r.upPct }
       : { side: '▼', cls: 'move-neg', level: r.down, pct: r.downPct }) : null);
@@ -789,6 +794,19 @@
       <td>${cell(r.n4)}</td>
       <td>${cell(r.nd)}</td>
     </tr>`).join('') || '<tr><td colspan="4" class="table-empty">No market data available.</td></tr>';
+  }
+
+  // Ticker tape: every market's price and 24h change from the radar sweep.
+  // Content is rendered twice so the -50% translate loops seamlessly.
+  function renderTicker(rows) {
+    const track = $('tape-track');
+    if (!track || !rows.length) return;
+    const items = rows.map((r) =>
+      `<span class="tape-item"><span class="tape-sym">${ASSETS[r.a].tab}</span>` +
+      `<span class="tape-px">${fmtPrice(r.price)}</span>` +
+      `<span class="tape-delta ${r.d24 >= 0 ? 'pos' : 'neg'}">${r.d24 >= 0 ? '▲' : '▼'}${fmtPct(r.d24)}</span>` +
+      `${r.demo ? '<span class="tape-px" style="opacity:.5">demo</span>' : ''}</span>`).join('');
+    track.innerHTML = items + items;
   }
 
   function renderTrackRecord(signals, baseline, candles, ind, breakout) {
@@ -1249,5 +1267,10 @@
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
   setInterval(loadPerformance, 30 * 60 * 1000); // ledger updates every 4h
   setInterval(renderRadar, 30 * 60 * 1000); // radar sweeps all markets — keep it slow
+
+  // masthead UTC clock
+  const tickClock = () => { const el = $('term-clock'); if (el) el.textContent = new Date().toISOString().slice(11, 19); };
+  tickClock();
+  setInterval(tickClock, 1000);
   setInterval(renderCountdown, 30 * 1000);
 })();

@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231a1a19'/%3E%3Cpath d='M10 22 L16 9 L22 22' stroke='%230ca30c' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0d0d0d">
+<meta name="theme-color" content="#0b0a08">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -34,28 +34,36 @@
 
 <main id="top">
 
-  <!-- ============ Hero ============ -->
+  <!-- ============ Ticker tape ============ -->
+  <div class="tape" aria-hidden="true"><div class="tape-track" id="tape-track"><span class="tape-item"><span class="tape-sym">SCANNING MARKETS</span></span></div></div>
+
+  <!-- ============ Terminal masthead ============ -->
   <section class="hero">
-    <p class="hero-kicker">Crypto · Gold · Indices · FX — 1h / 4h / daily</p>
-    <h1>Trading signals computed<br>in the open.</h1>
+    <p class="hero-kicker">LordBastian Terminal · Crypto / Gold / Indices / FX · 1H · 4H · 1D</p>
+    <h1>Trading signals computed in the open.</h1>
     <p class="hero-sub">
-      The LordBastian Signal Generator produces long and short entries across crypto, gold, indices and FX from a
-      fixed, published rule set — EMA trend crosses gated by higher-timeframe trend, trend
-      strength, and momentum. Every signal, and the track record behind it, is recomputed
-      live from public market data right here in your browser. Nothing is hand-picked.
+      Long and short entries from a fixed, published rule set: EMA trend crosses and Donchian
+      breakouts, gated by higher-timeframe trend, trend strength and momentum. Every signal,
+      and the track record behind it, is recomputed live from public market data in your
+      browser. Nothing is hand-picked.
     </p>
-    <div class="hero-price" aria-live="polite">
-      <span class="hero-price-label" id="hero-symbol">BTC / USD</span>
-      <span class="hero-price-value" id="hero-price">—</span>
-      <span class="hero-price-delta" id="hero-delta"></span>
+    <div class="term-readout">
+      <div class="hero-price" aria-live="polite">
+        <span class="hero-price-label" id="hero-symbol">BTC / USD</span>
+        <span class="hero-price-value" id="hero-price">—</span>
+        <span class="hero-price-delta" id="hero-delta"></span>
+      </div>
+      <div class="term-status">
+        <span class="term-cell">UTC <strong id="term-clock">—</strong></span>
+        <span class="term-cell">FEED <strong><span id="data-source">connecting…</span></strong></span>
+      </div>
     </div>
-    <a class="cta" href="#dashboard">View the live dashboard</a>
-    <p class="data-source">Data: <span id="data-source">connecting…</span></p>
+    <a class="cta" href="#dashboard">Open dashboard</a>
   </section>
 
   <!-- ============ Dashboard ============ -->
   <section id="dashboard" class="section">
-    <h2>Live dashboard</h2>
+    <h2><span class="fn-code">MKT</span>Live dashboard</h2>
 
     <div class="asset-tabs" id="asset-tabs" role="tablist" aria-label="Asset"></div>
 
@@ -126,7 +134,7 @@
 
   <!-- ============ Breakout radar ============ -->
   <section id="radar" class="section">
-    <h2>Breakout radar</h2>
+    <h2><span class="fn-code">RADR</span>Breakout radar</h2>
     <p class="section-sub">Quiet days still tell you something: how far each market sits from triggering its next breakout signal. Distances are from the last closed candle to the Donchian band — under 1% means a single decent candle could fire it.</p>
     <div class="table-wrap">
       <table class="record-table radar-table">
@@ -138,7 +146,7 @@
 
   <!-- ============ Current signal ============ -->
   <section id="signal" class="section">
-    <h2>Current signal</h2>
+    <h2><span class="fn-code">SIG</span>Current signal</h2>
     <div class="signal-card" id="signal-card">
       <div class="signal-state">
         <span class="signal-badge neutral" id="signal-badge">—</span>
@@ -186,7 +194,7 @@
 
   <!-- ============ Methodology ============ -->
   <section id="methodology" class="section">
-    <h2>How signals work</h2>
+    <h2><span class="fn-code">RULE</span>How signals work</h2>
     <p class="section-sub">The full rule set. There is no discretionary step — what you read here is exactly what the code does.</p>
     <div class="method-grid">
       <div class="method-card">
@@ -222,7 +230,7 @@
 
   <!-- ============ Track record ============ -->
   <section id="track-record" class="section">
-    <h2>Track record</h2>
+    <h2><span class="fn-code">HIST</span>Track record</h2>
     <p class="section-sub" id="track-sub">Every signal the rule set produced over the loaded history — recomputed from raw candles on each page load, so it cannot be curated.</p>
     <div class="equity-card" id="equity-wrap" hidden>
       <h3>Cumulative move across closed signals</h3>
@@ -246,7 +254,7 @@
 
   <!-- ============ Live performance ============ -->
   <section id="performance" class="section">
-    <h2>Live performance</h2>
+    <h2><span class="fn-code">PERF</span>Live performance</h2>
     <p class="section-sub" id="perf-sub">Loading the signal ledger…</p>
     <div id="perf-content" hidden>
       <div class="tiles">
