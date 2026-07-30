@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260730g">
+<link rel="stylesheet" href="styles.css?v=20260730h">
 </head>
 <body>
 
@@ -349,10 +349,10 @@
       <label class="cat-sort-lab" id="cat-sale-wrap" hidden>Sale
         <select id="cat-sale"></select>
       </label>
-      <label class="file-btn primary">⬆ Import catalogue CSV<input type="file" id="cat-csv" accept=".csv" hidden></label>
+      <label class="file-btn primary">Import catalogue CSV<input type="file" id="cat-csv" accept=".csv" hidden></label>
       <label class="cat-sort-lab">Rank by
         <select id="cat-sort">
-          <option value="dubai">🏜 Dubai fit</option>
+          <option value="dubai">Dubai fit</option>
           <option value="value">value gap</option>
           <option value="vault">vault score</option>
         </select>
@@ -361,7 +361,7 @@
       <button id="cat-clear">Clear</button>
     </div>
     <details class="fx-editor">
-      <summary>💱 Exchange rates <span class="fx-summary" id="fx-summary"></span></summary>
+      <summary>Exchange rates <span class="fx-summary" id="fx-summary"></span></summary>
       <div class="fx-grid">
         <label>£ per €1 <input type="number" id="fx-EUR" step="0.01" min="0.1"></label>
         <label>£ per $1 <input type="number" id="fx-USD" step="0.01" min="0.1"></label>
@@ -375,9 +375,11 @@
     <div class="table-wrap">
       <table id="catalogue-table" class="cat-table" hidden>
         <thead><tr>
-          <th>Lot</th><th>Horse</th><th>Pedigree</th><th>OR</th>
-          <th>Vault</th><th>🏜 Fit</th><th>Nick</th><th>Guide</th>
-          <th>Max bid</th><th>Verdict</th><th></th>
+          <th class="sk" data-sk="lot">Lot</th><th class="sk" data-sk="name">Horse</th><th>Pedigree</th>
+          <th class="sk ta-c" data-sk="or">OR</th><th class="sk ta-c" data-sk="vault">Vault</th>
+          <th class="sk ta-c" data-sk="fit">Fit</th><th class="sk ta-c" data-sk="nick">Nick</th>
+          <th class="sk ta-r" data-sk="guide">Guide</th><th class="sk ta-r" data-sk="bid">Max bid</th>
+          <th class="sk" data-sk="verdict">Verdict</th><th></th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -410,8 +412,10 @@
       <table id="watchlist">
         <thead>
           <tr>
-            <th>Horse</th><th>Sale</th><th>OR</th><th>Screen</th>
-            <th>Max bid (gns)</th><th>Value gap</th><th>Status</th><th></th>
+            <th class="sk" data-sk="name">Horse</th><th class="sk" data-sk="sale">Sale</th>
+            <th class="sk ta-c" data-sk="or">OR</th><th class="sk" data-sk="screen">Screen</th>
+            <th class="sk ta-r" data-sk="bid">Max bid (gns)</th><th class="sk ta-r" data-sk="gap">Value gap</th>
+            <th class="sk" data-sk="status">Status</th><th></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -419,7 +423,7 @@
     </div>
     <div class="form-actions">
       <button id="rank-gap" class="primary" title="Screen-passers first, widest value gap on top">Rank by value gap</button>
-      <button id="compare-btn" title="Line the shortlist up side by side">⚖ Compare</button>
+      <button id="compare-btn" title="Line the shortlist up side by side">Compare</button>
       <button id="export-pdf">Export PDF</button>
       <button id="export-csv">Export CSV</button>
       <button id="export-json">Backup</button>
@@ -515,7 +519,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260730g"></script>
-<script src="app.js?v=20260730g"></script>
+<script src="engine.js?v=20260730h"></script>
+<script src="app.js?v=20260730h"></script>
 </body>
 </html>

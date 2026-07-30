@@ -412,6 +412,13 @@ function renderScore(h, r) {
     </details>`;
 }
 
+let wlColSort = null;   // clicked-column sort for the watchlist (non-destructive)
+function setSortIndicator(sel, key, dir) {
+  document.querySelectorAll(`${sel} th.sk`).forEach((t) => {
+    if (t.dataset.sk === key) t.setAttribute('data-sortdir', dir < 0 ? 'desc' : 'asc');
+    else t.removeAttribute('data-sortdir');
+  });
+}
 function renderList() {
   const P = loadParams();
   const tbody = $('#watchlist tbody');
@@ -420,7 +427,27 @@ function renderList() {
     tbody.innerHTML = '<tr><td colspan="8" class="empty">Nothing scanned yet — score a lot above.</td></tr>';
     return;
   }
-  tbody.innerHTML = list.map((h, i) => {
+  // display order — sorts a copy of the indices, so data-i still points at the
+  // stored record and every row handler stays correct.
+  let order = list.map((_, i) => i);
+  if (wlColSort) {
+    const ev = list.map((h) => { const r = evaluate(h, P); const exp = expectedPrice(h); return { r, gap: exp ? r.gns - exp.gns : null }; });
+    const kf = {
+      name: (i) => (list[i].name || '').toLowerCase(),
+      sale: (i) => (list[i].sale || '').toLowerCase(),
+      or: (i) => +list[i].rating || 0,
+      screen: (i) => ev[i].r.score,
+      bid: (i) => ev[i].r.gns,
+      gap: (i) => ev[i].gap == null ? -Infinity : ev[i].gap,
+      status: (i) => STATUSES.indexOf(list[i].status),
+    }[wlColSort.key];
+    if (kf) {
+      const alpha = wlColSort.key === 'name' || wlColSort.key === 'sale';
+      order.sort((a, b) => { const va = kf(a), vb = kf(b); const c = alpha ? String(va).localeCompare(String(vb)) : (va - vb); return c * wlColSort.dir; });
+    }
+  }
+  tbody.innerHTML = order.map((i) => {
+    const h = list[i];
     const r = evaluate(h, P);
     const exp = expectedPrice(h);
     const gap = exp ? r.gns - exp.gns : null;
@@ -664,6 +691,7 @@ $('#rank-gap').addEventListener('click', () => {
     return key(b) - key(a);                     // widest value gap first
   });
   saveList(list);
+  wlColSort = null; setSortIndicator('#watchlist', null, 0);
   renderList();
 });
 
@@ -817,10 +845,29 @@ function catVerdict(h, r) {
   return ['OVER', 'cv-over'];                            // market above our limit
 }
 let CATALOGUE = [];
+let catColSort = null;   // clicked-column sort for the catalogue (overrides Rank-by)
 function scoreCatalogue() {
   const P = loadParams();
   const sort = ($('#cat-sort') && $('#cat-sort').value) || 'dubai';
   const scored = CATALOGUE.map((h) => ({ h, r: evaluate(h, P), nick: nickScore(h) }));
+  if (catColSort) {
+    const kf = {
+      lot: (x) => parseInt(x.h.lot, 10) || 0,
+      name: (x) => (x.h.name || '').toLowerCase(),
+      or: (x) => +x.h.rating || 0,
+      vault: (x) => x.r.score,
+      fit: (x) => dubaiPct(x.r),
+      nick: (x) => x.nick.pct,
+      guide: (x) => x.h.guide ? guideGns(x.h) : -1,
+      bid: (x) => x.r.gns,
+      verdict: (x) => ({ BUY: 3, STRETCH: 2, OVER: 1 }[catVerdict(x.h, x.r)[0]] || 0),
+    }[catColSort.key];
+    if (kf) {
+      const alpha = catColSort.key === 'name';
+      scored.sort((a, b) => { const va = kf(a), vb = kf(b); const c = alpha ? String(va).localeCompare(String(vb)) : (va - vb); return c * catColSort.dir; });
+      return scored;
+    }
+  }
   scored.sort((a, b) => {
     if (sort === 'vault') return b.r.score - a.r.score;
     if (sort === 'value') { const g = (x) => x.h.guide ? x.r.gns - guideGns(x.h) : -1e12; return g(b) - g(a); }
@@ -865,7 +912,25 @@ if ($('#cat-csv')) $('#cat-csv').addEventListener('change', async (e) => {
   } catch { alert('Could not parse that CSV — see DATA.md for the columns.'); }
   e.target.value = '';
 });
-if ($('#cat-sort')) $('#cat-sort').addEventListener('change', renderCatalogue);
+if ($('#cat-sort')) $('#cat-sort').addEventListener('change', () => { catColSort = null; setSortIndicator('#catalogue-table', null, 0); renderCatalogue(); });
+// sortable column headers — catalogue
+if ($('#catalogue-table')) $('#catalogue-table').addEventListener('click', (e) => {
+  const th = e.target.closest('th.sk'); if (!th) return;
+  const k = th.dataset.sk;
+  if (catColSort && catColSort.key === k) catColSort.dir = -catColSort.dir;
+  else catColSort = { key: k, dir: k === 'name' ? 1 : -1 };
+  setSortIndicator('#catalogue-table', k, catColSort.dir);
+  renderCatalogue();
+});
+// sortable column headers — watchlist
+if ($('#watchlist')) $('#watchlist').addEventListener('click', (e) => {
+  const th = e.target.closest('th.sk'); if (!th) return;
+  const k = th.dataset.sk;
+  if (wlColSort && wlColSort.key === k) wlColSort.dir = -wlColSort.dir;
+  else wlColSort = { key: k, dir: (k === 'name' || k === 'sale' || k === 'status') ? 1 : -1 };
+  setSortIndicator('#watchlist', k, wlColSort.dir);
+  renderList();
+});
 if ($('#cat-clear')) $('#cat-clear').addEventListener('click', () => {
   CATALOGUE = [];
   const sel = $('#cat-sale'); if (sel) sel.value = '';

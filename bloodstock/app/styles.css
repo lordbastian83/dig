@@ -1004,3 +1004,10 @@ footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: v
 .sk-ind { color: var(--cyan); margin-left: .25rem; font-size: .9em; }
 .scan-table tbody tr.is-active { background: rgba(56, 189, 248, .10); box-shadow: inset 2px 0 0 var(--cyan); }
 .scan-table tbody tr.is-active:hover { background: rgba(56, 189, 248, .13); }
+
+/* generic sortable headers (catalogue + watchlist), persistent indicator */
+th.sk { cursor: pointer; user-select: none; }
+th.sk:hover { color: var(--cloud); }
+th.sk[data-sortdir]::after { color: var(--cyan); margin-left: .25rem; font-size: .9em; }
+th.sk[data-sortdir="asc"]::after  { content: '\25B2'; }
+th.sk[data-sortdir="desc"]::after { content: '\25BC'; }
