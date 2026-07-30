@@ -146,15 +146,50 @@ main > section, main > .hero { scroll-margin-top: 116px; }
 .tagline { color: var(--ink-muted); font-size: .78rem; }
 @media (max-width: 480px) { .tagline { display: none; } }
 
-main { max-width: 1200px; margin: 0 auto; padding: 1rem 1rem 3rem; display: grid; gap: 1rem; }
+/* ---------- desk layout: a tiled 12-column terminal grid ----------
+   Panels sit side by side across the full width like a Bloomberg screen,
+   not stacked in one long scroll. Hidden panels take no space and the
+   dense flow repacks the rest, so the grid never leaves holes. */
+main {
+  max-width: 1640px; margin: 0 auto; padding: .85rem 1rem 3rem;
+  display: grid; grid-template-columns: repeat(12, 1fr);
+  grid-auto-flow: row dense; gap: .85rem; align-items: start;
+}
+/* full-bleed strips */
+.hero, #statstrip, .budget-bar, #model { grid-column: 1 / -1; }
+/* paired panes (each pair sums to 12) */
+#score          { grid-column: span 5; }
+#finds-card     { grid-column: span 7; }
+#prospects-card { grid-column: span 5; }
+#catalogue-card { grid-column: span 7; }
+#mktintel-card  { grid-column: 1 / -1; }
+#intel-card     { grid-column: 1 / -1; }
+#watchlist-card { grid-column: span 6; }
+#portfolio-card { grid-column: span 6; }
+#calendar-card  { grid-column: span 6; }
+main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference panel */
+/* bounded panes — a terminal pane scrolls inside itself, not the page */
+#finds { max-height: 30rem; overflow-y: auto; padding-right: .3rem; }
+#catalogue-card .table-wrap,
+#watchlist-card .table-wrap { max-height: 26rem; overflow-y: auto; }
+#finds::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+#finds::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb { background: var(--navy-3); border-radius: 8px; }
+/* collapse to a single column on narrower screens */
+@media (max-width: 1080px) {
+  main { grid-template-columns: 1fr; }
+  main > section, main > .hero { grid-column: 1 / -1 !important; }
+  #finds, #catalogue-card .table-wrap, #watchlist-card .table-wrap { max-height: none; }
+}
 
 /* ---------- hero: compact terminal briefing strip ---------- */
 .hero {
   position: relative;
   display: flex; align-items: center; gap: 1.4rem;
   background: var(--navy-2);
-  border: 1px solid var(--line); border-left: 2px solid var(--gold); border-radius: 3px;
-  padding: 1.1rem 1.3rem; box-shadow: var(--shadow-card);
+  border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 3px;
+  padding: 1rem 1.3rem; box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 .hero-text { flex: 1; }
@@ -767,7 +802,9 @@ td:nth-child(3) { font-family: var(--mono); }
 .pf-totals { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: .7rem; padding-top: .6rem;
   border-top: 1px solid var(--navy-3); font-size: .86rem; color: var(--ink-muted); }
 .pf-totals b { color: var(--ink); font-family: var(--mono); }
-#portfolio input.pf-in { width: 6.2rem; font-family: var(--mono); }
+#portfolio input.pf-in { width: 4.8rem; font-family: var(--mono); }
+#portfolio.cat-table { min-width: 0; }
+#portfolio.cat-table th, #portfolio.cat-table td { padding: .4rem .4rem; }
 #portfolio .verdict-bid { color: var(--green); } #portfolio .verdict-reject { color: #E8794E; }
 
 /* market intelligence charts */
