@@ -1029,3 +1029,33 @@ th.sk[data-sortdir="desc"]::after { content: '\25BC'; }
   font-family: var(--mono); font-size: .66rem; padding: .18rem .5rem; border-radius: 2px;
 }
 .view-pin:hover { color: var(--cyan); border-color: var(--cyan); }
+
+/* keyboard focus on catalogue + watchlist rows */
+#catalogue-table tbody tr:focus-visible, #watchlist tbody tr:focus-visible {
+  outline: 1px solid var(--cyan); outline-offset: -1px; background: rgba(56, 189, 248, .08);
+}
+
+/* density toggle control */
+.density-toggle {
+  margin-left: auto; flex: none; cursor: pointer;
+  background: var(--navy-3); border: 1px solid var(--line); color: var(--ink-muted);
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .06em; text-transform: uppercase;
+  padding: .25rem .55rem; border-radius: 2px;
+}
+.density-toggle:hover { color: var(--cloud); border-color: var(--cyan); }
+.density-toggle.on { color: var(--cyan); border-color: var(--cyan); }
+@media (max-width: 480px) { .density-toggle { font-size: .58rem; padding: .2rem .4rem; } }
+
+/* ---- compact density: tighten the whole desk one notch ---- */
+body.dense { font-size: 12px; }
+body.dense main { gap: .35rem; padding: .4rem .5rem 2rem; }
+body.dense .card { padding: .6rem; }
+body.dense .card > h2, body.dense .card-head { margin: -.6rem -.6rem .55rem; padding: .32rem .6rem; }
+body.dense .scan-table { font-size: .76rem; }
+body.dense .scan-table td { padding: .3rem .5rem; }
+body.dense th, body.dense td { padding: .32rem .45rem; }
+body.dense .hint { margin-top: .05em; }
+body.dense .statstrip { padding: .5rem .7rem; }
+body.dense .type-chips { gap: .3rem; margin-bottom: .5rem; }
+body.dense .tchip { padding: .22rem .55rem; }
+body.dense #finds { max-height: 34rem; }

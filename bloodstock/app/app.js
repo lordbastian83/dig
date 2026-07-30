@@ -250,6 +250,7 @@ function currentBlob() {
     img: loadImg(),
     fx: JSON.parse(localStorage.getItem(LS_FX) || '{}'),
     views: JSON.parse(localStorage.getItem('bloodstock.views.v1') || '[]'),
+    hist: JSON.parse(localStorage.getItem('bloodstock.hist.v1') || '{}'),
     heroImg: localStorage.getItem('bloodstock.heroImg') || '' };
 }
 function applyBlob(b) {
@@ -263,6 +264,7 @@ function applyBlob(b) {
   if (b.sect) localStorage.setItem(LS_SECT, JSON.stringify(b.sect));
   if (b.fx && Object.keys(b.fx).length) localStorage.setItem(LS_FX, JSON.stringify(b.fx));
   if (Array.isArray(b.views)) localStorage.setItem('bloodstock.views.v1', JSON.stringify(b.views));
+  if (b.hist && typeof b.hist === 'object') localStorage.setItem('bloodstock.hist.v1', JSON.stringify(b.hist));
   if (b.heroImg) localStorage.setItem('bloodstock.heroImg', b.heroImg);
   return true;
 }
@@ -455,7 +457,7 @@ function renderList() {
     const gap = exp ? r.gns - exp.gns : null;
     const opts = STATUSES.map((s) =>
       `<option ${h.status === s ? 'selected' : ''}>${s}</option>`).join('');
-    return `<tr class="${r.verdict === 'BID' ? '' : 'row-reject'}">
+    return `<tr tabindex="0" class="${r.verdict === 'BID' ? '' : 'row-reject'}">
       <td><b>${esc(h.name)}</b>${h.lot ? ' (lot ' + esc(h.lot) + ')' : ''}${h.grade ? ` <span class="grade-badge">${esc(h.grade)}</span>` : ''}${h.bidTarget != null ? ` <span class="bid-target" title="your target bid">TGT ${fmt(h.bidTarget)}</span>` : ''}<br>
           <small>${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}</small>
           ${(h.tags || []).length ? `<span class="wl-tags">${h.tags.map((t) => `<span class="wl-tag">${esc(t)}</span>`).join('')}</span>` : ''}
@@ -884,7 +886,7 @@ function renderCatalogue() {
   const scored = scoreCatalogue();
   tb.innerHTML = scored.map(({ h, r, nick }, i) => {
     const [vl, vc] = catVerdict(h, r);
-    return `<tr>
+    return `<tr tabindex="0">
       <td>${esc(h.lot || '—')}</td>
       <td><b class="cat-name" data-i="${i}" title="Full profile">${esc(h.name)}</b></td>
       <td class="cat-ped">${esc(h.sire || '?')} × ${esc(damsireOf(h) || '?')}</td>
@@ -1272,37 +1274,73 @@ function heatPill(val, label) {
   const cls = v >= 85 ? 'pill-gold' : v >= 70 ? 'pill-green' : v >= 50 ? 'pill-slate' : 'pill-low';
   return `<span class="pill ${cls}" title="${esc(label)}: ${v}">${v}</span>`;
 }
-// Deterministic, stable per-horse score trajectory — indicative, not a live
-// feed. Shaped so it converges to the current algo score, tilted by momentum.
-function sparkline(h, r) {
+/* ---- algo-score history: one snapshot per daily scan, per horse ---------- */
+const LS_HIST = 'bloodstock.hist.v1';
+let HIST = {};   // in-memory cache, refreshed each renderFinds
+function loadHist() { try { return JSON.parse(localStorage.getItem(LS_HIST) || '{}'); } catch { return {}; } }
+function saveHist(o) { try { localStorage.setItem(LS_HIST, JSON.stringify(o)); if (typeof syncPush === 'function') syncPush(); } catch {} }
+// Record today's algo score for every swept horse, once per scan date. The
+// score is intrinsic (rating/fit/pedigree), so this is a genuine day-over-day
+// series — not the budget-dependent max bid.
+function recordHistory() {
+  const t = RADAR_META.generated; if (!t || !RADAR.length) return;
+  const P = loadParams(); const hist = loadHist(); let changed = false;
+  RADAR.forEach((h) => {
+    const arr = hist[h.name] || (hist[h.name] = []);
+    if (arr.length && arr[arr.length - 1].t === t) return;
+    arr.push({ t, s: Math.round(evaluate(h, P).score * 100) });
+    if (arr.length > 40) arr.splice(0, arr.length - 40);
+    changed = true;
+  });
+  if (changed) saveHist(hist);
+  HIST = hist;
+}
+// The score series to draw: real recorded history when we have >=2 scans,
+// otherwise a deterministic indicative curve that converges to today's score.
+function scoreSeries(h, r) {
+  const rec = HIST[h.name];
+  if (rec && rec.length >= 2) return { pts: rec.map((p) => p.s), real: true };
   const N = 16, end = Math.round(r.score * 100);
   const adj = h.trend === 'improving' ? 1 : h.trend === 'declining' ? -1 : 0;
   const seed = [...(h.name || 'x')].reduce((a, c) => a + c.charCodeAt(0), 7);
   const pts = [];
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1);
-    const drift = -adj * (1 - t) * 11;
-    const wob = Math.sin(seed * 0.7 + i * 0.85) * 3 * (0.35 + 0.65 * t);
-    pts.push(end + drift + wob);
+    pts.push(end + (-adj * (1 - t) * 11) + Math.sin(seed * 0.7 + i * 0.85) * 3 * (0.35 + 0.65 * t));
   }
   pts[N - 1] = end;
+  return { pts, real: false };
+}
+// Direction of the series: last vs previous point (real), else momentum flag.
+function seriesDir(h, r) {
+  const rec = HIST[h.name];
+  if (rec && rec.length >= 2) { const d = rec[rec.length - 1].s - rec[rec.length - 2].s; return d > 0 ? 1 : d < 0 ? -1 : 0; }
+  return h.trend === 'improving' ? 1 : h.trend === 'declining' ? -1 : 0;
+}
+function sparkline(h, r) {
+  const { pts, real } = scoreSeries(h, r);
+  const n = pts.length;
   const mn = Math.min(...pts), mx = Math.max(...pts), span = (mx - mn) || 1;
   const W = 64, H = 22, pad = 2.5;
   let d = '';
   pts.forEach((v, i) => {
-    const x = pad + (W - 2 * pad) * i / (N - 1);
+    const x = pad + (W - 2 * pad) * (n > 1 ? i / (n - 1) : 0.5);
     const y = pad + (H - 2 * pad) * (1 - (v - mn) / span);
     d += `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
   });
-  const col = adj > 0 ? 'var(--green)' : adj < 0 ? 'var(--red)' : 'var(--ink-muted)';
+  const dir = seriesDir(h, r);
+  const col = dir > 0 ? 'var(--green)' : dir < 0 ? 'var(--red)' : 'var(--ink-muted)';
   const lx = (pad + (W - 2 * pad)).toFixed(1);
-  const ly = (pad + (H - 2 * pad) * (1 - (pts[N - 1] - mn) / span)).toFixed(1);
-  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+  const ly = (pad + (H - 2 * pad) * (1 - (pts[n - 1] - mn) / span)).toFixed(1);
+  const title = real ? `${n}-scan algo history` : 'indicative — needs 2+ scans for real history';
+  return `<svg class="spark${real ? ' spark-real' : ''}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><title>${title}</title>
     <path d="${d}" fill="none" stroke="${col}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
     <circle cx="${lx}" cy="${ly}" r="1.7" fill="${col}"/></svg>`;
 }
-const trendArrow = (h) => h.trend === 'improving' ? '<span class="tr up">▲</span>'
-  : h.trend === 'declining' ? '<span class="tr down">▼</span>' : '<span class="tr flat">▬</span>';
+function trendArrow(h, r) {
+  const dir = seriesDir(h, r);
+  return dir > 0 ? '<span class="tr up">▲</span>' : dir < 0 ? '<span class="tr down">▼</span>' : '<span class="tr flat">▬</span>';
+}
 function scanFlags(h) {
   const f = [];
   if (h.awForm) f.push('<i class="flag flag-gold" title="All-weather / dirt win">AW</i>');
@@ -1331,7 +1369,7 @@ function scanRowHTML(h, r, i) {
     <td class="sc-line"><b>${esc(h.sire || '?')}</b><small>${esc(h.dam || '?')}${h.damsire ? ` <span class="ds">(${esc(h.damsire)})</span>` : ''}</small></td>
     <td class="sc-train">${h.trainer ? esc(h.trainer) : '—'}<small>${loc}</small></td>
     <td class="sc-bid mono" data-flash="b:${esc(h.name)}" data-val="${r.gns}">${fmt(r.gns)}<small>gns</small></td>
-    <td class="sc-mkt"><span class="sc-mktval mono" data-flash="m:${esc(h.name)}" data-val="${mkt}">${fmt(mkt)}</span>${sparkline(h, r)}${trendArrow(h)}</td>
+    <td class="sc-mkt"><span class="sc-mktval mono" data-flash="m:${esc(h.name)}" data-val="${mkt}">${fmt(mkt)}</span>${sparkline(h, r)}${trendArrow(h, r)}</td>
     <td class="sc-delta mono ${dCls}" data-flash="d:${esc(h.name)}" data-val="${delta}">${delta > 0 ? '+' : ''}${fmt(delta)}</td>
     <td class="sc-form">${heatPill(h.rating, 'Official rating')}${heatPill(rpr, 'Best RPR')}${heatPill(fit, 'Dubai fit')}</td>
     <td class="sc-act"><button class="scan-add" data-i="${i}" title="Add to watchlist" aria-label="Add to watchlist">＋</button>
@@ -1448,6 +1486,7 @@ function renderFinds() {
   const card = $('#finds-card');
   if (!RADAR.length) { card.hidden = true; navShow('finds-card', false); return; }
   navShow('finds-card', true);
+  HIST = loadHist();
   const P = loadParams();
   const prof = previewProfile || activeProfile();
   const rows = RADAR
@@ -1910,14 +1949,49 @@ document.addEventListener('click', (e) => {
       if (row) { const h = rowsFrom(row)[+row.dataset.i]; if (h) openHorseModal(h); }
       return;
     }
-    // vim-style row cursor: j/k anywhere, arrows only inside the scanner
-    if (!typing && RADAR.length) {
-      const inScanner = e.target.closest && e.target.closest('#finds-card');
-      if (e.key === 'j' || (e.key === 'ArrowDown' && inScanner)) { e.preventDefault(); setScanActive(scanActive + 1); return; }
-      if (e.key === 'k' || (e.key === 'ArrowUp' && inScanner)) { e.preventDefault(); setScanActive(scanActive < 0 ? 0 : scanActive - 1); return; }
+    // vim-style row cursor — scoped to the scanner so it never steals j/k
+    // from the catalogue or watchlist grids, which have their own cursor.
+    if (!typing && RADAR.length && e.target.closest && e.target.closest('#finds-card')) {
+      if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); setScanActive(scanActive + 1); return; }
+      if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); setScanActive(scanActive < 0 ? 0 : scanActive - 1); return; }
     }
   });
 })();
+
+/* ---------- density toggle: compact vs comfortable, app-wide ------------- */
+(function wireDensity() {
+  const btn = $('#density-toggle');
+  const apply = (on) => {
+    document.body.classList.toggle('dense', on);
+    if (btn) { btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', String(on)); btn.textContent = on ? 'Comfortable' : 'Compact'; }
+  };
+  apply(localStorage.getItem('bloodstock.dense') === '1');
+  if (btn) btn.addEventListener('click', () => {
+    const on = !document.body.classList.contains('dense');
+    localStorage.setItem('bloodstock.dense', on ? '1' : '0');
+    apply(on);
+  });
+})();
+
+/* ---------- keyboard cursor for the catalogue + watchlist grids ----------- */
+document.addEventListener('keydown', (e) => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+  const card = e.target.closest && e.target.closest('#catalogue-card, #watchlist-card');
+  if (!card) return;
+  const rows = [...card.querySelectorAll('tbody tr[tabindex]')];
+  if (!rows.length) return;
+  const cur = rows.indexOf(document.activeElement.closest('tr'));
+  if (e.key === 'j' || e.key === 'ArrowDown') {
+    e.preventDefault(); (rows[Math.min(rows.length - 1, cur + 1)] || rows[0]).focus({ preventScroll: false });
+  } else if (e.key === 'k' || e.key === 'ArrowUp') {
+    e.preventDefault(); rows[cur <= 0 ? 0 : cur - 1].focus({ preventScroll: false });
+  } else if (e.key === 'Enter') {
+    const tr = document.activeElement.closest('tr'); if (!tr) return;
+    if (card.id === 'catalogue-card') { const n = tr.querySelector('.cat-name'); if (n) { const h = rowsFrom(n)[+n.dataset.i]; if (h) openHorseModal(h); } }
+    else { const b = tr.querySelector('.edit-btn'); if (b) b.click(); }
+  }
+});
 
 $('#modal-close').addEventListener('click', () => { $('#horse-modal').hidden = true; });
 $('#horse-modal').addEventListener('click', (e) => {
@@ -2242,7 +2316,7 @@ async function loadFeeds(bust) {
   try {
     const r = await fetch(CANDIDATES_URL + q, { cache: 'no-store' });
     const j = r.ok ? await r.json() : null;
-    if (j?.candidates) { RADAR = j.candidates; RADAR_META = { generated: j.generated }; renderFinds(); }
+    if (j?.candidates) { RADAR = j.candidates; RADAR_META = { generated: j.generated }; recordHistory(); renderFinds(); }
   } catch {}
   try {
     const r = await fetch(PROSPECTS_URL + q, { cache: 'no-store' });
