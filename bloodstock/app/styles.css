@@ -992,3 +992,10 @@ footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: v
 @media (max-width: 640px) { #horse-modal .modal-card { width: 100%; max-width: 100%; border-left: 0; } }
 
 @media (max-width: 1080px) { .scan-table { min-width: 680px; } }
+
+/* sortable column headers + keyboard row cursor */
+.scan-table th.sk { cursor: pointer; user-select: none; white-space: nowrap; }
+.scan-table th.sk:hover { color: var(--cloud); }
+.sk-ind { color: var(--cyan); margin-left: .25rem; font-size: .9em; }
+.scan-table tbody tr.is-active { background: rgba(56, 189, 248, .10); box-shadow: inset 2px 0 0 var(--cyan); }
+.scan-table tbody tr.is-active:hover { background: rgba(56, 189, 248, .13); }

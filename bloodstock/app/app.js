@@ -1186,7 +1186,17 @@ let scanSearch = '';            // global filter query ("/" focuses it)
 let scanLive = false;           // live market simulation on/off
 let scanLiveTimer = null;
 let scanView = [];              // last rendered rows [{h,r}] (for in-place ticks)
+let scanSort = null;            // { key, dir } — clicked column sort, overrides rank
+let scanActive = -1;            // keyboard cursor row (j/k / arrows)
 const SCAN_LIMIT = 18;
+const SCAN_SORT_KEYS = {
+  algo:   (x) => x.r.score,
+  bid:    (x) => x.r.gns,
+  mkt:    (x) => mktEst(x.h, x.r),
+  delta:  (x) => x.r.gns - mktEst(x.h, x.r),
+  runner: (x) => (x.h.name || '').toLowerCase(),
+};
+const sortInd = (key) => scanSort && scanSort.key === key ? `<span class="sk-ind">${scanSort.dir < 0 ? '▼' : '▲'}</span>` : '';
 
 const algoClass = (p) => p >= 85 ? 'algo-gold' : p >= 70 ? 'algo-green' : p >= 50 ? 'algo-slate' : 'algo-low';
 function heatPill(val, label) {
@@ -1264,8 +1274,11 @@ function scanRowHTML(h, r, i) {
 function scannerTableHTML(shown) {
   return `<div class="scan-wrap"><table class="scan-table">
     <thead><tr>
-      <th class="th-runner">Runner · Algo</th><th>Sire / Dam</th><th>Trainer · Base</th>
-      <th class="ta-r">Max bid</th><th>Mkt est · trend</th><th class="ta-r">Δ value</th>
+      <th class="th-runner sk" data-sk="algo" title="Sort by algo score">Runner · Algo${sortInd('algo')}</th>
+      <th>Sire / Dam</th><th>Trainer · Base</th>
+      <th class="ta-r sk" data-sk="bid" title="Sort by max bid">Max bid${sortInd('bid')}</th>
+      <th class="sk" data-sk="mkt" title="Sort by market estimate">Mkt est · trend${sortInd('mkt')}</th>
+      <th class="ta-r sk" data-sk="delta" title="Sort by value delta">Δ value${sortInd('delta')}</th>
       <th class="ta-c">OR·RPR·Fit</th><th class="ta-c" aria-label="Actions"></th>
     </tr></thead>
     <tbody>${shown.map(({ h, r }, i) => scanRowHTML(h, r, i)).join('')}</tbody>
@@ -1344,8 +1357,18 @@ function renderFinds() {
   renderTicker(rows);
   // global search across the swept pool
   const q = scanSearch.toLowerCase();
-  const view = q ? rows.filter(({ h }) =>
+  let view = q ? rows.filter(({ h }) =>
     [h.name, h.sire, h.dam, h.damsire, h.trainer, h.region].some((s) => (s || '').toLowerCase().includes(q))) : rows;
+  // clicked-column sort overrides the rank order
+  if (scanSort && SCAN_SORT_KEYS[scanSort.key]) {
+    const kf = SCAN_SORT_KEYS[scanSort.key];
+    const alpha = scanSort.key === 'runner';
+    view = view.slice().sort((a, b) => {
+      const va = kf(a), vb = kf(b);
+      const c = alpha ? String(va).localeCompare(String(vb)) : (va - vb);
+      return c * scanSort.dir;
+    });
+  }
   const scanDate = RADAR_META.generated || '—';
   const rankLabel = radarSort === 'dubai' ? 'Dubai fit' : 'value score';
   const header = `<p class="finds-meta">Scanned <b>${esc(scanDate)}</b> · ${RADAR.length} swept · ${view.length}${q ? ` matching “${esc(scanSearch)}”` : ''} · ranked by ${rankLabel}</p>`;
@@ -1361,7 +1384,22 @@ function renderFinds() {
   $('#finds').innerHTML = header + scannerTableHTML(shown) + more;
   $('#finds').dataset.rows = JSON.stringify(view.map((x) => x.h));
   applyScanFlashes();
+  // reapply the keyboard cursor highlight after the rebuild (no focus/scroll)
+  if (scanActive >= 0) {
+    const rs = document.querySelectorAll('#finds .scan-row');
+    if (scanActive >= rs.length) scanActive = rs.length - 1;
+    rs.forEach((r, idx) => r.classList.toggle('is-active', idx === scanActive));
+  }
   card.hidden = false;
+}
+// Move the keyboard cursor; focus the row so Enter opens it and it scrolls in.
+function setScanActive(i) {
+  const rows = document.querySelectorAll('#finds .scan-row');
+  if (!rows.length) return;
+  scanActive = Math.max(0, Math.min(rows.length - 1, i));
+  rows.forEach((r, idx) => r.classList.toggle('is-active', idx === scanActive));
+  const el = rows[scanActive];
+  if (el) { el.scrollIntoView({ block: 'nearest' }); el.focus({ preventScroll: true }); }
 }
 
 /* ---------- at-a-glance dashboard ---------- */
@@ -1705,6 +1743,14 @@ function addToWatchlist(h, btn, doneText) {
 // One delegated click handler covers the radar AND the prospects list.
 document.addEventListener('click', (e) => {
   if (e.target.id === 'finds-more') { findsExpanded = !findsExpanded; renderFinds(); return; }
+  // sortable column header
+  const th = e.target.closest('#finds th.sk');
+  if (th) {
+    const k = th.dataset.sk;
+    if (scanSort && scanSort.key === k) scanSort.dir = -scanSort.dir;
+    else scanSort = { key: k, dir: k === 'runner' ? 1 : -1 };
+    findsExpanded = false; renderFinds(); return;
+  }
   // scanner grid: buttons first, then a row click opens the inspector drawer
   const sAdd = e.target.closest('.scan-add');
   if (sAdd) { addToWatchlist(rowsFrom(sAdd)[+sAdd.dataset.i], sAdd, '✓'); return; }
@@ -1747,6 +1793,13 @@ document.addEventListener('click', (e) => {
     if (e.key === 'Enter') {
       const row = e.target.closest && e.target.closest('.scan-row');
       if (row) { const h = rowsFrom(row)[+row.dataset.i]; if (h) openHorseModal(h); }
+      return;
+    }
+    // vim-style row cursor: j/k anywhere, arrows only inside the scanner
+    if (!typing && RADAR.length) {
+      const inScanner = e.target.closest && e.target.closest('#finds-card');
+      if (e.key === 'j' || (e.key === 'ArrowDown' && inScanner)) { e.preventDefault(); setScanActive(scanActive + 1); return; }
+      if (e.key === 'k' || (e.key === 'ArrowUp' && inScanner)) { e.preventDefault(); setScanActive(scanActive < 0 ? 0 : scanActive - 1); return; }
     }
   });
 })();
