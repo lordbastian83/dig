@@ -120,6 +120,7 @@ name,lot,sale,sire,dam,damsire,vendor,rating,starts,age,sex,sireTier,vet,powerho
 - `vet` = `clean`/`incomplete`/`unknown` · booleans accept `true/yes/1`
 - `ccy` = `gns`/`EUR`/`USD`/… (inferred from the sale name if blank) — the
   guide's currency; converted to guineas for the verdict (see FX above)
+- `image` = optional photo URL (official lot photo you have rights to); shown as the horse's thumbnail
 - `ped` = optional 4-generation pedigree for a real Dosage Index, as
   `name:generation` pairs, e.g. `Galileo:1, Danehill:2, Mr. Prospector:3,
   Northern Dancer:4`. Only recognised chefs-de-race count. Can also be pasted

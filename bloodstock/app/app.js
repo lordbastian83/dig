@@ -110,6 +110,18 @@ function savePed(o) { localStorage.setItem(LS_PED, JSON.stringify(o)); syncPush(
 const LS_SECT = 'bloodstock.sect.v1';
 function loadSect() { try { return JSON.parse(localStorage.getItem(LS_SECT) || '{}'); } catch { return {}; } }
 function saveSect(o) { localStorage.setItem(LS_SECT, JSON.stringify(o)); syncPush(); }
+// Per-horse photo, keyed by name (synced). Set from a conformation upload, a
+// catalogue `image` column, or a pasted URL. NEVER auto-scraped by name.
+const LS_IMG = 'bloodstock.img.v1';
+function loadImg() { try { return JSON.parse(localStorage.getItem(LS_IMG) || '{}'); } catch { return {}; } }
+function saveImg(o) { localStorage.setItem(LS_IMG, JSON.stringify(o)); syncPush(); }
+// Resolve a horse's photo: user-set (synced) wins, else a catalogue-supplied
+// image URL. Only http(s) or data: URLs are honoured.
+function horseImg(h) {
+  const set = loadImg()[h && h.name];
+  const url = set || (h && (h.img || h.image)) || '';
+  return /^(https?:|data:image\/)/i.test(url) ? url : '';
+}
 // Reduce breeze/sectional inputs to a pace (sec/furlong) and an indicative read.
 function sectionalRead(s) {
   if (!s) return null;
@@ -173,6 +185,7 @@ function currentBlob() {
     conf: loadConf(),
     ped: loadPed(),
     sect: loadSect(),
+    img: loadImg(),
     fx: JSON.parse(localStorage.getItem(LS_FX) || '{}'),
     heroImg: localStorage.getItem('bloodstock.heroImg') || '' };
 }
@@ -181,6 +194,7 @@ function applyBlob(b) {
   if (Array.isArray(b.watchlist)) localStorage.setItem(LS_LIST, JSON.stringify(b.watchlist));
   if (b.params) localStorage.setItem(LS_PARAMS, JSON.stringify(b.params));
   if (b.profiles) localStorage.setItem(LS_PROFILES, JSON.stringify(b.profiles));
+  if (b.img) localStorage.setItem(LS_IMG, JSON.stringify(b.img));
   if (b.conf) localStorage.setItem(LS_CONF, JSON.stringify(b.conf));
   if (b.ped) localStorage.setItem(LS_PED, JSON.stringify(b.ped));
   if (b.sect) localStorage.setItem(LS_SECT, JSON.stringify(b.sect));
@@ -725,7 +739,7 @@ function csvRowToLot(r) {
     wins: r.wins === '' || r.wins == null ? null : +r.wins,
     guide: num(r.guide ?? r.guideprice ?? r.estimate),
     ccy: (r.ccy || r.currency || saleCcy(r.sale || '')).toString().replace(/^gns$/i, 'gns'),
-    ped: r.ped || r.pedigree || '',
+    ped: r.ped || r.pedigree || '', img: r.image || r.img || '',
     notes: r.notes || '', status: 'watch', added: new Date().toISOString().slice(0, 10),
   };
 }
@@ -1056,6 +1070,15 @@ function findTagsHTML(h) {
   return t.join('');
 }
 // One horse row. `topLabel` non-null marks it the top pick.
+// A small photo (or a serif-monogram placeholder). Photos come from a user
+// upload, a catalogue image URL, or a pasted URL — never auto-scraped.
+function thumbHTML(h, cls = 'find-thumb') {
+  const src = horseImg(h);
+  const initial = esc((h.name || '?').trim().slice(0, 1).toUpperCase());
+  if (src) return `<div class="${cls}"><img src="${esc(src)}" alt="" loading="lazy"
+    onerror="this.parentElement.classList.add('noimg');this.parentElement.innerHTML='<span>${initial}</span>'"></div>`;
+  return `<div class="${cls} noimg"><span>${initial}</span></div>`;
+}
 function horseRowHTML(h, r, i, topLabel) {
   const [tl, tc] = tierOf(r.score);
   const dp = dubaiPct(r);
@@ -1063,6 +1086,7 @@ function horseRowHTML(h, r, i, topLabel) {
     <div class="find-row ${tc}-edge${topLabel ? ' find-top' : ''}">
       ${topLabel ? `<span class="top-tag">${topLabel}</span>` : ''}
       <div class="find-score ${tc}"><span class="fs-num">${Math.round(r.score * 100)}</span><span class="fs-lab">${tl}</span></div>
+      ${thumbHTML(h)}
       <div class="find-main">
         <b class="find-name" data-i="${i}" title="Click for full profile">${esc(h.name)}</b>
         <small class="find-ped">${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}</small>
@@ -1242,12 +1266,18 @@ function openHorseModal(h) {
     ? `<h4>${title}</h4><div class="mp-grid">${rows.join('')}</div>` : '';
   const money = (n) => n ? '£' + fmt(n) : null;
   $('#modal-body').innerHTML = `
-    <div class="mp-head">
-      <h3>${esc(h.name)}</h3>
-      <span class="mp-score">vault ${Math.round(r.score * 100)}</span>
-      <span class="mp-score mp-dubai">🏜 Dubai fit ${dubaiPct(r)}</span>
+    <div class="mp-topline">
+      <button class="mp-photo-btn" id="mp-photo-btn" title="Add or change photo">${thumbHTML(h, 'mp-photo')}</button>
+      <input type="file" id="mp-photo-file" accept="image/*" hidden>
+      <div class="mp-headtext">
+        <div class="mp-head">
+          <h3>${esc(h.name)}</h3>
+          <span class="mp-score">vault ${Math.round(r.score * 100)}</span>
+          <span class="mp-score mp-dubai">🏜 Dubai fit ${dubaiPct(r)}</span>
+        </div>
+        <p class="mp-sub">${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}${h.trainer ? ` · ${esc(h.trainer)}` : ''}</p>
+      </div>
     </div>
-    <p class="mp-sub">${esc(h.sire || '?')} × ${esc(h.dam || '?')} · ${esc(h.vendor || '?')}${h.trainer ? ` · ${esc(h.trainer)}` : ''}</p>
 
     <div class="mp-headline">
       <div><span class="mp-big">${fmt(r.gns)}</span><span class="mp-lab">max bid (gns)</span></div>
@@ -1461,13 +1491,20 @@ $('#horse-modal').addEventListener('click', (e) => {
   if (e.target.matches('.mp-add')) addToWatchlist(modalHorse, e.target, '✓ added to watchlist');
   if (e.target.matches('.mp-report') && modalHorse) horseReport(modalHorse);
   if (e.target.id === 'conf-shoot') { const f = $('#conf-photo'); if (f) f.click(); }
+  if (e.target.closest('#mp-photo-btn')) { const f = $('#mp-photo-file'); if (f) f.click(); }
 });
 // Conformation assessment — save each observation and re-score the modal live.
 $('#horse-modal').addEventListener('change', (e) => {
   if (e.target.id === 'conf-photo') {
     const file = e.target.files && e.target.files[0];
     e.target.value = ''; // allow re-selecting the same file
-    if (file) inspectPhoto(file);
+    if (file) { setHorseImageFromFile(file); inspectPhoto(file); } // the shot is also the horse's photo
+    return;
+  }
+  if (e.target.id === 'mp-photo-file') {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (file) setHorseImageFromFile(file);
     return;
   }
   if (e.target.id === 'ped-input' && modalHorse) {
@@ -1496,6 +1533,17 @@ $('#horse-modal').addEventListener('change', (e) => {
   all[modalHorse.name] = cur; saveConf(all);
   openHorseModal(modalHorse); // re-render with the new score
 });
+
+// Save a chosen file as the horse's photo — resized to a compact thumbnail so
+// it stays small enough to sync. Re-renders the modal, radar and lists.
+async function setHorseImageFromFile(file) {
+  if (!file || !modalHorse) return;
+  try {
+    const thumb = await resizeImage(file, 480); // ~480px JPEG, small enough to sync
+    const all = loadImg(); all[modalHorse.name] = thumb; saveImg(all);
+    openHorseModal(modalHorse); renderFinds(); renderList();
+  } catch { /* bad image — ignore */ }
+}
 
 // AI photo inspection — resize a chosen photo, POST it to /api/inspect, and
 // fold the returned grades into the conformation scorer. Degrades cleanly when
