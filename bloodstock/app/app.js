@@ -1240,12 +1240,19 @@ function renderStats(rows) {
   const diamonds = rows.filter((x) => x.r.score >= 0.85).length;
   const dubaiReady = rows.filter((x) => dubaiPct(x.r) >= 70).length;
   const top = rows[0];
+  const P = loadParams();
+  const bids = rows.map((x) => x.r.gns).filter((n) => Number.isFinite(n) && n > 0);
+  const avgBid = bids.length ? Math.round(bids.reduce((a, b) => a + b, 0) / bids.length) : 0;
+  const underBudget = rows.filter((x) => Number.isFinite(x.r.gns) && x.r.gns <= P.budgetGns).length;
   const cell = (num, lab, cls = '') =>
     `<div class="stat ${cls}"><span class="stat-num">${num}</span><span class="stat-lab">${lab}</span></div>`;
   strip.innerHTML =
     cell(RADAR.length, 'horses swept') +
+    cell(rows.length, 'shown') +
     cell(diamonds, 'diamonds', diamonds ? 'stat-gold' : '') +
     cell(dubaiReady, 'Dubai-ready', dubaiReady ? 'stat-green' : '') +
+    cell(underBudget, 'within budget') +
+    cell(avgBid ? fmt(avgBid) : '—', 'avg max bid') +
     cell(daysToCarnival(), 'days to Carnival') +
     (top ? `<div class="stat stat-top"><span class="stat-lab">top ${radarSort === 'dubai' ? 'for Dubai' : 'value'}</span>` +
       `<span class="stat-topname">${esc(top.h.name)}</span>` +

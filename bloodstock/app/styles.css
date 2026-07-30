@@ -7,27 +7,29 @@
    and one call to action per screen. Quiet, numerate, exact. */
 
 :root {
-  /* Trading-terminal palette: near-black base, phosphor accents used ONLY to
-     carry meaning (green up, red down, amber alert). Muted, dense, serious. */
-  --ink:         #070A0E;   /* page base, near-black */
-  --navy:        #0B0F15;
-  --navy-2:      #0D131B;   /* panel surface */
-  --navy-3:      #131A24;   /* raised rows / inputs */
-  --line:        #1C2530;   /* grid hairlines */
-  --line-soft:   rgba(198,208,218,0.06);
-  --blue:        #58B6E8;   /* info / links */
-  --cyan:        #56C7D6;
-  --gold:        #D8A93E;   /* amber accent / key figures */
-  --gold-bright: #F0C24E;
-  --gold-deep:   #8A6A34;
-  --green:       #34D07E;   /* up / positive */
-  --red:         #FF5D5D;   /* down / negative */
-  --cloud:       #C7D2DE;   /* primary text, phosphor grey */
-  --ink-muted:   #66727F;   /* labels */
-  --border:      rgba(198, 210, 222, 0.08);
-  --green-wash:  rgba(52, 208, 126, 0.11);
-  --red-wash:    rgba(255, 93, 93, 0.11);
-  --gold-wash:   rgba(216, 169, 62, 0.10);
+  /* Trading-terminal palette: a true near-black desk, signature amber for
+     headers and key figures, crisp near-white primary text, and functional
+     green/red/cyan that only ever carry meaning. Neutral (no navy-blue cast)
+     so it reads as a terminal, not a dark SaaS dashboard. */
+  --ink:         #09090A;   /* page base, near-black */
+  --navy:        #0D0D0F;
+  --navy-2:      #121214;   /* panel surface */
+  --navy-3:      #1A1A1D;   /* raised rows / inputs / header strips */
+  --line:        #2A2A30;   /* grid hairlines / dividers */
+  --line-soft:   rgba(230,228,222,0.06);
+  --blue:        #5AA9F0;   /* info / links */
+  --cyan:        #5AC8DE;
+  --gold:        #FF9E2C;   /* Bloomberg amber — headers, key figures */
+  --gold-bright: #FFBB5E;
+  --gold-deep:   #B87B2E;
+  --green:       #33D17A;   /* up / positive */
+  --red:         #FF5B52;   /* down / negative */
+  --cloud:       #EAE8E3;   /* primary text, crisp warm white */
+  --ink-muted:   #8A8A93;   /* labels */
+  --border:      rgba(230, 228, 222, 0.10);
+  --green-wash:  rgba(51, 209, 122, 0.12);
+  --red-wash:    rgba(255, 91, 82, 0.12);
+  --gold-wash:   rgba(255, 158, 44, 0.12);
   --shadow-card: none;
   --serif: 'IBM Plex Mono', ui-monospace, monospace;  /* terminal: no serif */
   --sans: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -41,9 +43,9 @@ body {
   background: var(--ink);
   color: var(--cloud);
   font-family: var(--mono);            /* terminal: monospace-forward */
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.42;
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
 }
@@ -51,8 +53,8 @@ body {
 body::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(rgba(198,210,222,0.014) 1px, transparent 1px) 0 0 / 100% 3px,
-    radial-gradient(80% 50% at 50% 0%, rgba(30,44,64,0.5), transparent 65%);
+    linear-gradient(rgba(230,228,222,0.012) 1px, transparent 1px) 0 0 / 100% 3px,
+    radial-gradient(90% 55% at 50% 0%, rgba(255,158,44,0.05), transparent 60%);
 }
 
 /* Terminal headings: monospace, uppercase, tight */
@@ -70,8 +72,8 @@ code {
 /* ---------- header: the wordmark IS the mark — shoe knocked out of the u */
 .topbar {
   position: sticky; top: 0; z-index: 20;
-  background: rgba(18, 32, 58, 0.94); backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
+  background: rgba(12, 12, 14, 0.96); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
 }
 .site-header {
   display: flex; align-items: center; gap: 1rem;
@@ -151,9 +153,9 @@ main > section, main > .hero { scroll-margin-top: 116px; }
    not stacked in one long scroll. Hidden panels take no space and the
    dense flow repacks the rest, so the grid never leaves holes. */
 main {
-  max-width: 1640px; margin: 0 auto; padding: .85rem 1rem 3rem;
+  max-width: 1720px; margin: 0 auto; padding: .55rem .6rem 2.4rem;
   display: grid; grid-template-columns: repeat(12, 1fr);
-  grid-auto-flow: row dense; gap: .85rem; align-items: start;
+  grid-auto-flow: row dense; gap: .5rem; align-items: stretch;
 }
 /* full-bleed strips */
 .hero, #statstrip, .budget-bar, #model { grid-column: 1 / -1; }
@@ -186,20 +188,26 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
 /* ---------- hero: compact terminal briefing strip ---------- */
 .hero {
   position: relative;
-  display: flex; align-items: center; gap: 1.4rem;
+  display: flex; align-items: center; gap: 1rem;
   background: var(--navy-2);
-  border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 3px;
-  padding: 1rem 1.3rem; box-shadow: var(--shadow-card);
+  border: 1px solid var(--line); border-radius: 2px;
+  padding: .55rem .85rem; box-shadow: var(--shadow-card);
   overflow: hidden;
 }
-.hero-text { flex: 1; }
-.hero-text h2 {
-  font-family: var(--mono); font-size: 1.35rem; line-height: 1.1; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .06em; margin: 0 0 .5rem; color: var(--cloud);
+.hero::before {
+  content: 'TARGET PROFILE'; position: absolute; top: 0; left: 0;
+  font-size: .58rem; letter-spacing: .18em; color: var(--gold); opacity: .85;
+  background: var(--navy-3); padding: .12rem .5rem; border-bottom-right-radius: 2px;
+  border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
 }
-.hero-line { margin: .18rem 0; font-size: .82rem; color: var(--cloud); max-width: 74ch; font-family: var(--sans); }
-.hero-line.dim { color: var(--ink-muted); font-size: .78rem; margin-top: .3rem; }
-.hero-media { flex: none; margin: 0; width: 84px; height: 84px; position: relative; display: flex; align-items: center; justify-content: center; }
+.hero-text { flex: 1; padding-top: .5rem; }
+.hero-text h2 {
+  font-family: var(--mono); font-size: 1.02rem; line-height: 1.05; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; margin: 0 0 .25rem; color: var(--cloud);
+}
+.hero-line { margin: .1rem 0; font-size: .76rem; color: var(--ink-muted); max-width: 96ch; font-family: var(--sans); }
+.hero-line.dim { display: none; }
+.hero-media { flex: none; margin: 0; width: 54px; height: 54px; position: relative; display: flex; align-items: center; justify-content: center; }
 .hero-media .hero-horse { width: 100%; height: 100%; filter: drop-shadow(0 6px 18px rgba(0,0,0,.35)); }
 .hero-media img {
   width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
@@ -217,38 +225,59 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
 .hero-media:hover #hero-set { opacity: 1; }
 #hero-set:hover { color: var(--cloud); }
 @media (max-width: 640px) {
-  .hero { flex-direction: column; text-align: center; }
-  .hero-media { width: 150px; height: 150px; }
+  .hero { gap: .7rem; }
+  .hero-media { width: 46px; height: 46px; }
 }
 
-/* terminal panel: sharp corners, tight, hairline framed */
+/* terminal panel: sharp corners, tight, hairline framed. Panels stretch to
+   fill their grid cell (align-items: stretch on main) so paired panes are
+   flush-height with no ragged voids; the header pins to the top. */
 .card {
   background: var(--navy-2);
   border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 1.15rem;
+  border-radius: 2px;
+  padding: .8rem;
   box-shadow: var(--shadow-card);
+  display: flex; flex-direction: column;
 }
 /* terminal section header: full-bleed strip, mono uppercase, leading marker */
 .card > h2, .card-head > h2 {
-  margin: 0; font-size: .82rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--cloud);
+  margin: 0; font-size: .74rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--gold);
 }
 .card > h2 {
-  display: flex; align-items: center; margin: -1.15rem -1.15rem 1.1rem; padding: .65rem 1.15rem;
+  display: flex; align-items: center; margin: -.8rem -.8rem .8rem; padding: .45rem .8rem;
   background: var(--navy-3); border-bottom: 1px solid var(--line);
 }
 .card > h2::before, .card-head > h2::before {
-  content: '▸'; color: var(--gold); margin-right: .55rem; font-size: .82em; line-height: 1;
+  content: '▸'; color: var(--gold); margin-right: .5rem; font-size: .82em; line-height: 1; opacity: .8;
 }
 .card-head {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  margin: -1.15rem -1.15rem 1.1rem; padding: .55rem 1.15rem;
+  margin: -.8rem -.8rem .8rem; padding: .38rem .8rem;
   background: var(--navy-3); border-bottom: 1px solid var(--line);
 }
 .card-head > h2 { margin: 0; }
 .refresh-btn { flex: none; font-size: .72rem; padding: .3rem .7rem; }
 .refresh-btn:disabled { opacity: .7; cursor: default; }
 .prospects-count { font-family: var(--mono); font-size: .72rem; color: var(--gold); letter-spacing: .05em; }
+
+/* score panel reference key — fills the input pane with the model at a glance */
+.score-key { margin-top: auto; padding-top: .8rem; }
+.score-key .sk-head {
+  font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; color: var(--gold);
+  border-top: 1px solid var(--line); padding-top: .55rem; margin-bottom: .35rem;
+}
+.score-key ul { list-style: none; margin: 0; padding: 0; }
+.score-key li {
+  display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: baseline; gap: .5rem;
+  padding: .2rem 0; border-bottom: 1px dotted var(--line); font-size: .72rem;
+}
+.score-key li:last-child { border-bottom: 0; }
+.score-key li b { color: var(--gold); font-weight: 600; letter-spacing: .04em; }
+.score-key li span { color: var(--cloud); }
+.score-key li i { color: var(--ink-muted); font-style: normal; }
+.score-key .sk-rule b { color: var(--red); }
+.score-key .sk-rule i { color: var(--red); }
 
 .hint { color: var(--ink-muted); font-size: .82rem; margin-top: .1em; }
 .warn { color: var(--gold); font-size: .85rem; }

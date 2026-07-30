@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>vault racing — scanner</title>
-<meta name="theme-color" content="#12203A">
+<meta name="theme-color" content="#09090A">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Spectral:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260730b">
+<link rel="stylesheet" href="styles.css?v=20260730d">
 </head>
 <body>
 
@@ -22,7 +22,7 @@
   <div class="lockup" aria-label="vault racing">
     <h1>va<svg class="u-glyph" viewBox="0 0 50 52" fill="none" aria-hidden="true">
       <path d="M0 0 L0 27 A25 25 0 0 0 50 27 L50 0 Z" fill="currentColor"/>
-      <path d="M13 9 L13 25 A12 12 0 0 0 37 25 L37 9" fill="none" stroke="#12203A" stroke-width="9" stroke-linecap="round"/>
+      <path d="M13 9 L13 25 A12 12 0 0 0 37 25 L37 9" fill="none" stroke="#0C0C0E" stroke-width="9" stroke-linecap="round"/>
       <g fill="currentColor">
         <circle cx="13" cy="13" r="1.9"/><circle cx="13" cy="19" r="1.9"/>
         <circle cx="16.5" cy="33.5" r="1.9"/><circle cx="33.5" cy="33.5" r="1.9"/>
@@ -160,6 +160,18 @@
       </div>
     </form>
     <div id="score-result" class="score-result" hidden></div>
+    <div class="score-key" aria-hidden="true">
+      <div class="sk-head">Scoring model · max bid = base &times; Dubai fit &times; vet</div>
+      <ul>
+        <li><b>F1</b> <span>Powerhouse cast-off</span> <i>vendor edge</i></li>
+        <li><b>F2</b> <span>Dirt sire line</span> <i>tier A / B</i></li>
+        <li><b>F3</b> <span>Black type, first two dams</span> <i>floor</i></li>
+        <li><b>F4</b> <span>Official rating</span> <i>85&ndash;95</i></li>
+        <li><b>F5</b> <span>Career starts</span> <i>&le; 7</i></li>
+        <li><b>F6</b> <span>All-weather / dirt form</span> <i>surface proxy</i></li>
+        <li class="sk-rule"><b>VET</b> <span>file not clean</span> <i>&minus;20%</i></li>
+      </ul>
+    </div>
   </section>
 
   <!-- ============ 2 · Radar finds ============ -->
@@ -495,7 +507,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260730b"></script>
-<script src="app.js?v=20260730b"></script>
+<script src="engine.js?v=20260730d"></script>
+<script src="app.js?v=20260730d"></script>
 </body>
 </html>
