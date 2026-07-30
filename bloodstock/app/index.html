@@ -10,8 +10,8 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Spectral:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260730d">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=20260730e">
 </head>
 <body>
 
@@ -177,8 +177,16 @@
   <!-- ============ 2 · Radar finds ============ -->
   <section class="card" id="finds-card" hidden>
     <div class="card-head">
-      <h2>Radar finds</h2>
-      <button id="refresh-btn" class="refresh-btn" title="Re-pull the latest scan">↻ Refresh</button>
+      <h2>Scanner</h2>
+      <div class="scan-tools">
+        <div class="scan-searchbox">
+          <span class="ss-icon" aria-hidden="true">⌕</span>
+          <input id="scan-search" type="search" placeholder="Filter runner · sire · trainer" autocomplete="off" aria-label="Filter runners">
+          <kbd class="ss-key" title="Press / to search">/</kbd>
+        </div>
+        <button id="scan-live" class="scan-live" aria-pressed="false" title="Simulate a live market feed (display only)"><i></i>LIVE</button>
+        <button id="refresh-btn" class="refresh-btn" title="Re-pull the latest scan">↻</button>
+      </div>
     </div>
     <p class="hint">Horses currently <b>in training</b>, auto-scanned daily from live
     UK/IRE/France results. Filter with a saved profile, or keep the Imperial Emperor
@@ -507,7 +515,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260730d"></script>
-<script src="app.js?v=20260730d"></script>
+<script src="engine.js?v=20260730e"></script>
+<script src="app.js?v=20260730e"></script>
 </body>
 </html>

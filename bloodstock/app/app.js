@@ -1175,6 +1175,148 @@ function navShow(id, on) {
   const a = document.querySelector(`.quicknav a[href="#${id}"]`);
   if (a) a.hidden = !on;
 }
+/* ===================== scanner grid: dense quant table ====================
+   A high-density table (not cards): algo score, lineage, connections, our
+   hard max bid, a live market estimate with an inline sparkline, the value
+   delta, and a form heatmap. Numbers are monospaced + tabular so they never
+   reflow; changed cells flash green/red. Gold is reserved for top-tier scores. */
+const scanLast = new Map();     // flash memory: cell key -> last numeric value
+const simDrift = new Map();     // live-sim market drift per horse (name -> ±frac)
+let scanSearch = '';            // global filter query ("/" focuses it)
+let scanLive = false;           // live market simulation on/off
+let scanLiveTimer = null;
+let scanView = [];              // last rendered rows [{h,r}] (for in-place ticks)
+const SCAN_LIMIT = 18;
+
+const algoClass = (p) => p >= 85 ? 'algo-gold' : p >= 70 ? 'algo-green' : p >= 50 ? 'algo-slate' : 'algo-low';
+function heatPill(val, label) {
+  if (val == null || !Number.isFinite(+val)) return `<span class="pill pill-na" title="${esc(label)}">–</span>`;
+  const v = Math.round(+val);
+  const cls = v >= 85 ? 'pill-gold' : v >= 70 ? 'pill-green' : v >= 50 ? 'pill-slate' : 'pill-low';
+  return `<span class="pill ${cls}" title="${esc(label)}: ${v}">${v}</span>`;
+}
+// Deterministic, stable per-horse score trajectory — indicative, not a live
+// feed. Shaped so it converges to the current algo score, tilted by momentum.
+function sparkline(h, r) {
+  const N = 16, end = Math.round(r.score * 100);
+  const adj = h.trend === 'improving' ? 1 : h.trend === 'declining' ? -1 : 0;
+  const seed = [...(h.name || 'x')].reduce((a, c) => a + c.charCodeAt(0), 7);
+  const pts = [];
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1);
+    const drift = -adj * (1 - t) * 11;
+    const wob = Math.sin(seed * 0.7 + i * 0.85) * 3 * (0.35 + 0.65 * t);
+    pts.push(end + drift + wob);
+  }
+  pts[N - 1] = end;
+  const mn = Math.min(...pts), mx = Math.max(...pts), span = (mx - mn) || 1;
+  const W = 64, H = 22, pad = 2.5;
+  let d = '';
+  pts.forEach((v, i) => {
+    const x = pad + (W - 2 * pad) * i / (N - 1);
+    const y = pad + (H - 2 * pad) * (1 - (v - mn) / span);
+    d += `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+  });
+  const col = adj > 0 ? 'var(--green)' : adj < 0 ? 'var(--red)' : 'var(--ink-muted)';
+  const lx = (pad + (W - 2 * pad)).toFixed(1);
+  const ly = (pad + (H - 2 * pad) * (1 - (pts[N - 1] - mn) / span)).toFixed(1);
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${d}" fill="none" stroke="${col}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lx}" cy="${ly}" r="1.7" fill="${col}"/></svg>`;
+}
+const trendArrow = (h) => h.trend === 'improving' ? '<span class="tr up">▲</span>'
+  : h.trend === 'declining' ? '<span class="tr down">▼</span>' : '<span class="tr flat">▬</span>';
+function scanFlags(h) {
+  const f = [];
+  if (h.awForm) f.push('<i class="flag flag-gold" title="All-weather / dirt win">AW</i>');
+  if (h.classMove === 'dropping') f.push('<i class="flag flag-green" title="Dropping in class, well-in">CL↓</i>');
+  if (+h.rprEdge >= 5) f.push(`<i class="flag" title="RPR above official rating">R+${h.rprEdge}</i>`);
+  if (h.lastRunDays != null && h.lastRunDays >= 30) f.push(`<i class="flag" title="Days since last run">${h.lastRunDays}d</i>`);
+  return f.join('');
+}
+// Live market estimate for the row: the model's expected price, nudged by any
+// live-sim drift. Never feeds back into our max bid, algo score, or verdict.
+function mktEst(h, r) {
+  const base = expectedPrice(h)?.gns ?? r.gns;
+  return Math.max(1, Math.round(base * (1 + (simDrift.get(h.name) || 0))));
+}
+function scanRowHTML(h, r, i) {
+  const algo = Math.round(r.score * 100);
+  const fit = dubaiPct(r);
+  const rpr = h.bestRPR ?? h.careerHigh ?? null;
+  const mkt = mktEst(h, r);
+  const delta = r.gns - mkt;
+  const dCls = delta > 0 ? 'pos' : delta < 0 ? 'neg' : 'flat';
+  const loc = h.region ? esc(h.region) : (h.coursesList && h.coursesList[0] ? esc(h.coursesList[0]) : '');
+  return `<tr class="scan-row" data-i="${i}" tabindex="0" aria-label="${esc(h.name)} — open inspector">
+    <td class="sc-runner"><span class="algo ${algoClass(algo)}" title="Algorithmic value score">${algo}</span>
+      <span class="sc-name"><b>${esc(h.name)}</b><em class="sc-flags">${scanFlags(h)}</em></span></td>
+    <td class="sc-line"><b>${esc(h.sire || '?')}</b><small>${esc(h.dam || '?')}${h.damsire ? ` <span class="ds">(${esc(h.damsire)})</span>` : ''}</small></td>
+    <td class="sc-train">${h.trainer ? esc(h.trainer) : '—'}<small>${loc}</small></td>
+    <td class="sc-bid mono" data-flash="b:${esc(h.name)}" data-val="${r.gns}">${fmt(r.gns)}<small>gns</small></td>
+    <td class="sc-mkt"><span class="sc-mktval mono" data-flash="m:${esc(h.name)}" data-val="${mkt}">${fmt(mkt)}</span>${sparkline(h, r)}${trendArrow(h)}</td>
+    <td class="sc-delta mono ${dCls}" data-flash="d:${esc(h.name)}" data-val="${delta}">${delta > 0 ? '+' : ''}${fmt(delta)}</td>
+    <td class="sc-form">${heatPill(h.rating, 'Official rating')}${heatPill(rpr, 'Best RPR')}${heatPill(fit, 'Dubai fit')}</td>
+    <td class="sc-act"><button class="scan-add" data-i="${i}" title="Add to watchlist" aria-label="Add to watchlist">＋</button>
+      <button class="scan-inspect" data-i="${i}" title="Open inspector" aria-label="Open inspector">▤</button></td>
+  </tr>`;
+}
+function scannerTableHTML(shown) {
+  return `<div class="scan-wrap"><table class="scan-table">
+    <thead><tr>
+      <th class="th-runner">Runner · Algo</th><th>Sire / Dam</th><th>Trainer · Base</th>
+      <th class="ta-r">Max bid</th><th>Mkt est · trend</th><th class="ta-r">Δ value</th>
+      <th class="ta-c">OR·RPR·Fit</th><th class="ta-c" aria-label="Actions"></th>
+    </tr></thead>
+    <tbody>${shown.map(({ h, r }, i) => scanRowHTML(h, r, i)).join('')}</tbody>
+  </table></div>`;
+}
+// Flash any metric cell whose value changed since the last paint.
+function applyScanFlashes() {
+  document.querySelectorAll('#finds [data-flash]').forEach((el) => {
+    const key = el.getAttribute('data-flash');
+    const val = +el.getAttribute('data-val');
+    const prev = scanLast.get(key);
+    if (prev != null && Number.isFinite(val) && val !== prev) {
+      const cls = val > prev ? 'flash-up' : 'flash-down';
+      el.classList.remove('flash-up', 'flash-down'); void el.offsetWidth;
+      el.classList.add(cls);
+      setTimeout(() => el.classList.remove(cls), 950);
+    }
+    if (Number.isFinite(val)) scanLast.set(key, val);
+  });
+}
+// Live-sim tick: recompute only the market/delta cells in place (keeps input
+// focus, the ticker, and scroll position; rebuilds nothing else).
+function tickLiveCells() {
+  scanView.forEach(({ h, r }, i) => {
+    const tr = document.querySelector(`#finds .scan-row[data-i="${i}"]`);
+    if (!tr) return;
+    const mkt = mktEst(h, r), delta = r.gns - mkt;
+    const mEl = tr.querySelector('[data-flash^="m:"]');
+    const dEl = tr.querySelector('[data-flash^="d:"]');
+    if (mEl) { mEl.setAttribute('data-val', mkt); mEl.textContent = fmt(mkt); }
+    if (dEl) {
+      dEl.setAttribute('data-val', delta); dEl.textContent = (delta > 0 ? '+' : '') + fmt(delta);
+      dEl.classList.toggle('pos', delta > 0); dEl.classList.toggle('neg', delta < 0);
+    }
+  });
+  applyScanFlashes();
+}
+function startLiveSim() {
+  stopLiveSim();
+  scanLiveTimer = setInterval(() => {
+    const names = RADAR.map((h) => h.name);
+    for (let k = 0; k < 3 && names.length; k++) {
+      const nm = names[Math.floor(Math.random() * names.length)];
+      const cur = simDrift.get(nm) || 0;
+      simDrift.set(nm, Math.max(-0.06, Math.min(0.06, cur + (Math.random() - 0.5) * 0.022)));
+    }
+    tickLiveCells();
+  }, 2200);
+}
+function stopLiveSim() { if (scanLiveTimer) { clearInterval(scanLiveTimer); scanLiveTimer = null; } }
+
 function renderFinds() {
   const card = $('#finds-card');
   if (!RADAR.length) { card.hidden = true; navShow('finds-card', false); return; }
@@ -1186,11 +1328,9 @@ function renderFinds() {
     .map((h) => ({ h, r: evaluate(h, P) }))
     .sort((a, b) => {
       if (radarSort === 'dubai') {
-        // Best for the Meydan campaign first, vault score breaks ties
         if (dubaiPct(b.r) !== dubaiPct(a.r)) return dubaiPct(b.r) - dubaiPct(a.r);
         return b.r.score - a.r.score;
       }
-      // Best value: vault score, then widest value gap
       if (Math.round(b.r.score * 100) !== Math.round(a.r.score * 100))
         return b.r.score - a.r.score;
       const ga = a.r.gns - (expectedPrice(a.h)?.gns ?? a.r.gns);
@@ -1202,26 +1342,25 @@ function renderFinds() {
   renderStats(rows);
   renderMarketIntel();
   renderTicker(rows);
+  // global search across the swept pool
+  const q = scanSearch.toLowerCase();
+  const view = q ? rows.filter(({ h }) =>
+    [h.name, h.sire, h.dam, h.damsire, h.trainer, h.region].some((s) => (s || '').toLowerCase().includes(q))) : rows;
   const scanDate = RADAR_META.generated || '—';
-  const rankLabel = radarSort === 'dubai' ? 'Dubai Carnival fit' : 'vault value score';
-  const header = `<p class="finds-meta">Scanned <b>${scanDate}</b> · ${RADAR.length} horses swept ·
-    showing ${rows.length} for "${prof.name}" ranked by ${rankLabel}</p>`;
-  if (!rows.length) {
-    $('#finds').innerHTML = header +
-      `<p class="empty">No radar finds match "${prof.name}". Loosen the filters (⚙ Profiles) or wait for tomorrow's scan.</p>`;
-    card.hidden = false;
-    return;
+  const rankLabel = radarSort === 'dubai' ? 'Dubai fit' : 'value score';
+  const header = `<p class="finds-meta">Scanned <b>${esc(scanDate)}</b> · ${RADAR.length} swept · ${view.length}${q ? ` matching “${esc(scanSearch)}”` : ''} · ranked by ${rankLabel}</p>`;
+  if (!view.length) {
+    scanView = [];
+    $('#finds').innerHTML = header + `<p class="empty">${q ? `No runner matches “${esc(scanSearch)}”.` : `No radar finds match "${esc(prof.name)}". Loosen the filters or wait for tomorrow's scan.`}</p>`;
+    card.hidden = false; return;
   }
-  const shown = findsExpanded ? rows : rows.slice(0, FINDS_LIMIT);
-  const rowHTML = shown.map(({ h, r }, i) =>
-    horseRowHTML(h, r, i, (i === 0 && r.score >= 0.7)
-      ? `★ top pick${radarSort === 'dubai' ? ' for dubai' : ''}` : null)).join('');
-  const more = rows.length > FINDS_LIMIT
-    ? `<button class="finds-more" id="finds-more">${findsExpanded
-        ? '▴ Show fewer' : `▾ Show all ${rows.length} finds`}</button>`
-    : '';
-  $('#finds').innerHTML = header + rowHTML + more;
-  $('#finds').dataset.rows = JSON.stringify(rows.map((x) => x.h));
+  const shown = findsExpanded ? view : view.slice(0, SCAN_LIMIT);
+  scanView = shown;
+  const more = view.length > SCAN_LIMIT
+    ? `<button class="finds-more" id="finds-more">${findsExpanded ? '▴ Collapse' : `▾ Show all ${view.length} runners`}</button>` : '';
+  $('#finds').innerHTML = header + scannerTableHTML(shown) + more;
+  $('#finds').dataset.rows = JSON.stringify(view.map((x) => x.h));
+  applyScanFlashes();
   card.hidden = false;
 }
 
@@ -1566,6 +1705,13 @@ function addToWatchlist(h, btn, doneText) {
 // One delegated click handler covers the radar AND the prospects list.
 document.addEventListener('click', (e) => {
   if (e.target.id === 'finds-more') { findsExpanded = !findsExpanded; renderFinds(); return; }
+  // scanner grid: buttons first, then a row click opens the inspector drawer
+  const sAdd = e.target.closest('.scan-add');
+  if (sAdd) { addToWatchlist(rowsFrom(sAdd)[+sAdd.dataset.i], sAdd, '✓'); return; }
+  const sInspect = e.target.closest('.scan-inspect');
+  if (sInspect) { const h = rowsFrom(sInspect)[+sInspect.dataset.i]; if (h) openHorseModal(h); return; }
+  const sRow = e.target.closest('.scan-row');
+  if (sRow) { const h = rowsFrom(sRow)[+sRow.dataset.i]; if (h) openHorseModal(h); return; }
   const open = e.target.closest('.find-name, .find-profile');
   if (open) { const h = rowsFrom(open)[+open.dataset.i]; if (h) openHorseModal(h); return; }
   const add = e.target.closest('.find-add');
@@ -1575,6 +1721,36 @@ document.addEventListener('click', (e) => {
   const catAdd = e.target.closest('.cat-add');
   if (catAdd) { addToWatchlist(rowsFrom(catAdd)[+catAdd.dataset.i], catAdd, '✓'); return; }
 });
+/* ---------- scanner filter bar: global search ("/") + live-sim toggle ------ */
+(function wireScanner() {
+  const search = $('#scan-search');
+  if (search) {
+    search.addEventListener('input', () => { scanSearch = search.value.trim(); findsExpanded = false; renderFinds(); });
+  }
+  const live = $('#scan-live');
+  if (live) {
+    live.addEventListener('click', () => {
+      scanLive = !scanLive;
+      live.classList.toggle('on', scanLive);
+      live.setAttribute('aria-pressed', String(scanLive));
+      if (scanLive) startLiveSim(); else stopLiveSim();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
+    if (e.key === '/' && !typing) { if (search) { e.preventDefault(); search.focus(); search.select(); } return; }
+    if (e.key === 'Escape' && search && document.activeElement === search) {
+      if (search.value) { search.value = ''; scanSearch = ''; renderFinds(); } else search.blur();
+      return;
+    }
+    if (e.key === 'Enter') {
+      const row = e.target.closest && e.target.closest('.scan-row');
+      if (row) { const h = rowsFrom(row)[+row.dataset.i]; if (h) openHorseModal(h); }
+    }
+  });
+})();
+
 $('#modal-close').addEventListener('click', () => { $('#horse-modal').hidden = true; });
 $('#horse-modal').addEventListener('click', (e) => {
   if (e.target.id === 'horse-modal') $('#horse-modal').hidden = true; // click backdrop

@@ -7,33 +7,33 @@
    and one call to action per screen. Quiet, numerate, exact. */
 
 :root {
-  /* Trading-terminal palette: a true near-black desk, signature amber for
-     headers and key figures, crisp near-white primary text, and functional
-     green/red/cyan that only ever carry meaning. Neutral (no navy-blue cast)
-     so it reads as a terminal, not a dark SaaS dashboard. */
-  --ink:         #09090A;   /* page base, near-black */
-  --navy:        #0D0D0F;
-  --navy-2:      #121214;   /* panel surface */
-  --navy-3:      #1A1A1D;   /* raised rows / inputs / header strips */
-  --line:        #2A2A30;   /* grid hairlines / dividers */
-  --line-soft:   rgba(230,228,222,0.06);
-  --blue:        #5AA9F0;   /* info / links */
-  --cyan:        #5AC8DE;
-  --gold:        #FF9E2C;   /* Bloomberg amber — headers, key figures */
-  --gold-bright: #FFBB5E;
-  --gold-deep:   #B87B2E;
-  --green:       #33D17A;   /* up / positive */
-  --red:         #FF5B52;   /* down / negative */
-  --cloud:       #EAE8E3;   /* primary text, crisp warm white */
-  --ink-muted:   #8A8A93;   /* labels */
-  --border:      rgba(230, 228, 222, 0.10);
-  --green-wash:  rgba(51, 209, 122, 0.12);
-  --red-wash:    rgba(255, 91, 82, 0.12);
-  --gold-wash:   rgba(255, 158, 44, 0.12);
+  /* Institutional quant-terminal palette. Deep navy desk, charcoal-navy
+     surfaces, low-contrast slate hairlines. Muted gold is RESERVED — it only
+     marks top-tier algo scores and high-priority alerts, never chrome.
+     Emerald = positive delta, crimson = negative, slate-gray = neutral. */
+  --ink:         #0B0E17;   /* page base — deep navy */
+  --navy:        #0F1523;
+  --navy-2:      #141C2E;   /* panel surface — charcoal navy */
+  --navy-3:      #1B2436;   /* raised rows / inputs / header strips */
+  --line:        #26334D;   /* low-contrast slate borders / dividers */
+  --line-soft:   rgba(148,163,184,0.10);
+  --blue:        #38BDF8;   /* info / links */
+  --cyan:        #38BDF8;
+  --gold:        #D4AF37;   /* RESERVED — top-tier scores, severe alerts */
+  --gold-bright: #EAB308;
+  --gold-deep:   #A8862B;
+  --green:       #10B981;   /* positive delta / value */
+  --red:         #EF4444;   /* negative delta */
+  --cloud:       #E2E8F0;   /* primary text — slate-100 */
+  --ink-muted:   #64748B;   /* labels / neutral baseline — slate-gray */
+  --border:      rgba(148, 163, 184, 0.14);
+  --green-wash:  rgba(16, 185, 129, 0.14);
+  --red-wash:    rgba(239, 68, 68, 0.14);
+  --gold-wash:   rgba(212, 175, 55, 0.14);
   --shadow-card: none;
-  --serif: 'IBM Plex Mono', ui-monospace, monospace;  /* terminal: no serif */
+  --serif: 'Outfit', system-ui, sans-serif;
   --sans: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -42,13 +42,16 @@ body {
   margin: 0;
   background: var(--ink);
   color: var(--cloud);
-  font-family: var(--mono);            /* terminal: monospace-forward */
-  font-size: 12.5px;
+  font-family: var(--sans);            /* UI labels in sans; numbers in mono */
+  font-size: 13px;
   font-weight: 400;
-  line-height: 1.42;
+  line-height: 1.45;
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
 }
+/* every raw metric is monospaced so digits align and never reflow on update */
+.mono, .num, td.mono, .stat-num, .find-bid, .fs-num,
+input[type="number"], .budget-value { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 /* faint scanline grid — the CRT/terminal texture, extremely subtle */
 body::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
@@ -57,9 +60,10 @@ body::before {
     radial-gradient(90% 55% at 50% 0%, rgba(255,158,44,0.05), transparent 60%);
 }
 
-/* Terminal headings: monospace, uppercase, tight */
-h1, h2, h3 { color: var(--cloud); margin: 0 0 .5em; font-family: var(--mono); font-weight: 600; letter-spacing: .01em; }
-h2 { font-size: 1rem; line-height: 1.2; text-transform: uppercase; letter-spacing: .1em; }
+/* Headings: clean sans, tight tracking. Section headers are neutral slate —
+   gold is reserved for data, not chrome. */
+h1, h2, h3 { color: var(--cloud); margin: 0 0 .5em; font-family: var(--sans); font-weight: 600; letter-spacing: .01em; }
+h2 { font-size: .92rem; line-height: 1.2; text-transform: uppercase; letter-spacing: .12em; }
 a { color: var(--cyan); }
 /* longer prose stays in the humanist sans for readability */
 .hint, .mp-sub, p.hint { font-family: var(--sans); }
@@ -196,7 +200,7 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
 }
 .hero::before {
   content: 'TARGET PROFILE'; position: absolute; top: 0; left: 0;
-  font-size: .58rem; letter-spacing: .18em; color: var(--gold); opacity: .85;
+  font-family: var(--mono); font-size: .56rem; letter-spacing: .16em; color: var(--ink-muted);
   background: var(--navy-3); padding: .12rem .5rem; border-bottom-right-radius: 2px;
   border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
 }
@@ -242,14 +246,15 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
 }
 /* terminal section header: full-bleed strip, mono uppercase, leading marker */
 .card > h2, .card-head > h2 {
-  margin: 0; font-size: .74rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--gold);
+  margin: 0; font-size: .72rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--cloud);
 }
 .card > h2 {
   display: flex; align-items: center; margin: -.8rem -.8rem .8rem; padding: .45rem .8rem;
   background: var(--navy-3); border-bottom: 1px solid var(--line);
 }
 .card > h2::before, .card-head > h2::before {
-  content: '▸'; color: var(--gold); margin-right: .5rem; font-size: .82em; line-height: 1; opacity: .8;
+  content: ''; width: 3px; height: .78em; background: var(--ink-muted);
+  margin-right: .55rem; flex: none; border-radius: 1px;
 }
 .card-head {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
@@ -857,3 +862,133 @@ td:nth-child(3) { font-family: var(--mono); }
 .mi-lb-fit { color: var(--gold); } .mi-lb-bid { color: var(--gold); font-weight: 700; }
 
 footer { max-width: 980px; margin: 0 auto; padding: 1rem 1.2rem 2.2rem; color: var(--ink-muted); font-size: .78rem; }
+
+/* ======================================================================
+   SCANNER GRID — high-density quant table, sparklines, heatmap, flashes
+   ====================================================================== */
+.scan-wrap { overflow-x: auto; margin: .2rem -.8rem -.8rem; }
+.scan-table { width: 100%; border-collapse: collapse; font-size: .8rem; min-width: 740px; }
+.scan-table thead th {
+  position: sticky; top: 0; z-index: 2; background: var(--navy-3);
+  text-align: left; font-family: var(--sans); font-size: .56rem; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted);
+  padding: .5rem .55rem; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.scan-table th.ta-r { text-align: right; }
+.scan-table th.ta-c { text-align: center; }
+.scan-table tbody tr {
+  border-bottom: 1px solid var(--line-soft); cursor: pointer;
+  transition: background .12s ease;
+}
+.scan-table tbody tr:hover { background: rgba(56, 189, 248, .05); }
+.scan-table tbody tr:focus-visible { outline: 1px solid var(--cyan); outline-offset: -1px; }
+.scan-table td { padding: .42rem .55rem; vertical-align: middle; }
+
+/* runner + algo score chip (gold only at top tier) */
+.sc-runner { display: flex; align-items: center; gap: .55rem; }
+.algo {
+  flex: none; width: 2.15rem; height: 1.55rem; display: grid; place-items: center;
+  font-family: var(--mono); font-weight: 600; font-size: .82rem;
+  border-radius: 2px; border: 1px solid var(--line); color: var(--ink-muted);
+}
+.algo-gold  { color: var(--gold-bright); border-color: rgba(212,175,55,.5); background: var(--gold-wash); }
+.algo-green { color: var(--green); border-color: rgba(16,185,129,.4); background: var(--green-wash); }
+.algo-slate { color: var(--cloud); }
+.sc-name { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.sc-name b { font-weight: 600; color: var(--cloud); white-space: nowrap; }
+.sc-flags { display: flex; gap: .25rem; margin-top: .14rem; }
+.flag {
+  font-family: var(--mono); font-size: .55rem; font-style: normal; color: var(--ink-muted);
+  border: 1px solid var(--line); border-radius: 2px; padding: 0 .25rem; letter-spacing: .02em;
+}
+.flag-gold  { color: var(--gold); border-color: rgba(212,175,55,.35); }
+.flag-green { color: var(--green); border-color: rgba(16,185,129,.3); }
+
+/* lineage + connections */
+.sc-line { max-width: 15rem; }
+.sc-line b { font-weight: 500; color: var(--cloud); font-size: .77rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-line small { color: var(--ink-muted); font-size: .67rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-line .ds { opacity: .8; }
+.sc-train { color: var(--cloud); font-size: .75rem; white-space: nowrap; }
+.sc-train small { display: block; color: var(--ink-muted); font-size: .65rem; }
+
+/* money columns — mono, tabular, right-aligned so digits never jump */
+.sc-bid { text-align: right; color: var(--cloud); font-weight: 600; white-space: nowrap; }
+.sc-bid small { color: var(--ink-muted); font-weight: 400; font-size: .6rem; margin-left: .15rem; }
+.sc-mkt { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.sc-mktval { color: var(--ink-muted); font-size: .75rem; min-width: 3.6rem; text-align: right; }
+.spark { width: 64px; height: 22px; display: block; flex: none; }
+.tr { font-size: .58rem; flex: none; }
+.tr.up { color: var(--green); } .tr.down { color: var(--red); } .tr.flat { color: var(--ink-muted); }
+.sc-delta { text-align: right; white-space: nowrap; font-weight: 600; color: var(--ink-muted); }
+.sc-delta.pos { color: var(--green); } .sc-delta.neg { color: var(--red); }
+
+/* form heatmap pills */
+.sc-form { text-align: center; white-space: nowrap; }
+.pill {
+  display: inline-block; min-width: 1.7rem; font-family: var(--mono); font-size: .65rem;
+  font-weight: 600; padding: .1rem .3rem; margin: 0 .07rem; border-radius: 2px;
+  border: 1px solid transparent; text-align: center;
+}
+.pill-gold  { color: var(--gold-bright); background: var(--gold-wash); border-color: rgba(212,175,55,.4); }
+.pill-green { color: var(--green); background: var(--green-wash); }
+.pill-slate { color: var(--cloud); background: var(--navy-3); }
+.pill-low   { color: var(--ink-muted); background: rgba(100,116,139,.14); }
+.pill-na    { color: var(--ink-muted); }
+
+/* row actions */
+.sc-act { text-align: center; white-space: nowrap; }
+.sc-act button {
+  background: transparent; border: 1px solid var(--line); color: var(--ink-muted);
+  width: 1.5rem; height: 1.5rem; border-radius: 2px; cursor: pointer;
+  font-size: .78rem; line-height: 1; padding: 0; margin: 0 .1rem;
+}
+.sc-act button:hover { color: var(--cloud); border-color: var(--cyan); }
+
+/* live flash — value up (emerald) / down (crimson), then decays to baseline */
+@keyframes flash-up   { 0% { background: var(--green-wash); } 100% { background: transparent; } }
+@keyframes flash-down { 0% { background: var(--red-wash); }   100% { background: transparent; } }
+.flash-up   { animation: flash-up .95s ease-out; }
+.flash-down { animation: flash-down .95s ease-out; }
+@media (prefers-reduced-motion: reduce) { .flash-up, .flash-down { animation: none; } }
+
+/* ---- filter bar: search ("/") + live-sim toggle ---- */
+.scan-tools { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.scan-searchbox {
+  display: flex; align-items: center; gap: .35rem;
+  background: var(--navy); border: 1px solid var(--line); border-radius: 2px; padding: .18rem .45rem;
+}
+.scan-searchbox:focus-within { border-color: var(--cyan); }
+.ss-icon { color: var(--ink-muted); font-size: .82rem; line-height: 1; }
+#scan-search {
+  background: transparent; border: 0; color: var(--cloud); font-family: var(--sans);
+  font-size: .74rem; width: 14rem; max-width: 44vw; outline: none; padding: .05rem 0;
+}
+#scan-search::placeholder { color: var(--ink-muted); }
+#scan-search::-webkit-search-cancel-button { -webkit-appearance: none; }
+.ss-key { font-family: var(--mono); font-size: .58rem; color: var(--ink-muted); border: 1px solid var(--line); border-radius: 2px; padding: 0 .3rem; }
+.scan-live {
+  display: inline-flex; align-items: center; gap: .35rem; background: var(--navy);
+  border: 1px solid var(--line); color: var(--ink-muted); font-family: var(--mono);
+  font-size: .62rem; letter-spacing: .1em; padding: .28rem .5rem; border-radius: 2px; cursor: pointer;
+}
+.scan-live i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-muted); }
+.scan-live.on { color: var(--green); border-color: rgba(16,185,129,.5); }
+.scan-live.on i { background: var(--green); animation: blink 1.3s steps(1) infinite; }
+
+/* ======================================================================
+   INSPECTOR — the horse profile as a right-docked split drawer, so the
+   scanner stays in view behind it.
+   ====================================================================== */
+#horse-modal { align-items: stretch; justify-content: flex-end; padding: 0; background: rgba(11, 14, 23, .55); }
+#horse-modal .modal-card {
+  width: 460px; max-width: 94vw; height: 100%; border-radius: 0;
+  border: 0; border-left: 1px solid var(--line); padding: 1.3rem 1.35rem 3rem;
+  overflow-y: auto; box-shadow: -24px 0 60px rgba(0,0,0,.4);
+  animation: drawer-in .28s cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes drawer-in { from { transform: translateX(24px); opacity: .3; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #horse-modal .modal-card { animation: none; } }
+@media (max-width: 640px) { #horse-modal .modal-card { width: 100%; max-width: 100%; border-left: 0; } }
+
+@media (max-width: 1080px) { .scan-table { min-width: 680px; } }
