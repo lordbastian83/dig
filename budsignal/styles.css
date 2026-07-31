@@ -680,3 +680,65 @@ a { color: var(--text-primary); }
 }
 
 .pos-stale td { opacity: 0.55; }
+
+/* ---------- windowed layout (Bloomberg Launchpad style) ---------- */
+
+/* wider workspace so tiled windows breathe */
+.section, .hero, .site-footer { max-width: 1240px; }
+.section { padding: 30px 24px; }
+
+/* every card reads as a window: raised title bar with a status dot */
+.chart-card > .chart-head {
+  margin: -20px -20px 14px; padding: 9px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: 4px 4px 0 0;
+}
+.watchlist-card > h3 {
+  margin: -14px -12px 10px; padding: 9px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: 4px 4px 0 0;
+}
+.equity-card > h3 {
+  margin: -18px -20px 12px; padding: 9px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: 4px 4px 0 0;
+}
+.trade-plan > .plan-head {
+  margin: -26px -28px 14px; padding: 9px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: 4px 4px 0 0;
+}
+.chart-head h3::before, .watchlist-card h3::before, .equity-card h3::before, .plan-head h3::before {
+  content: ''; display: inline-block; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--up); margin-right: 8px;
+  vertical-align: 1px;
+}
+
+/* tiled 2-up windows on desktop: signal | plan, radar | correlation */
+@media (min-width: 921px) {
+  #signal { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  #signal > h2 { grid-column: 1 / -1; margin-bottom: 0; }
+  #signal .trade-plan { margin-top: 0; }
+  #signal > * { min-width: 0; }
+
+  #radar { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  #radar > h2, #radar > .section-sub { grid-column: 1 / -1; }
+  #radar > h2 { margin-bottom: 0; }
+  #radar .corr-card { margin-top: 0; }
+  #radar > * { min-width: 0; }
+}
+
+@media (max-width: 640px) {
+  /* card padding shrinks on phones — window title bars must shrink with it */
+  .chart-card > .chart-head { margin: -14px -12px 12px; }
+  .trade-plan > .plan-head { margin: -18px -16px 12px; }
+}
+
+@media (max-width: 640px) {
+  .watchlist { font-size: 11px; }
+  .watchlist th, .watchlist td { padding: 7px 5px; }
+}
