@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=56">
+<link rel="stylesheet" href="styles.css?v=57">
 </head>
 <body>
 
@@ -195,6 +195,8 @@
       </div>
       <div class="plan-body" id="plan-body">Waiting for market data…</div>
       <div class="plan-rules">
+        <details class="fold">
+        <summary>Playbook: allocation &amp; exit rules</summary>
         <h4>When several markets fire at once</h4>
         <ul>
           <li><strong>Only validated streams qualify for real money:</strong> 🌊 daily swing signals (strongest edge), ◆ 4h breakouts on ✅ markets, and ⚡ 1h scalps (thin edge — Telegram only). Everything else (the cross stream, breakouts on ❌ markets) is paper/informational — the walk-forward research says it doesn't pay after costs.</li>
@@ -210,6 +212,7 @@
           <li><strong>Cross trades (paper only):</strong> stop 1.5×ATR, target 2×ATR, stop to breakeven once 1×ATR in profit, time-exit after 24h.</li>
           <li><strong>Never widen a stop, never add to a loser, never re-enter a market the same day after a stop-out.</strong></li>
         </ul>
+        </details>
       </div>
     </div>
   </section>
@@ -395,7 +398,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=56"></script>
-<script src="app.js?v=56"></script>
+<script src="engine.js?v=57"></script>
+<script src="app.js?v=57"></script>
 </body>
 </html>
