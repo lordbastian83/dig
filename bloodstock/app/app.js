@@ -2160,6 +2160,8 @@ document.addEventListener('click', (e) => {
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
     const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
+    if (e.key === '?' && !typing) { e.preventDefault(); const hm = $('#help-modal'); if (hm) hm.hidden = false; return; }
+    if (e.key === 'Escape') { const hm = $('#help-modal'); if (hm && !hm.hidden) { hm.hidden = true; return; } }
     if (e.key === '/' && !typing) { if (search) { e.preventDefault(); search.focus(); search.select(); } return; }
     if (e.key === 'Escape' && search && document.activeElement === search) {
       if (search.value) { search.value = ''; scanSearch = ''; renderFinds(); } else search.blur();
@@ -2382,7 +2384,9 @@ function openCompare(horsesIn) {
     <div class="cmp-wrap"><table class="cmp-table"><thead><tr>${thead}</tr></thead><tbody>${body}</tbody></table></div>`;
   $('#compare-modal').hidden = false;
 }
-$('#compare-btn').addEventListener('click', openCompare);
+if ($('#help-close')) $('#help-close').addEventListener('click', () => { $('#help-modal').hidden = true; });
+if ($('#help-modal')) $('#help-modal').addEventListener('click', (e) => { if (e.target.id === 'help-modal') $('#help-modal').hidden = true; });
+$('#compare-btn').addEventListener('click', () => openCompare());
 $('#compare-close').addEventListener('click', () => { $('#compare-modal').hidden = true; });
 $('#compare-modal').addEventListener('click', (e) => { if (e.target.id === 'compare-modal') $('#compare-modal').hidden = true; });
 

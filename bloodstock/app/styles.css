@@ -1145,3 +1145,13 @@ body.dense #finds { max-height: 34rem; }
 /* expert-mode toggle active state + expert-column deltas */
 #scan-expert.on { color: var(--cyan); border-color: var(--cyan); }
 .scan-table td.pos { color: var(--green); } .scan-table td.neg { color: var(--red); }
+
+/* keyboard shortcut reference */
+.help-table { width: 100%; border-collapse: collapse; margin: .4rem 0 1rem; }
+.help-table td { padding: .4rem .3rem; border-bottom: 1px solid var(--line-soft); font-size: .82rem; vertical-align: top; }
+.help-table td:first-child { width: 6.5rem; white-space: nowrap; }
+kbd {
+  display: inline-block; font-family: var(--mono); font-size: .72rem; color: var(--cloud);
+  background: var(--navy-3); border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 3px; padding: .05rem .4rem; margin-right: .15rem; min-width: 1.1rem; text-align: center;
+}
