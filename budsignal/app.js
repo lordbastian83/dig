@@ -780,12 +780,19 @@
         const dAtr = dInd ? dInd.atr[dInd.atr.length - 1] : null;
         const rets = new Map(); // day timestamp -> daily return, for correlation
         for (let i = 1; i < daily.length; i++) rets.set(daily[i].t, daily[i].c / daily[i - 1].c - 1);
+        // live funded-stream signals on THIS market, whatever asset the
+        // chart is showing — feeds the masthead live bar
+        const ind4 = E.computeIndicators(closed);
+        const lastT = closed[closed.length - 1].t;
+        const active = [...E.computeBreakoutStream(closed, ind4), ...E.computeSwingStream(closed)]
+          .filter((s) => lastT - s.t <= (s.candleMs || CANDLE_MS))
+          .map((s) => ({ side: s.side, strategy: s.strategy, early: s.early, entry: s.entry }));
         return {
           a, demo: /demo/i.test(source), price, r4, rd,
           d24: ((price - ref.c) / ref.c) * 100,
           trendUp: sma20 != null ? price > sma20 : null,
           rngPct: dAtr ? (dAtr / price) * 100 : null,
-          rets,
+          rets, active,
         };
       } catch (e) { return null; }
     }));
@@ -807,6 +814,75 @@
     </tr>`).join('') || '<tr><td colspan="4" class="table-empty">No market data available.</td></tr>';
     renderWatchlist(list);
     renderCorr(list);
+    lastSweepRows = list;
+    renderLiveBar(list);
+    renderBlotter();
+  }
+  let lastSweepRows = null;
+
+  // Live bar: signals firing on ANY market right now — the signal card only
+  // covers the selected one, and a Gold signal shouldn't hide behind a BTC
+  // chart. Hidden entirely when everything is flat.
+  function renderLiveBar(list) {
+    const bar = $('live-bar');
+    if (!bar) return;
+    const items = list.flatMap((r) => (r.active || []).map((s) =>
+      `<button class="live-item" data-asset="${r.a}" type="button">● ${ASSETS[r.a].tab} ${s.side === 'long' ? '▲ LONG' : '▼ SHORT'} ${s.strategy === 'swing' ? (s.early ? 'EARLY SWING' : 'SWING') : 'BREAKOUT'} @ $${fmtPrice(s.entry)}${r.demo ? ' *' : ''}</button>`));
+    bar.hidden = !items.length;
+    if (items.length) {
+      bar.innerHTML = `<span class="live-tag">LIVE</span>${items.join('')}`;
+      bar.querySelectorAll('.live-item').forEach((b) => b.addEventListener('click', () => {
+        currentAsset = b.dataset.asset;
+        localStorage.setItem('budsignal-asset', currentAsset);
+        refresh();
+        document.getElementById('signal').scrollIntoView({ behavior: 'smooth' });
+      }));
+    }
+  }
+
+  // Positions blotter: the ledger's open trades marked to the latest sweep
+  // price. R is measured against the initial stop; £ applies the account's
+  // edge-weighted plan size for that stream.
+  function renderBlotter() {
+    const body = $('pos-body');
+    if (!body) return;
+    if (!lastRecs) return;
+    const px = new Map((lastSweepRows || []).map((r) => [r.a, r]));
+    const open = lastRecs.filter((r) => r.outcome === 'open' && r.entry && r.stop && ASSETS[r.asset])
+      .sort((a, b) => b.t - a.t);
+    if (!open.length) {
+      body.innerHTML = '<tr><td colspan="9" class="table-empty">Flat — no open positions in the ledger.</td></tr>';
+      return;
+    }
+    body.innerHTML = open.map((r) => {
+      const dir = r.side === 'long' ? 1 : -1;
+      const sweep = px.get(r.asset);
+      const now = sweep?.price ?? null;
+      const stopPct = Math.abs(r.entry - r.stop) / r.entry * 100;
+      const movePct = now != null ? (dir * (now - r.entry) / r.entry) * 100 : r.movePct;
+      const R = stopPct && movePct != null ? movePct / stopPct : null;
+      const funded = r.strategy === 'swing' || r.strategy === 'scalp' ||
+        (r.strategy === 'breakout' && edgeStatus?.assets?.[r.asset]?.edge === true);
+      const gbp = R != null && funded ? acctGbp() * 0.01 * E.riskMultiplier(r) * R : null;
+      const ageH = (Date.now() - r.t) / 3600000;
+      // rows still "open" long past their stream's hard time-exit are ledger
+      // orphans (feed timestamps drifted), not live positions — say so
+      const maxHoldH = r.strategy === 'scalp' ? 18 : r.strategy === 'swing' ? 18 * 24 : 3 * 24;
+      const stale = ageH > maxHoldH * 1.5;
+      const stream = r.strategy === 'breakout' ? '◆ Breakout' : r.strategy === 'swing' ? (r.early ? '🌊 Early swing' : '🌊 Swing') : r.strategy === 'scalp' ? '⚡ Scalp' : 'Cross';
+      const cls = (v) => (v >= 0 ? 'move-pos' : 'move-neg');
+      return `<tr${stale ? ' class="pos-stale"' : ''}>
+        <td>${ASSETS[r.asset].tab}${sweep?.demo ? '<span class="radar-dist">*</span>' : ''}</td>
+        <td>${stream}${funded ? '' : ' <span class="radar-dist">paper</span>'}${stale ? ' <span class="radar-hot">stale</span>' : ''}</td>
+        <td><span class="side-badge ${r.side}">${r.side === 'long' ? '▲ LONG' : '▼ SHORT'}</span></td>
+        <td class="num">$${fmtPrice(r.entry)}</td>
+        <td class="num">${now != null ? '$' + fmtPrice(now) : '—'}</td>
+        <td class="num ${movePct != null ? cls(movePct) : ''}">${movePct != null ? fmtPct(movePct) : '—'}</td>
+        <td class="num ${R != null ? cls(R) : ''}">${R != null ? (R >= 0 ? '+' : '') + R.toFixed(2) + 'R' : '—'}</td>
+        <td class="num ${gbp != null ? cls(gbp) : ''}">${gbp != null ? (gbp >= 0 ? '+£' : '−£') + fmtUsd(Math.abs(gbp)) : '—'}</td>
+        <td class="num">${ageH < 48 ? ageH.toFixed(0) + 'h' : (ageH / 24).toFixed(1) + 'd'}</td>
+      </tr>`;
+    }).join('');
   }
 
   // Watchlist: trend vs 20-day mean, last, 24h change, expected daily range
@@ -1248,6 +1324,7 @@
 
     lastRecs = recs;
     renderPaperAccount(recs);
+    renderBlotter();
   }
   let lastRecs = null;
 
@@ -1330,6 +1407,31 @@
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
   setInterval(loadPerformance, 30 * 60 * 1000); // ledger updates every 4h
   setInterval(renderRadar, 30 * 60 * 1000); // radar sweeps all markets — keep it slow
+
+  // ledger CSV export — the raw records, for spreadsheets or your own research
+  $('csv-btn')?.addEventListener('click', () => {
+    if (!lastRecs) return;
+    const cols = ['asset', 't', 'strategy', 'early', 'side', 'entry', 'stop', 'target', 'outcome', 'movePct', 'confidence', 'adx', 'rsi', 'volConfirm', 'recorded'];
+    const csv = [
+      cols.join(','),
+      ...lastRecs.map((r) => cols.map((c) => (c === 't' ? new Date(r.t).toISOString() : r[c] ?? '')).join(',')),
+    ].join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'lordbastian-signal-ledger.csv';
+    a.click();
+  });
+
+  // terminal keyboard nav: ← → cycle markets (desktop)
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const keys = Object.keys(ASSETS);
+    const i = keys.indexOf(currentAsset);
+    currentAsset = keys[(i + (e.key === 'ArrowRight' ? 1 : keys.length - 1)) % keys.length];
+    localStorage.setItem('budsignal-asset', currentAsset);
+    refresh();
+  });
 
   // masthead UTC clock
   const tickClock = () => { const el = $('term-clock'); if (el) el.textContent = new Date().toISOString().slice(11, 19); };

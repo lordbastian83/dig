@@ -108,6 +108,44 @@ a { color: var(--text-primary); }
 .tape-delta.neg { color: var(--down); }
 @media (prefers-reduced-motion: reduce) { .tape-track { animation: none; } }
 
+/* ---------- live signal bar ---------- */
+
+.live-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 8px 24px;
+  background: var(--amber-wash);
+  border-bottom: 1px solid var(--amber-dim);
+  font-family: var(--mono); font-size: 12px;
+}
+.live-tag {
+  color: var(--page); background: var(--amber);
+  padding: 2px 8px; border-radius: 3px;
+  font-weight: 700; letter-spacing: 0.1em;
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes live-pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .live-tag { animation: none; } }
+.live-item {
+  border: 1px solid var(--amber-dim); border-radius: 3px;
+  background: none; color: var(--text-primary);
+  font: inherit; font-weight: 600; padding: 3px 10px; cursor: pointer;
+}
+.live-item:hover { background: var(--amber); color: var(--page); }
+
+/* ---------- positions blotter / misc ---------- */
+
+.pos-table th, .pos-table td { white-space: nowrap; }
+
+.ghost-btn {
+  margin-left: auto;
+  border: 1px solid var(--border); border-radius: 3px;
+  background: var(--surface-1); color: var(--text-secondary);
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 6px 12px; cursor: pointer;
+}
+.ghost-btn:hover { color: var(--amber); border-color: var(--amber-dim); }
+
 /* ---------- terminal masthead ---------- */
 
 .hero {
@@ -640,3 +678,5 @@ a { color: var(--text-primary); }
   .tile, .method-card, .record-table tbody tr { transition: none; }
   .tile:hover { transform: none; }
 }
+
+.pos-stale td { opacity: 0.55; }
