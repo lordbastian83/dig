@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=53">
+<link rel="stylesheet" href="styles.css?v=55">
 </head>
 <body>
 
@@ -103,6 +103,7 @@
       </div>
     </div>
 
+    <div class="workspace">
     <div class="chart-card">
       <div class="chart-head">
         <h3 id="chart-title">BTC / USD · 4h candles</h3>
@@ -130,6 +131,16 @@
         <span>Next candle <strong id="ind-next">—</strong></span>
       </div>
     </div>
+
+    <aside class="watchlist-card">
+      <h3>Watchlist</h3>
+      <table class="record-table watchlist">
+        <thead><tr><th>Sym</th><th class="num">Last</th><th class="num">24h</th><th class="num">±Rng</th><th class="num">Brk</th></tr></thead>
+        <tbody id="watchlist-body"><tr><td colspan="5" class="table-empty">Scanning…</td></tr></tbody>
+      </table>
+      <p class="watchlist-note">▲▼ trend vs 20-day mean · ±Rng expected daily range from ATR (volatility forecast, not direction) · Brk distance to nearest 4h breakout trigger</p>
+    </aside>
+    </div>
   </section>
 
   <!-- ============ Breakout radar ============ -->
@@ -141,6 +152,13 @@
         <thead><tr><th>Market</th><th class="num">Price</th><th>◆ 4h trigger</th><th>🌊 Daily trigger</th></tr></thead>
         <tbody id="radar-body"><tr><td colspan="4" class="table-empty">Scanning markets…</td></tr></tbody>
       </table>
+    </div>
+    <div class="equity-card corr-card">
+      <h3>Cross-market correlation · 60 trading days</h3>
+      <p class="section-sub corr-sub">Pearson correlation of daily returns. Markets above 0.6 move together: two positions in them is closer to one double-sized bet — the 3-position cap counts them accordingly.</p>
+      <div class="table-wrap">
+        <table class="record-table corr-table"><tbody id="corr-body"><tr><td class="table-empty">Computing…</td></tr></tbody></table>
+      </div>
     </div>
   </section>
 
@@ -196,6 +214,8 @@
   <section id="methodology" class="section">
     <h2><span class="fn-code">RULE</span>How signals work</h2>
     <p class="section-sub">The full rule set. There is no discretionary step — what you read here is exactly what the code does.</p>
+    <details class="fold" id="rule-fold">
+    <summary>Expand full rule set</summary>
     <div class="method-grid">
       <div class="method-card">
         <h3><span class="step-num">1</span>Trend cross</h3>
@@ -226,6 +246,7 @@
         <p>A signal is valid for one candle — four hours from the close that produced it. If unfilled, it expires. Outcomes are scored over the following 24 hours: target, stop, or expiry at market. Signals are evaluated on closed candles only, so they never repaint mid-candle.</p>
       </div>
     </div>
+    </details>
   </section>
 
   <!-- ============ Track record ============ -->
@@ -358,7 +379,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=53"></script>
-<script src="app.js?v=53"></script>
+<script src="engine.js?v=55"></script>
+<script src="app.js?v=55"></script>
 </body>
 </html>
