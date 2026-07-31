@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=55">
+<link rel="stylesheet" href="styles.css?v=56">
 </head>
 <body>
 
@@ -26,6 +26,7 @@
     <a href="#dashboard">Dashboard</a>
     <a href="#radar">Radar</a>
     <a href="#signal">Current signal</a>
+    <a href="#positions">Positions</a>
     <a href="#methodology">How it works</a>
     <a href="#track-record">Track record</a>
     <a href="#performance">Performance</a>
@@ -36,6 +37,9 @@
 
   <!-- ============ Ticker tape ============ -->
   <div class="tape" aria-hidden="true"><div class="tape-track" id="tape-track"><span class="tape-item"><span class="tape-sym">SCANNING MARKETS</span></span></div></div>
+
+  <!-- live signals from ANY market (the signal card below only shows the selected one) -->
+  <div class="live-bar" id="live-bar" hidden></div>
 
   <!-- ============ Terminal masthead ============ -->
   <section class="hero">
@@ -210,6 +214,18 @@
     </div>
   </section>
 
+  <!-- ============ Open positions ============ -->
+  <section id="positions" class="section">
+    <h2><span class="fn-code">POS</span>Open positions</h2>
+    <p class="section-sub">Every trade the ledger currently has open, marked to the latest sweep price. £ figures use your account settings and the stream's edge-weighted size. Paper rows are streams that never earned real money.</p>
+    <div class="table-wrap">
+      <table class="record-table pos-table">
+        <thead><tr><th>Market</th><th>Stream</th><th>Side</th><th class="num">Entry</th><th class="num">Now</th><th class="num">P&amp;L</th><th class="num">R</th><th class="num">£ @ plan</th><th class="num">Age</th></tr></thead>
+        <tbody id="pos-body"><tr><td colspan="9" class="table-empty">Loading ledger…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- ============ Methodology ============ -->
   <section id="methodology" class="section">
     <h2><span class="fn-code">RULE</span>How signals work</h2>
@@ -251,7 +267,7 @@
 
   <!-- ============ Track record ============ -->
   <section id="track-record" class="section">
-    <h2><span class="fn-code">HIST</span>Track record</h2>
+    <h2><span class="fn-code">HIST</span>Track record <button id="csv-btn" class="ghost-btn" type="button" title="Download the full signal ledger as CSV">⇩ Ledger CSV</button></h2>
     <p class="section-sub" id="track-sub">Every signal the rule set produced over the loaded history — recomputed from raw candles on each page load, so it cannot be curated.</p>
     <div class="equity-card" id="equity-wrap" hidden>
       <h3>Cumulative move across closed signals</h3>
@@ -379,7 +395,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=55"></script>
-<script src="app.js?v=55"></script>
+<script src="engine.js?v=56"></script>
+<script src="app.js?v=56"></script>
 </body>
 </html>
