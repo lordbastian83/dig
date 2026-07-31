@@ -1448,6 +1448,8 @@
       const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
       if (!r.ok) return;
       const v = (await r.json()).v;
+      const el = $('term-build');
+      if (el && v) el.textContent = String(v).slice(0, 7);
       if (bootVersion === undefined) bootVersion = v;
       else if (v !== bootVersion) location.reload();
     } catch (e) { /* offline — try again later */ }
