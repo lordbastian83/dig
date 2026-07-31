@@ -251,6 +251,7 @@ function currentBlob() {
     fx: JSON.parse(localStorage.getItem(LS_FX) || '{}'),
     views: JSON.parse(localStorage.getItem('bloodstock.views.v1') || '[]'),
     hist: JSON.parse(localStorage.getItem('bloodstock.hist.v1') || '{}'),
+    pfhist: JSON.parse(localStorage.getItem('bloodstock.pfhist.v1') || '[]'),
     heroImg: localStorage.getItem('bloodstock.heroImg') || '' };
 }
 function applyBlob(b) {
@@ -265,6 +266,7 @@ function applyBlob(b) {
   if (b.fx && Object.keys(b.fx).length) localStorage.setItem(LS_FX, JSON.stringify(b.fx));
   if (Array.isArray(b.views)) localStorage.setItem('bloodstock.views.v1', JSON.stringify(b.views));
   if (b.hist && typeof b.hist === 'object') localStorage.setItem('bloodstock.hist.v1', JSON.stringify(b.hist));
+  if (Array.isArray(b.pfhist)) localStorage.setItem('bloodstock.pfhist.v1', JSON.stringify(b.pfhist));
   if (b.heroImg) localStorage.setItem('bloodstock.heroImg', b.heroImg);
   return true;
 }
@@ -556,6 +558,47 @@ function renderPortfolio() {
   tbl.hidden = false; empty.hidden = true; totals.hidden = false; card.hidden = false;
   if (count) count.textContent = `${held.length} held`;
   renderPortfolioChart(held);
+  renderEquityCurve(recordPortfolioSnapshot(T));
+}
+/* ---- portfolio equity curve: one P&L snapshot per day, plotted over time --- */
+const LS_PFHIST = 'bloodstock.pfhist.v1';
+function loadPfHist() { try { return JSON.parse(localStorage.getItem(LS_PFHIST) || '[]'); } catch { return []; } }
+function savePfHist(a) { try { localStorage.setItem(LS_PFHIST, JSON.stringify(a)); if (typeof syncPush === 'function') syncPush(); } catch {} }
+function recordPortfolioSnapshot(T) {
+  const t = new Date().toISOString().slice(0, 10);
+  const hist = loadPfHist();
+  const point = { t, invested: T.buy + T.costs, value: T.value, prize: T.prize, pnl: T.pnl };
+  if (hist.length && hist[hist.length - 1].t === t) hist[hist.length - 1] = point; // refresh today
+  else hist.push(point);
+  if (hist.length > 120) hist.splice(0, hist.length - 120);
+  savePfHist(hist);
+  return hist;
+}
+function renderEquityCurve(hist) {
+  const host = $('#pf-equity'); if (!host) return;
+  if (!hist || hist.length < 2) {
+    host.hidden = false;
+    host.innerHTML = `<h4>Equity curve · P&amp;L over time</h4><p class="eq-note">Recorded daily — the curve builds from tomorrow's snapshot onward (${hist && hist.length ? '1 day so far' : 'no history yet'}).</p>`;
+    return;
+  }
+  const pts = hist.map((p) => p.pnl), n = pts.length;
+  const mn = Math.min(0, ...pts), mx = Math.max(0, ...pts), span = (mx - mn) || 1;
+  const W = 560, H = 92, pad = 8;
+  const X = (i) => pad + (W - 2 * pad) * (n > 1 ? i / (n - 1) : 0.5);
+  const Y = (v) => pad + (H - 2 * pad) * (1 - (v - mn) / span);
+  let d = ''; pts.forEach((v, i) => { d += `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`; });
+  const last = pts[n - 1], col = last >= 0 ? 'var(--green)' : 'var(--red)';
+  const zeroY = Y(0).toFixed(1);
+  const area = `${d} L ${X(n - 1).toFixed(1)} ${zeroY} L ${X(0).toFixed(1)} ${zeroY} Z`;
+  host.innerHTML = `<h4>Equity curve · P&amp;L over time (gns)</h4>
+    <svg viewBox="0 0 ${W} ${H}" class="eq-svg" preserveAspectRatio="none" aria-label="portfolio P&L across ${n} days">
+      <line x1="${pad}" x2="${W - pad}" y1="${zeroY}" y2="${zeroY}" stroke="var(--line)" stroke-width="1"/>
+      <path d="${area}" fill="${col}" opacity="0.10"/>
+      <path d="${d}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/>
+    </svg>
+    <div class="eq-meta"><span>${n} days</span><span>${esc(hist[0].t)} → ${esc(hist[n - 1].t)}</span>
+      <span class="${last >= 0 ? 'ok' : 'neg'}">${last >= 0 ? '+' : ''}${fmt(last)} gns</span></div>`;
+  host.hidden = false;
 }
 // Diverging P&L bars — profit right (emerald), loss left (crimson), from a
 // centre line, scaled to the largest absolute P&L in the book.
