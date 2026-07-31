@@ -789,3 +789,67 @@ a { color: var(--text-primary); }
   .hero-price { justify-content: space-between; }
   .section { padding-top: 18px; }
 }
+
+/* ================================================================
+   EIKON RESKIN — complete new look: ice-blue on deep navy, left
+   command rail on desktop, data-first masthead. The old amber
+   identity tokens are redefined wholesale, so every fn-code, tab,
+   title bar, CTA and ticker symbol flips with them.
+   ================================================================ */
+
+:root {
+  --page:           #070b12;
+  --surface-1:      #0d1420;
+  --surface-2:      #142033;
+  --text-primary:   #e9eff8;
+  --text-secondary: #a9b7cd;
+  --text-muted:     #64748f;
+  --grid:           #1a2436;
+  --baseline:       #26344e;
+  --border:         #1e2c44;
+  --up:             #22c55e;
+  --down:           #ef4444;
+  --up-wash:        rgba(34, 197, 94, 0.12);
+  --down-wash:      rgba(239, 68, 68, 0.12);
+  --amber:          #35c9f5;
+  --amber-dim:      #1e7fa3;
+  --amber-wash:     rgba(53, 201, 245, 0.10);
+}
+
+/* data-first masthead: the headline prose retires; the page opens on the
+   readout strip */
+.hero h1, .hero-sub { display: none; }
+.hero { padding: 16px 24px 8px; }
+@media (min-width: 921px) {
+  .hero { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 14px 24px 6px; }
+  .hero-kicker { margin: 0; flex-basis: 100%; }
+  .term-readout { margin: 0; flex-direction: row; }
+  .cta { align-self: center; }
+}
+
+/* left command rail on desktop */
+@media (min-width: 921px) {
+  .site-header {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 196px;
+    flex-direction: column; align-items: stretch;
+    padding: 16px 12px;
+    border-right: 1px solid var(--border); border-bottom: none;
+    z-index: 30;
+  }
+  .brand { margin-bottom: 16px; }
+  .site-nav { flex-direction: column; margin-left: 0; gap: 3px; }
+  .site-nav a {
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 9px 10px; border-radius: 4px;
+  }
+  .site-nav a:hover { background: var(--surface-2); color: var(--amber); }
+  .refresh-btn { order: 4; margin: auto 0 0; width: 100%; }
+  body > main, body > .site-footer, .site-footer { margin-left: 196px; }
+}
+
+/* window title bars carry the accent */
+.chart-card > .chart-head,
+.watchlist-card > h3,
+.equity-card > h3,
+.trade-plan > .plan-head { border-top: 2px solid var(--amber); }
