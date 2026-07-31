@@ -482,6 +482,54 @@ a { color: var(--text-primary); }
    cells folding into clipped two-line fragments on narrow screens */
 .radar-table th, .radar-table td { white-space: nowrap; }
 
+/* ---------- workspace (chart + watchlist) ---------- */
+
+.workspace { display: grid; grid-template-columns: 1fr 330px; gap: 14px; align-items: start; }
+.workspace > * { min-width: 0; }
+@media (max-width: 920px) { .workspace { grid-template-columns: 1fr; } }
+
+.watchlist-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 14px 12px 10px;
+}
+.watchlist-card h3 {
+  margin: 0 0 8px; padding: 0 4px;
+  font-family: var(--mono); font-size: 12px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber);
+}
+.watchlist { min-width: 0; font-size: 11.5px; }
+.watchlist th, .watchlist td { padding: 7px 7px; white-space: nowrap; }
+.watchlist tbody tr { cursor: pointer; }
+.watchlist tbody tr:hover { background: var(--amber-wash); }
+.watchlist tr.wl-active td { background: var(--amber-wash); }
+.watchlist-note { margin: 8px 4px 2px; font-size: 10.5px; color: var(--text-muted); line-height: 1.5; }
+
+/* ---------- correlation matrix ---------- */
+
+.corr-card { margin-top: 16px; }
+.corr-sub { font-size: 13px; margin-bottom: 14px; }
+.corr-table { min-width: 0; }
+.corr-table th, .corr-table td { padding: 6px 9px; white-space: nowrap; }
+.corr-table th { text-align: right; font-size: 10.5px; color: var(--amber-dim); }
+.corr-table tr > th:first-child { text-align: left; }
+.corr-self { color: var(--text-muted); }
+.corr-hi { color: var(--amber); background: var(--amber-wash); font-weight: 700; }
+.corr-lo { color: var(--accent); background: var(--accent-wash); font-weight: 700; }
+
+/* ---------- collapsible prose ---------- */
+
+.fold summary {
+  cursor: pointer; list-style: none;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--amber); padding: 8px 0; margin-bottom: 8px;
+}
+.fold summary::before { content: '▸'; transition: transform 0.15s ease; }
+.fold[open] summary::before { transform: rotate(90deg); }
+.fold summary::-webkit-details-marker { display: none; }
+
 .radar-dist { color: var(--text-muted); font-size: 12.5px; }
 
 /* quant tearsheet */

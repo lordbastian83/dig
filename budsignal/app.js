@@ -772,9 +772,20 @@
         while (daily.length && daily[daily.length - 1].t + E.SWING.CANDLE_MS > Date.now()) daily.pop();
         const rd = daily.length > 56 ? E.breakoutRadar(daily) : null;
         const ref = closed[Math.max(0, closed.length - 7)]; // ~24h back on 4h candles
+        const price = closed[closed.length - 1].c;
+        // quant extras for the watchlist and correlation matrix
+        const closes = daily.map((d) => d.c);
+        const sma20 = closes.length >= 20 ? closes.slice(-20).reduce((x, y) => x + y, 0) / 20 : null;
+        const dInd = daily.length > 30 ? E.computeIndicators(daily) : null;
+        const dAtr = dInd ? dInd.atr[dInd.atr.length - 1] : null;
+        const rets = new Map(); // day timestamp -> daily return, for correlation
+        for (let i = 1; i < daily.length; i++) rets.set(daily[i].t, daily[i].c / daily[i - 1].c - 1);
         return {
-          a, demo: /demo/i.test(source), price: closed[closed.length - 1].c, r4, rd,
-          d24: ((closed[closed.length - 1].c - ref.c) / ref.c) * 100,
+          a, demo: /demo/i.test(source), price, r4, rd,
+          d24: ((price - ref.c) / ref.c) * 100,
+          trendUp: sma20 != null ? price > sma20 : null,
+          rngPct: dAtr ? (dAtr / price) * 100 : null,
+          rets,
         };
       } catch (e) { return null; }
     }));
@@ -794,6 +805,58 @@
       <td>${cell(r.n4)}</td>
       <td>${cell(r.nd)}</td>
     </tr>`).join('') || '<tr><td colspan="4" class="table-empty">No market data available.</td></tr>';
+    renderWatchlist(list);
+    renderCorr(list);
+  }
+
+  // Watchlist: trend vs 20-day mean, last, 24h change, expected daily range
+  // (an honest volatility forecast — direction is NOT predictable, size of
+  // move is), and distance to the nearest 4h breakout trigger. Tapping a row
+  // switches the chart, terminal-style.
+  function renderWatchlist(list) {
+    const body = $('watchlist-body');
+    if (!body) return;
+    body.innerHTML = list.map((r) => `<tr data-asset="${r.a}" class="${r.a === currentAsset ? 'wl-active' : ''}">
+      <td><span class="${r.trendUp == null ? 'radar-dist' : r.trendUp ? 'move-pos' : 'move-neg'}">${r.trendUp == null ? '·' : r.trendUp ? '▲' : '▼'}</span> ${ASSETS[r.a].tab}${r.demo ? '<span class="radar-dist">*</span>' : ''}</td>
+      <td class="num">${fmtPrice(r.price)}</td>
+      <td class="num ${r.d24 >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(r.d24)}</td>
+      <td class="num">${r.rngPct != null ? `±${r.rngPct.toFixed(1)}%` : '—'}</td>
+      <td class="num">${r.n4 ? `<span class="${r.n4.pct < 1 ? 'radar-hot' : ''}">${r.n4.pct.toFixed(1)}%</span>` : '—'}</td>
+    </tr>`).join('');
+    body.querySelectorAll('tr[data-asset]').forEach((tr) => tr.addEventListener('click', () => {
+      currentAsset = tr.dataset.asset;
+      localStorage.setItem('budsignal-asset', currentAsset);
+      body.querySelectorAll('tr').forEach((x) => x.classList.toggle('wl-active', x === tr));
+      refresh();
+    }));
+  }
+
+  // Pearson correlation of daily returns over the last 60 shared trading
+  // days — crypto trades weekends and FX doesn't, so pairs align on common
+  // days only ('·' where fewer than 30 overlap).
+  function renderCorr(list) {
+    const body = $('corr-body');
+    if (!body) return;
+    const ms = list.filter((r) => r.rets && r.rets.size >= 30);
+    if (ms.length < 2) { body.innerHTML = '<tr><td class="table-empty">Not enough daily history yet.</td></tr>'; return; }
+    const corr = (A, B) => {
+      const days = [...A.keys()].filter((t) => B.has(t)).slice(-60);
+      if (days.length < 30) return null;
+      const a = days.map((t) => A.get(t)), b = days.map((t) => B.get(t));
+      const ma = a.reduce((x, y) => x + y, 0) / a.length, mb = b.reduce((x, y) => x + y, 0) / b.length;
+      let num = 0, da = 0, db = 0;
+      for (let i = 0; i < a.length; i++) { num += (a[i] - ma) * (b[i] - mb); da += (a[i] - ma) ** 2; db += (b[i] - mb) ** 2; }
+      return da && db ? num / Math.sqrt(da * db) : null;
+    };
+    const head = `<tr><th></th>${ms.map((r) => `<th class="num">${ASSETS[r.a].tab}</th>`).join('')}</tr>`;
+    const rows = ms.map((r, i) => `<tr><th>${ASSETS[r.a].tab}</th>${ms.map((c, j) => {
+      if (i === j) return '<td class="num corr-self">1.00</td>';
+      const v = corr(r.rets, c.rets);
+      if (v == null) return '<td class="num radar-dist">·</td>';
+      const cls = v >= 0.6 ? 'corr-hi' : v <= -0.6 ? 'corr-lo' : '';
+      return `<td class="num ${cls}">${v.toFixed(2)}</td>`;
+    }).join('')}</tr>`).join('');
+    body.innerHTML = head + rows;
   }
 
   // Ticker tape: every market's price and 24h change from the radar sweep.
