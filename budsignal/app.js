@@ -1273,4 +1273,26 @@
   tickClock();
   setInterval(tickClock, 1000);
   setInterval(renderCountdown, 30 * 1000);
+
+  // Self-update: installed PWAs resume old sessions instead of reloading, so
+  // the deployed build stamps version.json and the app reloads itself the
+  // moment the stamp changes. Checked on load, on resume, and every 10 min.
+  let bootVersion;
+  async function checkVersion() {
+    try {
+      const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+      if (!r.ok) return;
+      const v = (await r.json()).v;
+      if (bootVersion === undefined) bootVersion = v;
+      else if (v !== bootVersion) location.reload();
+    } catch (e) { /* offline — try again later */ }
+  }
+  checkVersion();
+  setInterval(checkVersion, 10 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    checkVersion();
+    refresh();          // resume also re-pulls data, so a reopened app is never stale
+    loadPerformance();
+  });
 })();

@@ -33,6 +33,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp build version (drives the app's self-update check)
+        run: printf '{"v": "%s"}' "$GITHUB_SHA" > budsignal/version.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -44,6 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp build version (drives the app's self-update check)
+        run: printf '{"v": "%s"}' "$GITHUB_SHA" > budsignal/version.json
       - name: Publish budsignal/ to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
