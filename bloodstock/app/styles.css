@@ -76,7 +76,9 @@ code {
 /* ---------- header: the wordmark IS the mark — shoe knocked out of the u */
 .topbar {
   position: sticky; top: 0; z-index: 20;
-  background: rgba(12, 12, 14, 0.96); backdrop-filter: blur(8px);
+  /* opaque + matches the logo knockout exactly, so the shoe cut-out in the
+     'u' reads as clean negative space instead of a mismatched patch */
+  background: var(--ink);
   border-bottom: 1px solid var(--line);
 }
 .site-header {
