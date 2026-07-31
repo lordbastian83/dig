@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260730j">
+<link rel="stylesheet" href="styles.css?v=20260730k">
 </head>
 <body>
 
@@ -186,6 +186,7 @@
           <kbd class="ss-key" title="Press / to search">/</kbd>
         </div>
         <button id="scan-live" class="scan-live" aria-pressed="false" title="Simulate a live market feed (display only)"><i></i>LIVE</button>
+        <button id="scan-export" class="refresh-btn" title="Export the current scanner view to CSV">CSV</button>
         <button id="refresh-btn" class="refresh-btn" title="Re-pull the latest scan">↻</button>
       </div>
     </div>
@@ -218,6 +219,15 @@
     </div>
     <!-- Saved views — pin a profile + rank + column sort + filter, recall in one tap -->
     <div class="views-bar" id="views-bar" aria-label="Saved views"></div>
+    <!-- Per-column numeric filters -->
+    <div class="scan-numfilters" id="scan-numfilters">
+      <span class="nf-lab">Cut</span>
+      <label>algo ≥ <input id="nf-algo" type="number" min="0" max="100" inputmode="numeric" placeholder="–"></label>
+      <label>fit ≥ <input id="nf-fit" type="number" min="0" max="100" inputmode="numeric" placeholder="–"></label>
+      <label>OR ≥ <input id="nf-or" type="number" min="0" max="130" inputmode="numeric" placeholder="–"></label>
+      <label>max bid ≤ <input id="nf-bid" type="number" min="0" step="1000" inputmode="numeric" placeholder="–"></label>
+      <button id="nf-clear" type="button">clear</button>
+    </div>
 
     <details id="profile-editor" class="profile-editor">
       <summary>Edit filters</summary>
@@ -375,6 +385,7 @@
       these rates for the BUY / OVER verdict. Max bids always stay in guineas.
       Rates are indicative — set them to today's before a sale.</p>
     </details>
+    <div class="cat-dist mktintel-grid" id="cat-dist" hidden></div>
     <div class="table-wrap">
       <table id="catalogue-table" class="cat-table" hidden>
         <thead><tr>
@@ -522,7 +533,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260730j"></script>
-<script src="app.js?v=20260730j"></script>
+<script src="engine.js?v=20260730k"></script>
+<script src="app.js?v=20260730k"></script>
 </body>
 </html>

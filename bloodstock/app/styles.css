@@ -1059,3 +1059,27 @@ body.dense .statstrip { padding: .5rem .7rem; }
 body.dense .type-chips { gap: .3rem; margin-bottom: .5rem; }
 body.dense .tchip { padding: .22rem .55rem; }
 body.dense #finds { max-height: 34rem; }
+
+/* score-jump alert flags in the scanner */
+.flag-red   { color: var(--red); border-color: rgba(239,68,68,.35); }
+.flag-alert { color: var(--gold-bright); border-color: var(--gold); background: var(--gold-wash); font-weight: 600; }
+
+/* per-column numeric filter row */
+.scan-numfilters { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 0 0 .7rem; }
+.scan-numfilters .nf-lab { font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); }
+.scan-numfilters label { display: inline-flex; align-items: center; gap: .3rem; font-family: var(--mono); font-size: .66rem; color: var(--ink-muted); }
+.scan-numfilters input {
+  width: 4.2rem; background: var(--navy); border: 1px solid var(--line); color: var(--cloud);
+  font-family: var(--mono); font-size: .7rem; padding: .16rem .35rem; border-radius: 2px;
+}
+.scan-numfilters input:focus { outline: none; border-color: var(--cyan); }
+.scan-numfilters input::-webkit-outer-spin-button, .scan-numfilters input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.scan-numfilters #nf-clear {
+  cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--ink-muted);
+  font-family: var(--mono); font-size: .64rem; padding: .16rem .5rem; border-radius: 2px;
+}
+.scan-numfilters #nf-clear:hover { color: var(--cyan); border-color: var(--cyan); }
+
+/* catalogue distribution heatmap */
+.cat-dist { margin: 0 0 1rem; padding-bottom: .9rem; border-bottom: 1px solid var(--line); }
+.cat-dist[hidden] { display: none; }

@@ -903,6 +903,22 @@ function renderCatalogue() {
   tbl.hidden = false; if (empty) empty.hidden = true;
   if (count) count.textContent = `${CATALOGUE.length} lots`;
   tbl.dataset.rows = JSON.stringify(scored.map((s) => s.h));
+  renderCatDist(scored);
+}
+// Where this sale's lots sit — ability, Dubai fit, and value-score distribution.
+function renderCatDist(scored) {
+  const host = $('#cat-dist'); if (!host) return;
+  if (scored.length < 3) { host.hidden = true; host.innerHTML = ''; return; }
+  const ratings = histBucket(scored, RATING_BINS, (x) => +x.h.rating);
+  const fits = histBucket(scored, FIT_BINS, (x) => dubaiPct(x.r));
+  const vaults = histBucket(scored, VAULT_BINS, (x) => Math.round(x.r.score * 100));
+  const buys = scored.filter((x) => catVerdict(x.h, x.r)[0] === 'BUY').length;
+  const verdicts = [['BUY', buys], ['STRETCH', scored.filter((x) => catVerdict(x.h, x.r)[0] === 'STRETCH').length], ['OVER', scored.filter((x) => catVerdict(x.h, x.r)[0] === 'OVER').length]];
+  host.innerHTML = miChart('Official rating', ratings, 'mi-blue')
+    + miChart('Dubai fit', fits, 'mi-gold')
+    + miChart('Vault score', vaults, 'mi-green')
+    + miChart('Verdict', verdicts, 'mi-blue');
+  host.hidden = false;
 }
 if ($('#cat-csv')) $('#cat-csv').addEventListener('change', async (e) => {
   const file = e.target.files[0]; if (!file) return;
@@ -1257,6 +1273,8 @@ let scanLiveTimer = null;
 let scanView = [];              // last rendered rows [{h,r}] (for in-place ticks)
 let scanSort = null;            // { key, dir } — clicked column sort, overrides rank
 let scanActive = -1;            // keyboard cursor row (j/k / arrows)
+let scanColFilters = { algo: null, fit: null, or: null, bid: null };  // per-column min/max
+let scanViewFull = [];          // full filtered view (for CSV export), pre-slice
 const SCAN_LIMIT = 18;
 const SCAN_SORT_KEYS = {
   algo:   (x) => x.r.score,
@@ -1341,8 +1359,19 @@ function trendArrow(h, r) {
   const dir = seriesDir(h, r);
   return dir > 0 ? '<span class="tr up">▲</span>' : dir < 0 ? '<span class="tr down">▼</span>' : '<span class="tr flat">▬</span>';
 }
+// Algo-score move since the previous scan (from recorded history).
+function scoreJump(h) {
+  const rec = HIST[h.name];
+  if (!rec || rec.length < 2) return 0;
+  return rec[rec.length - 1].s - rec[rec.length - 2].s;
+}
 function scanFlags(h) {
   const f = [];
+  const jump = scoreJump(h);
+  if (Math.abs(jump) >= 2) {
+    const cls = Math.abs(jump) >= 5 ? 'flag-alert' : (jump > 0 ? 'flag-green' : 'flag-red');
+    f.push(`<i class="flag ${cls}" title="Algo score ${jump > 0 ? 'up' : 'down'} ${Math.abs(jump)} vs last scan">${jump > 0 ? '▲' : '▼'}${Math.abs(jump)}</i>`);
+  }
   if (h.awForm) f.push('<i class="flag flag-gold" title="All-weather / dirt win">AW</i>');
   if (h.classMove === 'dropping') f.push('<i class="flag flag-green" title="Dropping in class, well-in">CL↓</i>');
   if (+h.rprEdge >= 5) f.push(`<i class="flag" title="RPR above official rating">R+${h.rprEdge}</i>`);
@@ -1512,6 +1541,15 @@ function renderFinds() {
   const q = scanSearch.toLowerCase();
   let view = q ? rows.filter(({ h }) =>
     [h.name, h.sire, h.dam, h.damsire, h.trainer, h.region].some((s) => (s || '').toLowerCase().includes(q))) : rows;
+  // per-column numeric filters (algo ≥, fit ≥, OR ≥, max bid ≤)
+  const cf = scanColFilters;
+  if (cf.algo != null || cf.fit != null || cf.or != null || cf.bid != null) {
+    view = view.filter(({ h, r }) =>
+      (cf.algo == null || Math.round(r.score * 100) >= cf.algo) &&
+      (cf.fit == null || dubaiPct(r) >= cf.fit) &&
+      (cf.or == null || (+h.rating || 0) >= cf.or) &&
+      (cf.bid == null || r.gns <= cf.bid));
+  }
   // clicked-column sort overrides the rank order
   if (scanSort && SCAN_SORT_KEYS[scanSort.key]) {
     const kf = SCAN_SORT_KEYS[scanSort.key];
@@ -1522,6 +1560,7 @@ function renderFinds() {
       return c * scanSort.dir;
     });
   }
+  scanViewFull = view;
   const scanDate = RADAR_META.generated || '—';
   const rankLabel = radarSort === 'dubai' ? 'Dubai fit' : 'value score';
   const header = `<p class="finds-meta">Scanned <b>${esc(scanDate)}</b> · ${RADAR.length} swept · ${view.length}${q ? ` matching “${esc(scanSearch)}”` : ''} · ranked by ${rankLabel}</p>`;
@@ -1610,23 +1649,28 @@ function renderTicker(rows) {
 }
 
 /* ---------- market intelligence: distributions across the swept pool ------ */
+// Shared distribution helpers (used by market-intel and the catalogue heatmap)
+const histBucket = (items, bins, pick) => bins.map(([label, lo, hi]) =>
+  [label, items.filter((x) => { const v = pick(x); return v != null && v >= lo && v < hi; }).length]);
+function miChart(title, pairs, accent) {
+  const max = Math.max(1, ...pairs.map((p) => p[1]));
+  const bars = pairs.map(([label, n]) => `<div class="mi-row"><span class="mi-lab">${label}</span>
+    <span class="mi-track"><span class="mi-fill ${accent}" style="width:${Math.round(n / max * 100)}%"></span></span>
+    <span class="mi-n">${n}</span></div>`).join('');
+  return `<div class="mi-chart"><h4>${title}</h4>${bars}</div>`;
+}
+const RATING_BINS = [['70–79', 70, 80], ['80–84', 80, 85], ['85–89', 85, 90], ['90–94', 90, 95], ['95+', 95, 999]];
+const FIT_BINS = [['0–39', 0, 40], ['40–54', 40, 55], ['55–69', 55, 70], ['70–84', 70, 85], ['85+', 85, 101]];
+const VAULT_BINS = [['<50', 0, 50], ['50–64', 50, 65], ['65–74', 65, 75], ['75–84', 75, 85], ['85+', 85, 101]];
 function renderMarketIntel() {
   const host = $('#mktintel'), card = $('#mktintel-card');
   if (!host || !card) return;
   if (!RADAR.length) { card.hidden = true; return; }
   const P = loadParams();
   const scored = RADAR.map((h) => ({ h, r: evaluate(h, P) }));
-  const bucket = (items, bins, pick) => bins.map(([label, lo, hi]) =>
-    [label, items.filter((x) => { const v = pick(x); return v != null && v >= lo && v < hi; }).length]);
-  const chart = (title, pairs, accent) => {
-    const max = Math.max(1, ...pairs.map((p) => p[1]));
-    const bars = pairs.map(([label, n]) => `<div class="mi-row"><span class="mi-lab">${label}</span>
-      <span class="mi-track"><span class="mi-fill ${accent}" style="width:${Math.round(n / max * 100)}%"></span></span>
-      <span class="mi-n">${n}</span></div>`).join('');
-    return `<div class="mi-chart"><h4>${title}</h4>${bars}</div>`;
-  };
-  const ratings = bucket(scored, [['70–79', 70, 80], ['80–84', 80, 85], ['85–89', 85, 90], ['90–94', 90, 95], ['95+', 95, 999]], (x) => +x.h.rating);
-  const fits = bucket(scored, [['0–39', 0, 40], ['40–54', 40, 55], ['55–69', 55, 70], ['70–84', 70, 85], ['85+', 85, 101]], (x) => dubaiPct(x.r));
+  const bucket = histBucket, chart = miChart;
+  const ratings = bucket(scored, RATING_BINS, (x) => +x.h.rating);
+  const fits = bucket(scored, FIT_BINS, (x) => dubaiPct(x.r));
   const regions = ['GB', 'IRE', 'FR', 'USA'].map((rg) => [rg, scored.filter((x) => (x.h.region || '') === rg).length]).filter((p) => p[1]);
   const tiers = [['A — dirt sire', scored.filter((x) => x.h.sireTier === 'A').length], ['B — dirt damsire', scored.filter((x) => x.h.sireTier === 'B').length], ['turf / other', scored.filter((x) => !x.h.sireTier).length]];
   // Best-value leaderboard — the finds where fit × ability is highest, so the
@@ -1638,15 +1682,15 @@ function renderMarketIntel() {
   const lb = ranked.map(({ h, r }, i) => `<div class="mi-lb-row">
     <span class="mi-lb-rank">${i + 1}</span>
     <span class="mi-lb-name">${esc(h.name)}</span>
-    <span class="mi-lb-fit" title="Dubai fit">🏜 ${dubaiPct(r)}</span>
+    <span class="mi-lb-fit" title="Dubai fit">${dubaiPct(r)}</span>
     <span class="mi-lb-vault" title="vault score">${Math.round(r.score * 100)}</span>
     <span class="mi-lb-bid" title="max bid">${fmt(r.gns)}</span>
   </div>`).join('');
   host.innerHTML = chart('Official rating', ratings, 'mi-blue')
-    + chart('🏜 Dubai fit', fits, 'mi-gold')
+    + chart('Dubai fit', fits, 'mi-gold')
     + chart('Region', regions, 'mi-green')
     + chart('Sire tier', tiers, 'mi-blue')
-    + `<div class="mi-chart mi-lb"><h4>🏆 Best-value shortlist</h4>
+    + `<div class="mi-chart mi-lb"><h4>Best-value shortlist</h4>
         <div class="mi-lb-head"><span></span><span>horse</span><span>fit</span><span>vault</span><span>max bid</span></div>
         ${lb}</div>`;
   card.hidden = false;
@@ -1936,6 +1980,32 @@ document.addEventListener('click', (e) => {
       if (scanLive) startLiveSim(); else stopLiveSim();
     });
   }
+  // per-column numeric filters (static inputs — focus survives re-render)
+  const numFilter = () => {
+    const val = (id) => { const el = $(id); const v = el && el.value !== '' ? +el.value : null; return Number.isFinite(v) ? v : null; };
+    scanColFilters = { algo: val('#nf-algo'), fit: val('#nf-fit'), or: val('#nf-or'), bid: val('#nf-bid') };
+    findsExpanded = false; renderFinds();
+  };
+  ['#nf-algo', '#nf-fit', '#nf-or', '#nf-bid'].forEach((id) => { const el = $(id); if (el) el.addEventListener('input', numFilter); });
+  const nfClear = $('#nf-clear');
+  if (nfClear) nfClear.addEventListener('click', () => {
+    ['#nf-algo', '#nf-fit', '#nf-or', '#nf-bid'].forEach((id) => { const el = $(id); if (el) el.value = ''; });
+    scanColFilters = { algo: null, fit: null, or: null, bid: null }; findsExpanded = false; renderFinds();
+  });
+  // export the current scanner view to CSV
+  const exp = $('#scan-export');
+  if (exp) exp.addEventListener('click', () => {
+    if (!scanViewFull.length) { alert('Nothing to export — the scanner view is empty.'); return; }
+    const head = ['rank', 'runner', 'sire', 'dam', 'damsire', 'trainer', 'region', 'algo', 'max_bid_gns', 'mkt_est_gns', 'value_delta_gns', 'OR', 'best_RPR', 'dubai_fit', 'score_move'];
+    const lines = scanViewFull.map(({ h, r }, i) => {
+      const mkt = mktEst(h, r);
+      return [i + 1, h.name, h.sire || '', h.dam || '', h.damsire || '', h.trainer || '', h.region || '',
+        Math.round(r.score * 100), r.gns, mkt, r.gns - mkt, h.rating ?? '', h.bestRPR ?? h.careerHigh ?? '', dubaiPct(r), scoreJump(h)]
+        .map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',');
+    });
+    const stamp = (RADAR_META.generated || '').slice(0, 10) || 'view';
+    download(`vault-scanner-${stamp}.csv`, 'text/csv', [head.join(','), ...lines].join('\n'));
+  });
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
     const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
