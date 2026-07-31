@@ -1508,6 +1508,7 @@ function scanFlags(h) {
     const cls = Math.abs(jump) >= 5 ? 'flag-alert' : (jump > 0 ? 'flag-green' : 'flag-red');
     f.push(`<i class="flag ${cls}" title="Algo score ${jump > 0 ? 'up' : 'down'} ${Math.abs(jump)} vs last scan">${jump > 0 ? '▲' : '▼'}${Math.abs(jump)}</i>`);
   }
+  if (h.liveOdds) f.push(`<i class="flag flag-odds" title="Live / forecast betting odds (declared to run)">@${esc(String(h.liveOdds))}</i>`);
   if (h.awForm) f.push('<i class="flag flag-gold" title="All-weather / dirt win">AW</i>');
   if (h.classMove === 'dropping') f.push('<i class="flag flag-green" title="Dropping in class, well-in">CL↓</i>');
   if (+h.rprEdge >= 5) f.push(`<i class="flag" title="RPR above official rating">R+${h.rprEdge}</i>`);

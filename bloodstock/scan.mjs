@@ -390,7 +390,7 @@ for (const m of ranked) {
 // Assemble a candidate/prospect record from a sweep match + deep-check.
 function buildHorse(m, deep, saleLabel) {
   const horse = {
-    name: m.name, lot: '', sale: saleLabel,
+    name: m.name, lot: '', sale: saleLabel, horseId: m.id || '',
     sire: m.sire, dam: m.damsire ? `${m.dam} (${m.damsire})` : m.dam,
     vendor: m.owner, rating: m.rating, starts: deep.starts,
     sireTier: m.tier, vet: 'unknown',

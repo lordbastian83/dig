@@ -4,20 +4,13 @@
   "auth": "Per source: set `authEnv` to the name of an env var holding a bearer token, or `basicEnvUser`/`basicEnvPass` for HTTP basic auth. Secrets live in GitHub Actions, never in this file.",
   "sources": [
     {
-      "name": "TheRacingAPI forecast prices",
-      "enabled": false,
+      "name": "TheRacingAPI live/forecast odds (built-in)",
+      "enabled": true,
+      "builtin": "racing-api-odds",
       "site": "https://theracingapi.com",
-      "url": "",
-      "format": "json",
       "basicEnvUser": "RACING_API_USERNAME",
       "basicEnvPass": "RACING_API_PASSWORD",
-      "map": {
-        "items": "data",
-        "name": "horse",
-        "liveOdds": "odds.decimal",
-        "orLive": "official_rating"
-      },
-      "why": "Racecard forecast/live prices for runners entered to race. Maps a horse name to its current market odds; marketGns is left to the model unless the feed also carries a sale/market value."
+      "why": "Handled in code (feeds/index.mjs → racingApiOdds), not by the generic url path, because it needs the racecards endpoint and per-runner matching. When RACING_API creds are present and FEEDS=1, it pulls today's + tomorrow's declared runners and stamps liveOdds (and a fresh official rating) onto matching candidates, keyed by horse_id. Odds are a betting-market signal, shown as a flag — separate from marketGns, which is the auction/hammer price and still awaits a sale-market feed."
     },
     {
       "name": "Generic market CSV",

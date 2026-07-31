@@ -108,6 +108,15 @@ GitHub Actions env vars named in the source (`authEnv`, or
 by a CI run (the dev sandbox has no internet); the offline `file` path is how
 it's tested locally.
 
+**Built-in: The Racing API live odds.** Beyond the config sources, when the
+scan's `RACING_API_*` credentials are present the adapter also pulls today's
+and tomorrow's **declared runners** and stamps `liveOdds` (forecast/live
+betting odds) onto matching candidates by `horse_id` — a real betting-market
+signal, shown as a cyan `@odds` flag in the scanner. This is a distinct signal
+from `marketGns` (the auction/hammer price), which still awaits a sale-market
+feed. The racecards endpoint shape is read defensively and confirmed by a CI
+run; it never blocks the scan.
+
 ### Currency (FX)
 
 Guides are quoted in each sale's own currency — Tattersalls/Goffs UK in

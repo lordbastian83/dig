@@ -1192,3 +1192,6 @@ kbd {
 
 /* live-market marker in the scanner (real feed price, not the model estimate) */
 .mkt-live { color: var(--green); font-size: .58rem; flex: none; }
+
+/* live betting-odds flag chip in the scanner */
+.flag-odds { color: var(--cyan); border-color: rgba(56,189,248,.4); }

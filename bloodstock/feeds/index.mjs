@@ -144,21 +144,63 @@ export async function fetchLiveMarket() {
   return map;
 }
 
-// Stamp candidates in place with any live market data. Returns the count matched.
+/* The Racing API — real forecast/live betting odds for candidates DECLARED to
+   run. Uses the same proven Basic-auth pattern as scan.mjs. Reads every field
+   defensively (the racecards shape is confirmed by a CI run, not the sandbox),
+   so a wrong endpoint or missing field simply yields nothing — never a crash,
+   never a fabricated price. Keyed by the API horse_id, with a name fallback. */
+async function racingApiOdds() {
+  const USER = process.env.RACING_API_USERNAME, PASS = process.env.RACING_API_PASSWORD;
+  const map = new Map();
+  if (!USER || !PASS) return map;
+  const API = 'https://api.theracingapi.com/v1';
+  const auth = { Authorization: 'Basic ' + Buffer.from(`${USER}:${PASS}`).toString('base64') };
+  const get = async (path) => { const r = await fetch(API + path, { headers: auth }); if (!r.ok) throw new Error(`${r.status}`); return r.json(); };
+  const pick = (o, ...keys) => { for (const k of keys) { const v = k.split('.').reduce((x, kk) => (x == null ? x : x[kk]), o); if (v != null && v !== '') return v; } return null; };
+  for (const day of ['today', 'tomorrow']) {
+    let data = null;
+    for (const path of [`/racecards/pro?day=${day}`, `/racecards/standard?day=${day}`, `/racecards?day=${day}`]) {
+      try { data = await get(path); break; } catch { /* try next shape */ }
+    }
+    if (!data) continue;
+    const cards = data.racecards || data.data || (Array.isArray(data) ? data : []);
+    for (const rc of cards) for (const rn of (rc.runners || rc.horses || [])) {
+      const id = pick(rn, 'horse_id', 'id');
+      const name = pick(rn, 'horse', 'name');
+      const odds = pick(rn, 'odds.0.decimal', 'odds.0.fractional', 'forecast', 'sp_forecast', 'odds_decimal', 'odds');
+      const or = +(pick(rn, 'ofr', 'official_rating', 'or') ?? NaN);
+      if (!id && !name) continue;
+      const rec = { name, liveOdds: odds != null ? String(odds) : null, orLive: Number.isFinite(or) ? or : null };
+      if (id) map.set(String(id), rec);
+      if (name) map.set(name.toLowerCase(), rec);
+    }
+  }
+  return map;
+}
+
+// Stamp candidates in place with any live market/odds data. Returns count matched.
 export async function applyLiveFeeds(candidates) {
   if (process.env.FEEDS !== '1' || !Array.isArray(candidates) || !candidates.length) return 0;
-  const market = await fetchLiveMarket();
-  if (!market.size) return 0;
   const ts = new Date().toISOString();
   let matched = 0;
+  // 1) configured market feeds (real hammer/market price → marketGns)
+  const market = await fetchLiveMarket().catch(() => new Map());
   for (const h of candidates) {
     const m = market.get(String(h.name || '').toLowerCase());
     if (!m) continue;
-    if (m.marketGns != null) { h.marketGns = m.marketGns; h.marketLive = true; }
+    if (m.marketGns != null) { h.marketGns = m.marketGns; h.marketLive = true; h.marketTs = ts; matched++; }
     if (m.liveOdds != null) h.liveOdds = m.liveOdds;
     if (m.orLive != null) h.orLive = m.orLive;
-    if (h.marketLive) { h.marketTs = ts; matched++; }
   }
-  console.error(`Live feeds: ${matched}/${candidates.length} candidates enriched with a real market price.`);
-  return matched;
+  // 2) The Racing API — live/forecast betting odds for declared runners
+  const odds = await racingApiOdds().catch(() => new Map());
+  let oddsHit = 0;
+  if (odds.size) for (const h of candidates) {
+    const rec = (h.horseId && odds.get(String(h.horseId))) || odds.get(String(h.name || '').toLowerCase());
+    if (!rec) continue;
+    if (rec.liveOdds != null) { h.liveOdds = rec.liveOdds; h.oddsTs = ts; oddsHit++; }
+    if (rec.orLive != null) h.orLive = rec.orLive;
+  }
+  console.error(`Live feeds: ${matched} market price(s), ${oddsHit} live-odds match(es) across ${candidates.length} candidates.`);
+  return matched + oddsHit;
 }
