@@ -38,11 +38,11 @@
   if (!ASSETS[currentAsset]) currentAsset = 'BTC';
 
   const COLORS = {
-    up: '#16b616', down: '#e04a4a',
+    up: '#22c55e', down: '#ef4444',
     ema20: '#4a90e8', ema50: '#c98500',
-    line: '#4a90e8', lineWash: 'rgba(74, 144, 232, 0.10)',
-    grid: '#262215', baseline: '#3b3522',
-    muted: '#8c8570', ink: '#f2eede', surface: '#131109',
+    line: '#35c9f5', lineWash: 'rgba(53, 201, 245, 0.10)',
+    grid: '#1a2436', baseline: '#26344e',
+    muted: '#64748f', ink: '#e9eff8', surface: '#0d1420',
   };
 
   const $ = (id) => document.getElementById(id);
