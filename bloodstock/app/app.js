@@ -780,6 +780,58 @@ $('#export-json').addEventListener('click', () =>
     JSON.stringify({ params: loadParams(), watchlist: loadList(),
       profiles: loadProfiles().list.filter((p) => !p.builtin) }, null, 2)));
 
+/* ---------- shareable snapshot links (watchlist → URL hash) ---------- */
+// UTF-8-safe base64 so any horse name survives the round trip.
+function b64encode(obj) { return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
+function b64decode(s) { try { return JSON.parse(decodeURIComponent(escape(atob(s)))); } catch { return null; } }
+let toastTimer = null;
+function toast(msg) {
+  let t = $('#toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function shareLink(list, kind) {
+  const payload = { v: 1, kind: kind || 'wl', ts: new Date().toISOString().slice(0, 10), list };
+  const url = location.origin + location.pathname + '#s=' + b64encode(payload);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => toast(`Link copied — ${list.length} horse${list.length === 1 ? '' : 's'}, paste it to a partner.`),
+      () => prompt('Copy this shareable link:', url));
+  } else { prompt('Copy this shareable link:', url); }
+}
+if ($('#share-wl')) $('#share-wl').addEventListener('click', () => {
+  const list = loadList();
+  if (!list.length) { alert('Add horses to the watchlist first, then Share.'); return; }
+  shareLink(list, 'wl');
+});
+function clearShareHash() { try { history.replaceState(null, '', location.pathname + location.search); } catch {} }
+function checkShareHash() {
+  const m = (location.hash || '').match(/[#&]s=([^&]+)/);
+  if (!m) return;
+  const data = b64decode(m[1]);
+  const banner = $('#share-banner');
+  if (!data || !Array.isArray(data.list) || !data.list.length || !banner) { clearShareHash(); return; }
+  const n = data.list.length;
+  banner.innerHTML = `<span class="sb-msg">Shared shortlist · <b>${n}</b> horse${n === 1 ? '' : 's'}${data.ts ? ` · ${esc(data.ts)}` : ''}</span>
+    <span class="sb-actions">
+      <button id="sb-import">Import to watchlist</button>
+      <button id="sb-compare">Compare</button>
+      <button id="sb-dismiss" class="sb-ghost">Dismiss</button>
+    </span>`;
+  banner.hidden = false;
+  $('#sb-import').addEventListener('click', () => {
+    const cur = loadList();
+    data.list.forEach((h) => { if (h && h.name && !cur.some((x) => x.name.toLowerCase() === h.name.toLowerCase())) cur.unshift(h); });
+    saveList(cur); renderList(); banner.hidden = true; clearShareHash();
+    const wc = document.getElementById('watchlist-card'); if (wc) wc.scrollIntoView({ behavior: 'smooth' });
+    toast(`Imported ${n} horse${n === 1 ? '' : 's'} to your watchlist.`);
+  });
+  $('#sb-compare').addEventListener('click', () => openCompare(data.list));
+  $('#sb-dismiss').addEventListener('click', () => { banner.hidden = true; clearShareHash(); });
+}
+checkShareHash();
+window.addEventListener('hashchange', checkShareHash);
+
 // PDF export — print-styled window the browser saves as PDF (no libraries,
 // works offline; the vault-racing header + brand styling carry through).
 $('#export-pdf').addEventListener('click', () => {

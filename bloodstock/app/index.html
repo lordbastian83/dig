@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260730o">
+<link rel="stylesheet" href="styles.css?v=20260730p">
 </head>
 <body>
 
@@ -50,6 +50,9 @@
 </div>
 
 <main>
+
+  <!-- Shared-snapshot import banner (shown when opened from a share link) -->
+  <div id="share-banner" class="share-banner" hidden></div>
 
   <!-- ============ 0 · Hero: the horse this whole system chases ============ -->
   <section class="hero">
@@ -450,6 +453,7 @@
     <div class="form-actions">
       <button id="rank-gap" class="primary" title="Screen-passers first, widest value gap on top">Rank by value gap</button>
       <button id="compare-btn" title="Line the shortlist up side by side">Compare</button>
+      <button id="share-wl" title="Copy a shareable link to this shortlist">Share link</button>
       <button id="export-pdf">Export PDF</button>
       <button id="export-csv">Export CSV</button>
       <button id="export-json">Backup</button>
@@ -566,7 +570,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260730o"></script>
-<script src="app.js?v=20260730o"></script>
+<script src="engine.js?v=20260730p"></script>
+<script src="app.js?v=20260730p"></script>
 </body>
 </html>
