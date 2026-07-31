@@ -742,3 +742,28 @@ a { color: var(--text-primary); }
   .watchlist { font-size: 11px; }
   .watchlist th, .watchlist td { padding: 7px 5px; }
 }
+
+/* ---------- density fixes ---------- */
+
+/* author display rules must never defeat the hidden attribute — this was
+   rendering empty dash-grids, an unused key row, and a blank live bar */
+[hidden] { display: none !important; }
+
+/* tighter masthead: the terminal should open onto data, not prose */
+.hero { padding: 30px 24px 26px; }
+.hero-sub { margin-bottom: 20px; max-width: 76ch; font-size: 14.5px; }
+.hero h1 { font-size: clamp(22px, 3.4vw, 34px); }
+.term-readout { margin-bottom: 18px; }
+.hero-price { padding: 10px 16px; }
+.hero-price-value { font-size: 30px; }
+.term-status { padding: 10px 16px; }
+
+.section { padding: 24px 24px; }
+.section-sub { margin-bottom: 18px; font-size: 13.5px; }
+.signal-copy { margin-bottom: 14px; font-size: 14.5px; }
+.tiles { margin: 18px 0; }
+
+@media (max-width: 640px) {
+  .hero { padding: 24px 14px 22px; }
+  .section { padding: 22px 14px; }
+}
