@@ -1293,13 +1293,36 @@ let scanSort = null;            // { key, dir } — clicked column sort, overrid
 let scanActive = -1;            // keyboard cursor row (j/k / arrows)
 let scanColFilters = { algo: null, fit: null, or: null, bid: null };  // per-column min/max
 let scanViewFull = [];          // full filtered view (for CSV export), pre-slice
+const scanSelected = new Set(); // multi-select for the compare tray (by name)
+let expertMode = localStorage.getItem('bloodstock.expert') === '1';   // advanced columns
 const SCAN_LIMIT = 18;
+// Advanced columns unlocked in Expert mode.
+function expertHeads() {
+  if (!expertMode) return '';
+  return '<th class="ta-r sk" data-sk="rpredge" title="RPR above official rating">RPRΔ</th>'
+    + '<th class="ta-r" title="Win strike rate">Win%</th>'
+    + '<th class="ta-r" title="Dosage Index (speed vs stamina)">DI</th>'
+    + '<th class="ta-r" title="Days since last run">Rest</th>';
+}
+function expertCells(h) {
+  if (!expertMode) return '';
+  const edge = (+h.rprEdge || 0);
+  const winpct = h.winPct != null ? Math.round(h.winPct * 100) + '%' : '—';
+  let di = '—';
+  try { const d = dosageOf({ ...h, ped: (loadPed()[h.name] || h.ped) }); if (d && d.di != null) di = d.di.toFixed(2); else if (d) di = '∞'; } catch {}
+  const rest = h.lastRunDays != null ? h.lastRunDays + 'd' : '—';
+  return `<td class="mono ta-r ${edge > 0 ? 'pos' : edge < 0 ? 'neg' : ''}">${edge > 0 ? '+' : ''}${edge || '—'}</td>`
+    + `<td class="mono ta-r">${winpct}</td>`
+    + `<td class="mono ta-r">${di}</td>`
+    + `<td class="mono ta-r">${rest}</td>`;
+}
 const SCAN_SORT_KEYS = {
   algo:   (x) => x.r.score,
   bid:    (x) => x.r.gns,
   mkt:    (x) => mktEst(x.h, x.r),
   delta:  (x) => x.r.gns - mktEst(x.h, x.r),
   runner: (x) => (x.h.name || '').toLowerCase(),
+  rpredge: (x) => +x.h.rprEdge || 0,
 };
 const sortInd = (key) => scanSort && scanSort.key === key ? `<span class="sk-ind">${scanSort.dir < 0 ? '▼' : '▲'}</span>` : '';
 
@@ -1411,6 +1434,7 @@ function scanRowHTML(h, r, i) {
   const dCls = delta > 0 ? 'pos' : delta < 0 ? 'neg' : 'flat';
   const loc = h.region ? esc(h.region) : (h.coursesList && h.coursesList[0] ? esc(h.coursesList[0]) : '');
   return `<tr class="scan-row" data-i="${i}" tabindex="0" aria-label="${esc(h.name)} — open inspector">
+    <td class="sc-sel"><input type="checkbox" class="sc-check" data-name="${esc(h.name)}"${scanSelected.has(h.name) ? ' checked' : ''} aria-label="Select ${esc(h.name)}"></td>
     <td class="sc-runner"><span class="algo ${algoClass(algo)}" title="Algorithmic value score">${algo}</span>
       <span class="sc-name"><b>${esc(h.name)}</b><em class="sc-flags">${scanFlags(h)}</em></span></td>
     <td class="sc-line"><b>${esc(h.sire || '?')}</b><small>${esc(h.dam || '?')}${h.damsire ? ` <span class="ds">(${esc(h.damsire)})</span>` : ''}</small></td>
@@ -1419,6 +1443,7 @@ function scanRowHTML(h, r, i) {
     <td class="sc-mkt"><span class="sc-mktval mono" data-flash="m:${esc(h.name)}" data-val="${mkt}">${fmt(mkt)}</span>${sparkline(h, r)}${trendArrow(h, r)}</td>
     <td class="sc-delta mono ${dCls}" data-flash="d:${esc(h.name)}" data-val="${delta}">${delta > 0 ? '+' : ''}${fmt(delta)}</td>
     <td class="sc-form">${heatPill(h.rating, 'Official rating')}${heatPill(rpr, 'Best RPR')}${heatPill(fit, 'Dubai fit')}</td>
+    ${expertCells(h)}
     <td class="sc-act"><button class="scan-add" data-i="${i}" title="Add to watchlist" aria-label="Add to watchlist">＋</button>
       <button class="scan-inspect" data-i="${i}" title="Open inspector" aria-label="Open inspector">▤</button></td>
   </tr>`;
@@ -1426,12 +1451,13 @@ function scanRowHTML(h, r, i) {
 function scannerTableHTML(shown) {
   return `<div class="scan-wrap"><table class="scan-table">
     <thead><tr>
+      <th class="ta-c sc-sel"><input type="checkbox" id="sc-check-all" title="Select all shown" aria-label="Select all shown"></th>
       <th class="th-runner sk" data-sk="algo" title="Sort by algo score">Runner · Algo${sortInd('algo')}</th>
       <th>Sire / Dam</th><th>Trainer · Base</th>
       <th class="ta-r sk" data-sk="bid" title="Sort by max bid">Max bid${sortInd('bid')}</th>
       <th class="sk" data-sk="mkt" title="Sort by market estimate">Mkt est · trend${sortInd('mkt')}</th>
       <th class="ta-r sk" data-sk="delta" title="Sort by value delta">Δ value${sortInd('delta')}</th>
-      <th class="ta-c">OR·RPR·Fit</th><th class="ta-c" aria-label="Actions"></th>
+      <th class="ta-c">OR·RPR·Fit</th>${expertHeads()}<th class="ta-c" aria-label="Actions"></th>
     </tr></thead>
     <tbody>${shown.map(({ h, r }, i) => scanRowHTML(h, r, i)).join('')}</tbody>
   </table></div>`;
@@ -1529,6 +1555,26 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// Compare tray — appears when runners are ticked in the grid.
+function renderScanTray() {
+  const tray = $('#scan-tray'); if (!tray) return;
+  const n = scanSelected.size;
+  if (!n) { tray.hidden = true; tray.innerHTML = ''; return; }
+  const chips = [...scanSelected].slice(0, 8).map((nm) =>
+    `<span class="tray-chip">${esc(nm)}<span class="tray-x" data-unpick="${esc(nm)}" role="button" aria-label="Deselect">×</span></span>`).join('');
+  tray.innerHTML = `<span class="tray-lab">${n} selected</span>${chips}${n > 8 ? `<span class="tray-more">+${n - 8}</span>` : ''}
+    <span class="tray-actions">
+      <button class="tray-btn" data-tray="compare"${n < 2 ? ' disabled title="Select 2+ to compare"' : ''}>Compare</button>
+      <button class="tray-btn" data-tray="add">Add to watchlist</button>
+      <button class="tray-btn tray-ghost" data-tray="clear">Clear</button>
+    </span>`;
+  tray.hidden = false;
+}
+document.addEventListener('click', (e) => {
+  const x = e.target.closest('.tray-x[data-unpick]'); if (!x) return;
+  scanSelected.delete(x.dataset.unpick); renderScanTray(); renderFinds();
+});
+
 function renderFinds() {
   const card = $('#finds-card');
   if (!RADAR.length) { card.hidden = true; navShow('finds-card', false); return; }
@@ -1602,6 +1648,9 @@ function renderFinds() {
     rs.forEach((r, idx) => r.classList.toggle('is-active', idx === scanActive));
   }
   const vb = $('#views-bar'); if (vb && !vb.children.length) renderViews();
+  renderScanTray();
+  const allbox = $('#sc-check-all');
+  if (allbox) { const boxes = [...document.querySelectorAll('#finds .sc-check')]; allbox.checked = boxes.length > 0 && boxes.every((b) => b.checked); }
   card.hidden = false;
 }
 // Move the keyboard cursor; focus the row so Enter opens it and it scrolls in.
@@ -2028,6 +2077,7 @@ document.addEventListener('click', (e) => {
   if (sAdd) { addToWatchlist(rowsFrom(sAdd)[+sAdd.dataset.i], sAdd, '✓'); return; }
   const sInspect = e.target.closest('.scan-inspect');
   if (sInspect) { const h = rowsFrom(sInspect)[+sInspect.dataset.i]; if (h) openHorseModal(h); return; }
+  if (e.target.closest('.sc-sel')) return;  // checkbox cell — let the checkbox handle it
   const sRow = e.target.closest('.scan-row');
   if (sRow) { const h = rowsFrom(sRow)[+sRow.dataset.i]; if (h) openHorseModal(h); return; }
   const open = e.target.closest('.find-name, .find-profile');
@@ -2066,6 +2116,33 @@ document.addEventListener('click', (e) => {
     ['#nf-algo', '#nf-fit', '#nf-or', '#nf-bid'].forEach((id) => { const el = $(id); if (el) el.value = ''; });
     scanColFilters = { algo: null, fit: null, or: null, bid: null }; findsExpanded = false; renderFinds();
   });
+  // multi-select → compare tray
+  const finds = $('#finds');
+  if (finds) finds.addEventListener('change', (e) => {
+    const cb = e.target.closest('.sc-check'); if (!cb) return;
+    if (cb.checked) scanSelected.add(cb.dataset.name); else scanSelected.delete(cb.dataset.name);
+    renderScanTray();
+    const all = $('#sc-check-all'); if (all) { const boxes = [...document.querySelectorAll('#finds .sc-check')]; all.checked = boxes.length > 0 && boxes.every((b) => b.checked); }
+  });
+  if (finds) finds.addEventListener('click', (e) => {
+    if (e.target.id !== 'sc-check-all') return;
+    const on = e.target.checked;
+    document.querySelectorAll('#finds .sc-check').forEach((b) => { b.checked = on; if (on) scanSelected.add(b.dataset.name); else scanSelected.delete(b.dataset.name); });
+    renderScanTray();
+  });
+  const tray = $('#scan-tray');
+  if (tray) tray.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-tray]'); if (!act) return;
+    const horses = [...scanSelected].map((n) => RADAR.find((h) => h.name === n)).filter(Boolean);
+    if (act.dataset.tray === 'compare') { if (horses.length) openCompare(horses); }
+    else if (act.dataset.tray === 'add') { const list = loadList(); horses.forEach((h) => { if (!list.some((x) => x.name.toLowerCase() === h.name.toLowerCase())) list.unshift({ ...h, status: 'shortlist' }); }); saveList(list); renderList(); scanSelected.clear(); renderScanTray(); renderFinds(); }
+    else if (act.dataset.tray === 'clear') { scanSelected.clear(); renderScanTray(); renderFinds(); }
+  });
+  // expert mode
+  const expert = $('#scan-expert');
+  const applyExpert = (on) => { expertMode = on; if (expert) { expert.classList.toggle('on', on); expert.setAttribute('aria-pressed', String(on)); } };
+  applyExpert(expertMode);
+  if (expert) expert.addEventListener('click', () => { const on = !expertMode; localStorage.setItem('bloodstock.expert', on ? '1' : '0'); applyExpert(on); renderFinds(); });
   // export the current scanner view to CSV
   const exp = $('#scan-export');
   if (exp) exp.addEventListener('click', () => {
@@ -2261,25 +2338,26 @@ async function inspectPhoto(file) {
 }
 
 /* ---------- compare the shortlist side by side ---------- */
-function openCompare() {
-  const list = loadList();
-  if (!list.length) { alert('Add horses to your watchlist first, then Compare.'); return; }
+function openCompare(horsesIn) {
   const P = loadParams();
-  const horses = list.slice(0, 5).map((h) => ({ h, r: evaluate(h, P) }));
+  let source, note;
+  if (Array.isArray(horsesIn) && horsesIn.length) { source = horsesIn.slice(0, 6); note = 'selected'; }
+  else { source = loadList(); note = 'watchlist'; if (!source.length) { alert('Add horses to your watchlist first, then Compare.'); return; } }
+  const horses = source.slice(0, 6).map((h) => ({ h, r: evaluate(h, P) }));
   // [label, valueFn -> {n, t}, higherIsBetter]
   const M = [
     ['Vault score', (h, r) => ({ n: Math.round(r.score * 100), t: Math.round(r.score * 100) }), true],
-    ['🏜 Dubai fit', (h, r) => ({ n: dubaiPct(r), t: dubaiPct(r) }), true],
-    ['🧬 Dirt nick', (h) => { const p = Math.round(nickScore(h).pct * 100); return { n: p, t: p }; }, true],
+    ['Dubai fit', (h, r) => ({ n: dubaiPct(r), t: dubaiPct(r) }), true],
+    ['Dirt nick', (h) => { const p = Math.round(nickScore(h).pct * 100); return { n: p, t: p }; }, true],
     ['Max bid (gns)', (h, r) => ({ n: r.gns, t: fmt(r.gns) }), true],
     ['Official rating', (h) => ({ n: +h.rating || null, t: h.rating ?? '—' }), true],
     ['Career-high OR', (h) => ({ n: h.careerHigh ?? null, t: h.careerHigh ?? '—' }), true],
     ['Best RPR (speed)', (h) => ({ n: h.bestRPR ?? null, t: h.bestRPR ?? '—' }), true],
     ['Best trip', (h) => ({ n: h.distBest ?? null, t: h.distBest != null ? h.distBest + 'f' : '—' }), null],
-    ['AW / dirt win', (h) => ({ n: h.awForm ? 1 : 0, t: h.awForm ? '✓ yes' : '—' }), true],
+    ['AW / dirt win', (h) => ({ n: h.awForm ? 1 : 0, t: h.awForm ? 'yes' : '—' }), true],
     ['Wins / starts', (h) => ({ n: h.wins ?? null, t: (h.wins ?? '?') + ' / ' + (h.starts ?? '?') }), true],
     ['Win %', (h) => ({ n: h.winPct != null ? h.winPct : null, t: h.winPct != null ? Math.round(h.winPct * 100) + '%' : '—' }), true],
-    ['Class angle', (h) => ({ n: h.classMove === 'dropping' ? 1 : 0, t: h.classMove === 'dropping' ? 'dropping ✓' : (h.classMove || '—') }), true],
+    ['Class angle', (h) => ({ n: h.classMove === 'dropping' ? 1 : 0, t: h.classMove === 'dropping' ? 'dropping' : (h.classMove || '—') }), true],
     ['Dam production', (h) => ({ n: h.damScore ?? null, t: h.damLabel || '—' }), true],
     ['Sire tier', (h) => ({ n: h.sireTier === 'A' ? 2 : h.sireTier === 'B' ? 1 : 0, t: h.sireTier ? `tier ${h.sireTier}` : '—' }), true],
     ['Trainer', (h) => ({ n: null, t: h.trainer || '—' }), null],
@@ -2299,8 +2377,8 @@ function openCompare() {
     const tds = cells.map((c, i) => `<td class="${hi.has(i) ? 'cmp-best' : ''}">${esc(c.t)}</td>`).join('');
     return `<tr><td class="cmp-metric">${label}</td>${tds}</tr>`;
   }).join('');
-  $('#compare-body').innerHTML = `<h3>⚖ Compare shortlist</h3>
-    <p class="hint">The leader in each row is highlighted gold. Showing ${horses.length}${list.length > 5 ? ` of ${list.length}` : ''} watchlist ${horses.length === 1 ? 'horse' : 'horses'} (first 5).</p>
+  $('#compare-body').innerHTML = `<h3>Compare ${note === 'selected' ? 'runners' : 'shortlist'}</h3>
+    <p class="hint">The leader in each row is highlighted. Showing ${horses.length}${source.length > 6 ? ` of ${source.length}` : ''} ${note} ${horses.length === 1 ? 'horse' : 'horses'}.</p>
     <div class="cmp-wrap"><table class="cmp-table"><thead><tr>${thead}</tr></thead><tbody>${body}</tbody></table></div>`;
   $('#compare-modal').hidden = false;
 }

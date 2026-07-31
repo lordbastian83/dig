@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260730l">
+<link rel="stylesheet" href="styles.css?v=20260730m">
 </head>
 <body>
 
@@ -186,6 +186,7 @@
           <kbd class="ss-key" title="Press / to search">/</kbd>
         </div>
         <button id="scan-live" class="scan-live" aria-pressed="false" title="Simulate a live market feed (display only)"><i></i>LIVE</button>
+        <button id="scan-expert" class="refresh-btn" aria-pressed="false" title="Expert mode — unlock advanced columns">EXPERT</button>
         <button id="scan-export" class="refresh-btn" title="Export the current scanner view to CSV">CSV</button>
         <button id="refresh-btn" class="refresh-btn" title="Re-pull the latest scan">↻</button>
       </div>
@@ -228,6 +229,8 @@
       <label>max bid ≤ <input id="nf-bid" type="number" min="0" step="1000" inputmode="numeric" placeholder="–"></label>
       <button id="nf-clear" type="button">clear</button>
     </div>
+    <!-- Compare tray — populated when runners are selected in the grid -->
+    <div class="scan-tray" id="scan-tray" hidden></div>
 
     <details id="profile-editor" class="profile-editor">
       <summary>Edit filters</summary>
@@ -543,7 +546,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js?v=20260730l"></script>
-<script src="app.js?v=20260730l"></script>
+<script src="engine.js?v=20260730m"></script>
+<script src="app.js?v=20260730m"></script>
 </body>
 </html>

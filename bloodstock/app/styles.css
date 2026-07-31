@@ -1120,3 +1120,28 @@ body.dense #finds { max-height: 34rem; }
 .pfc-bar.pos { background: var(--green); } .pfc-bar.neg { background: var(--red); }
 .pfc-val { text-align: right; font-size: .74rem; font-weight: 600; }
 .pfc-val.pos { color: var(--green); } .pfc-val.neg { color: var(--red); }
+
+/* multi-select checkbox column */
+.scan-table th.sc-sel, .scan-table td.sc-sel { width: 1.6rem; text-align: center; padding-left: .4rem; padding-right: .2rem; }
+.sc-check, #sc-check-all { accent-color: var(--cyan); cursor: pointer; width: 13px; height: 13px; }
+
+/* compare tray */
+.scan-tray {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; margin: 0 0 .7rem;
+  padding: .45rem .55rem; background: var(--navy-3); border: 1px solid var(--line); border-radius: 2px;
+}
+.scan-tray[hidden] { display: none; }
+.tray-lab { font-family: var(--mono); font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; color: var(--cyan); margin-right: .2rem; }
+.tray-chip { display: inline-flex; align-items: center; gap: .3rem; background: var(--navy); border: 1px solid var(--line); color: var(--cloud); font-size: .68rem; padding: .12rem .45rem; border-radius: 2px; }
+.tray-chip .tray-x { color: var(--ink-muted); cursor: pointer; font-size: .8rem; line-height: 1; }
+.tray-chip .tray-x:hover { color: var(--red); }
+.tray-more { font-family: var(--mono); font-size: .66rem; color: var(--ink-muted); }
+.tray-actions { display: flex; gap: .35rem; margin-left: auto; }
+.tray-btn { cursor: pointer; background: var(--navy); border: 1px solid var(--line); color: var(--cloud); font-family: var(--mono); font-size: .64rem; letter-spacing: .04em; padding: .22rem .55rem; border-radius: 2px; }
+.tray-btn:hover:not(:disabled) { border-color: var(--cyan); color: var(--cyan); }
+.tray-btn:disabled { opacity: .45; cursor: default; }
+.tray-btn.tray-ghost { color: var(--ink-muted); }
+
+/* expert-mode toggle active state + expert-column deltas */
+#scan-expert.on { color: var(--cyan); border-color: var(--cyan); }
+.scan-table td.pos { color: var(--green); } .scan-table td.neg { color: var(--red); }
