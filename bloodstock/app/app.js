@@ -1516,9 +1516,12 @@ function scanFlags(h) {
 }
 // Live market estimate for the row: the model's expected price, nudged by any
 // live-sim drift. Never feeds back into our max bid, algo score, or verdict.
+function hasLiveMarket(h) { return Number.isFinite(+h.marketGns) && +h.marketGns > 0; }
 function mktEst(h, r) {
-  const base = expectedPrice(h)?.gns ?? r.gns;
-  return Math.max(1, Math.round(base * (1 + (simDrift.get(h.name) || 0))));
+  const live = hasLiveMarket(h);
+  const base = live ? +h.marketGns : (expectedPrice(h)?.gns ?? r.gns);
+  // a real market price is used as-is; only the model estimate takes sim drift
+  return Math.max(1, Math.round(base * (live ? 1 : (1 + (simDrift.get(h.name) || 0)))));
 }
 function scanRowHTML(h, r, i) {
   const algo = Math.round(r.score * 100);
@@ -1535,7 +1538,7 @@ function scanRowHTML(h, r, i) {
     <td class="sc-line"><b>${esc(h.sire || '?')}</b><small>${esc(h.dam || '?')}${h.damsire ? ` <span class="ds">(${esc(h.damsire)})</span>` : ''}</small></td>
     <td class="sc-train">${h.trainer ? esc(h.trainer) : '—'}<small>${loc}</small></td>
     <td class="sc-bid mono" data-flash="b:${esc(h.name)}" data-val="${r.gns}">${fmt(r.gns)}<small>gns</small></td>
-    <td class="sc-mkt"><span class="sc-mktval mono" data-flash="m:${esc(h.name)}" data-val="${mkt}">${fmt(mkt)}</span>${sparkline(h, r)}${trendArrow(h, r)}</td>
+    <td class="sc-mkt"><span class="sc-mktval mono" data-flash="m:${esc(h.name)}" data-val="${mkt}">${fmt(mkt)}</span>${hasLiveMarket(h) ? '<i class="mkt-live" title="Live market price from a data feed">◆</i>' : ''}${sparkline(h, r)}${trendArrow(h, r)}</td>
     <td class="sc-delta mono ${dCls}" data-flash="d:${esc(h.name)}" data-val="${delta}">${delta > 0 ? '+' : ''}${fmt(delta)}</td>
     <td class="sc-form">${heatPill(h.rating, 'Official rating')}${heatPill(rpr, 'Best RPR')}${heatPill(fit, 'Dubai fit')}</td>
     ${expertCells(h)}

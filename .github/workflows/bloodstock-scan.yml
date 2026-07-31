@@ -54,6 +54,10 @@ jobs:
           OUT: candidates.json
           EXISTING: candidates.json
           PROSPECTS_OUT: prospects.json
+          # Live market/odds enrichment. Reads bloodstock/feeds/sources.json; a
+          # no-op until a source there is enabled with a url or file, so this is
+          # safe to leave on.
+          FEEDS: '1'
         run: node bloodstock/scan.mjs
 
       - name: Publish candidates to bloodstock-data branch

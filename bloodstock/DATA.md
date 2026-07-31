@@ -82,6 +82,32 @@ available (feed URL, or CSV export into `catalogues/`). The dev sandbox can't
 reach the houses' sites to validate a scraper; CI can, so any feed URL you add
 is confirmed by a workflow run.
 
+### Live market / odds feeds (`bloodstock/feeds/`)
+
+The scanner's **Mkt est** column normally shows the model's expected hammer
+price. Wire a real feed and it shows the actual market instead — the value
+delta (Δ), the sort, and the flash all follow the live number, and the row
+gets a green ◆ marker.
+
+`feeds/sources.json` is the registry (same philosophy as `scrapers/`):
+config-driven and **fail-safe**. Each source maps a feed to the app's fields
+— `name` (the match key), `marketGns` (live market/hammer estimate in
+guineas), `liveOdds`, `orLive`. Give a source a `url` (CSV or JSON, with
+`columns`/`map` aliasing the feed's own headers) **or** drop a CSV at
+`feeds/data/<file>` and set `file` (a no-network path;
+`example-market.csv` ships as a worked example). Set `enabled: true` on the
+source you want.
+
+`feeds/index.mjs`'s `applyLiveFeeds(candidates)` runs inside the scan
+(`FEEDS=1`, already set in `bloodstock-scan.yml`) and stamps matching
+candidates with the live fields before `candidates.json` is written. With no
+source enabled it is a **no-op** and the app keeps its model estimate, so
+turning `FEEDS` on is safe. Auth (bearer token or HTTP basic) comes from
+GitHub Actions env vars named in the source (`authEnv`, or
+`basicEnvUser`/`basicEnvPass`) — never from the file. Feed URLs are validated
+by a CI run (the dev sandbox has no internet); the offline `file` path is how
+it's tested locally.
+
 ### Currency (FX)
 
 Guides are quoted in each sale's own currency — Tattersalls/Goffs UK in

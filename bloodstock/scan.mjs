@@ -424,6 +424,11 @@ function buildHorse(m, deep, saleLabel) {
 }
 
 const all = [...fresh, ...existing.candidates].slice(0, 200);
+// Optional live market/odds enrichment (FEEDS=1). No-op with no feed configured;
+// stamps candidates with a real marketGns so the app's Δ-value reflects the
+// actual market instead of the model estimate. Fail-safe — never blocks the scan.
+try { const { applyLiveFeeds } = await import('./feeds/index.mjs'); await applyLiveFeeds(all); }
+catch (e) { console.error('Live feeds skipped:', e && e.message || e); }
 writeFileSync(OUT, JSON.stringify({ generated: day(0), candidates: all,
   ...(DEBUG && debugSample ? { _debugSample: debugSample } : {}) }, null, 2));
 console.log(`${fresh.length} new, ${all.length} total → ${OUT}`);
