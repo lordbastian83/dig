@@ -555,6 +555,24 @@ function renderPortfolio() {
     <span class="${cls}">P&amp;L <b>${T.pnl >= 0 ? '+' : ''}${fmt(T.pnl)}</b> gns${roi == null ? '' : ` · ${roi >= 0 ? '+' : ''}${roi}% ROI`}</span>`;
   tbl.hidden = false; empty.hidden = true; totals.hidden = false; card.hidden = false;
   if (count) count.textContent = `${held.length} held`;
+  renderPortfolioChart(held);
+}
+// Diverging P&L bars — profit right (emerald), loss left (crimson), from a
+// centre line, scaled to the largest absolute P&L in the book.
+function renderPortfolioChart(held) {
+  const host = $('#portfolio-chart'); if (!host) return;
+  const data = held.map(({ h }) => ({ name: h.name, pnl: pnlOf(h).pnl }));
+  if (!data.length) { host.hidden = true; host.innerHTML = ''; return; }
+  const maxAbs = Math.max(1, ...data.map((d) => Math.abs(d.pnl)));
+  const rows = data.map((d) => {
+    const w = Math.round(Math.abs(d.pnl) / maxAbs * 48);
+    const pos = d.pnl >= 0;
+    return `<div class="pfc-row"><span class="pfc-name">${esc(d.name)}</span>
+      <span class="pfc-track"><span class="pfc-bar ${pos ? 'pos' : 'neg'}" style="width:${w}%;${pos ? 'left:50%' : 'right:50%'}"></span></span>
+      <span class="pfc-val mono ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${fmt(d.pnl)}</span></div>`;
+  }).join('');
+  host.innerHTML = `<h4>P&amp;L by horse (gns)</h4>${rows}`;
+  host.hidden = false;
 }
 if ($('#portfolio')) $('#portfolio').addEventListener('change', (e) => {
   const inp = e.target.closest('.pf-in'); if (!inp) return;
@@ -1536,6 +1554,7 @@ function renderFinds() {
   renderProfileBar();
   renderStats(rows);
   renderMarketIntel();
+  renderMovers();
   renderTicker(rows);
   // global search across the swept pool
   const q = scanSearch.toLowerCase();
@@ -1696,6 +1715,33 @@ function renderMarketIntel() {
   card.hidden = false;
 }
 
+// Alert digest — the biggest algo-score moves since the previous scan.
+function renderMovers() {
+  const card = $('#movers-card'), host = $('#movers'), meta = $('#movers-meta');
+  if (!card || !host) return;
+  const moves = [];
+  RADAR.forEach((h) => {
+    const rec = HIST[h.name];
+    if (rec && rec.length >= 2) { const d = rec[rec.length - 1].s - rec[rec.length - 2].s; if (d) moves.push({ h, d, s: rec[rec.length - 1].s }); }
+  });
+  if (!moves.length) { card.hidden = true; host.innerHTML = ''; return; }
+  const up = moves.filter((m) => m.d > 0).sort((a, b) => b.d - a.d).slice(0, 6);
+  const down = moves.filter((m) => m.d < 0).sort((a, b) => a.d - b.d).slice(0, 6);
+  const rowsOf = (arr, cls) => arr.length ? arr.map((m) =>
+    `<button class="mv-row" data-name="${esc(m.h.name)}" title="Open ${esc(m.h.name)}">
+      <span class="mv-delta ${cls}">${m.d > 0 ? '▲' : '▼'}${Math.abs(m.d)}</span>
+      <span class="mv-name">${esc(m.h.name)}</span><span class="mv-score mono">${m.s}</span></button>`).join('')
+    : '<p class="mv-empty">none</p>';
+  host.innerHTML = `<div class="mv-col"><h4 class="mv-up">Upgrades</h4>${rowsOf(up, 'pos')}</div>`
+    + `<div class="mv-col"><h4 class="mv-down">Downgrades</h4>${rowsOf(down, 'neg')}</div>`;
+  if (meta) meta.textContent = `${moves.length} moved`;
+  card.hidden = false;
+}
+document.addEventListener('click', (e) => {
+  const mv = e.target.closest('.mv-row'); if (!mv) return;
+  const h = RADAR.find((x) => x.name === mv.dataset.name); if (h) openHorseModal(h);
+});
+
 $('#sort-toggle').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-sort]'); if (!b) return;
   radarSort = b.dataset.sort;
@@ -1704,6 +1750,32 @@ $('#sort-toggle').addEventListener('click', (e) => {
   findsExpanded = false;
   renderFinds();
 });
+
+// A larger area sparkline of a horse's recorded algo score across scans —
+// the compare-across-scans view for a single runner.
+function historyChartHTML(h) {
+  const rec = loadHist()[h.name] || [];
+  if (rec.length < 2) return '';
+  const pts = rec.map((p) => p.s), n = pts.length;
+  const mn = Math.min(...pts), mx = Math.max(...pts), span = (mx - mn) || 1;
+  const W = 320, H = 62, pad = 6;
+  const X = (i) => pad + (W - 2 * pad) * i / (n - 1);
+  const Y = (v) => pad + (H - 2 * pad) * (1 - (v - mn) / span);
+  let d = ''; pts.forEach((v, i) => { d += `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`; });
+  const move = pts[n - 1] - pts[0];
+  const col = move > 0 ? 'var(--green)' : move < 0 ? 'var(--red)' : 'var(--ink-muted)';
+  const area = `${d} L ${X(n - 1).toFixed(1)} ${(H - pad).toFixed(1)} L ${X(0).toFixed(1)} ${(H - pad).toFixed(1)} Z`;
+  const dots = pts.map((v, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="1.7" fill="${col}"/>`).join('');
+  return `<h4>Algo score history</h4>
+    <div class="hist-chart">
+      <svg viewBox="0 0 ${W} ${H}" class="hist-svg" preserveAspectRatio="none" aria-label="algo score across ${n} scans">
+        <path d="${area}" fill="${col}" opacity="0.10"/>
+        <path d="${d}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>${dots}
+      </svg>
+      <div class="hist-meta"><span>${n} scans</span><span>${esc(rec[0].t.slice(0, 10))} → ${esc(rec[n - 1].t.slice(0, 10))}</span>
+        <span class="${move > 0 ? 'ok' : move < 0 ? 'neg' : ''}">${move > 0 ? '+' : ''}${move} pts</span></div>
+    </div>`;
+}
 
 /* ---------- horse profile modal — everything we know ---------- */
 let modalHorse = null;
@@ -1754,6 +1826,8 @@ function openHorseModal(h) {
       <b>🏜 Why it fits Dubai (${dubaiPct(r)}/100):</b> ${r.dubai.reasons.join(' · ')}.
       ${dubaiPct(r) < 55 ? ' Fit is modest — better value elsewhere than as a Meydan type.' : ''}
     </div>` : ''}
+
+    ${historyChartHTML(h)}
 
     ${section('Ability &amp; speed', [
       row('Official rating', h.rating), row('Career-high OR', h.careerHigh),
