@@ -2,7 +2,7 @@
    shell still opens offline (data comes from live APIs and simply falls back
    to the labeled demo mode when unreachable). */
 
-const CACHE = 'budsignal-v1';
+const CACHE = 'budsignal-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));

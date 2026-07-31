@@ -478,6 +478,10 @@ a { color: var(--text-primary); }
 
 .table-empty { text-align: center; color: var(--text-muted); padding: 28px !important; }
 
+/* radar rows stay on one line each — the wrap scrolls sideways instead of
+   cells folding into clipped two-line fragments on narrow screens */
+.radar-table th, .radar-table td { white-space: nowrap; }
+
 .radar-dist { color: var(--text-muted); font-size: 12.5px; }
 
 /* quant tearsheet */
@@ -521,8 +525,10 @@ a { color: var(--text-primary); }
 }
 
 @media (max-width: 640px) {
-  /* header collapses to brand + refresh on row one, scrollable nav below */
-  .site-header { flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+  /* header collapses to brand + refresh on row one, scrollable nav below.
+     Not sticky on phones — two pinned rows would eat ~100px of a small
+     screen on every scroll. */
+  .site-header { position: static; flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
   .refresh-btn { order: 0; margin-left: auto; width: 36px; height: 36px; }
   .site-nav {
     flex-basis: 100%; gap: 16px;
