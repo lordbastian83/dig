@@ -30,6 +30,20 @@
       "why": "Drop-in for any exported market sheet: a CSV with a horse-name column and a market/odds column. Column names are aliased to the app's fields so a raw export ingests without renaming."
     },
     {
+      "name": "Pedigree feed (Weatherbys / Racing Post / Equibase export)",
+      "enabled": false,
+      "url": "",
+      "format": "csv",
+      "file": "example-pedigree.csv",
+      "columns": {
+        "horse": "name", "name": "name",
+        "pedigree": "ped", "chefs": "ped", "dosage_chefs": "ped",
+        "black_type": "blackType", "blacktype": "blackType",
+        "dam_production": "damLabel", "dam_notes": "damLabel"
+      },
+      "why": "Brings the deep pedigree the free form APIs can't: a 4-generation chef-de-race string (name:generation pairs) that gives the REAL Dosage Index, plus verified black type and a dam-production note. Drop a licensed export at feeds/data/<file> or point url at a feed and set enabled:true. A worked example ships at feeds/data/example-pedigree.csv."
+    },
+    {
       "name": "Example market CSV (offline file)",
       "enabled": false,
       "url": "",

@@ -108,6 +108,16 @@ GitHub Actions env vars named in the source (`authEnv`, or
 by a CI run (the dev sandbox has no internet); the offline `file` path is how
 it's tested locally.
 
+**Pedigree feed (the deep breeding data).** The free form APIs can't verify
+black type or give a full Dosage. A pedigree source (Weatherbys / Racing Post
+/ Equibase export) fills that: map a horse to `ped` (a 4-generation
+chef-de-race string, `name:generation` pairs), `blackType`, and a
+`damLabel` (dam-production note). With a real `ped` on a candidate the app
+computes the **true Dosage Index** (no longer indicative) and the inspector's
+Breeding panel reads the full story. Configure it like any source in
+`sources.json` (`example-pedigree.csv` ships as a worked example); it's a
+no-op until enabled, and the pedigree still accepts manual per-horse entry.
+
 **Built-in: The Racing API live odds.** Beyond the config sources, when the
 scan's `RACING_API_*` credentials are present the adapter also pulls today's
 and tomorrow's **declared runners** and stamps `liveOdds` (forecast/live

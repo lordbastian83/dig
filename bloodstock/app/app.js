@@ -1925,6 +1925,38 @@ function historyChartHTML(h) {
     </div>`;
 }
 
+// A consolidated Breeding panel: a plain-language breeding note plus the key
+// breeding figures as tiles, so the pedigree story reads at a glance.
+function breedingNote(h, nk, dos) {
+  const parts = [];
+  const tier = h.sireTier === 'A' ? 'a proven dirt sire (tier A)'
+    : h.sireTier === 'B' ? 'a dirt-influenced line (tier B)' : 'a turf/other line';
+  if (h.sire) parts.push(`By <b>${esc(h.sire)}</b>, ${tier}`);
+  if (nk.damsire) {
+    const q = nk.pct >= 0.75 ? 'a strong dirt cross' : nk.pct >= 0.5 ? 'a fair dirt cross' : 'a modest dirt cross';
+    parts.push(`over <b>${esc(nk.damsire)}</b> — ${q} (${Math.round(nk.pct * 100)}/100)`);
+  }
+  if (h.damLabel) parts.push(`dam has ${esc(h.damLabel)}`);
+  if (dos && dos.di != null) parts.push(`dosage ${dos.partial ? 'indicative ' : ''}DI ${dos.di.toFixed(2)}, ${esc(String(dos.aptitude).toLowerCase())} aptitude`);
+  if (h.blackType) parts.push('black type in the first two dams (flagged, verify)');
+  return parts.length ? parts.join(' · ') + '.' : 'Pedigree detail limited — add sire/dam to build the breeding read.';
+}
+function breedingPanel(h, nk, dos, fam) {
+  const tile = (val, lab, cls = '') => `<div class="bd-tile ${cls}"><span class="bd-val">${val}</span><span class="bd-lab">${lab}</span></div>`;
+  const tierTxt = h.sireTier === 'A' ? 'A' : h.sireTier === 'B' ? 'B' : '—';
+  const nickV = `${Math.round(nk.pct * 100)}`;
+  const diV = dos && dos.di != null ? dos.di.toFixed(2) : '—';
+  const famV = fam ? `${Math.round(fam.pct * 100)}` : '—';
+  return `<h4>Breeding</h4>
+    <p class="bd-note">${breedingNote(h, nk, dos)}</p>
+    <div class="bd-tiles">
+      ${tile(tierTxt, 'Sire tier', h.sireTier === 'A' ? 'bd-hot' : '')}
+      ${tile(nickV, 'Dirt nick', nk.pct >= 0.6 ? 'bd-hot' : '')}
+      ${tile(diV + (dos && dos.partial ? '*' : ''), 'Dosage DI')}
+      ${tile(famV, 'Female fam')}
+    </div>`;
+}
+
 /* ---------- horse profile modal — everything we know ---------- */
 let modalHorse = null;
 function openHorseModal(h) {
@@ -2001,6 +2033,8 @@ function openHorseModal(h) {
       row('Days since last run', h.lastRunDays != null ? `${h.lastRunDays} days` : null),
       row('AW win', h.awForm ? 'yes' : 'no'), row('Class', h.classMove === 'dropping' ? 'dropping (well-in)' : h.classMove),
     ])}
+    ${breedingPanel(h, nk, dos, fam)}
+
     ${section('Pedigree &amp; connections', [
       row('Sire', h.sire), row('Sire tier', h.sireTier === 'A' ? 'A — proven dirt' : h.sireTier === 'B' ? 'B — dirt damsire' : '—'),
       row('Dam', h.dam), row('Damsire', nk.damsire || null),

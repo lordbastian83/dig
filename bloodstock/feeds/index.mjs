@@ -83,7 +83,9 @@ function authHeaders(src) {
 
 const num = (v) => { const n = +String(v ?? '').replace(/[^0-9.]/g, ''); return Number.isFinite(n) && n ? n : null; };
 
-// Normalise raw feed rows (already field-mapped) to the live-fields shape.
+const boolish = (v) => { const s = String(v ?? '').trim().toLowerCase(); return s === '' ? null : ['true', 'yes', 'y', '1'].includes(s); };
+// Normalise raw feed rows (already field-mapped) to the feed-fields shape:
+// live market/odds AND pedigree (4-gen chefs, black type, dam production).
 function normalise(rows) {
   return rows
     .map((r) => ({
@@ -91,6 +93,9 @@ function normalise(rows) {
       marketGns: num(r.marketGns),
       liveOdds: r.liveOdds != null && r.liveOdds !== '' ? String(r.liveOdds) : null,
       orLive: num(r.orLive),
+      ped: r.ped != null && r.ped !== '' ? String(r.ped) : null,
+      blackType: boolish(r.blackType),
+      damLabel: r.damLabel != null && r.damLabel !== '' ? String(r.damLabel) : null,
     }))
     .filter((r) => r.name);
 }
@@ -137,6 +142,9 @@ export async function fetchLiveMarket() {
         marketGns: prev.marketGns ?? r.marketGns,
         liveOdds: prev.liveOdds ?? r.liveOdds,
         orLive: prev.orLive ?? r.orLive,
+        ped: prev.ped ?? r.ped,
+        blackType: prev.blackType ?? r.blackType,
+        damLabel: prev.damLabel ?? r.damLabel,
       });
     }
     if (rows.length) console.error(`  feed ${src.name}: ${rows.length} rows`);
@@ -191,6 +199,11 @@ export async function applyLiveFeeds(candidates) {
     if (m.marketGns != null) { h.marketGns = m.marketGns; h.marketLive = true; h.marketTs = ts; matched++; }
     if (m.liveOdds != null) h.liveOdds = m.liveOdds;
     if (m.orLive != null) h.orLive = m.orLive;
+    // pedigree enrichment — a real 4-gen chef string gives the full Dosage,
+    // and verified black type / dam production land straight on the candidate.
+    if (m.ped != null) { h.ped = m.ped; h.pedLive = true; matched++; }
+    if (m.blackType != null) h.blackType = m.blackType;
+    if (m.damLabel != null) h.damLabel = m.damLabel;
   }
   // 2) The Racing API — live/forecast betting odds for declared runners
   const odds = await racingApiOdds().catch(() => new Map());
@@ -201,6 +214,6 @@ export async function applyLiveFeeds(candidates) {
     if (rec.liveOdds != null) { h.liveOdds = rec.liveOdds; h.oddsTs = ts; oddsHit++; }
     if (rec.orLive != null) h.orLive = rec.orLive;
   }
-  console.error(`Live feeds: ${matched} market price(s), ${oddsHit} live-odds match(es) across ${candidates.length} candidates.`);
+  console.error(`Live feeds: ${matched} market/pedigree enrichment(s), ${oddsHit} live-odds match(es) across ${candidates.length} candidates.`);
   return matched + oddsHit;
 }
