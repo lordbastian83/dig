@@ -1974,6 +1974,8 @@ function horseFigureHTML(h) {
     <div class="mp-figure-actions">
       <a class="mp-analyse" href="analysis.html${q}">🐎 Conformation analysis ▸</a>
       <a class="mp-analyse" href="gallop.html${q}">🎥 Motion / gallop analysis ▸</a>
+      <a class="mp-analyse" href="pedigree.html${q}">🧬 Pedigree analysis ▸</a>
+      <a class="mp-analyse" href="mating.html${q}">⚭ Mating analysis ▸</a>
     </div>
   </div>`;
 }
