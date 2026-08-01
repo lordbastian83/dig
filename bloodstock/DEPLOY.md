@@ -97,6 +97,71 @@ feed is fetched from the public `bloodstock-data` branch, so the login
 protects the app UI but the data stays public until the private-repo
 migration.
 
+## 5. Cross-device sync (watchlist follows your login)
+
+The watchlist, notes, grades, saved searches and settings sync across phone
+and laptop once a storage account is attached. Without it the app still
+works, just per-device.
+
+1. Azure portal → **Create a resource → Storage account** → any name, same
+   region, cheapest redundancy (LRS). Create.
+2. On the storage account → **Access keys** → copy **Connection string**.
+3. Static Web App `vault-racing-www-swa` → **Settings → Environment
+   variables** (Application settings) → **+ Add** → name
+   `AZURE_STORAGE_CONNECTION`, value = the connection string → Save.
+4. Re-run the deploy workflow (it now builds the `api/` function).
+
+Data is keyed to your Microsoft login id and stored one row per user, so
+each syndicate member sees only their own. Sign in on any device → your
+saved board loads automatically.
+
+## 6. AI photo inspection (conformation first pass)
+
+Each horse profile has a **📷 Analyse photo (AI)** button. It resizes a
+conformation photo in the browser and sends it to a vision model, which
+grades the six conformation items (shoulder, pasterns, hoof-pastern axis,
+limb, walk, balance) and writes a one-line read — you then adjust the grid
+by eye. The model key stays server-side; the browser never sees it. Until
+it's configured the button just says "AI inspection not enabled yet" and the
+manual grid still works.
+
+It works with **Claude (Anthropic)** or **OpenAI / Azure OpenAI**. Add these
+Static Web App **Application settings** (same place as
+`AZURE_STORAGE_CONNECTION`):
+
+| Setting | Value |
+|---|---|
+| `INSPECT_PROVIDER` | `anthropic` (Claude) or `openai`. Auto-detected from the URL if omitted |
+| `INSPECT_API_KEY` | The API key |
+| `INSPECT_API_URL` | Optional — defaults to the provider's standard endpoint |
+| `INSPECT_MODEL` | Optional — model name (defaults below) |
+| `INSPECT_AUTH` | OpenAI only: `bearer` (default) or `api-key` (Azure) |
+
+**Claude / Anthropic (recommended):** get an API key from
+**console.anthropic.com** (this is the *API*, billed per-use — separate from a
+Claude.ai Pro/Max subscription, which doesn't include API access). Then just:
+
+- `INSPECT_PROVIDER=anthropic`
+- `INSPECT_API_KEY=sk-ant-…`
+
+That's it — the URL defaults to `https://api.anthropic.com/v1/messages` and the
+model to a Haiku vision model (cheap/fast). For a sharper read set
+`INSPECT_MODEL=claude-sonnet-5`. Cost is roughly a US cent or two per photo on
+Haiku.
+
+**OpenAI:** `INSPECT_PROVIDER=openai`, `INSPECT_API_KEY=sk-…`. URL defaults to
+`https://api.openai.com/v1/chat/completions`, model to `gpt-4o-mini` (set
+`INSPECT_MODEL=gpt-4o` for a sharper read).
+
+**Azure OpenAI:** deploy a vision model, then `INSPECT_PROVIDER=openai`,
+`INSPECT_API_URL=https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions?api-version=2024-08-01-preview`,
+`INSPECT_API_KEY=<key>`, `INSPECT_AUTH=api-key` (the model comes from the
+deployment URL, so `INSPECT_MODEL` is ignored).
+
+Re-run the deploy workflow after adding them. This is an assistive first pass,
+**not** the biomechanics pose model — that's a separate ML service (see
+`DATA-SOURCES.md`); the scorer here is ready to receive its output too.
+
 ## Checklist
 
 - [ ] SWA created (Free plan), hostname noted

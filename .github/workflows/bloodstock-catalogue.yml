@@ -1,0 +1,62 @@
+name: Bloodstock sale catalogues
+
+# Builds catalogue.json from the CSV catalogues in bloodstock/catalogues/ and
+# publishes it to the bloodstock-data branch, where the app's "Sale shopping
+# list" auto-loads it with a sale picker. Runs whenever a catalogue CSV
+# changes, on a daily schedule (to pick up API enrichment), and on demand.
+# Drop a sale's catalogue CSV into bloodstock/catalogues/ and the shopping
+# list fills itself.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'bloodstock/catalogues/**'
+      - 'bloodstock/catalogue.mjs'
+  schedule:
+    - cron: '25 6 * * *'   # 06:25 UTC daily, after the radar sweep
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bloodstock-catalogue
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build catalogue.json
+        env:
+          RACING_API_USERNAME: ${{ secrets.RACING_API_USERNAME }}
+          RACING_API_PASSWORD: ${{ secrets.RACING_API_PASSWORD }}
+          CATALOGUE_DIR: bloodstock/catalogues
+          OUT: catalogue.json
+          SCRAPE: '1'
+        run: node bloodstock/catalogue.mjs
+
+      - name: Publish catalogue to bloodstock-data branch
+        run: |
+          git config user.name 'bloodstock-catalogue[bot]'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch origin bloodstock-data:refs/remotes/origin/bloodstock-data || true
+          if git rev-parse --verify refs/remotes/origin/bloodstock-data >/dev/null 2>&1; then
+            git worktree add data origin/bloodstock-data
+            cd data && git checkout -B bloodstock-data
+          else
+            git worktree add --orphan -b bloodstock-data data 2>/dev/null \
+              || { git worktree add --detach data && cd data && git checkout --orphan bloodstock-data && git rm -rf --quiet . 2>/dev/null; cd ..; }
+            cd data
+          fi
+          cp ../catalogue.json .
+          git add catalogue.json
+          git commit -m "catalogue $(date -u +%F)" || exit 0
+          git push origin bloodstock-data

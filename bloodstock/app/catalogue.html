@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vault Racing — Sale Catalogue</title>
+<meta name="theme-color" content="#12203A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="description" content="Browse the sale catalogue with a Bio-Metric Index on every lot — sire tier, foaling date and elite sire-lines — sortable by score.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Vault Racing">
+<meta property="og:title" content="Vault Racing — Sale Catalogue">
+<meta property="og:description" content="Browse the sale catalogue with a Bio-Metric Index on every lot — sire tier, foaling date and elite sire-lines — sortable by score.">
+<meta property="og:image" content="og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vault Racing — Sale Catalogue">
+<meta name="twitter:description" content="Browse the sale catalogue with a Bio-Metric Index on every lot — sire tier, foaling date and elite sire-lines — sortable by score.">
+<meta name="twitter:image" content="og-image.png">
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root{
+    --ink:#0B0E17; --navy:#12203A; --panel:#0f1626; --panel-2:#14203a;
+    --line:#25334d; --cloud:#E6ECF5; --muted:#8598b5; --muted-2:#5f7089;
+    --orange:#DCB64A; --orange-2:#E8C563; --blue:#38a3f5; --green:#2CC1A0;
+    --sans:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--cloud);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--orange-2)}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 18px 80px}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  .band{background:var(--navy);border-bottom:2px solid var(--orange)}
+  .band-in{max-width:1240px;margin:0 auto;padding:16px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .logo{height:52px;width:auto;flex:none}
+  .lock{display:flex;flex-direction:column;line-height:1}
+  .lock b{font-size:1.5rem;font-weight:700;letter-spacing:-.01em}
+  .lock span{font-size:.6rem;text-transform:lowercase;letter-spacing:.28em;color:var(--orange);margin-top:.2rem}
+  .tag{font-size:.8rem;color:var(--muted)}.tag em{color:var(--orange);font-style:normal;font-weight:600}
+  .band-nav{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .band-nav a{font-size:.74rem;font-weight:600;color:var(--cloud);text-decoration:none;background:#16233c;border:1px solid var(--line);padding:7px 11px;border-radius:5px}
+  .band-nav a.on{background:var(--orange);border-color:var(--orange);color:#fff}
+  @media(max-width:760px){.tag{display:none}}
+
+  .hero{padding:22px 0 6px}
+  .kicker{display:inline-block;font-size:.66rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--cloud);background:#16233c;border:1px solid var(--line);padding:5px 11px;border-radius:3px}
+  h1.title{font-size:2.2rem;line-height:1.02;font-weight:800;margin:.5rem 0 .2rem;letter-spacing:-.02em}
+  h1.title .o{color:var(--orange)}
+  .sub{color:var(--muted);font-size:.96rem}
+
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:16px 0 12px}
+  .controls input,.controls select{font-family:var(--sans);background:#0c1424;color:var(--cloud);border:1px solid var(--line);border-radius:6px;padding:9px 11px;font-size:.9rem}
+  .controls input[type=search]{min-width:280px;flex:1}
+  .count{font-size:.8rem;color:var(--muted);margin-left:auto}
+
+  .catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+  .lot{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:14px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
+  .lot:hover{border-color:#39527a;transform:translateY(-2px)}
+  .lot .lthumb{position:relative;height:110px;margin:-14px -14px 2px;border-radius:9px 9px 0 0;overflow:hidden;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;background:radial-gradient(130% 150% at 80% 18%,#17294a 0%,#0d1930 58%,#0a1526 100%)}
+  .lot .lthumb .hsvg{height:88%;width:auto;fill:var(--sx);filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
+  .lot .lthumb{--sx:#9fb1cb}.lot .lthumb.C{--sx:#5aa0ef}.lot .lthumb.F{--sx:#dcb64a}.lot .lthumb.G{--sx:#9fb1cb}
+  .lot .lthumb .tno{position:absolute;left:10px;top:10px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#fff;background:var(--orange);border-radius:5px;padding:2px 8px}
+  .lot .lthumb .tsex{position:absolute;right:10px;top:10px;font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:99px;color:#0a1526;background:var(--sx)}
+  .lot .lscore{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:'v bar band' 'v lab lab';align-items:center;column-gap:9px;row-gap:2px;margin:2px 0}
+  .lot .lscore .bmv{grid-area:v;font-family:var(--mono);font-size:1.5rem;font-weight:800;line-height:1;color:var(--sc)}
+  .lot .lscore .bmbar{grid-area:bar;height:6px;background:#182640;border-radius:99px;overflow:hidden}
+  .lot .lscore .bmbar i{display:block;height:100%;background:var(--sc);border-radius:99px}
+  .lot .lscore .bmlab{grid-area:lab;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .lot .lscore .bmband{grid-area:band;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#0a1526;background:var(--sc);padding:2px 8px;border-radius:99px}
+  .lot .lscore.elite{--sc:#dcb64a}.lot .lscore.strong{--sc:#38a3f5}.lot .lscore.solid{--sc:#2CC1A0}.lot .lscore.watch{--sc:#e7b93a}
+  .lot .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .lot .chip{font-size:.64rem;font-weight:600;letter-spacing:.02em;color:#cdd9ec;background:#16233c;border:1px solid var(--line);border-radius:99px;padding:2px 9px}
+  .lot .chip.hot{color:#ffd4bd;border-color:#7a3b23;background:#2a1710}
+  .lot .chip.elite{color:#bfe3ff;border-color:#274a6b;background:#102539}
+  .lot .lhead{display:flex;align-items:baseline;gap:9px}
+  .lot .lno{font-family:var(--mono);font-size:.72rem;font-weight:700;color:#fff;background:var(--orange);border-radius:4px;padding:2px 7px}
+  .lot .lname{font-weight:700;font-size:1rem}
+  .lot .lsub{font-size:.78rem;color:var(--muted)}
+  .lot .lped{font-size:.82rem;line-height:1.5}
+  .lot .lped b{color:var(--cloud);font-weight:600}
+  .lot .lped .k{color:var(--muted);display:inline-block;min-width:64px}
+  .lot .lcons{font-size:.74rem;color:var(--muted-2);margin-top:2px}
+  .lot .lacts{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+  .lot .lacts a{font-size:.74rem;font-weight:600;text-decoration:none;color:#fff;background:#16233c;border:1px solid var(--line);border-radius:5px;padding:6px 10px}
+  .lot .lacts a.pri{background:var(--orange);border-color:var(--orange)}
+  .lot .lacts a:hover{border-color:var(--orange)}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+
+  .footer-band{margin-top:30px;background:var(--navy);border-top:2px solid var(--orange);border-radius:8px;padding:16px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .footer-band .tagbig{font-weight:700}.footer-band .tagbig .o{color:var(--orange)}
+  .footer-band .contact{margin-left:auto;font-size:.76rem;color:var(--muted);text-align:right;line-height:1.6}
+  .disclaimer{font-size:.68rem;color:var(--muted-2);margin-top:14px;line-height:1.5}
+
+/* Vault Racing brand: gold carries navy ink; wordmark stays white */
+.band-nav a.on,.nav-cta,.btn.orange,.lot .lno,.lot .lacts a.pri,.lot .lthumb .tno{color:#12203A}
+.lock b{color:#F7F8FA}.lock span{color:#DFE2E8}
+img.logo{border-radius:8px}
+
+/* Keyboard focus (accessibility) */
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--orange,#DCB64A);outline-offset:2px;border-radius:3px}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+<div class="band">
+  <div class="band-in">
+    <img class="logo" src="icon.svg" alt="vault racing">
+    <div class="lock"><b>vault</b><span>racing</span></div>
+    <div class="tag">the horse the market <em>hasn't priced yet</em></div>
+    <nav class="band-nav">
+      <a href="index.html">Scanner</a>
+      <a href="catalogue.html" class="on">Catalogue</a>
+      <a href="pedigree.html">Pedigree</a>
+      <a href="mating.html">Mating</a>
+      <a href="analysis.html">Conformation</a>
+      <a href="gallop.html">Gallop</a>
+      <a href="report.html">Bio-Metric Score</a>
+      <a href="command.html">Command</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <span class="kicker">Sale Catalogue</span>
+    <h1 class="title">Sale <span class="o">Catalogue</span></h1>
+    <p class="sub" id="sub">Loading lots…</p>
+  </div>
+
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search name, sire, dam, damsire or consignor…" autocomplete="off">
+    <select id="sex"><option value="">All sexes</option><option value="C">Colts</option><option value="F">Fillies</option><option value="G">Geldings</option></select>
+    <select id="sort"><option value="lot">By lot</option><option value="bm">By Bio-Metric ▼</option><option value="name">By name</option><option value="sire">By sire</option></select>
+    <span class="count" id="count"></span>
+  </div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="horse" viewBox="-6 -8 172 147"><path d="M 116.2 131.1 L 110.6 131.1 L 109.5 130.0 L 108.7 126.1 L 107.0 124.4 L 105.4 103.5 L 103.1 109.8 L 103.1 121.0 L 104.4 124.0 L 108.2 128.7 L 105.0 129.8 L 101.1 129.8 L 100.1 128.7 L 99.6 124.9 L 97.9 123.1 L 100.5 87.8 L 100.1 78.3 L 99.4 77.6 L 70.5 75.9 L 62.7 73.7 L 50.7 68.1 L 47.9 70.5 L 44.0 78.7 L 41.0 88.2 L 39.2 98.1 L 39.2 107.6 L 41.0 112.8 L 43.6 118.8 L 50.0 126.1 L 48.5 127.7 L 43.3 127.2 L 41.8 125.7 L 40.5 121.8 L 37.1 118.8 L 34.5 101.1 L 30.6 92.9 L 30.6 89.5 L 31.9 85.6 L 31.3 84.5 L 24.6 91.2 L 18.5 102.4 L 17.3 110.2 L 17.3 119.2 L 22.9 126.1 L 24.2 129.6 L 21.3 130.7 L 17.0 129.8 L 14.7 127.4 L 14.7 123.6 L 11.2 121.8 L 11.2 119.7 L 13.4 111.5 L 13.8 91.2 L 19.4 83.9 L 21.6 78.3 L 21.1 73.1 L 16.8 60.2 L 16.0 54.1 L 16.4 47.7 L 19.8 41.2 L 19.8 39.9 L 18.8 39.7 L 17.3 41.6 L 14.7 48.9 L 13.4 86.9 L 9.5 101.6 L 7.5 103.5 L 7.1 102.2 L 6.3 104.8 L 4.7 103.7 L 4.1 99.2 L 3.5 102.0 L 2.6 101.6 L 2.6 95.1 L 1.5 97.9 L 0.0 90.8 L 0.0 58.0 L 1.7 47.7 L 4.7 40.8 L 9.3 36.7 L 13.6 34.9 L 25.2 34.1 L 36.0 31.5 L 47.2 31.5 L 61.5 34.9 L 70.5 36.2 L 79.6 36.2 L 91.2 34.5 L 99.8 30.6 L 110.0 17.9 L 115.8 12.1 L 120.1 9.1 L 127.4 5.6 L 138.7 4.3 L 143.4 0.0 L 143.4 4.3 L 146.8 0.0 L 146.6 4.5 L 145.3 6.7 L 150.1 11.9 L 152.2 18.8 L 159.6 31.7 L 160.0 34.3 L 156.3 39.7 L 153.3 39.7 L 152.0 40.5 L 150.5 39.5 L 147.5 33.9 L 144.3 31.1 L 133.5 26.7 L 132.4 28.7 L 128.5 44.2 L 125.9 49.8 L 123.8 69.2 L 118.6 76.5 L 113.9 92.5 L 113.0 99.4 L 110.0 110.2 L 110.0 119.7 L 111.3 123.1 L 117.7 128.7 L 117.7 130.5 L 116.2 131.1 Z"/></symbol></defs></svg>
+  <div class="catgrid" id="grid"></div>
+  <div class="empty" id="empty" hidden>No lots match your search.</div>
+
+  <div class="footer-band">
+    <img class="logo" src="icon.svg" alt="vault racing" style="height:38px">
+    <div class="tagbig">the same discipline, <span class="o">four legs faster.</span></div>
+    <div class="contact">vaultracing.ai · Newmarket, Suffolk, United Kingdom</div>
+  </div>
+  <p class="disclaimer">Catalogue data from an imported sale-lot export. Photos are not included in the export — add a photo per
+  lot in the Conformation tool, or point the data feed at licensed image URLs. Pedigree figures are indicative.</p>
+</div>
+
+<script>
+var $=function(s){return document.querySelector(s)};
+var LOTS=[], view=[];
+function txt(p,t,cls){var e=document.createElement(p);if(cls)e.className=cls;if(t!=null)e.textContent=t;return e;}
+function q(v){return encodeURIComponent(v||'');}
+
+var COLOURS={B:'Bay',Ch:'Chestnut',Gr:'Grey',Br:'Brown',Bl:'Black',Ro:'Roan','B/Gr':'Bay/Grey','B/Br':'Bay/Brown','Ch/Gr':'Chestnut/Grey','Gr/Ro':'Grey/Roan'};
+var SEXLONG={C:'Colt',F:'Filly',G:'Gelding'};
+var MONTHS=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Sire / broodmare-sire tiers (real, curated). A = proven elite, B = strong commercial.
+var TIER_A=['Frankel','Galileo','Dubawi','Sea The Stars','Kingman','Wootton Bassett','No Nay Never','Night Of Thunder','Too Darn Hot','Blue Point','Kodiac','Dark Angel','Havana Grey','Justify','Siyouni','Lope De Vega','Invincible Spirit','New Bay'];
+var TIER_B=['Mehmas','Showcasing','Acclamation','Oasis Dream','Zoustar','Harry Angel','Soldier’s Call','Soldier\'s Call','Dragon Symbol','Cable Bay','Persian Force','Bated Breath','Ardad','Inns Of Court','Sergei Prokofiev','Shaquille','Space Blues','Supremacy','Ten Sovereigns','Sioux Nation','Cotai Glory','Territories','Kodi Bear','Starspangledbanner'];
+function tier(name){ if(!name)return 0; var n=name.toLowerCase();
+  if(TIER_A.some(function(e){return n.indexOf(e.toLowerCase())>=0;})) return 2;
+  if(TIER_B.some(function(e){return n.indexOf(e.toLowerCase())>=0;})) return 1; return 0; }
+var ELITE=TIER_A;
+// Deterministic pedigree index 0-100 from sire tier, broodmare-sire tier, grandsire and foaling date.
+function bioScore(l){
+  var s=52, ts=tier(l.sire), tds=tier(l.damsire), tgs=tier(l.grandsire);
+  s += [0,12,20][ts];
+  s += [0,7,12][tds];
+  s += [0,3,6][tgs];
+  if(l.foaled){ var m=+l.foaled.slice(5,7); if(m<=2)s+=6; else if(m===3)s+=3; else if(m>=6)s-=3; }
+  return Math.max(42,Math.min(96,Math.round(s)));
+}
+function bioBand(v){ return v>=85?{k:'elite',t:'Elite'}:v>=74?{k:'strong',t:'Strong'}:v>=62?{k:'solid',t:'Solid'}:{k:'watch',t:'Watch'}; }
+function features(l){
+  var c=[];
+  if(SEXLONG[l.sex]) c.push({t:SEXLONG[l.sex]});
+  if(COLOURS[l.colour]) c.push({t:COLOURS[l.colour]});
+  if(l.foaled){ var m=+l.foaled.slice(5,7); if(m){ c.push({t:MONTHS[m]+' foal', hot:(m<=2)}); } }
+  var hay=((l.sire||'')+' '+(l.grandsire||'')+' '+(l.damsire||'')).toLowerCase();
+  var hit=ELITE.find(function(e){return hay.indexOf(e.toLowerCase())>=0;});
+  if(hit) c.push({t:hit+' line', elite:true});
+  return c;
+}
+function card(l){
+  var lot=document.createElement('div'); lot.className='lot';
+  // thumbnail: horse silhouette on a tinted panel (sex-coloured) with lot no + sex tag
+  var th=document.createElement('div'); th.className='lthumb '+(l.sex||'');
+  th.innerHTML='<svg class="hsvg" viewBox="-6 -8 172 147" aria-hidden="true"><use href="#horse"/></svg>'
+    +'<span class="tno">Lot '+(l.lot||'—')+'</span>'
+    +(SEXLONG[l.sex]?'<span class="tsex">'+SEXLONG[l.sex]+'</span>':'');
+  lot.appendChild(th);
+  var head=document.createElement('div'); head.className='lhead';
+  var nm=txt('span',l.name,'lname'); head.appendChild(nm);
+  lot.appendChild(head);
+  var sub=txt('div',[l.colour&&COLOURS[l.colour]||l.colour,l.foaled?('foaled '+l.foaled):''].filter(Boolean).join(' · '),'lsub'); lot.appendChild(sub);
+  // Bio-Metric Index (pedigree-derived)
+  var bs=bioScore(l), bb=bioBand(bs);
+  var sc=document.createElement('div'); sc.className='lscore '+bb.k;
+  sc.innerHTML='<span class="bmv">'+bs+'</span>'
+    +'<span class="bmbar"><i style="width:'+bs+'%"></i></span>'
+    +'<span class="bmlab">Bio-Metric Index</span>'
+    +'<span class="bmband">'+bb.t+'</span>';
+  lot.appendChild(sc);
+  var feats=features(l);
+  if(feats.length){ var ch=document.createElement('div'); ch.className='chips';
+    feats.forEach(function(f){ ch.appendChild(txt('span',f.t,'chip'+(f.hot?' hot':'')+(f.elite?' elite':''))); });
+    lot.appendChild(ch); }
+  var ped=document.createElement('div'); ped.className='lped';
+  function line(k,v){ if(!v)return; var d=document.createElement('div'); d.appendChild(txt('span',k,'k')); var b=txt('b',v); d.appendChild(b); ped.appendChild(d); }
+  line('Sire',l.sire); line('Dam',l.dam); line('Grandsire',l.grandsire); line('Damsire',l.damsire);
+  lot.appendChild(ped);
+  if(l.consignor) lot.appendChild(txt('div','Consignor · '+l.consignor,'lcons'));
+  var acts=document.createElement('div'); acts.className='lacts';
+  var base='?lot='+q(l.lot)+'&name='+q(l.name)+'&sire='+q(l.sire)+'&dam='+q(l.dam)+'&gsire='+q(l.grandsire)+'&dsire='+q(l.damsire)+'&cons='+q(l.consignor)+'&sale='+q(l.sale);
+  var a1=document.createElement('a'); a1.className='pri'; a1.href='pedigree.html'+base; a1.textContent='Pedigree ▸'; acts.appendChild(a1);
+  var a2=document.createElement('a'); a2.href='mating.html?sire='+q(l.sire)+'&dam='+q(l.dam); a2.textContent='Mating ▸'; acts.appendChild(a2);
+  var a3=document.createElement('a'); a3.href='analysis.html?h='+q(l.name); a3.textContent='Conformation ▸'; acts.appendChild(a3);
+  lot.appendChild(acts);
+  return lot;
+}
+function render(){
+  var qv=($('#q').value||'').toLowerCase().trim(), sx=$('#sex').value, sort=$('#sort').value;
+  view=LOTS.filter(function(l){
+    if(sx && l.sex!==sx) return false;
+    if(!qv) return true;
+    return [l.name,l.sire,l.dam,l.damsire,l.grandsire,l.consignor].join(' ').toLowerCase().indexOf(qv)>=0;
+  });
+  view.sort(function(a,b){
+    if(sort==='name') return a.name.localeCompare(b.name);
+    if(sort==='sire') return (a.sire||'').localeCompare(b.sire||'');
+    if(sort==='bm') return bioScore(b)-bioScore(a) || (+a.lot||0)-(+b.lot||0);
+    return (+a.lot||0)-(+b.lot||0);
+  });
+  var g=$('#grid'); while(g.firstChild)g.removeChild(g.firstChild);
+  view.slice(0,400).forEach(function(l){ g.appendChild(card(l)); });
+  $('#empty').hidden = view.length>0;
+  $('#count').textContent = view.length+' of '+LOTS.length+' lots';
+}
+['q','sex','sort'].forEach(function(id){ $('#'+id).addEventListener('input',render); });
+
+fetch('sale-lots.json').then(function(r){return r.json();}).then(function(d){
+  LOTS=d.lots||[];
+  var sale=LOTS[0]?LOTS[0].sale:'', yr=LOTS[0]?LOTS[0].year:'';
+  $('#sub').textContent=(d.count||LOTS.length)+' lots imported'+(sale?(' · sale '+sale):'')+(yr?(' · '+yr):'')+'. Search, then open any lot in the Pedigree, Mating or Conformation tools.';
+  render();
+}).catch(function(){ $('#sub').textContent='Could not load sale-lots.json.'; });
+</script>
+</body>
+</html>

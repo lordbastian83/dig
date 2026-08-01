@@ -3,81 +3,83 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>vault racing — scanner</title>
-<meta name="theme-color" content="#12203A">
+<title>Vault Racing — scanner</title>
+<meta name="theme-color" content="#0B0E17">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<meta name="description" content="Score thoroughbred sales lots against a hard max bid, scan horses in training, and find the value the market hasn't priced yet.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Vault Racing">
+<meta property="og:title" content="Vault Racing — scanner">
+<meta property="og:description" content="Score thoroughbred sales lots against a hard max bid, scan horses in training, and find the value the market hasn't priced yet.">
+<meta property="og:image" content="og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vault Racing — scanner">
+<meta name="twitter:description" content="Score thoroughbred sales lots against a hard max bid, scan horses in training, and find the value the market hasn't priced yet.">
+<meta name="twitter:image" content="og-image.png">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="styles.css?v=20260730x">
 </head>
 <body>
-
+<div class="topbar">
 <header class="site-header">
-  <!-- Logotype exactly per the brand toolkit (colours inverted for navy):
-       bowl filled, shoe as round-capped stroke knockout, six nails. -->
-  <div class="lockup" aria-label="vault racing">
-    <h1>va<svg class="u-glyph" viewBox="0 0 50 52" fill="none" aria-hidden="true">
-      <path d="M0 0 L0 27 A25 25 0 0 0 50 27 L50 0 Z" fill="currentColor"/>
-      <path d="M13 9 L13 25 A12 12 0 0 0 37 25 L37 9" fill="none" stroke="#12203A" stroke-width="9" stroke-linecap="round"/>
-      <g fill="currentColor">
-        <circle cx="13" cy="13" r="1.9"/><circle cx="13" cy="19" r="1.9"/>
-        <circle cx="16.5" cy="33.5" r="1.9"/><circle cx="33.5" cy="33.5" r="1.9"/>
-        <circle cx="37" cy="19" r="1.9"/><circle cx="37" cy="13" r="1.9"/>
-      </g>
-    </svg>lt</h1>
+  <!-- Vault Racing brand lockup: the horseshoe-in-'u' mark (navy/white),
+       the lowercase wordmark, and the brand tagline. -->
+  <img class="logo-mark" src="icon.svg" alt="vault racing">
+  <div class="lockup" aria-label="Vault Racing">
+    <h1>vault</h1>
     <span class="sub-line">racing</span>
   </div>
   <span class="tagline">the horse the market hasn't priced yet</span>
+  <a class="nav-cta" href="catalogue.html">Catalogue ▸</a>
+  <a class="nav-cta" href="report.html">Bio-Metric Score ▸</a>
+  <a class="nav-cta" href="analysis.html">Conformation ▸</a>
+  <a class="nav-cta" href="gallop.html">Gallop ▸</a>
+  <a class="nav-cta" href="mating.html">Mating ▸</a>
+  <a class="nav-cta" href="pedigree.html">Pedigree ▸</a>
+  <a class="nav-cta" href="command.html">Command ▸</a>
+  <button id="density-toggle" class="density-toggle" title="Toggle compact density" aria-pressed="false">Compact</button>
 </header>
+<nav class="quicknav" aria-label="Jump to section">
+  <a href="#finds-card" data-nav hidden>Radar</a>
+  <a href="#score" data-nav>Score</a>
+  <a href="#watchlist-card" data-nav>Watchlist</a>
+  <a href="#calendar-card" data-nav>Sales</a>
+  <a href="#model" data-nav>Model</a>
+</nav>
+</div>
+
+<!-- Live ticker — populated from the radar in app.js -->
+<div class="ticker" id="ticker" aria-hidden="true">
+  <span class="ticker-live"><i></i>LIVE</span>
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
 
 <main>
+
+  <!-- Shared-snapshot import banner (shown when opened from a share link) -->
+  <div id="share-banner" class="share-banner" hidden></div>
 
   <!-- ============ 0 · Hero: the horse this whole system chases ============ -->
   <section class="hero">
     <div class="hero-text">
-      <h2>find the next<br>imperial emperor</h2>
-      <p class="hero-line">dubawi &times; zhukova &middot; sold for $300,000 &middot;
-      won the G1 al maktoum challenge at meydan</p>
-      <p class="hero-line dim">the radar hunts his profile daily &mdash; before the ring prices it in</p>
+      <h2>Find the next<br>Imperial Emperor</h2>
+      <p class="hero-line">Dubawi &times; Zhukova &middot; sold for $300,000 &middot;
+      won the G1 Al Maktoum Challenge at Meydan.</p>
+      <p class="hero-line dim">The radar hunts his profile daily, before the ring prices it in.</p>
     </div>
     <figure class="hero-media">
-      <!-- Image priority: saved URL (set via the app) → bundled photo at
-           img/imperial-emperor.jpg → SVG silhouette. Paste any image
-           address (Unsplash "copy image address", or your own photo). -->
-      <img id="hero-img" src="img/imperial-emperor.jpg" alt="Racehorse"
-           onerror="this.remove()">
+      <!-- Default visual is the Bio-Metric keypoint-horse (always renders, no
+           external asset). A user-set https photo URL, if saved, shows instead. -->
+      <img id="hero-img" alt="Racehorse" hidden onerror="this.hidden=true">
       <button id="hero-set" title="Set the hero image from a URL">set image</button>
-      <svg class="hero-horse" viewBox="0 0 200 200" aria-hidden="true">
-        <!-- elegant thoroughbred head-and-neck profile silhouette -->
-        <path fill="#F7F8FA" fill-opacity="0.95" d="
-          M96 16
-          C104 14 110 18 113 25
-          L120 24 L116 33
-          C122 41 126 51 128 62
-          C130 76 129 90 124 103
-          C136 108 148 112 160 118
-          C172 124 182 134 186 148
-          L186 186 L166 186
-          L166 150
-          C166 140 160 132 151 128
-          C140 123 128 121 117 122
-          C104 123 93 118 86 108
-          C81 101 79 92 80 83
-          C74 84 68 82 64 77
-          C60 72 59 65 61 59
-          C56 58 52 54 51 48
-          C57 51 64 51 70 48
-          C74 40 81 33 90 28
-          C88 24 90 19 96 16 Z"/>
-        <circle cx="99" cy="34" r="3.2" fill="#12203A"/>
-        <path fill="#F7F8FA" fill-opacity="0.95" d="M108 20 L118 8 L120 22 Z"/>
-        <path fill="#F7F8FA" fill-opacity="0.95" d="M92 22 L96 6 L102 20 Z"/>
-      </svg>
+      <img class="hero-horse" src="icon.svg" alt="">
     </figure>
   </section>
+
+  <!-- ============ 0a · At-a-glance dashboard ============ -->
+  <section class="statstrip" id="statstrip" hidden></section>
 
   <!-- ============ 0b · Budget control ============ -->
   <section class="budget-bar">
@@ -90,7 +92,7 @@
   </section>
 
   <!-- ============ 1 · Score a lot — THE action ============ -->
-  <section class="card">
+  <section class="card" id="score">
     <h2>Score a lot</h2>
     <p class="hint">Type the horse in, tick what the catalogue shows, get a verdict
     and a hard max bid. The sire tier is worked out from the pedigree automatically.</p>
@@ -149,27 +151,140 @@
       </div>
     </form>
     <div id="score-result" class="score-result" hidden></div>
+    <div class="score-key" aria-hidden="true">
+      <div class="sk-head">Scoring model · max bid = base &times; Dubai fit &times; vet</div>
+      <ul>
+        <li><b>F1</b> <span>Powerhouse cast-off</span> <i>vendor edge</i></li>
+        <li><b>F2</b> <span>Dirt sire line</span> <i>tier A / B</i></li>
+        <li><b>F3</b> <span>Black type, first two dams</span> <i>floor</i></li>
+        <li><b>F4</b> <span>Official rating</span> <i>85&ndash;95</i></li>
+        <li><b>F5</b> <span>Career starts</span> <i>&le; 7</i></li>
+        <li><b>F6</b> <span>All-weather / dirt form</span> <i>surface proxy</i></li>
+        <li class="sk-rule"><b>VET</b> <span>file not clean</span> <i>&minus;20%</i></li>
+      </ul>
+    </div>
   </section>
 
   <!-- ============ 2 · Radar finds ============ -->
   <section class="card" id="finds-card" hidden>
-    <h2>💎 Radar finds</h2>
-    <p class="hint">Auto-scanned daily from live UK/IRE results. Filter the feed
-    with a saved profile, or keep the Imperial Emperor default. Black type and
-    availability always need a human check.</p>
+    <div class="card-head">
+      <h2>Scanner</h2>
+      <div class="scan-tools">
+        <div class="scan-searchbox">
+          <span class="ss-icon" aria-hidden="true">⌕</span>
+          <input id="scan-search" type="search" placeholder="Filter runner · sire · trainer" autocomplete="off" aria-label="Filter runners">
+          <kbd class="ss-key" title="Press / to search">/</kbd>
+        </div>
+        <button id="scan-live" class="scan-live" aria-pressed="false" title="Simulate a live market feed (display only)"><i></i>LIVE</button>
+        <button id="scan-expert" class="refresh-btn" aria-pressed="false" title="Expert mode — unlock advanced columns">EXPERT</button>
+        <button id="scan-export" class="refresh-btn" title="Export the current scanner view to CSV">CSV</button>
+        <button id="refresh-btn" class="refresh-btn" title="Re-pull the latest scan">↻</button>
+      </div>
+    </div>
+    <p class="hint">Horses currently <b>in training</b>, auto-scanned daily from live
+    UK/IRE/France results. Filter with a saved profile, or keep the Imperial Emperor
+    default. Black type and availability always need a human check.</p>
+
+    <!-- One-tap horse types — each toggles the matching filter below -->
+    <div class="type-chips" id="type-chips" aria-label="Quick horse types">
+      <button type="button" class="tchip" data-type="dirt">Dirt-proven</button>
+      <button type="button" class="tchip" data-type="sprint">Sprinter</button>
+      <button type="button" class="tchip" data-type="miler">Miler</button>
+      <button type="button" class="tchip" data-type="middle">Middle-dist</button>
+      <button type="button" class="tchip" data-type="dropping">Dropping in class</button>
+      <button type="button" class="tchip" data-type="powerhouse">Powerhouse cast-off</button>
+      <button type="button" class="tchip" data-type="improving">Improving</button>
+      <button type="button" class="tchip" data-type="winner">Multiple winner</button>
+      <button type="button" class="tchip" data-type="versatile">Versatile trip</button>
+      <button type="button" class="tchip" data-type="soft">Give-ground</button>
+      <button type="button" class="tchip chip-reset" data-type="reset">Reset</button>
+    </div>
 
     <div class="profile-bar">
       <select id="profile-select" title="Custom radar profile"></select>
-      <button id="profile-edit" title="Edit or create a profile">⚙ Profiles</button>
+      <button id="profile-edit" title="Edit or create a profile">All filters</button>
+      <div class="sort-toggle" id="sort-toggle" role="group" aria-label="Rank by">
+        <button type="button" data-sort="vault" class="on">Best value</button>
+        <button type="button" data-sort="dubai">Best for Dubai</button>
+      </div>
     </div>
+    <!-- Saved views — pin a profile + rank + column sort + filter, recall in one tap -->
+    <div class="views-bar" id="views-bar" aria-label="Saved views"></div>
+    <!-- Per-column numeric filters -->
+    <div class="scan-numfilters" id="scan-numfilters">
+      <span class="nf-lab">Cut</span>
+      <label>algo ≥ <input id="nf-algo" type="number" min="0" max="100" inputmode="numeric" placeholder="–"></label>
+      <label>fit ≥ <input id="nf-fit" type="number" min="0" max="100" inputmode="numeric" placeholder="–"></label>
+      <label>OR ≥ <input id="nf-or" type="number" min="0" max="130" inputmode="numeric" placeholder="–"></label>
+      <label>max bid ≤ <input id="nf-bid" type="number" min="0" step="1000" inputmode="numeric" placeholder="–"></label>
+      <button id="nf-clear" type="button">clear</button>
+    </div>
+    <!-- Compare tray — populated when runners are selected in the grid -->
+    <div class="scan-tray" id="scan-tray" hidden></div>
 
     <details id="profile-editor" class="profile-editor">
       <summary>Edit filters</summary>
+
+      <p class="pf-section">Ability &amp; momentum</p>
       <div class="grid">
-        <label>Profile name <input id="pf-name" placeholder="e.g. Sprint value"></label>
         <label>Rating min <input id="pf-rmin" type="number" min="0" max="130"></label>
         <label>Rating max <input id="pf-rmax" type="number" min="0" max="130"></label>
+        <label>Min career-high OR <input id="pf-orhigh" type="number" min="0" max="130" placeholder="any"></label>
         <label>Max starts <input id="pf-starts" type="number" min="0" max="50"></label>
+        <label>Momentum
+          <select id="pf-trend">
+            <option value="any">Any</option>
+            <option value="improving">Improving only</option>
+          </select>
+        </label>
+        <label>Min RPR edge <input id="pf-rpr" type="number" min="0" max="40" placeholder="0"></label>
+      </div>
+
+      <p class="pf-section">Type: distance, surface &amp; going</p>
+      <div class="grid">
+        <label>Race plan
+          <select id="pf-plan">
+            <option value="any">Any</option>
+            <option value="sprint">Sprint (≤6f)</option>
+            <option value="miler">Miler (7–8f)</option>
+            <option value="middle">Middle (9–11f)</option>
+            <option value="staying">Staying (12f+)</option>
+          </select>
+        </label>
+        <label>Trip from (f) <input id="pf-distmin" type="number" min="4" max="20" placeholder="any"></label>
+        <label>Trip to (f) <input id="pf-distmax" type="number" min="4" max="20" placeholder="any"></label>
+        <label>Surface aptitude
+          <select id="pf-surface">
+            <option value="any">Any</option>
+            <option value="aw">AW / dirt proven (Dubai)</option>
+            <option value="turf">Turf</option>
+          </select>
+        </label>
+        <label>Going
+          <select id="pf-going">
+            <option value="any">Any</option>
+            <option value="soft">Handles soft / heavy</option>
+            <option value="quick">Wants good / firm</option>
+          </select>
+        </label>
+        <label class="pf-check"><input type="checkbox" id="pf-vers"> Versatile trip only</label>
+      </div>
+
+      <p class="pf-section">Form &amp; class</p>
+      <div class="grid">
+        <label>Min wins <input id="pf-wins" type="number" min="0" max="30" placeholder="any"></label>
+        <label>Min win % <input id="pf-winpct" type="number" min="0" max="100" placeholder="any"></label>
+        <label>Class angle
+          <select id="pf-class">
+            <option value="any">Any</option>
+            <option value="dropping">Dropping in class (well-in)</option>
+          </select>
+        </label>
+        <label class="pf-check"><input type="checkbox" id="pf-aw"> Require AW win</label>
+      </div>
+
+      <p class="pf-section">Breeding &amp; connections</p>
+      <div class="grid">
         <label>Sire tier
           <select id="pf-tier">
             <option value="any">Any</option>
@@ -179,6 +294,7 @@
         </label>
         <label>Sire contains <input id="pf-sire" placeholder="e.g. Dubawi"></label>
         <label>Damsire contains <input id="pf-damsire" placeholder="e.g. Galileo"></label>
+        <label>Owner / vendor contains <input id="pf-owner" placeholder="e.g. Godolphin"></label>
         <label>Sex / type
           <select id="pf-sex">
             <option value="any">Any</option>
@@ -191,43 +307,114 @@
             <option value="any">Any</option>
             <option value="GB">GB</option>
             <option value="IRE">IRE</option>
+            <option value="FR">France</option>
+            <option value="USA">USA</option>
           </select>
         </label>
-        <label>Momentum
-          <select id="pf-trend">
-            <option value="any">Any</option>
-            <option value="improving">Improving only</option>
-          </select>
-        </label>
-        <label>Min RPR edge <input id="pf-rpr" type="number" min="0" max="40" placeholder="0"></label>
-        <label>Trip from (f) <input id="pf-distmin" type="number" min="4" max="20" placeholder="any"></label>
-        <label>Trip to (f) <input id="pf-distmax" type="number" min="4" max="20" placeholder="any"></label>
-        <label>Race plan
-          <select id="pf-plan">
-            <option value="any">Any</option>
-            <option value="sprint">Sprint (≤6f)</option>
-            <option value="miler">Miler (7–8f)</option>
-            <option value="middle">Middle (9–11f)</option>
-            <option value="staying">Staying (12f+)</option>
-          </select>
-        </label>
-        <label class="pf-check"><input type="checkbox" id="pf-aw"> Require AW win</label>
         <label class="pf-check"><input type="checkbox" id="pf-ph"> Require powerhouse owner</label>
-        <label class="pf-check"><input type="checkbox" id="pf-vers"> Versatile trip only</label>
       </div>
-      <div class="form-actions">
-        <button id="pf-save" class="primary">Save profile</button>
-        <button id="pf-delete">Delete this profile</button>
+
+      <div class="pf-save-row">
+        <label class="pf-name-field">Save this search as
+          <input id="pf-name" placeholder="e.g. Sprint value">
+        </label>
+        <div class="form-actions">
+          <button id="pf-save" class="primary">Save search</button>
+          <button id="pf-delete">Delete this search</button>
+        </div>
       </div>
     </details>
 
     <div id="finds"></div>
   </section>
 
+  <!-- ============ 2·movers · Biggest algo-score moves since last scan ===== -->
+  <section class="card" id="movers-card" hidden>
+    <div class="card-head">
+      <h2>Movers · since last scan</h2>
+      <span class="prospects-count" id="movers-meta"></span>
+    </div>
+    <div id="movers" class="movers-grid"></div>
+  </section>
+
+  <!-- ============ 2a · Off-market prospects ============ -->
+  <section class="card" id="prospects-card" hidden>
+    <div class="card-head">
+      <h2>Off-market prospects</h2>
+      <span class="prospects-count" id="prospects-count"></span>
+    </div>
+    <p class="hint">Horses that fit the Dubai profile but are <b>not actively
+    campaigning and not on a sale catalogue</b> — dormant for a while, so a
+    <b>private approach</b> to connections, not a ring buy. Same scoring; ranked by
+    Dubai fit. Availability is unknown until you ask — treat as leads.</p>
+    <div id="prospects-list" class="prospects-list"></div>
+  </section>
+
+  <!-- ============ 2c · Sale shopping list ============ -->
+  <section class="card" id="catalogue-card">
+    <div class="card-head">
+      <h2>Sale shopping list</h2>
+      <span class="prospects-count" id="catalogue-count"></span>
+    </div>
+    <p class="hint">Import a sale catalogue (CSV) and every lot is auto-scored and
+    ranked for the Dubai plan. If you include a <code>guide</code> price, each lot
+    gets a <b>BUY / STRETCH / OVER</b> verdict against our hard max bid. Columns in
+    <code>DATA.md</code>.</p>
+    <div class="cat-controls">
+      <label class="cat-sort-lab" id="cat-sale-wrap" hidden>Sale
+        <select id="cat-sale"></select>
+      </label>
+      <label class="file-btn primary">Import catalogue CSV<input type="file" id="cat-csv" accept=".csv" hidden></label>
+      <label class="cat-sort-lab">Rank by
+        <select id="cat-sort">
+          <option value="dubai">Dubai fit</option>
+          <option value="value">value gap</option>
+          <option value="vault">Bio-Metric score</option>
+        </select>
+      </label>
+      <button id="cat-addbuys">＋ Add all BUYs to watchlist</button>
+      <button id="cat-clear">Clear</button>
+    </div>
+    <details class="fx-editor">
+      <summary>Exchange rates <span class="fx-summary" id="fx-summary"></span></summary>
+      <div class="fx-grid">
+        <label>£ per €1 <input type="number" id="fx-EUR" step="0.01" min="0.1"></label>
+        <label>£ per $1 <input type="number" id="fx-USD" step="0.01" min="0.1"></label>
+        <label>£ per guinea <input type="number" id="fx-gns" step="0.01" min="0.5"></label>
+        <button id="fx-reset" type="button">reset</button>
+      </div>
+      <p class="hint">Guides at Arqana (€) and Keeneland ($) convert to guineas at
+      these rates for the BUY / OVER verdict. Max bids always stay in guineas.
+      Rates are indicative — set them to today's before a sale.</p>
+    </details>
+    <div class="cat-dist mktintel-grid" id="cat-dist" hidden></div>
+    <div class="table-wrap">
+      <table id="catalogue-table" class="cat-table" hidden>
+        <thead><tr>
+          <th class="sk" data-sk="lot">Lot</th><th class="sk" data-sk="name">Horse</th><th>Pedigree</th>
+          <th class="sk ta-c" data-sk="or">OR</th><th class="sk ta-c" data-sk="vault">Score</th>
+          <th class="sk ta-c" data-sk="fit">Fit</th><th class="sk ta-c" data-sk="nick">Nick</th>
+          <th class="sk ta-r" data-sk="guide">Guide</th><th class="sk ta-r" data-sk="bid">Max bid</th>
+          <th class="sk" data-sk="verdict">Verdict</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="empty" id="catalogue-empty">No catalogue loaded yet — pick a published sale above, or import a CSV to score a whole sale at once.</p>
+  </section>
+
+  <!-- ============ 2d · Market intelligence ============ -->
+  <section class="card" id="mktintel-card" hidden>
+    <h2>Market intelligence</h2>
+    <p class="hint">Distribution of everything the radar has swept — where the
+    ability, the Dubai fit and the dirt pedigrees actually sit across the pool.</p>
+    <div id="mktintel" class="mktintel-grid"></div>
+  </section>
+
   <!-- ============ 2b · Intel ============ -->
   <section class="card" id="intel-card" hidden>
     <details>
-      <summary><h2>📰 Intel</h2></summary>
+      <summary><h2>Intel</h2></summary>
       <p class="hint">Daily bloodstock news, filtered to your radar candidates,
       target sires, sale houses and the Dubai pipeline. Licensed feeds only.</p>
       <div id="intel"></div>
@@ -235,14 +422,16 @@
   </section>
 
   <!-- ============ 3 · Watchlist ============ -->
-  <section class="card">
+  <section class="card" id="watchlist-card">
     <h2>Watchlist</h2>
     <div class="table-wrap">
       <table id="watchlist">
         <thead>
           <tr>
-            <th>Horse</th><th>Sale</th><th>OR</th><th>Screen</th>
-            <th>Max bid (gns)</th><th>Value gap</th><th>Status</th><th></th>
+            <th class="sk" data-sk="name">Horse</th><th class="sk" data-sk="sale">Sale</th>
+            <th class="sk ta-c" data-sk="or">OR</th><th class="sk" data-sk="screen">Screen</th>
+            <th class="sk ta-r" data-sk="bid">Max bid (gns)</th><th class="sk ta-r" data-sk="gap">Value gap</th>
+            <th class="sk" data-sk="status">Status</th><th></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -250,6 +439,8 @@
     </div>
     <div class="form-actions">
       <button id="rank-gap" class="primary" title="Screen-passers first, widest value gap on top">Rank by value gap</button>
+      <button id="compare-btn" title="Line the shortlist up side by side">Compare</button>
+      <button id="share-wl" title="Copy a shareable link to this shortlist">Share link</button>
       <button id="export-pdf">Export PDF</button>
       <button id="export-csv">Export CSV</button>
       <button id="export-json">Backup</button>
@@ -260,8 +451,32 @@
     (columns in <code>DATA.md</code>).</p>
   </section>
 
+  <!-- ============ 2e · Portfolio / P&L ============ -->
+  <section class="card" id="portfolio-card" hidden>
+    <div class="card-head">
+      <h2>Portfolio &amp; P&amp;L</h2>
+      <span class="prospects-count" id="portfolio-count"></span>
+    </div>
+    <p class="hint">Every horse you mark <b>bought</b> on the watchlist lands here.
+    Enter what you paid, all-in campaign costs and prize money won — P&amp;L and ROI
+    update live, with current value from the market model. All in guineas, synced.</p>
+    <div class="table-wrap">
+      <table id="portfolio" class="cat-table" hidden>
+        <thead><tr>
+          <th>Horse</th><th>Bought</th><th>Costs</th><th>Prize</th>
+          <th>Value now</th><th>P&amp;L</th><th>ROI</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="portfolio-totals" class="pf-totals" hidden></div>
+    <div id="portfolio-chart" class="pf-chart" hidden></div>
+    <div id="pf-equity" class="pf-equity" hidden></div>
+    <p class="empty" id="portfolio-empty">No horses bought yet — set a watchlist horse's status to <b>bought</b>.</p>
+  </section>
+
   <!-- ============ 3 · Sales calendar ============ -->
-  <section class="card">
+  <section class="card" id="calendar-card">
     <details open>
       <summary><h2>Sales calendar</h2></summary>
       <div id="region-chips" class="chips"></div>
@@ -286,7 +501,7 @@
     </details>
   </section>
 
-  <section class="card">
+  <section class="card" id="model">
     <details id="model-details">
       <summary><h2>Valuation model (editable)</h2></summary>
       <p class="hint">Max bid = (prize EV + probability-weighted residual &minus; costs)
@@ -309,6 +524,32 @@
   </div>
 </div>
 
+<div id="compare-modal" class="modal" hidden>
+  <div class="modal-card modal-wide">
+    <button id="compare-close" class="modal-close" aria-label="Close">✕</button>
+    <div id="compare-body"></div>
+  </div>
+</div>
+
+<!-- Keyboard shortcut reference (press ?) -->
+<div id="help-modal" class="modal" hidden>
+  <div class="modal-card">
+    <button id="help-close" class="modal-close" aria-label="Close">✕</button>
+    <h3>Keyboard shortcuts</h3>
+    <p class="hint">Drive the scanner and grids from the keyboard.</p>
+    <table class="help-table">
+      <tr><td><kbd>/</kbd></td><td>Focus the scanner filter</td></tr>
+      <tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>Move the row cursor (scanner, catalogue, watchlist)</td></tr>
+      <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Move the cursor inside the focused grid</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>Open the inspector (or the watchlist editor)</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Clear the filter / close a panel</td></tr>
+      <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
+    </table>
+    <p class="hint">Click a column header to sort · tick rows to compare or bulk-add ·
+    <b>Expert</b> unlocks advanced columns · <b>Compact</b> tightens the desk.</p>
+  </div>
+</div>
+
 <footer>
   <span id="whoami"></span>
   Model assumptions are stated, editable and version-controlled so they can be
@@ -316,7 +557,7 @@
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
 
-<script src="engine.js"></script>
-<script src="app.js"></script>
+<script src="engine.js?v=20260730v"></script>
+<script src="app.js?v=20260730v"></script>
 </body>
 </html>

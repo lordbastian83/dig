@@ -15,8 +15,17 @@
     "rewrite": "/index.html",
     "exclude": ["/*.{css,js,mjs,json,svg,png}"]
   },
+  "globalHeaders": {
+    "cache-control": "no-cache",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()"
+  },
   "mimeTypes": {
     ".json": "application/json",
-    ".svg": "image/svg+xml"
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".webmanifest": "application/manifest+json"
   }
 }

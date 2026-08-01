@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vault Racing — Motion Analysis Gallop Report</title>
+<meta name="theme-color" content="#12203A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="description" content="Turn a gallop or breeze video into objective movement data — stride, symmetry, joint angles and balance.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Vault Racing">
+<meta property="og:title" content="Vault Racing — Motion Analysis Gallop Report">
+<meta property="og:description" content="Turn a gallop or breeze video into objective movement data — stride, symmetry, joint angles and balance.">
+<meta property="og:image" content="og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vault Racing — Motion Analysis Gallop Report">
+<meta name="twitter:description" content="Turn a gallop or breeze video into objective movement data — stride, symmetry, joint angles and balance.">
+<meta name="twitter:image" content="og-image.png">
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root{
+    --ink:#0B0E17; --navy:#12203A; --navy-2:#111c30; --panel:#0f1626; --panel-2:#14203a;
+    --line:#25334d; --cloud:#E6ECF5; --muted:#8598b5; --muted-2:#5f7089;
+    --orange:#DCB64A; --orange-2:#E8C563; --green:#2CC1A0; --amber:#e7b93a; --red:#e5484d;
+    --sans:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--cloud);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--orange-2)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 18px 80px}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* ---------- brand header band ---------- */
+  .band{background:var(--navy);border-bottom:2px solid var(--orange)}
+  .band-in{max-width:1180px;margin:0 auto;padding:16px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .logo{height:52px;width:auto;flex:none}
+  .lock{display:flex;flex-direction:column;line-height:1}
+  .lock b{font-size:1.5rem;font-weight:700;letter-spacing:-.01em}
+  .lock span{font-size:.6rem;text-transform:lowercase;letter-spacing:.28em;color:var(--orange);margin-top:.2rem}
+  .tag{font-size:.8rem;color:var(--muted)}
+  .tag em{color:var(--orange);font-style:normal;font-weight:600}
+  .band-nav{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .band-nav a{font-size:.74rem;font-weight:600;color:var(--cloud);text-decoration:none;background:#16233c;border:1px solid var(--line);padding:7px 11px;border-radius:5px}
+  .band-nav a.on{background:var(--orange);border-color:var(--orange);color:#fff}
+  @media(max-width:760px){.tag{display:none}}
+
+  .backlink{display:inline-block;margin:14px 0 2px;font-size:.8rem;color:var(--muted);text-decoration:none}
+  .backlink:hover{color:var(--cloud)}
+
+  /* ---------- title ---------- */
+  .hero{padding:26px 0 8px}
+  .kicker{display:inline-block;font-size:.66rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--cloud);background:#16233c;border:1px solid var(--line);padding:5px 11px;border-radius:3px}
+  h1.title{font-size:2.5rem;line-height:1.02;font-weight:800;margin:.5rem 0 .2rem;letter-spacing:-.02em}
+  h1.title .o{color:var(--orange)}
+  .sub{color:var(--muted);font-size:1rem;max-width:640px}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;margin-top:20px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
+  .card h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 12px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .card h2 .n{color:var(--orange);font-weight:700}
+
+  /* ---------- video ---------- */
+  .drop{border:2px dashed var(--line);border-radius:8px;padding:30px 18px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;background:#0c1424}
+  .drop:hover,.drop.over{border-color:var(--orange);background:#101a2e}
+  .drop svg{width:34px;height:34px;color:var(--orange);margin-bottom:8px}
+  .drop b{display:block;font-size:1rem}
+  .drop small{color:var(--muted)}
+  video{width:100%;border-radius:6px;background:#000;display:block}
+  .vtools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .btn{font-family:var(--sans);font-size:.8rem;font-weight:600;color:var(--cloud);background:#16233c;border:1px solid var(--line);border-radius:5px;padding:7px 11px;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--orange);color:#fff}
+  .btn.orange{background:var(--orange);border-color:var(--orange);color:#fff}
+  .btn.orange:hover{background:var(--orange-2);border-color:var(--orange-2)}
+  .vtools label{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:5px}
+  .vtools select,.vtools input{font-family:var(--mono);background:#0c1424;color:var(--cloud);border:1px solid var(--line);border-radius:4px;padding:5px 6px;font-size:.75rem}
+  .tcode{margin-left:auto;font-family:var(--mono);font-size:.8rem;color:var(--orange)}
+  .frames{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:4px}
+  .frames canvas,.frames .fr{height:56px;border-radius:4px;border:1px solid var(--line);flex:none}
+  .frames .fr{position:relative}
+  .frames .fr b{position:absolute;left:3px;bottom:2px;font-size:.5rem;background:rgba(0,0,0,.6);padding:0 3px;border-radius:2px}
+
+  /* ---------- overall score gauge ---------- */
+  .overall{display:flex;align-items:center;gap:18px}
+  .gauge{position:relative;flex:none}
+  .gauge .lab{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gauge .lab b{font-family:var(--mono);font-size:1.7rem;font-weight:700;line-height:1}
+  .gauge .lab small{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .band-pill{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:99px;text-transform:uppercase}
+
+  /* ---------- movement score rings ---------- */
+  .rings{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:12px}
+  .ring{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+  .ring .rlab{font-family:var(--mono);font-size:1rem;font-weight:600}
+  .ring small{font-size:.56rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);line-height:1.2}
+  .ring input{width:54px;text-align:center;font-family:var(--mono);background:#0c1424;color:var(--cloud);border:1px solid var(--line);border-radius:4px;padding:3px;font-size:.8rem}
+
+  /* ---------- metric grids ---------- */
+  .mrow{display:grid;grid-template-columns:1fr auto;gap:8px 12px;font-size:.82rem;padding:7px 0;border-bottom:1px solid #1a2740}
+  .mrow:last-child{border-bottom:0}
+  .mrow span:first-child{color:var(--muted)}
+  .mrow .v{font-family:var(--mono);color:var(--cloud)}
+  .mrow .v.g{color:var(--green)} .mrow .v.a{color:var(--amber)} .mrow .v.r{color:var(--red)}
+  .mrow input{width:82px;text-align:right;font-family:var(--mono);background:#0c1424;color:var(--cloud);border:1px solid var(--line);border-radius:4px;padding:3px 5px;font-size:.78rem}
+
+  /* stride timeline */
+  .timeline{display:flex;height:30px;border-radius:5px;overflow:hidden;border:1px solid var(--line);margin:6px 0 4px}
+  .timeline div{display:flex;align-items:center;justify-content:center;font-size:.56rem;font-weight:600;color:#08101f}
+  .tl-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.62rem;color:var(--muted)}
+  .tl-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+
+  .meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .meta-grid label{display:flex;flex-direction:column;gap:3px;font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .meta-grid input,.meta-grid select{font-family:var(--sans);background:#0c1424;color:var(--cloud);border:1px solid var(--line);border-radius:4px;padding:7px 8px;font-size:.85rem}
+
+  .lists{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:620px){.lists{grid-template-columns:1fr}}
+  .lists h3{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
+  .lists.h-str h3{color:var(--green)} .lists.h-risk h3{color:var(--amber)}
+  .lists ul{list-style:none;margin:0;padding:0}
+  .lists li{font-size:.8rem;padding:5px 0 5px 20px;position:relative;color:#c9d5e8}
+  .lists li::before{position:absolute;left:0;top:4px;font-size:.8rem}
+  .h-str li::before{content:'✓';color:var(--green)}
+  .h-risk li::before{content:'▲';color:var(--amber);font-size:.62rem;top:6px}
+  textarea{width:100%;font-family:var(--sans);background:#0c1424;color:var(--cloud);border:1px solid var(--line);border-radius:6px;padding:10px;font-size:.85rem;resize:vertical;min-height:70px}
+
+  .sig{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:14px;flex-wrap:wrap}
+  .sig .who{font-size:.72rem;color:var(--muted)}
+  .sig .who b{color:var(--cloud);font-size:.86rem;display:block}
+  .footer-band{margin-top:34px;background:var(--navy);border-top:2px solid var(--orange);border-radius:8px;padding:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .footer-band .tagbig{font-weight:700;letter-spacing:.02em}
+  .footer-band .tagbig .o{color:var(--orange)}
+  .footer-band .contact{margin-left:auto;font-size:.76rem;color:var(--muted);text-align:right;line-height:1.6}
+  .disclaimer{font-size:.68rem;color:var(--muted-2);margin-top:14px;line-height:1.5}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  @media print{.no-print{display:none!important}body{background:#fff;color:#111}.card{border-color:#ddd}}
+
+/* Vault Racing brand: gold carries navy ink; wordmark stays white */
+.band-nav a.on,.nav-cta,.btn.orange,.lot .lno,.lot .lacts a.pri,.lot .lthumb .tno{color:#12203A}
+.lock b{color:#F7F8FA}.lock span{color:#DFE2E8}
+img.logo{border-radius:8px}
+
+@media(max-width:560px){
+  .grid{grid-template-columns:1fr}
+  .card,.card>*,.grid>*{min-width:0}
+  .card{max-width:100%}
+  .meta-grid{grid-template-columns:1fr}
+  .drop small{overflow-wrap:anywhere}
+}
+
+/* Keyboard focus (accessibility) */
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--orange,#DCB64A);outline-offset:2px;border-radius:3px}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+<!-- ===== brand header band ===== -->
+<div class="band">
+  <div class="band-in">
+    <img class="logo" src="icon.svg" alt="vault racing">
+    <div class="lock"><b>vault</b><span>racing</span></div>
+    <div class="tag">the horse the market <em>hasn't priced yet</em></div>
+    <nav class="band-nav">
+      <a href="index.html">Scanner</a>
+      <a href="catalogue.html">Catalogue</a>
+      <a href="pedigree.html">Pedigree</a>
+      <a href="mating.html">Mating</a>
+      <a href="analysis.html">Conformation</a>
+      <a href="gallop.html" class="on">Gallop</a>
+      <a href="report.html">Bio-Metric Score</a>
+      <a href="command.html">Command</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+  <a class="backlink no-print" href="index.html">‹ Back to scanner</a>
+
+  <div class="hero">
+    <span class="kicker">AI &amp; Technology Series · Biomechanics</span>
+    <h1 class="title">Motion Analysis <span class="o">Gallop Report</span></h1>
+    <p class="sub">Add a gallop or breeze video and turn it into objective movement data — stride, symmetry,
+    joint angles and balance — that goes beyond what the eye can see. <em>See the difference. Measure the advantage.</em></p>
+  </div>
+
+  <div class="grid">
+    <!-- ============ LEFT: video + report ============ -->
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="card no-print">
+        <h2><span class="n">▸</span> Gallop video</h2>
+        <div id="drop" class="drop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <b>Add gallop video</b>
+          <small>Click to choose, or drag &amp; drop a file. Analysed in your browser — nothing is uploaded.</small>
+          <input id="file" type="file" accept="video/*" hidden>
+        </div>
+        <div id="player" hidden>
+          <video id="vid" playsinline controls preload="metadata"></video>
+          <div class="vtools">
+            <button class="btn" id="step-back" title="Back one frame">⏮ frame</button>
+            <button class="btn" id="play">Play/Pause</button>
+            <button class="btn" id="step-fwd" title="Forward one frame">frame ⏭</button>
+            <button class="btn orange" id="grab">Capture key frame</button>
+            <label>fps <input id="fps" type="number" value="30" min="1" max="240" style="width:52px"></label>
+            <label>speed
+              <select id="rate"><option>0.25</option><option>0.5</option><option selected>1</option><option>1.5</option></select>
+            </label>
+            <span class="tcode" id="tcode">0.00s · f0</span>
+          </div>
+          <div class="frames" id="frames"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Session details</h2>
+        <div class="meta-grid">
+          <label>Horse<input id="m-horse" placeholder="e.g. A La Vie (KY)"></label>
+          <label>Date<input id="m-date" type="date"></label>
+          <label>Track / venue<input id="m-track" placeholder="e.g. Keeneland"></label>
+          <label>Surface<select id="m-surface"><option>Dirt</option><option>Turf</option><option>All-weather</option><option>Grass gallop</option></select></label>
+          <label>Distance<input id="m-dist" placeholder="e.g. 4F"></label>
+          <label>Rider / condition<input id="m-rider" placeholder="e.g. Exercise rider · breezy"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">01</span> Movement scores</h2>
+        <p class="sub" style="font-size:.76rem;margin:-4px 0 12px">Score each 0–100 from the video. The AI Movement Score is their weighted composite.</p>
+        <div class="rings" id="rings"></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">02</span> Stride &amp; joint analysis</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px" class="sj">
+          <div>
+            <h3 style="font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 6px">Stride analysis</h3>
+            <div class="mrow"><span>Stride frequency</span><span><input id="s-freq" class="mono" value="2.42"> <small class="mono" style="color:var(--muted)">str/s</small></span></div>
+            <div class="mrow"><span>Stride length (est.)</span><span><input id="s-len" class="mono" value="6.8"> <small class="mono" style="color:var(--muted)">m</small></span></div>
+            <div class="mrow"><span>Suspension time</span><span><input id="s-susp" class="mono" value="0.18"> <small class="mono" style="color:var(--muted)">s</small></span></div>
+            <div class="mrow"><span>Stance time</span><span><input id="s-stance" class="mono" value="0.87"> <small class="mono" style="color:var(--muted)">s</small></span></div>
+          </div>
+          <div>
+            <h3 style="font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 6px">Joint angles (peak)</h3>
+            <div class="mrow"><span>Shoulder</span><span><input id="j-sh" class="mono" value="112">°</span></div>
+            <div class="mrow"><span>Hip</span><span><input id="j-hip" class="mono" value="108">°</span></div>
+            <div class="mrow"><span>Stifle</span><span><input id="j-st" class="mono" value="124">°</span></div>
+            <div class="mrow"><span>Hock</span><span><input id="j-ho" class="mono" value="147">°</span></div>
+            <div class="mrow"><span>Fetlock</span><span><input id="j-fe" class="mono" value="151">°</span></div>
+          </div>
+        </div>
+        <h3 style="font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 4px">Stride timeline — one stride cycle</h3>
+        <div class="timeline" id="timeline"></div>
+        <div class="tl-legend" id="tl-legend"></div>
+      </div>
+    </div>
+
+    <!-- ============ RIGHT: score + symmetry + verdict ============ -->
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="card">
+        <h2>AI Movement Score</h2>
+        <div class="overall">
+          <div class="gauge" id="overall-gauge"></div>
+          <div>
+            <div class="band-pill" id="overall-band">—</div>
+            <p class="sub" style="font-size:.78rem;margin:8px 0 0">Composite of the six movement dimensions, benchmarked on the
+            GOOD–ELITE band. Higher is better.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">03</span> Symmetry analysis</h2>
+        <div class="mrow"><span>Forelimb symmetry</span><span><input id="sym-fore" class="mono" value="92">% <b class="v g" id="sym-fore-l">Good</b></span></div>
+        <div class="mrow"><span>Hindlimb symmetry</span><span><input id="sym-hind" class="mono" value="90">% <b class="v g" id="sym-hind-l">Good</b></span></div>
+        <div class="mrow"><span>Pelvic stability</span><span><input id="sym-pel" class="mono" value="89">% <b class="v g" id="sym-pel-l">Good</b></span></div>
+        <div class="mrow"><span>Symmetry index</span><span class="v g" id="sym-index">90% · Good</span></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">04</span> Read-out</h2>
+        <div class="lists">
+          <div class="h-str">
+            <h3>Athletic strengths</h3>
+            <ul id="strengths"></ul>
+          </div>
+          <div class="h-risk">
+            <h3>Risk indicators</h3>
+            <ul id="risks"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Session notes</h2>
+        <textarea id="notes" placeholder="Balanced, efficient gallop with strong hindquarter engagement and excellent rhythm. No significant biomechanical concerns observed in this session."></textarea>
+        <div class="sig">
+          <div class="who">Report generated by <b>Bio-Metric AI System</b><span id="stamp"></span></div>
+          <div class="who" style="text-align:right"><b>Gareth Dickson</b>Founder &amp; Bloodstock Agent</div>
+        </div>
+      </div>
+
+      <div class="toolbar no-print">
+        <button class="btn orange" id="save">Save report</button>
+        <button class="btn" id="load">Load saved</button>
+        <button class="btn" id="print">Print / PDF</button>
+        <button class="btn" id="reset">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-band">
+    <img class="logo" src="icon.svg" alt="vault racing" style="height:40px">
+    <div class="tagbig">Better Data. Smarter Decisions. <span class="o">Better Results.</span></div>
+    <div class="contact">vaultracing.ai · gareth@vaultracing.ai<br>Newmarket, Suffolk, United Kingdom</div>
+  </div>
+
+  <p class="disclaimer">Scores are entered by the analyst from the video and combined by a fixed, transparent weighting —
+  this tool structures and presents an expert assessment, it does not itself measure the horse from pixels. Treat every
+  figure as an indicative, human-in-the-loop read, not a veterinary diagnosis.</p>
+</div>
+
+<script>
+/* ---------- the six movement dimensions (image: Workout Gallop Report) ---------- */
+var DIMS = [
+  {k:'rhythm',   label:'Rhythm',              v:90, w:1},
+  {k:'balance',  label:'Balance',             v:89, w:1},
+  {k:'power',    label:'Hindquarter power',   v:88, w:1.1},
+  {k:'forelimb', label:'Forelimb mechanics',  v:86, w:1},
+  {k:'headneck', label:'Head & neck stability',v:90, w:0.8},
+  {k:'symmetry', label:'Overall symmetry',    v:85, w:1.1}
+];
+var $=function(s){return document.querySelector(s)};
+function bandOf(v){ if(v>=90)return['ELITE','#2CC1A0']; if(v>=80)return['GOOD – ELITE','#2CC1A0'];
+  if(v>=70)return['GOOD','#8fd14f']; if(v>=60)return['FAIR','#e7b93a']; return['WATCH','#e5484d']; }
+function cls(v){ return v>=80?'g':v>=65?'a':'r'; }
+
+/* ---------- ring gauge (SVG) ---------- */
+function ring(v,size,stroke){
+  size=size||72; stroke=stroke||7; var r=(size-stroke)/2, c=2*Math.PI*r, col=bandOf(v)[1];
+  var off=c*(1-Math.max(0,Math.min(100,v))/100);
+  return '<svg role="img" aria-label="score '+Math.round(v)+' out of 100" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+    '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="#1c2a44" stroke-width="'+stroke+'"/>'+
+    '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="'+stroke+'" '+
+    'stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" '+
+    'transform="rotate(-90 '+size/2+' '+size/2+')"/></svg>';
+}
+
+/* ---------- render movement rings ---------- */
+function renderRings(){
+  var el=$('#rings'); el.innerHTML='';
+  DIMS.forEach(function(d){
+    d.v=+d.v||0;   // sanitize any loaded value before it reaches innerHTML
+    var wrap=document.createElement('div'); wrap.className='ring';
+    wrap.innerHTML='<div style="position:relative">'+ring(d.v,84,8)+
+      '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">'+
+      '<span class="rlab" style="color:'+bandOf(d.v)[1]+'">'+d.v+'</span></div></div>'+
+      '<input type="number" min="0" max="100" value="'+d.v+'" data-k="'+d.k+'"><small>'+d.label+'</small>';
+    wrap.querySelector('input').addEventListener('input',function(e){
+      d.v=Math.max(0,Math.min(100,+e.target.value||0)); renderRings(); renderOverall(); renderReadout();
+    });
+    el.appendChild(wrap);
+  });
+}
+function overallScore(){
+  var s=0,w=0; DIMS.forEach(function(d){s+=d.v*d.w; w+=d.w;}); return Math.round(s/w);
+}
+function renderOverall(){
+  var v=overallScore(), b=bandOf(v);
+  $('#overall-gauge').innerHTML=ring(v,130,11)+
+    '<div class="lab"><b style="color:'+b[1]+'">'+v+'</b><small>/ 100</small></div>';
+  var pill=$('#overall-band'); pill.textContent=b[0]; pill.style.background=b[1]+'22'; pill.style.color=b[1];
+}
+
+/* ---------- stride timeline ---------- */
+var PHASES=[['Flight',17,'#8fd14f'],['Forelimb contact',18,'#38a3f5'],['Weight acceptance',28,'#DCB64A'],
+  ['Hindlimb drive',20,'#dcb64a'],['Suspension',17,'#2CC1A0']];
+function renderTimeline(){
+  var tl=$('#timeline'), lg=$('#tl-legend'); tl.innerHTML=''; lg.innerHTML='';
+  PHASES.forEach(function(p){
+    var d=document.createElement('div'); d.style.width=p[1]+'%'; d.style.background=p[2];
+    d.textContent=p[1]+'%'; tl.appendChild(d);
+    lg.innerHTML+='<span><i style="background:'+p[2]+'"></i>'+p[0]+'</span>';
+  });
+}
+
+/* ---------- symmetry + read-out ---------- */
+function symLabel(v){ return v>=88?['Good','g']:v>=78?['Fair','a']:['Watch','r']; }
+function renderSymmetry(){
+  [['#sym-fore','#sym-fore-l'],['#sym-hind','#sym-hind-l'],['#sym-pel','#sym-pel-l']].forEach(function(p){
+    var v=+$(p[0]).value||0, l=symLabel(v); var el=$(p[1]); el.textContent=l[0]; el.className='v '+l[1];
+  });
+  var avg=Math.round((( +$('#sym-fore').value)+(+$('#sym-hind').value)+(+$('#sym-pel').value))/3);
+  var l=symLabel(avg); $('#sym-index').textContent=avg+'% · '+l[0]; $('#sym-index').className='v '+l[1];
+}
+function renderReadout(){
+  var str=[], risk=[];
+  DIMS.forEach(function(d){ if(d.v>=88) str.push(d.label+' — '+d.v+'/100'); else if(d.v<70) risk.push('Below-par '+d.label.toLowerCase()+' ('+d.v+')'); });
+  var symAvg=Math.round((( +$('#sym-fore').value)+(+$('#sym-hind').value)+(+$('#sym-pel').value))/3);
+  if(symAvg>=88) str.push('Balanced left–right symmetry ('+symAvg+'%)'); else if(symAvg<80) risk.push('Asymmetry to monitor ('+symAvg+'%)');
+  if(overallScore()>=85) str.push('Efficient, ground-covering action');
+  if(!str.length) str.push('No standout strengths flagged');
+  if(!risk.length) risk.push('No obvious lameness or asymmetry observed');
+  $('#strengths').innerHTML=str.map(function(x){return '<li>'+x+'</li>'}).join('');
+  $('#risks').innerHTML=risk.map(function(x){return '<li>'+x+'</li>'}).join('');
+}
+
+/* ---------- video handling ---------- */
+var vid=$('#vid');
+function loadVideo(file){
+  var url=URL.createObjectURL(file); vid.src=url;
+  $('#drop').hidden=true; $('#player').hidden=false;
+  if(!$('#m-horse').value) $('#m-horse').value=file.name.replace(/\.[^.]+$/,'');
+}
+$('#file').addEventListener('change',function(e){ if(e.target.files[0]) loadVideo(e.target.files[0]); });
+$('#drop').addEventListener('click',function(){ $('#file').click(); });
+['dragover','dragenter'].forEach(function(ev){$('#drop').addEventListener(ev,function(e){e.preventDefault();this.classList.add('over');});});
+['dragleave','drop'].forEach(function(ev){$('#drop').addEventListener(ev,function(e){e.preventDefault();this.classList.remove('over');});});
+$('#drop').addEventListener('drop',function(e){ if(e.dataTransfer.files[0]) loadVideo(e.dataTransfer.files[0]); });
+function fps(){ return Math.max(1,+$('#fps').value||30); }
+function tcode(){ $('#tcode').textContent=vid.currentTime.toFixed(2)+'s · f'+Math.round(vid.currentTime*fps()); }
+vid.addEventListener('timeupdate',tcode); vid.addEventListener('seeked',tcode);
+$('#step-fwd').addEventListener('click',function(){ vid.pause(); vid.currentTime=Math.min(vid.duration||1e9,vid.currentTime+1/fps()); });
+$('#step-back').addEventListener('click',function(){ vid.pause(); vid.currentTime=Math.max(0,vid.currentTime-1/fps()); });
+$('#play').addEventListener('click',function(){ vid.paused?vid.play():vid.pause(); });
+$('#rate').addEventListener('change',function(){ vid.playbackRate=+this.value; });
+$('#grab').addEventListener('click',function(){
+  if(!vid.videoWidth) return;
+  var h=56, w=Math.round(vid.videoWidth/vid.videoHeight*h);
+  var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  cv.getContext('2d').drawImage(vid,0,0,w,h);
+  var fr=document.createElement('div'); fr.className='fr';
+  fr.appendChild(cv); var b=document.createElement('b'); b.textContent=vid.currentTime.toFixed(2)+'s'; fr.appendChild(b);
+  $('#frames').appendChild(fr);
+});
+
+/* ---------- persistence ---------- */
+var FIELDS=['m-horse','m-date','m-track','m-surface','m-dist','m-rider','s-freq','s-len','s-susp','s-stance',
+  'j-sh','j-hip','j-st','j-ho','j-fe','sym-fore','sym-hind','sym-pel','notes'];
+function collect(){ var o={dims:{}}; DIMS.forEach(function(d){o.dims[d.k]=d.v;});
+  FIELDS.forEach(function(f){o[f]=$('#'+f).value;}); return o; }
+function apply(o){ if(!o)return;
+  if(o.dims) DIMS.forEach(function(d){ if(o.dims[d.k]!=null) d.v=o.dims[d.k]; });
+  FIELDS.forEach(function(f){ if(o[f]!=null) $('#'+f).value=o[f]; }); renderAll(); }
+$('#save').addEventListener('click',function(){
+  var key='bmt-gallop:'+(($('#m-horse').value||'report').trim());
+  localStorage.setItem(key,JSON.stringify(collect())); localStorage.setItem('bmt-gallop:last',key);
+  this.textContent='Saved ✓'; var b=this; setTimeout(function(){b.textContent='Save report';},1400);
+});
+$('#load').addEventListener('click',function(){
+  var key=localStorage.getItem('bmt-gallop:last'); if(!key){alert('No saved report yet.');return;}
+  apply(JSON.parse(localStorage.getItem(key)||'null'));
+});
+$('#print').addEventListener('click',function(){ window.print(); });
+$('#reset').addEventListener('click',function(){ if(confirm('Reset all fields?')) location.reload(); });
+
+/* ---------- wire live inputs ---------- */
+['s-freq','s-len','s-susp','s-stance','j-sh','j-hip','j-st','j-ho','j-fe'].forEach(function(id){
+  $('#'+id).addEventListener('input',renderReadout);
+});
+['sym-fore','sym-hind','sym-pel'].forEach(function(id){
+  $('#'+id).addEventListener('input',function(){ renderSymmetry(); renderReadout(); });
+});
+
+function renderAll(){ renderRings(); renderOverall(); renderTimeline(); renderSymmetry(); renderReadout(); }
+function stamp(){ var d=$('#m-date').value; $('#stamp').textContent = d? ' · '+d : ''; }
+$('#m-date').addEventListener('input',stamp);
+// prefill the horse from a ?h= link (e.g. opened from a horse profile)
+(function(){var m=/[?&]h=([^&]+)/.exec(location.search); if(m){var f=$('#m-horse'); if(f&&!f.value)f.value=decodeURIComponent(m[1]).slice(0,120);}})();
+renderAll(); stamp();
+</script>
+</body>
+</html>

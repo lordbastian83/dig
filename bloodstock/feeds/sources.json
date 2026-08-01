@@ -1,0 +1,57 @@
+{
+  "note": "Live market/odds feeds that enrich candidates.json with a real market price per horse. Config-driven and fail-safe, exactly like scrapers/sources.json: fill `url` with a CSV or JSON feed and set the column/field map; leave `url` empty and the feed is a no-op (the app falls back to its model market estimate). Runs inside the bloodstock-scan Action, which has internet; the dev sandbox does not, so a feed URL is validated by a CI run, not locally. Enable with FEEDS=1 in the scan workflow.",
+  "app_fields": "name (match key), marketGns (live market/hammer estimate in guineas), liveOdds (decimal or fractional, informational), orLive (latest official rating), ts (feed timestamp)",
+  "auth": "Per source: set `authEnv` to the name of an env var holding a bearer token, or `basicEnvUser`/`basicEnvPass` for HTTP basic auth. Secrets live in GitHub Actions, never in this file.",
+  "sources": [
+    {
+      "name": "TheRacingAPI live/forecast odds (built-in)",
+      "enabled": true,
+      "builtin": "racing-api-odds",
+      "site": "https://theracingapi.com",
+      "basicEnvUser": "RACING_API_USERNAME",
+      "basicEnvPass": "RACING_API_PASSWORD",
+      "why": "Handled in code (feeds/index.mjs → racingApiOdds), not by the generic url path, because it needs the racecards endpoint and per-runner matching. When RACING_API creds are present and FEEDS=1, it pulls today's + tomorrow's declared runners and stamps liveOdds (and a fresh official rating) onto matching candidates, keyed by horse_id. Odds are a betting-market signal, shown as a flag — separate from marketGns, which is the auction/hammer price and still awaits a sale-market feed."
+    },
+    {
+      "name": "Generic market CSV",
+      "enabled": false,
+      "site": "",
+      "url": "",
+      "format": "csv",
+      "columns": {
+        "horse": "name",
+        "name": "name",
+        "market": "marketGns",
+        "market_gns": "marketGns",
+        "hammer_estimate": "marketGns",
+        "odds": "liveOdds",
+        "or": "orLive"
+      },
+      "why": "Drop-in for any exported market sheet: a CSV with a horse-name column and a market/odds column. Column names are aliased to the app's fields so a raw export ingests without renaming."
+    },
+    {
+      "name": "Pedigree feed (Weatherbys / Racing Post / Equibase export)",
+      "enabled": false,
+      "url": "",
+      "format": "csv",
+      "file": "example-pedigree.csv",
+      "columns": {
+        "horse": "name", "name": "name",
+        "pedigree": "ped", "chefs": "ped", "dosage_chefs": "ped",
+        "black_type": "blackType", "blacktype": "blackType",
+        "dam_production": "damLabel", "dam_notes": "damLabel",
+        "image": "image", "photo": "image", "image_url": "image", "photo_url": "image"
+      },
+      "why": "Brings the deep pedigree the free form APIs can't: a 4-generation chef-de-race string (name:generation pairs) that gives the REAL Dosage Index, plus verified black type and a dam-production note. Drop a licensed export at feeds/data/<file> or point url at a feed and set enabled:true. A worked example ships at feeds/data/example-pedigree.csv."
+    },
+    {
+      "name": "Example market CSV (offline file)",
+      "enabled": false,
+      "url": "",
+      "format": "csv",
+      "file": "example-market.csv",
+      "columns": { "horse": "name", "market_gns": "marketGns", "odds": "liveOdds", "or": "orLive" },
+      "why": "Worked example + no-network path: with no `url`, the adapter reads feeds/data/<file>. Set enabled:true to feed it. Delete once a real feed is wired."
+    }
+  ]
+}

@@ -29,6 +29,11 @@ const DAYS = +(process.env.DAYS || 7);
 const OUT = process.env.OUT || 'candidates.json';
 const EXISTING = process.env.EXISTING || OUT;
 const MAX_PAGES = +(process.env.MAX_PAGES || 60); // Pro tier — deeper sweep
+// Regions swept for candidates. France is the cheapest dirt proxy — Deauville
+// and Cagnes PSF form translates straight to Meydan dirt — so it's in by
+// default alongside GB/IRE. Override with REGIONS=gb,ire,fr,usa etc.
+const REGIONS = (process.env.REGIONS || 'gb,ire,fr')
+  .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 const API = 'https://api.theracingapi.com/v1';
 
 const TIER_A = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
@@ -57,6 +62,20 @@ function tierOf(sire, damsire) {
        : DIRT_DAMSIRE.some((x) => lc(damsire).includes(x)) ? 'B' : '';
 }
 
+// Normalise the API's region/course into a clean GB / IRE / FR / USA label.
+function regionOf(race) {
+  const r = lc(race.region).trim();
+  if (r.startsWith('fr')) return 'FR';
+  if (r === 'ire' || r === 'ir' || r.startsWith('ire')) return 'IRE';
+  if (r.startsWith('us')) return 'USA';
+  if (r.startsWith('gb') || r.startsWith('uk')) return 'GB';
+  // fall back to well-known course hints when the code is missing
+  const c = lc(race.course);
+  if (/deauville|chantilly|cagnes|marseille|pau|saint-cloud|lyon|vichy/.test(c)) return 'FR';
+  if (/curragh|leopardstown|naas|cork|gowran|dundalk|navan|fairyhouse|galway/.test(c)) return 'IRE';
+  return 'GB';
+}
+
 // Trainer strike-rate accumulated across the whole sweep — no extra API
 // calls, and a trainer who wins often is one whose cast-offs improved under
 // good handling: a real quality signal on the horses they're now letting go.
@@ -66,20 +85,24 @@ function trainerSR(name) {
   return e && e.runs >= 10 ? +(e.wins / e.runs).toFixed(3) : null;
 }
 
-/* ---------- stage 1: sweep recent results for profile matches ---------- */
-async function sweep() {
+/* ---------- stage 1: sweep a results window for profile matches ----------
+   Defaults to the recent window (last DAYS days). The off-market prospects
+   pass calls it with an older window to find horses that fit but aren't
+   actively campaigning. */
+async function sweep(fromOff = DAYS, toOff = 0, pages = MAX_PAGES) {
   const prelim = new Map(); // horse_id -> runner snapshot
-  for (let page = 0; page < MAX_PAGES; page++) {
+  for (let page = 0; page < pages; page++) {
     let batch;
+    const regionQuery = REGIONS.map((r) => `region=${r}`).join('&');
     try {
-      batch = await api(`/results?start_date=${day(DAYS)}&end_date=${day(0)}&region=gb&region=ire&limit=50&skip=${page * 50}`);
+      batch = await api(`/results?start_date=${day(fromOff)}&end_date=${day(toOff)}&${regionQuery}&limit=50&skip=${page * 50}`);
     } catch (e) { console.error(`results page ${page}: ${e.message}`); break; }
     const races = batch?.results ?? [];
     if (!races.length) break;
     for (const race of races) {
       // Dirt targets are FLAT horses — skip jumps races entirely.
       if (race.jumps || /hurdle|chase|nh flat|bumper/.test(lc(race.type) + lc(race.race_name))) continue;
-      const region = /ire|irish/.test(lc(race.region) + lc(race.course)) ? 'IRE' : 'GB';
+      const region = regionOf(race);
       for (const r of race.runners ?? []) {
         const tk = lc(r.trainer);
         if (tk) { const e = trainerStats.get(tk) || { runs: 0, wins: 0 };
@@ -97,7 +120,7 @@ async function sweep() {
         if (!prelim.has(r.horse_id)) {
           prelim.set(r.horse_id, {
             id: r.horse_id, name: r.horse, sire: r.sire, dam: r.dam,
-            damsire: r.damsire, rating: or, age, region, sex: r.sex || '',
+            damsire: r.damsire, rating: or, age, region, sxClass: r.sex || '',
             owner: r.owner || '', trainer: r.trainer || '',
             lastRun: race.date, tier,
           });
@@ -185,9 +208,12 @@ async function deepCheck(c) {
   const furlongs = [];      // distance aptitude
   const goings = new Set(); // ground aptitude
   const surfaces = new Set();
+  const courses = new Set(); // where it has run
   const classesNewestFirst = []; // class-drop signal
-  let bestDistF = null, bestPos = 99;
+  let bestDistF = null, bestPos = 99, lastDate = null;
   for (const race of races) {
+    if (race.date && (!lastDate || race.date > lastDate)) lastDate = race.date;
+    if (race.course) courses.add(String(race.course).replace(/\s*\(.*?\)\s*/g, '').trim());
     const me = (race.runners ?? []).find((r) => r.horse_id === c.id);
     if (!me) continue;
     starts++;
@@ -230,7 +256,9 @@ async function deepCheck(c) {
       furlongs.push(f);
       if (pos < bestPos) { bestPos = pos; bestDistF = f; } // trip of best run
     }
-    if (race.going) goings.add(lc(race.going).split(' ')[0]);
+    // keep the full going phrase ("good to soft"), not just the first word,
+    // so the app's going filter can tell soft-ground from quick-ground horses
+    if (race.going) goings.add(lc(race.going).trim());
   }
   const rprEdge = bestRPR !== null ? bestRPR - c.rating : null;
   const last3 = orsNewestFirst.slice(0, 3);
@@ -262,10 +290,17 @@ async function deepCheck(c) {
 
   const dam = await damProduction(damId, (c.dam || '').replace(/\(.*?\)/g, '').trim(), c.id);
 
+  // Freshness: days since the last run (a soundness / readiness proxy).
+  const lastRunDays = lastDate
+    ? Math.round((Date.now() - Date.parse(lastDate)) / 86400000) : null;
+  const earningsPerStart = starts ? Math.round(earnings / starts) : null;
+  const coursesList = [...courses].filter(Boolean).slice(0, 5);
+
   return { starts, awForm, rprEdge, trend, distMin, distMax, distBest, racePlan,
            versatile, consistency, classMove, dam,
            bestRPR, bestTSR, careerHigh, wins, placed, winPct, bestWin,
-           earnings: Math.round(earnings), goingList, surfaceList };
+           earnings: Math.round(earnings), earningsPerStart, goingList, surfaceList,
+           coursesList, lastRunDays };
 }
 
 /* ---------- telegram ---------- */
@@ -287,9 +322,11 @@ async function alert(finds) {
     }
   } catch (e) { console.error('getUpdates:', e.message); }
   const fmt = (n) => n.toLocaleString('en-GB', { maximumFractionDigits: 0 });
-  const lines = finds.map((f) =>
-    `• ${f.name} (${f.sire}) — OR ${f.rating} ${f.trend}${f.rprEdge > 0 ? `, RPR +${f.rprEdge}` : ''}, ${f.starts} starts${f.awForm ? ', AW win' : ''}${f.distBest ? `, best ${f.distBest}f` : ''}\n  owner ${f.vendor || '?'} · max bid ~${fmt(f.maxBidGns)} gns${f.racePlan ? `\n  plan: ${f.racePlan}` : ''}\n  ⚠ verify black type + whether buyable`);
-  const msg = [`🐎💎 vault racing radar — ${finds.length} new candidate${finds.length === 1 ? '' : 's'}:`, '', ...lines].join('\n');
+  const fit = (f) => Math.round((E.dubaiFit(f).pct || 0) * 100);
+  const ranked = [...finds].sort((a, b) => fit(b) - fit(a));
+  const lines = ranked.map((f) =>
+    `• ${f.name} (${f.sire}) — 🏜 Dubai fit ${fit(f)} · OR ${f.rating} ${f.trend}${f.rprEdge > 0 ? `, RPR +${f.rprEdge}` : ''}, ${f.starts} starts${f.awForm ? ', AW win' : ''}${f.distBest ? `, best ${f.distBest}f` : ''}\n  owner ${f.vendor || '?'} · max bid ~${fmt(f.maxBidGns)} gns${f.racePlan ? `\n  plan: ${f.racePlan}` : ''}\n  ⚠ verify black type + whether buyable`);
+  const msg = [`🐎💎 vault racing radar — ${finds.length} new candidate${finds.length === 1 ? '' : 's'} (best Dubai fit first):`, '', ...lines].join('\n');
   for (const chat of ids) {
     try { await tg('sendMessage', { chat_id: chat, text: msg }); console.log(`alerted ${chat}`); }
     catch (e) { console.error(`send ${chat}: ${e.message}`); }
@@ -334,7 +371,9 @@ for (const m of ranked) {
     distBest: 8, racePlan: 'miler (7–8f) — the Imperial Emperor lane, Carnival handicaps→G-races',
     distMin: 7, distMax: 9, versatile: false, consistency: 0.75, classMove: 'dropping',
     bestRPR: 98, bestTSR: 92, careerHigh: 91, wins: 2, placed: 3, winPct: 0.5,
-    bestWin: 'Class 3 Handicap', earnings: 24800, goingList: ['good', 'soft'], surfaceList: ['turf', 'aw'],
+    bestWin: 'Class 3 Handicap', earnings: 24800, earningsPerStart: 6200,
+    goingList: ['good', 'soft'], surfaceList: ['turf', 'aw'],
+    coursesList: ['Kempton', 'Chelmsford', 'Newcastle'], lastRunDays: 21,
     dam: { score: 0.8, label: '2 black-type from 5 foals', blackType: true } };
   else if (deepUsed >= MAX_DEEP) { console.log(`  · ${m.name}: deep-check budget spent, stored from sweep`); }
   else {
@@ -343,45 +382,108 @@ for (const m of ranked) {
     catch (e) { console.error(`  ! ${m.name}: ${e.message}`); continue; }
   }
   if (deep.starts > 7) { console.log(`  – ${m.name}: ${deep.starts} starts, too exposed`); continue; }
+  const horse = buildHorse(m, deep, 'IN TRAINING — radar find');
+  fresh.push(horse);
+  console.log(`  + ${m.name} — OR ${m.rating} (${deep.trend}${deep.rprEdge > 0 ? `, RPR +${deep.rprEdge}` : ''}), ${deep.starts} starts, AW ${deep.awForm}, ${horse.radarPass ? 'RADAR PASS' : 'partial'} → ${horse.maxBidGns} gns`);
+}
 
+// Assemble a candidate/prospect record from a sweep match + deep-check.
+function buildHorse(m, deep, saleLabel) {
   const horse = {
-    name: m.name, lot: '', sale: 'IN TRAINING — radar find',
+    name: m.name, lot: '', sale: saleLabel, horseId: m.id || '',
     sire: m.sire, dam: m.damsire ? `${m.dam} (${m.damsire})` : m.dam,
     vendor: m.owner, rating: m.rating, starts: deep.starts,
     sireTier: m.tier, vet: 'unknown',
     powerhouse: POWERHOUSE.some((p) => lc(m.owner).includes(p)),
     awForm: deep.awForm,
     rprEdge: deep.rprEdge, trend: deep.trend,
-    region: m.region, sex: m.sex,
+    region: m.region, sxClass: m.sex, age: m.age,
     distBest: deep.distBest, distMin: deep.distMin, distMax: deep.distMax,
     racePlan: deep.racePlan, versatile: deep.versatile,
     consistency: deep.consistency, classMove: deep.classMove,
     trainerSR: trainerSR(m.trainer), trainer: m.trainer,
     bestRPR: deep.bestRPR, bestTSR: deep.bestTSR, careerHigh: deep.careerHigh,
     wins: deep.wins, placed: deep.placed, winPct: deep.winPct, bestWin: deep.bestWin,
-    earnings: deep.earnings, goingList: deep.goingList, surfaceList: deep.surfaceList,
+    earnings: deep.earnings, earningsPerStart: deep.earningsPerStart,
+    goingList: deep.goingList, surfaceList: deep.surfaceList,
+    coursesList: deep.coursesList, lastRunDays: deep.lastRunDays,
     damScore: deep.dam?.score ?? null, damLabel: deep.dam?.label ?? null,
-    // dam production, when found, is stronger evidence than the manual flag
     blackType: deep.dam?.blackType ?? false,
-    notes: `[RADAR ${day(0)}] trainer ${m.trainer} · last ran ${m.lastRun}`
+    notes: `[${day(0)}] trainer ${m.trainer} · last ran ${m.lastRun}`
       + (deep.rprEdge > 0 ? ` · RPR +${deep.rprEdge} over OR` : '')
       + ` · OR ${deep.trend}`
       + (deep.distBest ? ` · best trip ${deep.distBest}f` : '')
-      + (deep.racePlan ? ` · plan: ${deep.racePlan}` : '')
+      + (deep.lastRunDays != null ? ` · ${deep.lastRunDays}d since last run` : '')
       + ` · VERIFY black type + availability`,
     status: 'watch', added: day(0),
   };
   const r = E.evaluate(horse, E.PARAM_DEFAULTS);
   horse.maxBidGns = r.gns;
-  // "diamond" = fails nothing that form data can prove (black type pends)
   horse.radarPass = r.fails.every((f) => f.startsWith('Black type'));
-  fresh.push(horse);
-  console.log(`  + ${m.name} — OR ${m.rating} (${deep.trend}${deep.rprEdge > 0 ? `, RPR +${deep.rprEdge}` : ''}), ${deep.starts} starts, AW ${deep.awForm}, ${horse.radarPass ? 'RADAR PASS' : 'partial'} → ${r.gns} gns`);
+  return horse;
 }
 
 const all = [...fresh, ...existing.candidates].slice(0, 200);
+// Optional live market/odds enrichment (FEEDS=1). No-op with no feed configured;
+// stamps candidates with a real marketGns so the app's Δ-value reflects the
+// actual market instead of the model estimate. Fail-safe — never blocks the scan.
+try { const { applyLiveFeeds } = await import('./feeds/index.mjs'); await applyLiveFeeds(all); }
+catch (e) { console.error('Live feeds skipped:', e && e.message || e); }
 writeFileSync(OUT, JSON.stringify({ generated: day(0), candidates: all,
   ...(DEBUG && debugSample ? { _debugSample: debugSample } : {}) }, null, 2));
 console.log(`${fresh.length} new, ${all.length} total → ${OUT}`);
 
 await alert(fresh.filter((f) => f.radarPass));
+
+/* ---------- off-market prospects ----------
+   Horses that fit the profile but are NOT actively campaigning — an older
+   results window, then keep only those dormant for a while (a private
+   approach, not a sale-catalogue lot). Excludes anything already active. */
+const PROSPECTS_OUT = process.env.PROSPECTS_OUT || 'prospects.json';
+try {
+  const pFrom = +(process.env.PROSPECT_FROM || 120);   // window start (days ago)
+  const pTo = +(process.env.PROSPECT_TO || 30);        // window end (days ago)
+  const pPages = +(process.env.PROSPECT_PAGES || 20);
+  const pDeep = +(process.env.MAX_PROSPECT_DEEP || 40);
+  const minDormant = +(process.env.PROSPECT_MIN_DORMANT || 30);
+  const activeNames = new Set(all.map((c) => lc(c.name)));
+  let prospects = [];
+  if (DEMO) {
+    const d = { starts: 5, awForm: true, rprEdge: 5, trend: 'flat', distBest: 8,
+      racePlan: 'miler (7–8f) — the Imperial Emperor lane, Carnival handicaps→G-races',
+      distMin: 7, distMax: 9, versatile: false, consistency: 0.6, classMove: 'level',
+      bestRPR: 96, bestTSR: 90, careerHigh: 94, wins: 3, placed: 4, winPct: 0.6,
+      bestWin: 'Listed', earnings: 42000, earningsPerStart: 8400,
+      goingList: ['standard'], surfaceList: ['aw'], coursesList: ['Newcastle', 'Chelmsford'],
+      lastRunDays: 96, dam: { score: 0.7, label: '1 black-type from 4 foals', blackType: true } };
+    prospects = [buildHorse({ name: 'Dormant Demo (GB)', sire: 'Dubawi', dam: 'X', damsire: 'Shamardal',
+      owner: 'Godolphin', rating: 94, tier: 'A', region: 'GB', sxClass: 'g', age: 5, trainer: 'A Trainer',
+      lastRun: day(96) }, d, 'OFF-MARKET — approach privately')];
+  } else {
+    console.log(`Off-market sweep: ${pFrom}–${pTo} days ago …`);
+    const pMatches = await sweep(pFrom, pTo, pPages);
+    const pRanked = pMatches
+      .filter((m) => !activeNames.has(lc(m.name)))
+      .sort((a, b) => {
+        const s = (x) => (x.tier === 'A' ? 2 : x.tier === 'B' ? 1 : 0) + (x.rating >= 85 && x.rating <= 95 ? 1 : 0);
+        return s(b) - s(a);
+      });
+    let used = 0;
+    for (const m of pRanked) {
+      if (used >= pDeep) break;
+      used++;
+      let deep;
+      try { deep = await deepCheck(m); await sleep(400); }
+      catch (e) { console.error(`  ! ${m.name}: ${e.message}`); continue; }
+      if (deep.starts > 12) continue;                       // still relatively unexposed
+      if ((deep.lastRunDays ?? 0) < minDormant) continue;   // must be genuinely dormant
+      prospects.push(buildHorse(m, deep, 'OFF-MARKET — approach privately'));
+      console.log(`  ~ ${m.name} — OR ${m.rating}, ${deep.lastRunDays}d dormant, AW ${deep.awForm}`);
+    }
+  }
+  writeFileSync(PROSPECTS_OUT, JSON.stringify({ generated: day(0), prospects: prospects.slice(0, 60) }, null, 2));
+  console.log(`${prospects.length} off-market prospects → ${PROSPECTS_OUT}`);
+} catch (e) {
+  console.error('prospect sweep failed:', e.message);
+  writeFileSync(PROSPECTS_OUT, JSON.stringify({ generated: day(0), prospects: [] }, null, 2));
+}

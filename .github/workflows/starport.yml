@@ -1,31 +1,27 @@
-# This is a basic workflow that is manually triggered
+# Builds the chain with Ignite CLI (the tool formerly named Starport).
+# The old `get.starport.network` install host is dead and `chain serve` is a
+# long-running dev command that never exits in CI, so this workflow failed on
+# every commit. It now installs the current Ignite CLI and runs a terminating
+# `chain build`. The legacy chain may not compile under a current Ignite/Go, so
+# the build step is non-blocking (continue-on-error) — this is auxiliary
+# binary-build CI, not a correctness gate.
 
 name: Starport
 
-# Controls when the action will run. Workflow runs when manually triggered using the UI
-# or API.
 on: [push, pull_request, workflow_dispatch]
-
-# This workflow makes x86_64 binaries for mac, windows, and linux.
 
 jobs:
   starport:
-    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2.1.3
-        with: 
-          go-version: '^1.17'
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '^1.21'
 
-      - name: Starport
+      - name: Build chain with Ignite CLI
+        continue-on-error: true
         run: |
-          curl https://get.starport.network/starport! | bash
-          starport chain serve
-
-
-
-        
-          
-          
-
+          curl https://get.ignite.com/cli! | sudo bash
+          ignite version
+          ignite chain build

@@ -40,6 +40,102 @@ ingest feed exists) a generated `lots.json`.
    Until that exists, the app's **Import CSV** button does the same job from
    a hand-built sheet in minutes.
 
+## Auto-loading catalogues (live now)
+
+Drop a sale's catalogue as a CSV into **`bloodstock/catalogues/`** (one file
+per sale, same columns as the CSV import below). On push — and daily — the
+`bloodstock-catalogue.yml` workflow runs `bloodstock/catalogue.mjs`, which
+parses each file, maps every row to a scored lot, optionally enriches rating
+& form via The Racing API (for rows with a `horseid`), and publishes
+`catalogue.json` to the `bloodstock-data` branch. The app fetches it on load
+and fills the **Sale shopping list** with a sale picker — no typing. A future
+per-house scraper just needs to write its output CSV into that folder; the
+rest of the pipeline already exists. (`sample-tattersalls-october.csv` ships
+as a worked example — delete it once real catalogues land.)
+
+### Real sale sources (`bloodstock/scrapers/`)
+
+`scrapers/sources.json` is the registry of the real autumn-2026/winter-2027
+sales — Tattersalls Autumn HIT, Arqana Autumn HIT (Deauville), Goffs November,
+Keeneland November HORA — each tagged with its **house, currency and the date
+its catalogue is expected**. `scrapers/index.mjs` is a config-driven,
+fail-safe fetcher: give a source a `url` (CSV or JSON feed) and it ingests it
+in CI; leave `url` empty and it falls back to a CSV in `catalogues/`. With
+`SCRAPE=1` (set in the catalogue workflow) it runs each source and merges the
+results into `catalogue.json`; a CSV file of the same sale name always wins.
+
+Each source has a **`columns`** map that translates that house's own header
+names to the app's fields — Keeneland's `Hip` → `lot`, `Broodmare Sire` →
+`damsire`, `Consignor` → `vendor`, `Estimate` → `guide`; Tattersalls' `Sire of
+Dam` → `damsire`; Arqana's French headers (`Père`, `Mère`, `Père de mère`) →
+`sire`/`dam`/`damsire`. So a **raw export ingests without renaming anything**.
+Drop a house's native-header CSV into `catalogues/sources/<file>` (not the
+top-level `catalogues/`, which expects app-canonical headers) and the
+alias-aware scraper maps it.
+
+Why the `url`s are blank today: the houses publish catalogues as web pages
+with no documented public feed, **and the autumn catalogues haven't dropped
+yet** (see `catalogue_expected` — Tattersalls ~6 Oct, Arqana ~early Nov). So
+there are no real lots to load right now — the framework is wired and
+currency-correct so each sale auto-populates the moment its catalogue is
+available (feed URL, or CSV export into `catalogues/`). The dev sandbox can't
+reach the houses' sites to validate a scraper; CI can, so any feed URL you add
+is confirmed by a workflow run.
+
+### Live market / odds feeds (`bloodstock/feeds/`)
+
+The scanner's **Mkt est** column normally shows the model's expected hammer
+price. Wire a real feed and it shows the actual market instead — the value
+delta (Δ), the sort, and the flash all follow the live number, and the row
+gets a green ◆ marker.
+
+`feeds/sources.json` is the registry (same philosophy as `scrapers/`):
+config-driven and **fail-safe**. Each source maps a feed to the app's fields
+— `name` (the match key), `marketGns` (live market/hammer estimate in
+guineas), `liveOdds`, `orLive`. Give a source a `url` (CSV or JSON, with
+`columns`/`map` aliasing the feed's own headers) **or** drop a CSV at
+`feeds/data/<file>` and set `file` (a no-network path;
+`example-market.csv` ships as a worked example). Set `enabled: true` on the
+source you want.
+
+`feeds/index.mjs`'s `applyLiveFeeds(candidates)` runs inside the scan
+(`FEEDS=1`, already set in `bloodstock-scan.yml`) and stamps matching
+candidates with the live fields before `candidates.json` is written. With no
+source enabled it is a **no-op** and the app keeps its model estimate, so
+turning `FEEDS` on is safe. Auth (bearer token or HTTP basic) comes from
+GitHub Actions env vars named in the source (`authEnv`, or
+`basicEnvUser`/`basicEnvPass`) — never from the file. Feed URLs are validated
+by a CI run (the dev sandbox has no internet); the offline `file` path is how
+it's tested locally.
+
+**Pedigree feed (the deep breeding data).** The free form APIs can't verify
+black type or give a full Dosage. A pedigree source (Weatherbys / Racing Post
+/ Equibase export) fills that: map a horse to `ped` (a 4-generation
+chef-de-race string, `name:generation` pairs), `blackType`, and a
+`damLabel` (dam-production note). With a real `ped` on a candidate the app
+computes the **true Dosage Index** (no longer indicative) and the inspector's
+Breeding panel reads the full story. Configure it like any source in
+`sources.json` (`example-pedigree.csv` ships as a worked example); it's a
+no-op until enabled, and the pedigree still accepts manual per-horse entry.
+
+**Built-in: The Racing API live odds.** Beyond the config sources, when the
+scan's `RACING_API_*` credentials are present the adapter also pulls today's
+and tomorrow's **declared runners** and stamps `liveOdds` (forecast/live
+betting odds) onto matching candidates by `horse_id` — a real betting-market
+signal, shown as a cyan `@odds` flag in the scanner. This is a distinct signal
+from `marketGns` (the auction/hammer price), which still awaits a sale-market
+feed. The racecards endpoint shape is read defensively and confirmed by a CI
+run; it never blocks the scan.
+
+### Currency (FX)
+
+Guides are quoted in each sale's own currency — Tattersalls/Goffs UK in
+guineas, Arqana & Irish sales in €, Keeneland in $. The app carries the
+currency per lot (`ccy`, inferred from the sale name if absent) and converts
+the guide into guineas before the BUY/STRETCH/OVER verdict, so foreign-sale
+verdicts compare like-for-like. Rates are user-editable (💱 in the shopping
+list) and synced; max bids always stay in guineas.
+
 ## Pipeline (mirrors budsignal's architecture)
 
 ```
@@ -57,11 +153,45 @@ have credentials.
 
 ## CSV import format
 
-Header row (same columns the app exports, order-insensitive, extras ignored):
+Header row (order-insensitive, extras ignored). Two importers use it:
+**Import catalogue CSV** on the watchlist (bulk add), and the **Sale shopping
+list** (scores + ranks + BUY/OVER verdict, no auto-add).
 
 ```
-name,lot,sale,sire,dam,vendor,rating,starts,sireTier,vet,powerhouse,blackType,awForm,notes
+name,lot,sale,sire,dam,damsire,vendor,rating,starts,age,sex,sireTier,vet,powerhouse,blackType,awForm,distBest,wins,guide,notes
 ```
 
-`sireTier` = `A`/`B`/empty · `vet` = `clean`/`incomplete`/`unknown` ·
-boolean columns accept `true/yes/1`.
+- `sireTier` = `A`/`B`/empty (auto-derived from sire/damsire if blank)
+- `vet` = `clean`/`incomplete`/`unknown` · booleans accept `true/yes/1`
+- `ccy` = `gns`/`EUR`/`USD`/… (inferred from the sale name if blank) — the
+  guide's currency; converted to guineas for the verdict (see FX above)
+- `image` = optional photo URL (official lot photo you have rights to); shown as the horse's thumbnail
+- `ped` = optional 4-generation pedigree for a real Dosage Index, as
+  `name:generation` pairs, e.g. `Galileo:1, Danehill:2, Mr. Prospector:3,
+  Northern Dancer:4`. Only recognised chefs-de-race count. Can also be pasted
+  per-horse in the profile modal (synced).
+
+## Dosage Index (live now, pedigree-limited)
+
+The engine computes a real **Dosage Profile, Dosage Index (DI) and Centre of
+Distribution (CD)** by Steven Roman's method: chef-de-race ancestors in the
+first four generations score into five aptitude categories (Brilliant →
+Professional), weighted 16/8/4/2 by generation. The chef-de-race table
+(`CHEFS` in `engine.js`) follows Roman's published classifications, extended
+with recent influential sires — a curated, extensible subset.
+
+- With **sire + damsire only** (what the radar/catalogue carry) the DI is
+  shown as *indicative*.
+- Paste (or import via the `ped` column) the **full 4-generation pedigree**
+  and it becomes the real figure. Pedigree source: Weatherbys GSB / Racing
+  Post Bloodstock / Equibase (US) — none free, all licensed; **Equibase**
+  (equibase.com) is the strongest for US dirt pedigrees & form but is a
+  paid/licensed feed with no open API, so it's a copy-in or licence, not a
+  scrape. The math and UI are complete and update the instant a fuller
+  pedigree is supplied.
+- `damsire` — feeds the dirt-nick score (or put it in `dam` as `Name (Damsire)`)
+- `distBest` — best trip in furlongs, if known · `age`, `sex` — for Dubai fit
+- `guide` — expected/guide price (any currency symbols stripped). With a guide,
+  the shopping list grades each lot **BUY** (our max ≥ guide), **STRETCH**
+  (within 10%), or **OVER** (market above our limit). Only the minimum
+  `name` + a `sire`/`dam` is required; everything else sharpens the score.
