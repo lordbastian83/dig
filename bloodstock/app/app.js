@@ -1962,12 +1962,14 @@ function breedingPanel(h, nk, dos, fam) {
 function horseFigureHTML(h) {
   const q = `?h=${encodeURIComponent(h.name || '')}`;
   return `<div class="mp-figure">
-    <svg class="mp-horse" viewBox="150 148 625 404" aria-hidden="true">
-      <line x1="396" y1="360" x2="418" y2="504" stroke="#8a3a1e" stroke-width="7" stroke-linecap="round" stroke-opacity=".5"/>
-      <line x1="652" y1="332" x2="696" y2="504" stroke="#8a3a1e" stroke-width="7" stroke-linecap="round" stroke-opacity=".5"/>
-      <polygon points="170,232 215,195 238,172 300,196 405,205 520,202 628,192 672,205 700,300 712,392 686,300 662,262 655,330 672,392 668,452 664,486 662,504 636,504 640,452 648,392 628,322 560,352 470,372 402,352 408,420 404,460 400,486 398,504 372,504 376,452 380,392 388,352 360,300 250,282 205,268" fill="#12233f" stroke="#E9632B" stroke-width="2.2" stroke-linejoin="round"/>
-      <polygon points="238,172 232,150 251,164" fill="#12233f" stroke="#E9632B" stroke-width="2" stroke-linejoin="round"/>
-      <circle cx="223" cy="209" r="3.2" fill="#0a1120"/>
+    <svg class="mp-horse" viewBox="12 62 416 266" aria-hidden="true">
+      <path d="M344 132 C 372 160 372 236 348 270 C 362 226 356 174 334 152 Z" fill="#0e1e36" stroke="#E9632B" stroke-width="2"/>
+      <path d="M150 220 L164 316 L176 316 L166 218 Z" fill="#0b1830"/>
+      <path d="M322 205 L344 316 L356 316 L338 202 Z" fill="#0b1830"/>
+      <path d="M 30 152 C 34 130 48 112 62 104 C 68 100 73 99 77 97 C 98 82 132 92 160 116 C 165 119 169 120 174 120 C 220 116 270 114 302 116 C 322 118 336 122 344 132 C 350 142 350 150 348 156 C 344 190 340 220 338 244 L 337 300 L 344 316 L 326 316 L 324 300 L 325 244 C 326 220 330 208 322 200 C 292 214 230 220 168 214 C 160 213 154 214 150 218 L 146 300 L 152 316 L 134 316 L 136 300 L 137 244 C 137 220 132 205 126 194 C 120 176 112 162 102 152 C 94 145 82 146 72 152 C 62 158 52 166 44 168 C 38 166 33 160 30 152 Z" fill="#12233f" stroke="#E9632B" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M77 97 C 73 86 72 80 74 76 C 79 82 84 89 86 94 Z" fill="#12233f" stroke="#E9632B" stroke-width="2"/>
+      <path d="M87 94 C 85 84 85 78 88 75 C 92 81 96 88 97 92 Z" fill="#12233f" stroke="#E9632B" stroke-width="2"/>
+      <circle cx="64" cy="112" r="3" fill="#0a1120"/>
     </svg>
     <div class="mp-figure-actions">
       <a class="mp-analyse" href="analysis.html${q}">🐎 Conformation analysis ▸</a>

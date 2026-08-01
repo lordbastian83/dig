@@ -209,21 +209,22 @@ var SVGNS='http://www.w3.org/2000/svg';
 var $=function(s){return document.querySelector(s)};
 function el(tag,attrs,text){var e=document.createElementNS(SVGNS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e;}
 
-/* ---- a filled, recognisable thoroughbred silhouette (side profile, facing left) ---- */
-var OUTLINE=[[170,232],[215,195],[238,172],[300,196],[405,205],[520,202],[628,192],[672,205],[700,300],[712,392],
-  [686,300],[662,262],[655,330],[672,392],[668,452],[664,486],[662,504],[636,504],[640,452],[648,392],[628,322],
-  [560,352],[470,372],[402,352],[408,420],[404,460],[400,486],[398,504],[372,504],[376,452],[380,392],[388,352],
-  [360,300],[250,282],[205,268]];
+/* ---- filled thoroughbred silhouette (side profile), drawn in "horse space"
+       (viewBox ~440×340) and scaled into the 980×560 diagram ---- */
+var SC2=1.5, TX2=200, TY2=-14;
+function hx(x){return x*SC2+TX2} function hy(y){return y*SC2+TY2}
+var HORSE_BODY='M 30 152 C 34 130 48 112 62 104 C 68 100 73 99 77 97 C 98 82 132 92 160 116 C 165 119 169 120 174 120 C 220 116 270 114 302 116 C 322 118 336 122 344 132 C 350 142 350 150 348 156 C 344 190 340 220 338 244 L 337 300 L 344 316 L 326 316 L 324 300 L 325 244 C 326 220 330 208 322 200 C 292 214 230 220 168 214 C 160 213 154 214 150 218 L 146 300 L 152 316 L 134 316 L 136 300 L 137 244 C 137 220 132 205 126 194 C 120 176 112 162 102 152 C 94 145 82 146 72 152 C 62 158 52 166 44 168 C 38 166 33 160 30 152 Z';
 function drawHorse(){
   var g=$('#horse'); while(g.firstChild)g.removeChild(g.firstChild);
-  // far-side legs, behind, for depth
-  [[[396,360],[418,504]],[[652,332],[696,504]]].forEach(function(L){
-    g.appendChild(el('line',{x1:L[0][0],y1:L[0][1],x2:L[1][0],y2:L[1][1],stroke:'#8a3a1e','stroke-width':7,'stroke-linecap':'round','stroke-opacity':.5}));
-  });
-  g.appendChild(el('polygon',{points:OUTLINE.map(function(p){return p[0]+','+p[1];}).join(' '),
-    fill:'#0f2138',stroke:'#E9632B','stroke-width':2.2,'stroke-linejoin':'round'}));
-  g.appendChild(el('polygon',{points:'238,172 232,150 251,164',fill:'#0f2138',stroke:'#E9632B','stroke-width':2,'stroke-linejoin':'round'})); // ear
-  g.appendChild(el('circle',{cx:223,cy:209,r:3.2,fill:'#0a1120'})); // eye
+  var wrap=el('g',{transform:'translate('+TX2+','+TY2+') scale('+SC2+')'});
+  wrap.appendChild(el('path',{d:'M344 132 C 372 160 372 236 348 270 C 362 226 356 174 334 152 Z',fill:'#0e1e36',stroke:'#E9632B','stroke-width':1.5}));
+  wrap.appendChild(el('path',{d:'M150 220 L164 316 L176 316 L166 218 Z',fill:'#0b1830'}));
+  wrap.appendChild(el('path',{d:'M322 205 L344 316 L356 316 L338 202 Z',fill:'#0b1830'}));
+  wrap.appendChild(el('path',{d:HORSE_BODY,fill:'#12233f',stroke:'#E9632B','stroke-width':1.7,'stroke-linejoin':'round','stroke-linecap':'round'}));
+  wrap.appendChild(el('path',{d:'M77 97 C 73 86 72 80 74 76 C 79 82 84 89 86 94 Z',fill:'#12233f',stroke:'#E9632B','stroke-width':1.5}));
+  wrap.appendChild(el('path',{d:'M87 94 C 85 84 85 78 88 75 C 92 81 96 88 97 92 Z',fill:'#12233f',stroke:'#E9632B','stroke-width':1.5}));
+  wrap.appendChild(el('circle',{cx:64,cy:112,r:2.4,fill:'#0a1120'}));
+  g.appendChild(wrap);
 }
 
 /* ---- 16-point biomechanical scoring. Each landmark has an optimal range;
@@ -232,24 +233,24 @@ var RCOL={OPTIMAL:'#25c07f',GOOD:'#8fd14f',FAIR:'#e7b93a',WATCH:'#e5484d'};
 var RPTS={OPTIMAL:100,GOOD:90,FAIR:72,WATCH:52};
 // mode: 'range' (band is best) · 'high' (higher is better) · 'low' (lower is better)
 var METRICS=[
-  // left column (fore-end + head), top→bottom by node-y
-  {id:'poll',  name:'Head carriage',       val:3,  unit:'°',opt:[0,6],  mode:'low', node:[238,178],side:'l',row:0},
-  {id:'neck',  name:'Neck set',            val:63, unit:'°',opt:[55,70],mode:'range',node:[252,278],side:'l',row:1},
-  {id:'should',name:'Shoulder angle',      val:47, unit:'°',opt:[43,52],mode:'range',node:[372,285],side:'l',row:2},
-  {id:'girth', name:'Girth depth',         val:82, unit:'%',opt:[78,90],mode:'high', node:[392,330],side:'l',row:3},
-  {id:'humer', name:'Humerus angle',       val:58, unit:'°',opt:[52,62],mode:'range',node:[400,345],side:'l',row:4},
-  {id:'knee',  name:'Fore knee deviation', val:2,  unit:'°',opt:[0,4],  mode:'low', node:[378,392],side:'l',row:5},
-  {id:'fpast', name:'Fore pastern angle',  val:53, unit:'°',opt:[50,56],mode:'range',node:[399,478],side:'l',row:6},
-  {id:'fhoof', name:'Fore hoof balance',   val:88, unit:'%',opt:[82,96],mode:'high', node:[385,502],side:'l',row:7},
-  // right column (top-line + hind-end), top→bottom by node-y
-  {id:'croup', name:'Croup slope',         val:27, unit:'°',opt:[22,33],mode:'range',node:[632,196],side:'r',row:0},
-  {id:'back',  name:'Back length ratio',   val:47, unit:'%',opt:[43,49],mode:'range',node:[520,203],side:'r',row:1},
-  {id:'with',  name:'Wither definition',   val:84, unit:'%',opt:[78,100],mode:'high',node:[405,205],side:'r',row:2},
-  {id:'loin',  name:'Loin coupling',       val:86, unit:'%',opt:[80,100],mode:'high',node:[585,205],side:'r',row:3},
-  {id:'hip',   name:'Hip angle',           val:49, unit:'°',opt:[44,54],mode:'range',node:[628,240],side:'r',row:4},
-  {id:'stifle',name:'Stifle angle',        val:123,unit:'°',opt:[118,128],mode:'range',node:[628,322],side:'r',row:5},
-  {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',node:[665,392],side:'r',row:6},
-  {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],mode:'high', node:[655,500],side:'r',row:7}
+  // left column (fore-end + head) — node coords are in horse-space
+  {id:'poll',  name:'Head carriage',       val:3,  unit:'°',opt:[0,6],  mode:'low', node:[76,100], side:'l',row:0},
+  {id:'neck',  name:'Neck set',            val:63, unit:'°',opt:[55,70],mode:'range',node:[104,150],side:'l',row:1},
+  {id:'should',name:'Shoulder angle',      val:47, unit:'°',opt:[43,52],mode:'range',node:[138,178],side:'l',row:2},
+  {id:'girth', name:'Girth depth',         val:82, unit:'%',opt:[78,90],mode:'high', node:[150,198],side:'l',row:3},
+  {id:'humer', name:'Humerus angle',       val:58, unit:'°',opt:[52,62],mode:'range',node:[154,210],side:'l',row:4},
+  {id:'knee',  name:'Fore knee deviation', val:2,  unit:'°',opt:[0,4],  mode:'low', node:[143,255],side:'l',row:5},
+  {id:'fpast', name:'Fore pastern angle',  val:53, unit:'°',opt:[50,56],mode:'range',node:[140,290],side:'l',row:6},
+  {id:'fhoof', name:'Fore hoof balance',   val:88, unit:'%',opt:[82,96],mode:'high', node:[140,308],side:'l',row:7},
+  // right column (top-line + hind-end)
+  {id:'croup', name:'Croup slope',         val:27, unit:'°',opt:[22,33],mode:'range',node:[330,122],side:'r',row:0},
+  {id:'back',  name:'Back length ratio',   val:47, unit:'%',opt:[43,49],mode:'range',node:[250,116],side:'r',row:1},
+  {id:'with',  name:'Wither definition',   val:84, unit:'%',opt:[78,100],mode:'high',node:[176,122],side:'r',row:2},
+  {id:'loin',  name:'Loin coupling',       val:86, unit:'%',opt:[80,100],mode:'high',node:[298,120],side:'r',row:3},
+  {id:'hip',   name:'Hip angle',           val:49, unit:'°',opt:[44,54],mode:'range',node:[322,150],side:'r',row:4},
+  {id:'stifle',name:'Stifle angle',        val:123,unit:'°',opt:[118,128],mode:'range',node:[326,200],side:'r',row:5},
+  {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',node:[338,246],side:'r',row:6},
+  {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],mode:'high', node:[335,308],side:'r',row:7}
 ];
 var ROWS_Y=[44,111,178,245,312,379,446,513];
 var LX=8, RX=762, LABW=210;
@@ -268,7 +269,7 @@ function drawCallouts(){
   var g=$('#callouts'); while(g.firstChild)g.removeChild(g.firstChild);
   if($('#toggle-labels') && !$('#toggle-labels').checked) return;
   METRICS.forEach(function(m){
-    var nx=m.node[0], ny=m.node[1], rate=rateOf(m), col=RCOL[rate];
+    var nx=hx(m.node[0]), ny=hy(m.node[1]), rate=rateOf(m), col=RCOL[rate];
     var lx=m.side==='l'?LX:RX, ly=ROWS_Y[m.row], anchorX=m.side==='l'?lx+LABW:lx;
     g.appendChild(el('line',{x1:anchorX,y1:ly,x2:nx,y2:ny,stroke:col,'stroke-width':1.2,'stroke-opacity':.6}));
     g.appendChild(el('circle',{cx:anchorX,cy:ly,r:2.4,fill:col}));
