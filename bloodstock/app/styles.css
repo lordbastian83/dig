@@ -1220,10 +1220,10 @@ kbd {
 .bd-tile.bd-hot .bd-val { color: var(--gold-bright); }
 .bd-lab { font-size: .56rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .07em; }
 
-/* Bio-Metric horse figure inside the horse-profile modal */
-.mp-figure { display: flex; align-items: center; gap: 18px; margin: 12px 0 4px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: radial-gradient(120% 90% at 40% 30%, #0f1d33, #0a1120); flex-wrap: wrap; }
-.mp-horse { width: 240px; max-width: 60%; height: auto; flex: none; }
-.mp-figure-actions { display: flex; flex-direction: column; gap: 8px; }
-.mp-analyse { font-size: .82rem; font-weight: 600; color: #fff; background: var(--orange, #E9632B); border-radius: 5px; padding: 9px 13px; text-decoration: none; white-space: nowrap; transition: background .15s; }
+/* Bio-Metric analysis links inside the horse-profile modal */
+.mp-analyse-panel { margin: 12px 0 4px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--navy-2); }
+.mp-analyse-lab { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-muted); font-weight: 600; }
+.mp-figure-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.mp-analyse { font-size: .82rem; font-weight: 600; color: #fff; background: var(--orange, #E9632B); border-radius: 5px; padding: 10px 13px; text-decoration: none; text-align: center; transition: background .15s; }
 .mp-analyse:hover { background: var(--orange-2, #F0894A); }
-@media (max-width: 520px) { .mp-horse { max-width: 100%; width: 100%; } }
+@media (max-width: 520px) { .mp-figure-actions { grid-template-columns: 1fr; } }

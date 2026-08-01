@@ -50,9 +50,22 @@
   .card h2 .n{color:var(--orange);font-weight:700}
 
   /* diagram */
-  .diagram{position:relative;background:radial-gradient(120% 90% at 50% 30%,#0f1d33,#0a1120);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .diagram svg{position:relative;z-index:1;display:block;width:100%;height:auto}
-  .photo-under{position:absolute;inset:0;width:100%;height:100%;background-size:cover;background-position:center;display:none;z-index:0}
+  .stage{position:relative;aspect-ratio:3/2;width:100%;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#0b1626 center/cover no-repeat}
+  .stage-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;text-align:center;color:var(--muted);padding:22px}
+  .stage-empty svg{width:46px;height:46px;color:var(--orange)}
+  .stage-empty b{font-size:1.15rem;color:var(--cloud)}
+  .stage-empty small{max-width:360px;line-height:1.5}
+  .kp-layer{position:absolute;inset:0}
+  .kp{position:absolute;transform:translate(-50%,-50%);cursor:grab;touch-action:none;z-index:2}
+  .kp .dot{width:13px;height:13px;border-radius:50%;background:currentColor;border:2px solid #0a1120;box-shadow:0 0 0 3px rgba(8,14,26,.35),0 0 9px 2px currentColor}
+  .kp .lab{position:absolute;left:15px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:11px;font-weight:600;color:#e6ecf5;background:rgba(9,17,30,.86);border:1px solid currentColor;border-radius:4px;padding:2px 6px;pointer-events:none}
+  .kp .lab b{font-family:var(--mono);margin-left:5px}
+  .kp.right .lab{left:auto;right:15px}
+  .kp.dragging{cursor:grabbing}
+  .kp.dragging .dot{box-shadow:0 0 0 4px rgba(233,99,43,.3),0 0 12px 3px currentColor}
+  .stage-badge{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:8px;background:rgba(9,17,30,.82);border:1px solid var(--line);border-radius:8px;padding:6px 11px;z-index:3}
+  .stage-badge .bv{font-family:var(--mono);font-size:1.5rem;font-weight:700;line-height:1}
+  .stage-badge .bl{font-size:.56rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
   .diagram-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
   .btn{font-family:var(--sans);font-size:.8rem;font-weight:600;color:var(--cloud);background:#16233c;border:1px solid var(--line);border-radius:5px;padding:7px 11px;cursor:pointer;transition:.15s}
   .btn:hover{border-color:var(--orange);color:#fff}
@@ -129,25 +142,22 @@
     <!-- ===== diagram ===== -->
     <div class="card">
       <h2><span class="n">▸</span> Keypoint conformation map</h2>
-      <div class="diagram" id="diagram">
-        <div id="photo" class="photo-under" role="img" aria-label="uploaded horse photo"></div>
-        <svg id="svg" viewBox="0 0 980 560" aria-label="Horse conformation keypoint diagram">
-          <defs>
-            <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-              <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <g id="horse"></g>
-          <g id="callouts"></g>
-          <g id="scorebadge"></g>
-        </svg>
+      <div class="stage" id="stage">
+        <div class="stage-empty" id="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 17l5-4 4 3 3-3 6 5"/></svg>
+          <b>Add a horse photo</b>
+          <small>Then drag the 16 keypoints onto the horse to measure and score its conformation — objective analysis on your own image.</small>
+          <button class="btn orange" id="empty-btn">Choose photo</button>
+        </div>
+        <div class="kp-layer" id="kp-layer"></div>
+        <div class="stage-badge" id="stage-badge" hidden></div>
       </div>
       <div class="diagram-tools no-print">
-        <button class="btn" id="photo-btn">Add horse photo</button>
+        <button class="btn" id="photo-btn">Add / change photo</button>
         <input id="photo-input" type="file" accept="image/*" hidden>
         <button class="btn" id="photo-clear" hidden>Remove photo</button>
-        <label><input type="checkbox" id="toggle-wire" checked> Show wireframe</label>
-        <label><input type="checkbox" id="toggle-labels" checked> Show labels</label>
+        <label><input type="checkbox" id="toggle-labels" checked> Labels</label>
+        <button class="btn" id="reset-kp">Reset points</button>
       </div>
     </div>
 
@@ -209,53 +219,32 @@ var SVGNS='http://www.w3.org/2000/svg';
 var $=function(s){return document.querySelector(s)};
 function el(tag,attrs,text){var e=document.createElementNS(SVGNS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e;}
 
-/* ---- filled thoroughbred silhouette (side profile), drawn in "horse space"
-       (viewBox ~440×340) and scaled into the 980×560 diagram ---- */
-var SC2=1.5, TX2=200, TY2=-14;
-function hx(x){return x*SC2+TX2} function hy(y){return y*SC2+TY2}
-var HORSE_BODY='M 30 152 C 34 130 48 112 62 104 C 68 100 73 99 77 97 C 98 82 132 92 160 116 C 165 119 169 120 174 120 C 220 116 270 114 302 116 C 322 118 336 122 344 132 C 350 142 350 150 348 156 C 344 190 340 220 338 244 L 337 300 L 344 316 L 326 316 L 324 300 L 325 244 C 326 220 330 208 322 200 C 292 214 230 220 168 214 C 160 213 154 214 150 218 L 146 300 L 152 316 L 134 316 L 136 300 L 137 244 C 137 220 132 205 126 194 C 120 176 112 162 102 152 C 94 145 82 146 72 152 C 62 158 52 166 44 168 C 38 166 33 160 30 152 Z';
-function drawHorse(){
-  var g=$('#horse'); while(g.firstChild)g.removeChild(g.firstChild);
-  var wrap=el('g',{transform:'translate('+TX2+','+TY2+') scale('+SC2+')'});
-  wrap.appendChild(el('path',{d:'M344 132 C 372 160 372 236 348 270 C 362 226 356 174 334 152 Z',fill:'#0e1e36',stroke:'#E9632B','stroke-width':1.5}));
-  wrap.appendChild(el('path',{d:'M150 220 L164 316 L176 316 L166 218 Z',fill:'#0b1830'}));
-  wrap.appendChild(el('path',{d:'M322 205 L344 316 L356 316 L338 202 Z',fill:'#0b1830'}));
-  wrap.appendChild(el('path',{d:HORSE_BODY,fill:'#12233f',stroke:'#E9632B','stroke-width':1.7,'stroke-linejoin':'round','stroke-linecap':'round'}));
-  wrap.appendChild(el('path',{d:'M77 97 C 73 86 72 80 74 76 C 79 82 84 89 86 94 Z',fill:'#12233f',stroke:'#E9632B','stroke-width':1.5}));
-  wrap.appendChild(el('path',{d:'M87 94 C 85 84 85 78 88 75 C 92 81 96 88 97 92 Z',fill:'#12233f',stroke:'#E9632B','stroke-width':1.5}));
-  wrap.appendChild(el('circle',{cx:64,cy:112,r:2.4,fill:'#0a1120'}));
-  g.appendChild(wrap);
-}
-
 /* ---- 16-point biomechanical scoring. Each landmark has an optimal range;
-       the grade is derived from the measured value's deviation (expert, not manual). ---- */
+       the grade is derived from the measured value's deviation (expert, not manual).
+       px/py = the marker's position (%) on the uploaded photo (drag to align). ---- */
 var RCOL={OPTIMAL:'#25c07f',GOOD:'#8fd14f',FAIR:'#e7b93a',WATCH:'#e5484d'};
 var RPTS={OPTIMAL:100,GOOD:90,FAIR:72,WATCH:52};
 // mode: 'range' (band is best) · 'high' (higher is better) · 'low' (lower is better)
 var METRICS=[
-  // left column (fore-end + head) — node coords are in horse-space
-  {id:'poll',  name:'Head carriage',       val:3,  unit:'°',opt:[0,6],  mode:'low', node:[76,100], side:'l',row:0},
-  {id:'neck',  name:'Neck set',            val:63, unit:'°',opt:[55,70],mode:'range',node:[104,150],side:'l',row:1},
-  {id:'should',name:'Shoulder angle',      val:47, unit:'°',opt:[43,52],mode:'range',node:[138,178],side:'l',row:2},
-  {id:'girth', name:'Girth depth',         val:82, unit:'%',opt:[78,90],mode:'high', node:[150,198],side:'l',row:3},
-  {id:'humer', name:'Humerus angle',       val:58, unit:'°',opt:[52,62],mode:'range',node:[154,210],side:'l',row:4},
-  {id:'knee',  name:'Fore knee deviation', val:2,  unit:'°',opt:[0,4],  mode:'low', node:[143,255],side:'l',row:5},
-  {id:'fpast', name:'Fore pastern angle',  val:53, unit:'°',opt:[50,56],mode:'range',node:[140,290],side:'l',row:6},
-  {id:'fhoof', name:'Fore hoof balance',   val:88, unit:'%',opt:[82,96],mode:'high', node:[140,308],side:'l',row:7},
-  // right column (top-line + hind-end)
-  {id:'croup', name:'Croup slope',         val:27, unit:'°',opt:[22,33],mode:'range',node:[330,122],side:'r',row:0},
-  {id:'back',  name:'Back length ratio',   val:47, unit:'%',opt:[43,49],mode:'range',node:[250,116],side:'r',row:1},
-  {id:'with',  name:'Wither definition',   val:84, unit:'%',opt:[78,100],mode:'high',node:[176,122],side:'r',row:2},
-  {id:'loin',  name:'Loin coupling',       val:86, unit:'%',opt:[80,100],mode:'high',node:[298,120],side:'r',row:3},
-  {id:'hip',   name:'Hip angle',           val:49, unit:'°',opt:[44,54],mode:'range',node:[322,150],side:'r',row:4},
-  {id:'stifle',name:'Stifle angle',        val:123,unit:'°',opt:[118,128],mode:'range',node:[326,200],side:'r',row:5},
-  {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',node:[338,246],side:'r',row:6},
-  {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],mode:'high', node:[335,308],side:'r',row:7}
+  {id:'poll',  name:'Head carriage',       val:3,  unit:'°',opt:[0,6],   mode:'low',  px:22,py:24},
+  {id:'neck',  name:'Neck set',            val:63, unit:'°',opt:[55,70],  mode:'range',px:27,py:38},
+  {id:'should',name:'Shoulder angle',      val:47, unit:'°',opt:[43,52],  mode:'range',px:38,py:46},
+  {id:'girth', name:'Girth depth',         val:82, unit:'%',opt:[78,90],  mode:'high', px:40,py:56},
+  {id:'humer', name:'Humerus angle',       val:58, unit:'°',opt:[52,62],  mode:'range',px:42,py:60},
+  {id:'knee',  name:'Fore knee deviation', val:2,  unit:'°',opt:[0,4],    mode:'low',  px:40,py:74},
+  {id:'fpast', name:'Fore pastern angle',  val:53, unit:'°',opt:[50,56],  mode:'range',px:39,py:85},
+  {id:'fhoof', name:'Fore hoof balance',   val:88, unit:'%',opt:[82,96],  mode:'high', px:39,py:93},
+  {id:'with',  name:'Wither definition',   val:84, unit:'%',opt:[78,100], mode:'high', px:44,py:30},
+  {id:'back',  name:'Back length ratio',   val:47, unit:'%',opt:[43,49],  mode:'range',px:55,py:29},
+  {id:'loin',  name:'Loin coupling',       val:86, unit:'%',opt:[80,100], mode:'high', px:63,py:29},
+  {id:'croup', name:'Croup slope',         val:27, unit:'°',opt:[22,33],  mode:'range',px:72,py:28},
+  {id:'hip',   name:'Hip angle',           val:49, unit:'°',opt:[44,54],  mode:'range',px:72,py:40},
+  {id:'stifle',name:'Stifle angle',        val:123,unit:'°',opt:[118,128],mode:'range',px:71,py:56},
+  {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',px:76,py:74},
+  {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],  mode:'high', px:74,py:93}
 ];
-var ROWS_Y=[44,111,178,245,312,379,446,513];
-var LX=8, RX=762, LABW=210;
+var DEFAULT_POS=METRICS.map(function(m){return [m.px,m.py];});
 
-// derive grade from the value's position relative to its optimal range
 function rateOf(m){
   var v=+m.val||0, lo=m.opt[0], hi=m.opt[1];
   if(m.mode==='low'){ if(v<=hi) return v<=hi*0.5?'OPTIMAL':'GOOD'; return (v-hi)<=Math.max(hi,2)?'FAIR':'WATCH'; }
@@ -264,42 +253,52 @@ function rateOf(m){
   var d=v<lo?lo-v:v-hi, span=(hi-lo)||1; return d<=span*0.7?'FAIR':'WATCH';
 }
 function optLabel(m){ return m.mode==='low'?('≤'+m.opt[1]+m.unit):m.mode==='high'?('≥'+m.opt[0]+m.unit):(m.opt[0]+'–'+m.opt[1]+m.unit); }
-
-function drawCallouts(){
-  var g=$('#callouts'); while(g.firstChild)g.removeChild(g.firstChild);
-  if($('#toggle-labels') && !$('#toggle-labels').checked) return;
-  METRICS.forEach(function(m){
-    var nx=hx(m.node[0]), ny=hy(m.node[1]), rate=rateOf(m), col=RCOL[rate];
-    var lx=m.side==='l'?LX:RX, ly=ROWS_Y[m.row], anchorX=m.side==='l'?lx+LABW:lx;
-    g.appendChild(el('line',{x1:anchorX,y1:ly,x2:nx,y2:ny,stroke:col,'stroke-width':1.2,'stroke-opacity':.6}));
-    g.appendChild(el('circle',{cx:anchorX,cy:ly,r:2.4,fill:col}));
-    g.appendChild(el('circle',{cx:nx,cy:ny,r:7,fill:col,'fill-opacity':.22,filter:'url(#glow)'}));
-    g.appendChild(el('circle',{cx:nx,cy:ny,r:3.4,fill:col,stroke:'#0a1120','stroke-width':1.1}));
-    var chip=el('g',{});
-    chip.appendChild(el('rect',{x:lx,y:ly-17,width:LABW,height:34,rx:5,fill:'#0c1a30','fill-opacity':.94,stroke:col,'stroke-width':1}));
-    var tX=lx+11;
-    chip.appendChild(el('text',{x:tX,y:ly-3,fill:'#dbe6f5','font-size':12.5,'font-weight':600,'font-family':'Outfit, sans-serif'},m.name));
-    chip.appendChild(el('text',{x:tX,y:ly+12,fill:col,'font-size':11.5,'font-weight':700,'font-family':'JetBrains Mono, monospace'},(+m.val||0)+m.unit+'  ·  opt '+optLabel(m)));
-    g.appendChild(chip);
-  });
-}
-
-/* ---- score badge (top-centre of diagram) ---- */
 function scoreVal(){var s=0;METRICS.forEach(function(m){s+=RPTS[rateOf(m)]||72;});return Math.round(s/METRICS.length);}
 function bandOf(v){if(v>=90)return['ELITE','#25c07f'];if(v>=80)return['GOOD – ELITE','#25c07f'];if(v>=70)return['GOOD','#8fd14f'];if(v>=60)return['FAIR','#e7b93a'];return['WATCH','#e5484d'];}
-function ringSVG(v,size,stroke,cx,cy){
-  var r=(size-stroke)/2,c=2*Math.PI*r,col=bandOf(v)[1],off=c*(1-v/100),g=el('g',{});
-  g.appendChild(el('circle',{cx:cx,cy:cy,r:r,fill:'#0a1120',stroke:'#1c2a44','stroke-width':stroke}));
-  g.appendChild(el('circle',{cx:cx,cy:cy,r:r,fill:'none',stroke:col,'stroke-width':stroke,'stroke-linecap':'round','stroke-dasharray':c.toFixed(1),'stroke-dashoffset':off.toFixed(1),transform:'rotate(-90 '+cx+' '+cy+')'}));
-  return {g:g,col:col};
+
+/* ---- draggable keypoint markers over the uploaded photo ---- */
+var hasPhoto=false;
+function attachDrag(kp,m){
+  kp.addEventListener('pointerdown',function(ev){
+    ev.preventDefault(); kp.setPointerCapture(ev.pointerId); kp.classList.add('dragging');
+    var stage=$('#stage');
+    function move(e){
+      var r=stage.getBoundingClientRect();
+      var px=Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100));
+      var py=Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100));
+      m.px=px; m.py=py; kp.style.left=px+'%'; kp.style.top=py+'%'; kp.classList.toggle('right',px>62);
+    }
+    function up(){ kp.classList.remove('dragging'); try{kp.releasePointerCapture(ev.pointerId);}catch(x){}
+      kp.removeEventListener('pointermove',move); kp.removeEventListener('pointerup',up); }
+    kp.addEventListener('pointermove',move); kp.addEventListener('pointerup',up);
+  });
 }
-function drawBadge(){
-  var g=$('#scorebadge'); while(g.firstChild)g.removeChild(g.firstChild); var v=scoreVal(),b=bandOf(v);
-  var cx=490,cy=58,ring=ringSVG(v,84,8,cx,cy); g.appendChild(ring.g);
-  g.appendChild(el('text',{x:cx,y:cy+2,fill:ring.col,'font-size':26,'font-weight':700,'font-family':'JetBrains Mono, monospace','text-anchor':'middle'},v));
-  g.appendChild(el('text',{x:cx,y:cy+18,fill:'#8598b5','font-size':9,'text-anchor':'middle','font-family':'Outfit, sans-serif'},'/100'));
-  g.appendChild(el('text',{x:cx,y:cy+58,fill:ring.col,'font-size':11,'font-weight':700,'text-anchor':'middle','font-family':'Outfit, sans-serif','letter-spacing':'.5'},b[0]));
-  g.appendChild(el('text',{x:cx,y:16,fill:'#8598b5','font-size':10,'text-anchor':'middle','font-family':'Outfit, sans-serif','letter-spacing':'1.5'},'BIO-METRIC SCORE'));
+function drawMarkers(){
+  var layer=$('#kp-layer'); while(layer.firstChild)layer.removeChild(layer.firstChild);
+  if(!hasPhoto) return;
+  var showLab=$('#toggle-labels').checked;
+  METRICS.forEach(function(m){
+    var col=RCOL[rateOf(m)];
+    var kp=document.createElement('div'); kp.className='kp'+(m.px>62?' right':'');
+    kp.style.left=m.px+'%'; kp.style.top=m.py+'%'; kp.style.color=col;
+    var dot=document.createElement('div'); dot.className='dot'; kp.appendChild(dot);
+    if(showLab){
+      var lab=document.createElement('div'); lab.className='lab';
+      lab.appendChild(document.createTextNode(m.name));
+      var b=document.createElement('b'); b.textContent=(+m.val||0)+m.unit; lab.appendChild(b);
+      kp.appendChild(lab);
+    }
+    attachDrag(kp,m); layer.appendChild(kp);
+  });
+}
+function drawStageBadge(){
+  var host=$('#stage-badge'); while(host.firstChild)host.removeChild(host.firstChild);
+  var v=scoreVal(),b=bandOf(v);
+  var num=document.createElement('div'); num.className='bv'; num.textContent=v; num.style.color=b[1];
+  var wrap=document.createElement('div');
+  var l1=document.createElement('div'); l1.className='bl'; l1.textContent='Bio-Metric';
+  var l2=document.createElement('div'); l2.className='bl'; l2.textContent=b[0]; l2.style.color=b[1];
+  wrap.appendChild(l1); wrap.appendChild(l2); host.appendChild(num); host.appendChild(wrap);
 }
 
 /* ---- side score gauge (HTML/SVG) ---- */
@@ -337,24 +336,27 @@ function drawEditor(){
   });
 }
 
-/* ---- photo underlay ---- */
+/* ---- photo (the star of the map) — set as a CSS background on the stage ---- */
+function loadPhoto(f){
+  if(!f || !/^image\//.test(f.type)){ if(f) alert('Please choose an image file.'); return; }
+  $('#stage').style.backgroundImage='url("'+URL.createObjectURL(f)+'")';
+  hasPhoto=true; $('#empty').style.display='none'; $('#stage-badge').hidden=false;
+  $('#photo-clear').hidden=false; renderAll();
+}
 $('#photo-btn').addEventListener('click',function(){$('#photo-input').click();});
-$('#photo-input').addEventListener('change',function(ev){
-  var f=ev.target.files[0]; if(!f)return;
-  // Only accept image files; render as a plain <img> underlay (object URL, in-browser).
-  if(!/^image\//.test(f.type)){alert('Please choose an image file.');return;}
-  // Render the photo as a CSS background (object URL) — a style assignment, never an HTML/URL attribute sink.
-  var box=$('#photo'); box.style.backgroundImage='url("'+URL.createObjectURL(f)+'")'; box.style.display='block';
-  $('#photo-clear').hidden=false;
+$('#empty-btn').addEventListener('click',function(){$('#photo-input').click();});
+$('#photo-input').addEventListener('change',function(ev){ loadPhoto(ev.target.files[0]); });
+$('#photo-clear').addEventListener('click',function(){
+  $('#stage').style.backgroundImage=''; hasPhoto=false; $('#empty').style.display='';
+  $('#stage-badge').hidden=true; this.hidden=true; $('#photo-input').value=''; drawMarkers();
 });
-$('#photo-clear').addEventListener('click',function(){var box=$('#photo');box.style.display='none';box.style.backgroundImage='';this.hidden=true;$('#photo-input').value='';});
-$('#toggle-wire').addEventListener('change',function(){$('#horse').style.display=this.checked?'':'none';});
-$('#toggle-labels').addEventListener('change',drawCallouts);
+$('#toggle-labels').addEventListener('change',drawMarkers);
+$('#reset-kp').addEventListener('click',function(){ METRICS.forEach(function(m,i){m.px=DEFAULT_POS[i][0];m.py=DEFAULT_POS[i][1];}); drawMarkers(); });
 
-/* ---- persistence ---- */
+/* ---- persistence (values + marker positions) ---- */
 var FIELDS=['m-horse','m-type','m-sire','m-date'];
 $('#save').addEventListener('click',function(){
-  var o={metrics:{},fields:{}}; METRICS.forEach(function(m){o.metrics[m.id]=+m.val||0;});
+  var o={metrics:{},fields:{}}; METRICS.forEach(function(m){o.metrics[m.id]={v:+m.val||0,px:m.px,py:m.py};});
   FIELDS.forEach(function(f){o.fields[f]=$('#'+f).value;});
   var key='bmt-conf:'+(($('#m-horse').value||'report').trim());
   localStorage.setItem(key,JSON.stringify(o)); localStorage.setItem('bmt-conf:last',key);
@@ -363,13 +365,13 @@ $('#save').addEventListener('click',function(){
 $('#load').addEventListener('click',function(){
   var key=localStorage.getItem('bmt-conf:last'); if(!key){alert('No saved report yet.');return;}
   var o=JSON.parse(localStorage.getItem(key)||'null'); if(!o)return;
-  METRICS.forEach(function(m){if(o.metrics&&o.metrics[m.id]!=null)m.val=+o.metrics[m.id]||0;});
+  METRICS.forEach(function(m){var d=o.metrics&&o.metrics[m.id]; if(d!=null){ if(typeof d==='object'){m.val=+d.v||0; if(d.px!=null)m.px=+d.px; if(d.py!=null)m.py=+d.py;} else {m.val=+d||0;} }});
   if(o.fields)FIELDS.forEach(function(f){if(o.fields[f]!=null)$('#'+f).value=o.fields[f];});
   drawEditor(); renderAll();
 });
 $('#print').addEventListener('click',function(){window.print();});
 
-function renderAll(){drawCallouts();drawBadge();drawScorePanel();
+function renderAll(){drawMarkers(); if(hasPhoto)drawStageBadge(); drawScorePanel();
   document.querySelectorAll('#editor .met').forEach(function(row,i){
     var rate=rateOf(METRICS[i]), dot=row.querySelector('.nm i'), bad=row.querySelector('.rbadge');
     if(dot)dot.style.background=RCOL[rate];
@@ -378,7 +380,7 @@ function renderAll(){drawCallouts();drawBadge();drawScorePanel();
 }
 // prefill the subject from a ?h= link (e.g. opened from a horse profile)
 (function(){var m=/[?&]h=([^&]+)/.exec(location.search); if(m){var f=$('#m-horse'); if(f&&!f.value)f.value=decodeURIComponent(m[1]).slice(0,120);}})();
-drawHorse(); drawEditor(); renderAll();
+drawEditor(); renderAll();
 </script>
 </body>
 </html>
