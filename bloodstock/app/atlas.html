@@ -131,9 +131,8 @@ var COL={sk:'#3b82f6',soft:'#ef4444',hoof:'#22c55e'};
 
 /* original anatomical horse: body silhouette + skeleton line-art (drawn by Bio-Metric) */
 function drawHorse(svg){
-  // optional user base image behind the drawing
-  svg.appendChild(el('image',{id:svg.id+'-img',x:0,y:60,width:440,height:300,preserveAspectRatio:'xMidYMid slice',opacity:0}));
-  svg.appendChild(el('rect',{x:0,y:60,width:440,height:300,fill:'#f4f6fb'}));
+  // white backdrop rect — made transparent when a real photo is set behind the SVG
+  svg.appendChild(el('rect',{id:svg.id+'-bg',x:0,y:60,width:440,height:300,fill:'#f4f6fb'}));
   var body=el('path',{d:'M 30 152 C 34 130 48 112 62 104 C 68 100 73 99 77 97 C 98 82 132 92 160 116 C 165 119 169 120 174 120 C 220 116 270 114 302 116 C 322 118 336 122 344 132 C 350 142 350 150 348 156 C 344 190 340 220 338 244 L 337 300 L 344 316 L 326 316 L 324 300 L 325 244 C 326 220 330 208 322 200 C 292 214 230 220 168 214 C 160 213 154 214 150 218 L 146 300 L 152 316 L 134 316 L 136 300 L 137 244 C 137 220 132 205 126 194 C 120 176 112 162 102 152 C 94 145 82 146 72 152 C 62 158 52 166 44 168 C 38 166 33 160 30 152 Z',fill:'#e7ecf5',stroke:'#b9c5da','stroke-width':1.4,'stroke-linejoin':'round'});
   svg.appendChild(body);
   var sk=el('g',{id:svg.id+'-sk',fill:'none',stroke:'#9fb0cc','stroke-width':1.2,'stroke-linecap':'round','stroke-linejoin':'round','stroke-opacity':.95});
@@ -178,32 +177,36 @@ function drawMarkers(svg,all){
 function build(id,all){var svg=document.getElementById(id); while(svg.firstChild)svg.removeChild(svg.firstChild); drawHorse(svg); drawMarkers(svg,all);}
 build('svgA',false); build('svgB',true);
 
-// overlay the numbered markers on a real photo (uploaded file OR https URL)
-function setBase(href){
+// overlay the numbered markers on a real photo (uploaded file OR https URL).
+// the photo is a CSS background on the SVG's wrapper — never an href/HTML sink —
+// and the drawn schematic is hidden so only the real image shows behind the markers.
+function setBase(url){
+  var css=encodeURI(url).replace(/["'()]/g,encodeURIComponent);   // CSS-url() safe
   ['svgA','svgB'].forEach(function(id){
-    var img=document.getElementById(id+'-img');
-    if(img){ img.setAttributeNS('http://www.w3.org/1999/xlink','href',href); img.setAttribute('href',href); img.setAttribute('opacity','1'); }
-    var svg=document.getElementById(id);
+    var svg=document.getElementById(id), wrap=svg.parentNode;
+    wrap.style.backgroundImage='url("'+css+'")';
+    wrap.style.backgroundSize='contain'; wrap.style.backgroundRepeat='no-repeat'; wrap.style.backgroundPosition='center';
+    wrap.style.backgroundColor='#0b1626';
+    var bg=document.getElementById(id+'-bg'); if(bg)bg.setAttribute('fill-opacity','0');       // clear white backdrop
     var b=svg.querySelector('path[fill="#e7ecf5"]'); if(b)b.setAttribute('fill-opacity','0');   // hide drawn body
     var sk=document.getElementById(id+'-sk'); if(sk)sk.setAttribute('opacity','0');            // hide drawn skeleton
-    var bg=svg.querySelector('rect[fill="#f4f6fb"]'); if(bg)bg.setAttribute('fill','#0b1626');  // dark backdrop behind photo
   });
   document.getElementById('clearbase').hidden=false;
 }
 function clearBase(){
   ['svgA','svgB'].forEach(function(id){
-    var img=document.getElementById(id+'-img'); if(img)img.setAttribute('opacity','0');
-    var svg=document.getElementById(id);
+    var svg=document.getElementById(id), wrap=svg.parentNode;
+    wrap.style.backgroundImage=''; wrap.style.backgroundColor='';
+    var bg=document.getElementById(id+'-bg'); if(bg)bg.setAttribute('fill-opacity','1');
     var b=svg.querySelector('path[fill="#e7ecf5"]'); if(b)b.setAttribute('fill-opacity','1');
     var sk=document.getElementById(id+'-sk'); if(sk)sk.setAttribute('opacity','1');
-    var bg=svg.querySelector('rect'); if(bg)bg.setAttribute('fill','#f4f6fb');
   });
   document.getElementById('clearbase').hidden=true;
 }
 document.getElementById('apply').addEventListener('click',function(){
   var u=document.getElementById('imgurl').value.trim();
   if(!/^https:\/\//i.test(u)){alert('Please paste an https image URL, or use Upload photo.');return;}
-  setBase(encodeURI(u));
+  setBase(u);
 });
 document.getElementById('upload').addEventListener('click',function(){document.getElementById('file').click();});
 document.getElementById('file').addEventListener('change',function(ev){
