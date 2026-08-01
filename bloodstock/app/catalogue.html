@@ -46,7 +46,17 @@
   .count{font-size:.8rem;color:var(--muted);margin-left:auto}
 
   .catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
-  .lot{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:14px;display:flex;flex-direction:column;gap:8px}
+  .lot{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:14px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
+  .lot:hover{border-color:#39527a;transform:translateY(-2px)}
+  .lot .lthumb{position:relative;height:110px;margin:-14px -14px 2px;border-radius:9px 9px 0 0;overflow:hidden;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;background:radial-gradient(130% 150% at 80% 18%,#17294a 0%,#0d1930 58%,#0a1526 100%)}
+  .lot .lthumb .hsvg{height:88%;width:auto;fill:var(--sx);filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
+  .lot .lthumb{--sx:#9fb1cb}.lot .lthumb.C{--sx:#5aa0ef}.lot .lthumb.F{--sx:#f0894a}.lot .lthumb.G{--sx:#9fb1cb}
+  .lot .lthumb .tno{position:absolute;left:10px;top:10px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#fff;background:var(--orange);border-radius:5px;padding:2px 8px}
+  .lot .lthumb .tsex{position:absolute;right:10px;top:10px;font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:99px;color:#0a1526;background:var(--sx)}
+  .lot .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .lot .chip{font-size:.64rem;font-weight:600;letter-spacing:.02em;color:#cdd9ec;background:#16233c;border:1px solid var(--line);border-radius:99px;padding:2px 9px}
+  .lot .chip.hot{color:#ffd4bd;border-color:#7a3b23;background:#2a1710}
+  .lot .chip.elite{color:#bfe3ff;border-color:#274a6b;background:#102539}
   .lot .lhead{display:flex;align-items:baseline;gap:9px}
   .lot .lno{font-family:var(--mono);font-size:.72rem;font-weight:700;color:#fff;background:var(--orange);border-radius:4px;padding:2px 7px}
   .lot .lname{font-weight:700;font-size:1rem}
@@ -71,20 +81,7 @@
 
 <div class="band">
   <div class="band-in">
-    <svg class="logo" viewBox="0 0 168 130" aria-hidden="true">
-      <g fill="none" stroke="#E9632B" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
-        <polyline points="70,40 104,42 128,38 142,40"/><polyline points="34,15 30,24 10,46 26,48 35,41 50,27 70,40"/>
-        <polyline points="30,24 50,27"/><polyline points="35,41 60,46 66,74"/><polyline points="60,46 64,52 70,40"/>
-        <polyline points="66,74 104,82 128,70"/><polyline points="128,38 140,60 128,70"/><polyline points="142,40 152,78 140,60"/>
-        <polyline points="64,52 66,74 64,93 63,109 62,120"/><polyline points="128,70 134,95 133,111 132,121"/>
-      </g>
-      <g fill="#E9632B">
-        <circle cx="34" cy="15" r="3"/><circle cx="10" cy="46" r="3"/><circle cx="50" cy="27" r="3"/><circle cx="70" cy="40" r="3.2"/>
-        <circle cx="104" cy="42" r="3"/><circle cx="128" cy="38" r="3"/><circle cx="142" cy="40" r="3"/><circle cx="152" cy="78" r="3"/>
-        <circle cx="140" cy="60" r="3"/><circle cx="66" cy="74" r="3"/><circle cx="104" cy="82" r="3"/><circle cx="128" cy="70" r="3.2"/>
-        <circle cx="62" cy="120" r="3"/><circle cx="132" cy="121" r="3"/><circle cx="60" cy="46" r="2.6"/><circle cx="64" cy="93" r="2.6"/><circle cx="134" cy="95" r="2.6"/>
-      </g>
-    </svg>
+    <svg class="logo" viewBox="-6 -8 172 147" aria-hidden="true"><path d="M 116.2 131.1 L 110.6 131.1 L 109.5 130.0 L 108.7 126.1 L 107.0 124.4 L 105.4 103.5 L 103.1 109.8 L 103.1 121.0 L 104.4 124.0 L 108.2 128.7 L 105.0 129.8 L 101.1 129.8 L 100.1 128.7 L 99.6 124.9 L 97.9 123.1 L 100.5 87.8 L 100.1 78.3 L 99.4 77.6 L 70.5 75.9 L 62.7 73.7 L 50.7 68.1 L 47.9 70.5 L 44.0 78.7 L 41.0 88.2 L 39.2 98.1 L 39.2 107.6 L 41.0 112.8 L 43.6 118.8 L 50.0 126.1 L 48.5 127.7 L 43.3 127.2 L 41.8 125.7 L 40.5 121.8 L 37.1 118.8 L 34.5 101.1 L 30.6 92.9 L 30.6 89.5 L 31.9 85.6 L 31.3 84.5 L 24.6 91.2 L 18.5 102.4 L 17.3 110.2 L 17.3 119.2 L 22.9 126.1 L 24.2 129.6 L 21.3 130.7 L 17.0 129.8 L 14.7 127.4 L 14.7 123.6 L 11.2 121.8 L 11.2 119.7 L 13.4 111.5 L 13.8 91.2 L 19.4 83.9 L 21.6 78.3 L 21.1 73.1 L 16.8 60.2 L 16.0 54.1 L 16.4 47.7 L 19.8 41.2 L 19.8 39.9 L 18.8 39.7 L 17.3 41.6 L 14.7 48.9 L 13.4 86.9 L 9.5 101.6 L 7.5 103.5 L 7.1 102.2 L 6.3 104.8 L 4.7 103.7 L 4.1 99.2 L 3.5 102.0 L 2.6 101.6 L 2.6 95.1 L 1.5 97.9 L 0.0 90.8 L 0.0 58.0 L 1.7 47.7 L 4.7 40.8 L 9.3 36.7 L 13.6 34.9 L 25.2 34.1 L 36.0 31.5 L 47.2 31.5 L 61.5 34.9 L 70.5 36.2 L 79.6 36.2 L 91.2 34.5 L 99.8 30.6 L 110.0 17.9 L 115.8 12.1 L 120.1 9.1 L 127.4 5.6 L 138.7 4.3 L 143.4 0.0 L 143.4 4.3 L 146.8 0.0 L 146.6 4.5 L 145.3 6.7 L 150.1 11.9 L 152.2 18.8 L 159.6 31.7 L 160.0 34.3 L 156.3 39.7 L 153.3 39.7 L 152.0 40.5 L 150.5 39.5 L 147.5 33.9 L 144.3 31.1 L 133.5 26.7 L 132.4 28.7 L 128.5 44.2 L 125.9 49.8 L 123.8 69.2 L 118.6 76.5 L 113.9 92.5 L 113.0 99.4 L 110.0 110.2 L 110.0 119.7 L 111.3 123.1 L 117.7 128.7 L 117.7 130.5 L 116.2 131.1 Z" fill="#E9632B"/></svg>
     <div class="lock"><b>Bio-Metric</b><span>Thoroughbreds</span></div>
     <div class="tag">Precision in Pedigree. <em>Performance in Mind.</em></div>
     <nav class="band-nav">
@@ -111,17 +108,12 @@
     <span class="count" id="count"></span>
   </div>
 
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="horse" viewBox="-6 -8 172 147"><path d="M 116.2 131.1 L 110.6 131.1 L 109.5 130.0 L 108.7 126.1 L 107.0 124.4 L 105.4 103.5 L 103.1 109.8 L 103.1 121.0 L 104.4 124.0 L 108.2 128.7 L 105.0 129.8 L 101.1 129.8 L 100.1 128.7 L 99.6 124.9 L 97.9 123.1 L 100.5 87.8 L 100.1 78.3 L 99.4 77.6 L 70.5 75.9 L 62.7 73.7 L 50.7 68.1 L 47.9 70.5 L 44.0 78.7 L 41.0 88.2 L 39.2 98.1 L 39.2 107.6 L 41.0 112.8 L 43.6 118.8 L 50.0 126.1 L 48.5 127.7 L 43.3 127.2 L 41.8 125.7 L 40.5 121.8 L 37.1 118.8 L 34.5 101.1 L 30.6 92.9 L 30.6 89.5 L 31.9 85.6 L 31.3 84.5 L 24.6 91.2 L 18.5 102.4 L 17.3 110.2 L 17.3 119.2 L 22.9 126.1 L 24.2 129.6 L 21.3 130.7 L 17.0 129.8 L 14.7 127.4 L 14.7 123.6 L 11.2 121.8 L 11.2 119.7 L 13.4 111.5 L 13.8 91.2 L 19.4 83.9 L 21.6 78.3 L 21.1 73.1 L 16.8 60.2 L 16.0 54.1 L 16.4 47.7 L 19.8 41.2 L 19.8 39.9 L 18.8 39.7 L 17.3 41.6 L 14.7 48.9 L 13.4 86.9 L 9.5 101.6 L 7.5 103.5 L 7.1 102.2 L 6.3 104.8 L 4.7 103.7 L 4.1 99.2 L 3.5 102.0 L 2.6 101.6 L 2.6 95.1 L 1.5 97.9 L 0.0 90.8 L 0.0 58.0 L 1.7 47.7 L 4.7 40.8 L 9.3 36.7 L 13.6 34.9 L 25.2 34.1 L 36.0 31.5 L 47.2 31.5 L 61.5 34.9 L 70.5 36.2 L 79.6 36.2 L 91.2 34.5 L 99.8 30.6 L 110.0 17.9 L 115.8 12.1 L 120.1 9.1 L 127.4 5.6 L 138.7 4.3 L 143.4 0.0 L 143.4 4.3 L 146.8 0.0 L 146.6 4.5 L 145.3 6.7 L 150.1 11.9 L 152.2 18.8 L 159.6 31.7 L 160.0 34.3 L 156.3 39.7 L 153.3 39.7 L 152.0 40.5 L 150.5 39.5 L 147.5 33.9 L 144.3 31.1 L 133.5 26.7 L 132.4 28.7 L 128.5 44.2 L 125.9 49.8 L 123.8 69.2 L 118.6 76.5 L 113.9 92.5 L 113.0 99.4 L 110.0 110.2 L 110.0 119.7 L 111.3 123.1 L 117.7 128.7 L 117.7 130.5 L 116.2 131.1 Z"/></symbol></defs></svg>
   <div class="catgrid" id="grid"></div>
   <div class="empty" id="empty" hidden>No lots match your search.</div>
 
   <div class="footer-band">
-    <svg class="logo" viewBox="0 0 168 130" style="height:38px" aria-hidden="true">
-      <g fill="none" stroke="#E9632B" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
-        <polyline points="70,40 104,42 128,38 142,40"/><polyline points="34,15 30,24 10,46 26,48 35,41 50,27 70,40"/>
-        <polyline points="30,24 50,27"/><polyline points="35,41 60,46 66,74"/><polyline points="60,46 64,52 70,40"/>
-        <polyline points="66,74 104,82 128,70"/><polyline points="128,38 140,60 128,70"/><polyline points="142,40 152,78 140,60"/>
-        <polyline points="64,52 66,74 64,93 63,109 62,120"/><polyline points="128,70 134,95 133,111 132,121"/>
-      </g></svg>
+    <svg class="logo" viewBox="-6 -8 172 147" aria-hidden="true" style="height:38px"><path d="M 116.2 131.1 L 110.6 131.1 L 109.5 130.0 L 108.7 126.1 L 107.0 124.4 L 105.4 103.5 L 103.1 109.8 L 103.1 121.0 L 104.4 124.0 L 108.2 128.7 L 105.0 129.8 L 101.1 129.8 L 100.1 128.7 L 99.6 124.9 L 97.9 123.1 L 100.5 87.8 L 100.1 78.3 L 99.4 77.6 L 70.5 75.9 L 62.7 73.7 L 50.7 68.1 L 47.9 70.5 L 44.0 78.7 L 41.0 88.2 L 39.2 98.1 L 39.2 107.6 L 41.0 112.8 L 43.6 118.8 L 50.0 126.1 L 48.5 127.7 L 43.3 127.2 L 41.8 125.7 L 40.5 121.8 L 37.1 118.8 L 34.5 101.1 L 30.6 92.9 L 30.6 89.5 L 31.9 85.6 L 31.3 84.5 L 24.6 91.2 L 18.5 102.4 L 17.3 110.2 L 17.3 119.2 L 22.9 126.1 L 24.2 129.6 L 21.3 130.7 L 17.0 129.8 L 14.7 127.4 L 14.7 123.6 L 11.2 121.8 L 11.2 119.7 L 13.4 111.5 L 13.8 91.2 L 19.4 83.9 L 21.6 78.3 L 21.1 73.1 L 16.8 60.2 L 16.0 54.1 L 16.4 47.7 L 19.8 41.2 L 19.8 39.9 L 18.8 39.7 L 17.3 41.6 L 14.7 48.9 L 13.4 86.9 L 9.5 101.6 L 7.5 103.5 L 7.1 102.2 L 6.3 104.8 L 4.7 103.7 L 4.1 99.2 L 3.5 102.0 L 2.6 101.6 L 2.6 95.1 L 1.5 97.9 L 0.0 90.8 L 0.0 58.0 L 1.7 47.7 L 4.7 40.8 L 9.3 36.7 L 13.6 34.9 L 25.2 34.1 L 36.0 31.5 L 47.2 31.5 L 61.5 34.9 L 70.5 36.2 L 79.6 36.2 L 91.2 34.5 L 99.8 30.6 L 110.0 17.9 L 115.8 12.1 L 120.1 9.1 L 127.4 5.6 L 138.7 4.3 L 143.4 0.0 L 143.4 4.3 L 146.8 0.0 L 146.6 4.5 L 145.3 6.7 L 150.1 11.9 L 152.2 18.8 L 159.6 31.7 L 160.0 34.3 L 156.3 39.7 L 153.3 39.7 L 152.0 40.5 L 150.5 39.5 L 147.5 33.9 L 144.3 31.1 L 133.5 26.7 L 132.4 28.7 L 128.5 44.2 L 125.9 49.8 L 123.8 69.2 L 118.6 76.5 L 113.9 92.5 L 113.0 99.4 L 110.0 110.2 L 110.0 119.7 L 111.3 123.1 L 117.7 128.7 L 117.7 130.5 L 116.2 131.1 Z" fill="#E9632B"/></svg>
     <div class="tagbig">Real horses. <span class="o">Real insight.</span></div>
     <div class="contact">bio-metricthoroughbreds.ai · Newmarket, Suffolk, United Kingdom</div>
   </div>
@@ -135,13 +127,36 @@ var LOTS=[], view=[];
 function txt(p,t,cls){var e=document.createElement(p);if(cls)e.className=cls;if(t!=null)e.textContent=t;return e;}
 function q(v){return encodeURIComponent(v||'');}
 
+var COLOURS={B:'Bay',Ch:'Chestnut',Gr:'Grey',Br:'Brown',Bl:'Black',Ro:'Roan','B/Gr':'Bay/Grey','B/Br':'Bay/Brown','Ch/Gr':'Chestnut/Grey','Gr/Ro':'Grey/Roan'};
+var SEXLONG={C:'Colt',F:'Filly',G:'Gelding'};
+var MONTHS=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var ELITE=['Frankel','Galileo','Dubawi','Sea The Stars','Kingman','Wootton Bassett','Kodiac','No Nay Never','Dark Angel','Night Of Thunder','Acclamation','Showcasing','Oasis Dream','Invincible Spirit','Justify','Lope De Vega','Camelot','Siyouni','Zoustar','Havana Grey','Blue Point','Too Darn Hot','Mehmas'];
+function features(l){
+  var c=[];
+  if(SEXLONG[l.sex]) c.push({t:SEXLONG[l.sex]});
+  if(COLOURS[l.colour]) c.push({t:COLOURS[l.colour]});
+  if(l.foaled){ var m=+l.foaled.slice(5,7); if(m){ c.push({t:MONTHS[m]+' foal', hot:(m<=2)}); } }
+  var hay=((l.sire||'')+' '+(l.grandsire||'')+' '+(l.damsire||'')).toLowerCase();
+  var hit=ELITE.find(function(e){return hay.indexOf(e.toLowerCase())>=0;});
+  if(hit) c.push({t:hit+' line', elite:true});
+  return c;
+}
 function card(l){
   var lot=document.createElement('div'); lot.className='lot';
+  // thumbnail: horse silhouette on a tinted panel (sex-coloured) with lot no + sex tag
+  var th=document.createElement('div'); th.className='lthumb '+(l.sex||'');
+  th.innerHTML='<svg class="hsvg" viewBox="-6 -8 172 147" aria-hidden="true"><use href="#horse"/></svg>'
+    +'<span class="tno">Lot '+(l.lot||'—')+'</span>'
+    +(SEXLONG[l.sex]?'<span class="tsex">'+SEXLONG[l.sex]+'</span>':'');
+  lot.appendChild(th);
   var head=document.createElement('div'); head.className='lhead';
-  head.appendChild(txt('span',(l.lot||'—'),'lno'));
   var nm=txt('span',l.name,'lname'); head.appendChild(nm);
   lot.appendChild(head);
-  var sub=txt('div',[l.sex,l.colour,l.foaled?('foaled '+l.foaled):''].filter(Boolean).join(' · '),'lsub'); lot.appendChild(sub);
+  var sub=txt('div',[l.colour&&COLOURS[l.colour]||l.colour,l.foaled?('foaled '+l.foaled):''].filter(Boolean).join(' · '),'lsub'); lot.appendChild(sub);
+  var feats=features(l);
+  if(feats.length){ var ch=document.createElement('div'); ch.className='chips';
+    feats.forEach(function(f){ ch.appendChild(txt('span',f.t,'chip'+(f.hot?' hot':'')+(f.elite?' elite':''))); });
+    lot.appendChild(ch); }
   var ped=document.createElement('div'); ped.className='lped';
   function line(k,v){ if(!v)return; var d=document.createElement('div'); d.appendChild(txt('span',k,'k')); var b=txt('b',v); d.appendChild(b); ped.appendChild(d); }
   line('Sire',l.sire); line('Dam',l.dam); line('Grandsire',l.grandsire); line('Damsire',l.damsire);
