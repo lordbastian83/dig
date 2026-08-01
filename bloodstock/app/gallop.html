@@ -102,6 +102,7 @@
   .timeline div{display:flex;align-items:center;justify-content:center;font-size:.56rem;font-weight:600;color:#08101f}
   .tl-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.62rem;color:var(--muted)}
   .tl-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+  .jointmap{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:8px;background:radial-gradient(120% 90% at 50% 35%,#0f1d33,#0a1120)}
 
   .meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
   .meta-grid label{display:flex;flex-direction:column;gap:3px;font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
@@ -246,6 +247,8 @@
         <h3 style="font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 4px">Stride timeline — one stride cycle</h3>
         <div class="timeline" id="timeline"></div>
         <div class="tl-legend" id="tl-legend"></div>
+        <h3 style="font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 6px">Joint angle map (peak)</h3>
+        <svg id="joint-svg" class="jointmap" viewBox="150 150 625 396" aria-label="Peak joint angles mapped on the horse"></svg>
       </div>
     </div>
 
@@ -454,15 +457,52 @@ $('#load').addEventListener('click',function(){
 $('#print').addEventListener('click',function(){ window.print(); });
 $('#reset').addEventListener('click',function(){ if(confirm('Reset all fields?')) location.reload(); });
 
+/* ---------- joint-angle horse map ---------- */
+var SVGNS='http://www.w3.org/2000/svg';
+function svgEl(t,a,x){var e=document.createElementNS(SVGNS,t);for(var k in a)e.setAttribute(k,a[k]);if(x!=null)e.textContent=x;return e;}
+var OUTLINE=[[170,232],[215,195],[238,172],[300,196],[405,205],[520,202],[628,192],[672,205],[700,300],[712,392],
+  [686,300],[662,262],[655,330],[672,392],[668,452],[664,486],[662,504],[636,504],[640,452],[648,392],[628,322],
+  [560,352],[470,372],[402,352],[408,420],[404,460],[400,486],[398,504],[372,504],[376,452],[380,392],[388,352],
+  [360,300],[250,282],[205,268]];
+// joint id → node on the silhouette + a label offset (dx,dy) for the angle chip
+var JOINTS=[
+  {id:'j-sh', name:'Shoulder',node:[372,285],dx:-6,dy:-30},
+  {id:'j-hip',name:'Hip',     node:[628,240],dx:10,dy:-26},
+  {id:'j-st', name:'Stifle',  node:[628,322],dx:14,dy:6},
+  {id:'j-ho', name:'Hock',    node:[668,392],dx:16,dy:8},
+  {id:'j-fe', name:'Fetlock', node:[399,478],dx:-14,dy:18}
+];
+function drawJointMap(){
+  var svg=$('#joint-svg'); if(!svg)return; while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var defs=svgEl('defs',{}); var f=svgEl('filter',{id:'jglow',x:'-50%',y:'-50%',width:'200%',height:'200%'});
+  f.appendChild(svgEl('feGaussianBlur',{stdDeviation:'3.4',result:'b'}));
+  var m=svgEl('feMerge',{}); m.appendChild(svgEl('feMergeNode',{in:'b'})); m.appendChild(svgEl('feMergeNode',{in:'SourceGraphic'})); f.appendChild(m);
+  defs.appendChild(f); svg.appendChild(defs);
+  [[[396,360],[418,504]],[[652,332],[696,504]]].forEach(function(L){
+    svg.appendChild(svgEl('line',{x1:L[0][0],y1:L[0][1],x2:L[1][0],y2:L[1][1],stroke:'#8a3a1e','stroke-width':7,'stroke-linecap':'round','stroke-opacity':.5}));
+  });
+  svg.appendChild(svgEl('polygon',{points:OUTLINE.map(function(p){return p[0]+','+p[1];}).join(' '),fill:'#0f2138',stroke:'#E9632B','stroke-width':2.2,'stroke-linejoin':'round'}));
+  svg.appendChild(svgEl('polygon',{points:'238,172 232,150 251,164',fill:'#0f2138',stroke:'#E9632B','stroke-width':2,'stroke-linejoin':'round'}));
+  svg.appendChild(svgEl('circle',{cx:223,cy:209,r:3.2,fill:'#0a1120'}));
+  JOINTS.forEach(function(j){
+    var nx=j.node[0], ny=j.node[1], ang=Math.round(+($('#'+j.id).value)||0);
+    svg.appendChild(svgEl('circle',{cx:nx,cy:ny,r:8,fill:'#E9632B','fill-opacity':.22,filter:'url(#jglow)'}));
+    svg.appendChild(svgEl('circle',{cx:nx,cy:ny,r:4,fill:'#F0894A',stroke:'#0a1120','stroke-width':1.2}));
+    var tx=nx+j.dx, ty=ny+j.dy, anchor=j.dx<0?'end':'start';
+    svg.appendChild(svgEl('text',{x:tx,y:ty,fill:'#dbe6f5','font-size':13,'font-weight':600,'font-family':'Outfit, sans-serif','text-anchor':anchor},j.name));
+    svg.appendChild(svgEl('text',{x:tx,y:ty+15,fill:'#F0894A','font-size':13,'font-weight':700,'font-family':'JetBrains Mono, monospace','text-anchor':anchor},ang+'°'));
+  });
+}
+
 /* ---------- wire live inputs ---------- */
 ['s-freq','s-len','s-susp','s-stance','j-sh','j-hip','j-st','j-ho','j-fe'].forEach(function(id){
-  $('#'+id).addEventListener('input',renderReadout);
+  $('#'+id).addEventListener('input',function(){ renderReadout(); drawJointMap(); });
 });
 ['sym-fore','sym-hind','sym-pel'].forEach(function(id){
   $('#'+id).addEventListener('input',function(){ renderSymmetry(); renderReadout(); });
 });
 
-function renderAll(){ renderRings(); renderOverall(); renderTimeline(); renderSymmetry(); renderReadout(); }
+function renderAll(){ renderRings(); renderOverall(); renderTimeline(); renderSymmetry(); renderReadout(); drawJointMap(); }
 function stamp(){ var d=$('#m-date').value; $('#stamp').textContent = d? ' · '+d : ''; }
 $('#m-date').addEventListener('input',stamp);
 renderAll(); stamp();

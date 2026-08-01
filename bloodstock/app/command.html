@@ -39,6 +39,8 @@
   h1.title{font-size:2.3rem;line-height:1.02;font-weight:800;margin:.5rem 0 .2rem;letter-spacing:-.02em}
   h1.title .o{color:var(--orange)}
   .sub{color:var(--muted);font-size:.98rem;max-width:680px}
+  .hero-wm{position:absolute;right:6px;top:2px;height:120px;opacity:.13;pointer-events:none}
+  @media(max-width:680px){.hero-wm{display:none}}
 
   .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:18px}
   @media(max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}}
@@ -122,7 +124,11 @@
 </div>
 
 <div class="wrap">
-  <div class="hero">
+  <div class="hero" style="position:relative">
+    <svg class="hero-wm" viewBox="150 148 625 404" aria-hidden="true">
+      <polygon points="170,232 215,195 238,172 300,196 405,205 520,202 628,192 672,205 700,300 712,392 686,300 662,262 655,330 672,392 668,452 664,486 662,504 636,504 640,452 648,392 628,322 560,352 470,372 402,352 408,420 404,460 400,486 398,504 372,504 376,452 380,392 388,352 360,300 250,282 205,268" fill="none" stroke="#E9632B" stroke-width="3" stroke-linejoin="round"/>
+      <polygon points="238,172 232,150 251,164" fill="none" stroke="#E9632B" stroke-width="3" stroke-linejoin="round"/>
+    </svg>
     <span class="kicker">AI &amp; Technology Series</span>
     <h1 class="title">AI Horse Trading <span class="o">Command Centre</span></h1>
     <p class="sub">Real-time intelligence across the trading lifecycle — pedigree, biomechanics, performance and
