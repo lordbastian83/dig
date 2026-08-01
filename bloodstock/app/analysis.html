@@ -316,8 +316,10 @@ function drawEditor(){
     m.val=+m.val||0; if(RATINGS.indexOf(m.rate)<0)m.rate='GOOD';   // sanitize any loaded values before they reach innerHTML
     var row=document.createElement('div'); row.className='met';
     var opts=RATINGS.map(function(r){return '<option'+(r===m.rate?' selected':'')+'>'+r+'</option>';}).join('');
-    row.innerHTML='<span class="nm"><i style="background:'+(RCOL[m.rate])+'"></i>'+m.name+'</span>'+
-      '<input type="number" value="'+m.val+'" data-id="'+m.id+'">'+
+    // Build with only static text + a Number-coerced score; the rating colour is
+    // applied via .style after render (renderAll), never interpolated into HTML.
+    row.innerHTML='<span class="nm"><i></i>'+m.name+'</span>'+
+      '<input type="number" value="'+(+m.val||0)+'" data-id="'+m.id+'">'+
       '<select data-id="'+m.id+'">'+opts+'</select>';
     row.querySelector('input').addEventListener('input',function(ev){m.val=+ev.target.value||0;renderAll();});
     row.querySelector('select').addEventListener('change',function(ev){m.rate=ev.target.value;renderAll();});
