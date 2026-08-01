@@ -53,6 +53,13 @@
   .lot .lthumb{--sx:#9fb1cb}.lot .lthumb.C{--sx:#5aa0ef}.lot .lthumb.F{--sx:#f0894a}.lot .lthumb.G{--sx:#9fb1cb}
   .lot .lthumb .tno{position:absolute;left:10px;top:10px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#fff;background:var(--orange);border-radius:5px;padding:2px 8px}
   .lot .lthumb .tsex{position:absolute;right:10px;top:10px;font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:99px;color:#0a1526;background:var(--sx)}
+  .lot .lscore{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:'v bar band' 'v lab lab';align-items:center;column-gap:9px;row-gap:2px;margin:2px 0}
+  .lot .lscore .bmv{grid-area:v;font-family:var(--mono);font-size:1.5rem;font-weight:800;line-height:1;color:var(--sc)}
+  .lot .lscore .bmbar{grid-area:bar;height:6px;background:#182640;border-radius:99px;overflow:hidden}
+  .lot .lscore .bmbar i{display:block;height:100%;background:var(--sc);border-radius:99px}
+  .lot .lscore .bmlab{grid-area:lab;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .lot .lscore .bmband{grid-area:band;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#0a1526;background:var(--sc);padding:2px 8px;border-radius:99px}
+  .lot .lscore.elite{--sc:#e9632b}.lot .lscore.strong{--sc:#38a3f5}.lot .lscore.solid{--sc:#25c07f}.lot .lscore.watch{--sc:#e7b93a}
   .lot .chips{display:flex;flex-wrap:wrap;gap:5px}
   .lot .chip{font-size:.64rem;font-weight:600;letter-spacing:.02em;color:#cdd9ec;background:#16233c;border:1px solid var(--line);border-radius:99px;padding:2px 9px}
   .lot .chip.hot{color:#ffd4bd;border-color:#7a3b23;background:#2a1710}
@@ -104,7 +111,7 @@
   <div class="controls">
     <input type="search" id="q" placeholder="Search name, sire, dam, damsire or consignor…" autocomplete="off">
     <select id="sex"><option value="">All sexes</option><option value="C">Colts</option><option value="F">Fillies</option><option value="G">Geldings</option></select>
-    <select id="sort"><option value="lot">By lot</option><option value="name">By name</option><option value="sire">By sire</option></select>
+    <select id="sort"><option value="lot">By lot</option><option value="bm">By Bio-Metric ▼</option><option value="name">By name</option><option value="sire">By sire</option></select>
     <span class="count" id="count"></span>
   </div>
 
@@ -130,7 +137,23 @@ function q(v){return encodeURIComponent(v||'');}
 var COLOURS={B:'Bay',Ch:'Chestnut',Gr:'Grey',Br:'Brown',Bl:'Black',Ro:'Roan','B/Gr':'Bay/Grey','B/Br':'Bay/Brown','Ch/Gr':'Chestnut/Grey','Gr/Ro':'Grey/Roan'};
 var SEXLONG={C:'Colt',F:'Filly',G:'Gelding'};
 var MONTHS=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-var ELITE=['Frankel','Galileo','Dubawi','Sea The Stars','Kingman','Wootton Bassett','Kodiac','No Nay Never','Dark Angel','Night Of Thunder','Acclamation','Showcasing','Oasis Dream','Invincible Spirit','Justify','Lope De Vega','Camelot','Siyouni','Zoustar','Havana Grey','Blue Point','Too Darn Hot','Mehmas'];
+// Sire / broodmare-sire tiers (real, curated). A = proven elite, B = strong commercial.
+var TIER_A=['Frankel','Galileo','Dubawi','Sea The Stars','Kingman','Wootton Bassett','No Nay Never','Night Of Thunder','Too Darn Hot','Blue Point','Kodiac','Dark Angel','Havana Grey','Justify','Siyouni','Lope De Vega','Invincible Spirit','New Bay'];
+var TIER_B=['Mehmas','Showcasing','Acclamation','Oasis Dream','Zoustar','Harry Angel','Soldier’s Call','Soldier\'s Call','Dragon Symbol','Cable Bay','Persian Force','Bated Breath','Ardad','Inns Of Court','Sergei Prokofiev','Shaquille','Space Blues','Supremacy','Ten Sovereigns','Sioux Nation','Cotai Glory','Territories','Kodi Bear','Starspangledbanner'];
+function tier(name){ if(!name)return 0; var n=name.toLowerCase();
+  if(TIER_A.some(function(e){return n.indexOf(e.toLowerCase())>=0;})) return 2;
+  if(TIER_B.some(function(e){return n.indexOf(e.toLowerCase())>=0;})) return 1; return 0; }
+var ELITE=TIER_A;
+// Deterministic pedigree index 0-100 from sire tier, broodmare-sire tier, grandsire and foaling date.
+function bioScore(l){
+  var s=52, ts=tier(l.sire), tds=tier(l.damsire), tgs=tier(l.grandsire);
+  s += [0,12,20][ts];
+  s += [0,7,12][tds];
+  s += [0,3,6][tgs];
+  if(l.foaled){ var m=+l.foaled.slice(5,7); if(m<=2)s+=6; else if(m===3)s+=3; else if(m>=6)s-=3; }
+  return Math.max(42,Math.min(96,Math.round(s)));
+}
+function bioBand(v){ return v>=85?{k:'elite',t:'Elite'}:v>=74?{k:'strong',t:'Strong'}:v>=62?{k:'solid',t:'Solid'}:{k:'watch',t:'Watch'}; }
 function features(l){
   var c=[];
   if(SEXLONG[l.sex]) c.push({t:SEXLONG[l.sex]});
@@ -153,6 +176,14 @@ function card(l){
   var nm=txt('span',l.name,'lname'); head.appendChild(nm);
   lot.appendChild(head);
   var sub=txt('div',[l.colour&&COLOURS[l.colour]||l.colour,l.foaled?('foaled '+l.foaled):''].filter(Boolean).join(' · '),'lsub'); lot.appendChild(sub);
+  // Bio-Metric Index (pedigree-derived)
+  var bs=bioScore(l), bb=bioBand(bs);
+  var sc=document.createElement('div'); sc.className='lscore '+bb.k;
+  sc.innerHTML='<span class="bmv">'+bs+'</span>'
+    +'<span class="bmbar"><i style="width:'+bs+'%"></i></span>'
+    +'<span class="bmlab">Bio-Metric Index</span>'
+    +'<span class="bmband">'+bb.t+'</span>';
+  lot.appendChild(sc);
   var feats=features(l);
   if(feats.length){ var ch=document.createElement('div'); ch.className='chips';
     feats.forEach(function(f){ ch.appendChild(txt('span',f.t,'chip'+(f.hot?' hot':'')+(f.elite?' elite':''))); });
@@ -180,6 +211,7 @@ function render(){
   view.sort(function(a,b){
     if(sort==='name') return a.name.localeCompare(b.name);
     if(sort==='sire') return (a.sire||'').localeCompare(b.sire||'');
+    if(sort==='bm') return bioScore(b)-bioScore(a) || (+a.lot||0)-(+b.lot||0);
     return (+a.lot||0)-(+b.lot||0);
   });
   var g=$('#grid'); while(g.firstChild)g.removeChild(g.firstChild);
