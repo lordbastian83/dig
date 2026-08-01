@@ -304,8 +304,18 @@ $('#load').addEventListener('click',function(){
 });
 $('#print').addEventListener('click',function(){window.print();});
 
-// prefill the colt/lot from a ?h= link
-(function(){var m=/[?&]h=([^&]+)/.exec(location.search);if(m){var f=$('#m-lot');if(f)f.value=decodeURIComponent(m[1]).slice(0,80);}})();
+// prefill from a catalogue link (?lot=&name=&sire=&dam=&gsire=&dsire=&cons=&sale=) or a ?h= name
+(function(){
+  var qp=new URLSearchParams(location.search);
+  function setPed(k,v){ if(!v)return; var a=PED.filter(function(x){return x.k===k;})[0]; if(a)a.v=v; }
+  if(qp.get('name')||qp.get('lot')){
+    $('#m-lot').value=(qp.get('lot')?('Lot '+qp.get('lot')):'')+(qp.get('name')?(' — '+qp.get('name')):'');
+  } else if(qp.get('h')){ $('#m-lot').value=qp.get('h').slice(0,80); }
+  if(qp.get('sale')) $('#m-sale').value=qp.get('sale');
+  if(qp.get('cons')) $('#m-cons').value=qp.get('cons');
+  setPed('sire',qp.get('sire')); setPed('dam',qp.get('dam'));
+  setPed('ss',qp.get('gsire')); setPed('ds',qp.get('dsire'));
+})();
 drawPed();drawEvals();drawCard();renderScore();
 </script>
 </body>

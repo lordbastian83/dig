@@ -334,8 +334,11 @@ $('#print').addEventListener('click',function(){window.print();});
 ['di','cd','ic'].forEach(function(id){$('#'+id).addEventListener('input',function(){renderScore();renderRec();});});
 
 function renderAll(){renderStars();renderPie();renderDonut();renderScore();renderRec();}
-// prefill sire from ?h= link
-(function(){var m=/[?&]h=([^&]+)/.exec(location.search);if(m){var f=$('#sire');if(f)f.value=decodeURIComponent(m[1]).slice(0,80);}})();
+// prefill sire/dam from a catalogue link (?sire=&dam=) or a ?h= name
+(function(){var qp=new URLSearchParams(location.search);
+  if(qp.get('sire'))$('#sire').value=qp.get('sire').slice(0,80);
+  if(qp.get('dam'))$('#dam').value=qp.get('dam').slice(0,80);
+  if(!qp.get('sire')&&qp.get('h'))$('#sire').value=qp.get('h').slice(0,80);})();
 renderAll();
 </script>
 </body>
