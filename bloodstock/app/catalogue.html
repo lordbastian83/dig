@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vault Racing — Sale Catalogue</title>
-<meta name="theme-color" content="#0B1B33">
+<meta name="theme-color" content="#12203A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B0E17; --navy:#0B1B33; --panel:#0f1626; --panel-2:#14203a;
+    --ink:#0B0E17; --navy:#12203A; --panel:#0f1626; --panel-2:#14203a;
     --line:#25334d; --cloud:#E6ECF5; --muted:#8598b5; --muted-2:#5f7089;
-    --orange:#E9632B; --orange-2:#F0894A; --blue:#38a3f5; --green:#25c07f;
+    --orange:#DCB64A; --orange-2:#E8C563; --blue:#38a3f5; --green:#2CC1A0;
     --sans:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
-    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--ink);color:var(--cloud);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -50,7 +50,7 @@
   .lot:hover{border-color:#39527a;transform:translateY(-2px)}
   .lot .lthumb{position:relative;height:110px;margin:-14px -14px 2px;border-radius:9px 9px 0 0;overflow:hidden;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;background:radial-gradient(130% 150% at 80% 18%,#17294a 0%,#0d1930 58%,#0a1526 100%)}
   .lot .lthumb .hsvg{height:88%;width:auto;fill:var(--sx);filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
-  .lot .lthumb{--sx:#9fb1cb}.lot .lthumb.C{--sx:#5aa0ef}.lot .lthumb.F{--sx:#f0894a}.lot .lthumb.G{--sx:#9fb1cb}
+  .lot .lthumb{--sx:#9fb1cb}.lot .lthumb.C{--sx:#5aa0ef}.lot .lthumb.F{--sx:#dcb64a}.lot .lthumb.G{--sx:#9fb1cb}
   .lot .lthumb .tno{position:absolute;left:10px;top:10px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#fff;background:var(--orange);border-radius:5px;padding:2px 8px}
   .lot .lthumb .tsex{position:absolute;right:10px;top:10px;font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:99px;color:#0a1526;background:var(--sx)}
   .lot .lscore{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:'v bar band' 'v lab lab';align-items:center;column-gap:9px;row-gap:2px;margin:2px 0}
@@ -59,7 +59,7 @@
   .lot .lscore .bmbar i{display:block;height:100%;background:var(--sc);border-radius:99px}
   .lot .lscore .bmlab{grid-area:lab;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
   .lot .lscore .bmband{grid-area:band;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#0a1526;background:var(--sc);padding:2px 8px;border-radius:99px}
-  .lot .lscore.elite{--sc:#e9632b}.lot .lscore.strong{--sc:#38a3f5}.lot .lscore.solid{--sc:#25c07f}.lot .lscore.watch{--sc:#e7b93a}
+  .lot .lscore.elite{--sc:#dcb64a}.lot .lscore.strong{--sc:#38a3f5}.lot .lscore.solid{--sc:#2CC1A0}.lot .lscore.watch{--sc:#e7b93a}
   .lot .chips{display:flex;flex-wrap:wrap;gap:5px}
   .lot .chip{font-size:.64rem;font-weight:600;letter-spacing:.02em;color:#cdd9ec;background:#16233c;border:1px solid var(--line);border-radius:99px;padding:2px 9px}
   .lot .chip.hot{color:#ffd4bd;border-color:#7a3b23;background:#2a1710}
@@ -82,6 +82,11 @@
   .footer-band .tagbig{font-weight:700}.footer-band .tagbig .o{color:var(--orange)}
   .footer-band .contact{margin-left:auto;font-size:.76rem;color:var(--muted);text-align:right;line-height:1.6}
   .disclaimer{font-size:.68rem;color:var(--muted-2);margin-top:14px;line-height:1.5}
+
+/* Vault Racing brand: gold carries navy ink; wordmark stays white */
+.band-nav a.on,.nav-cta,.btn.orange,.lot .lno,.lot .lacts a.pri,.lot .lthumb .tno{color:#12203A}
+.lock b{color:#F7F8FA}.lock span{color:#DFE2E8}
+img.logo{border-radius:8px}
 </style>
 </head>
 <body>
@@ -90,8 +95,8 @@
 
 <div class="band">
   <div class="band-in">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true"><use href="#crest"/></svg>
-    <div class="lock"><b>Vault</b><span>Racing</span></div>
+    <img class="logo" src="icon.svg" alt="vault racing">
+    <div class="lock"><b>vault</b><span>racing</span></div>
     <div class="tag">Precision in Pedigree. <em>Performance in Mind.</em></div>
     <nav class="band-nav">
       <a href="index.html">Scanner</a>
@@ -122,7 +127,7 @@
   <div class="empty" id="empty" hidden>No lots match your search.</div>
 
   <div class="footer-band">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true" style="height:38px"><use href="#crest"/></svg>
+    <img class="logo" src="icon.svg" alt="vault racing" style="height:38px">
     <div class="tagbig">Real horses. <span class="o">Real insight.</span></div>
     <div class="contact">vaultracing.ai · Newmarket, Suffolk, United Kingdom</div>
   </div>
@@ -197,9 +202,9 @@ function card(l){
   if(l.consignor) lot.appendChild(txt('div','Consignor · '+l.consignor,'lcons'));
   var acts=document.createElement('div'); acts.className='lacts';
   var base='?lot='+q(l.lot)+'&name='+q(l.name)+'&sire='+q(l.sire)+'&dam='+q(l.dam)+'&gsire='+q(l.grandsire)+'&dsire='+q(l.damsire)+'&cons='+q(l.consignor)+'&sale='+q(l.sale);
-  var a1=document.createElement('a'); a1.className='pri'; a1.href='pedigree.html'+base; a1.textContent='🧬 Pedigree ▸'; acts.appendChild(a1);
-  var a2=document.createElement('a'); a2.href='mating.html?sire='+q(l.sire)+'&dam='+q(l.dam); a2.textContent='⚭ Mating ▸'; acts.appendChild(a2);
-  var a3=document.createElement('a'); a3.href='analysis.html?h='+q(l.name); a3.textContent='🐎 Conformation ▸'; acts.appendChild(a3);
+  var a1=document.createElement('a'); a1.className='pri'; a1.href='pedigree.html'+base; a1.textContent='Pedigree ▸'; acts.appendChild(a1);
+  var a2=document.createElement('a'); a2.href='mating.html?sire='+q(l.sire)+'&dam='+q(l.dam); a2.textContent='Mating ▸'; acts.appendChild(a2);
+  var a3=document.createElement('a'); a3.href='analysis.html?h='+q(l.name); a3.textContent='Conformation ▸'; acts.appendChild(a3);
   lot.appendChild(acts);
   return lot;
 }

@@ -22,11 +22,11 @@
   --gold:        #D4AF37;   /* RESERVED — top-tier scores, severe alerts */
   --gold-bright: #EAB308;
   --gold-deep:   #A8862B;
-  --orange:      #E9632B;   /* Bio-Metric brand accent — headlines, mark, CTAs */
-  --orange-2:    #F0894A;   /* lighter orange for gradients / hovers */
-  --orange-wash: rgba(233, 99, 43, 0.14);
-  --brand-navy:  #0B1B33;   /* deep navy of the brand header band */
-  --green:       #10B981;   /* positive delta / value */
+  --orange:      #DCB64A;   /* Bio-Metric brand accent — headlines, mark, CTAs */
+  --orange-2:    #E8C563;   /* lighter orange for gradients / hovers */
+  --orange-wash: rgba(220, 182, 74, 0.14);
+  --brand-navy:  #12203A;   /* deep navy of the brand header band */
+  --green:       #2CC1A0;   /* positive delta / value */
   --red:         #EF4444;   /* negative delta */
   --cloud:       #E2E8F0;   /* primary text — slate-100 */
   --ink-muted:   #64748B;   /* labels / neutral baseline — slate-gray */
@@ -37,7 +37,7 @@
   --shadow-card: none;
   --serif: 'Outfit', system-ui, sans-serif;
   --sans: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -1225,6 +1225,12 @@ kbd {
 .mp-kphorse { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto 12px; }
 .mp-analyse-lab { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-muted); font-weight: 600; }
 .mp-figure-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-.mp-analyse { font-size: .82rem; font-weight: 600; color: #fff; background: var(--orange, #E9632B); border-radius: 5px; padding: 10px 13px; text-decoration: none; text-align: center; transition: background .15s; }
-.mp-analyse:hover { background: var(--orange-2, #F0894A); }
+.mp-analyse { font-size: .82rem; font-weight: 600; color: #fff; background: var(--orange, #DCB64A); border-radius: 5px; padding: 10px 13px; text-decoration: none; text-align: center; transition: background .15s; }
+.mp-analyse:hover { background: var(--orange-2, #E8C563); }
 @media (max-width: 520px) { .mp-figure-actions { grid-template-columns: 1fr; } }
+
+/* Vault Racing brand override */
+.nav-cta{color:#12203A}
+.lockup .sub-line{color:#DFE2E8}
+.hero-media .hero-horse{object-fit:contain}
+img.logo-mark{border-radius:8px}

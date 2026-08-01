@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vault Racing — Motion Analysis Gallop Report</title>
-<meta name="theme-color" content="#0B1B33">
+<meta name="theme-color" content="#12203A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B0E17; --navy:#0B1B33; --navy-2:#111c30; --panel:#0f1626; --panel-2:#14203a;
+    --ink:#0B0E17; --navy:#12203A; --navy-2:#111c30; --panel:#0f1626; --panel-2:#14203a;
     --line:#25334d; --cloud:#E6ECF5; --muted:#8598b5; --muted-2:#5f7089;
-    --orange:#E9632B; --orange-2:#F0894A; --green:#25c07f; --amber:#e7b93a; --red:#e5484d;
+    --orange:#DCB64A; --orange-2:#E8C563; --green:#2CC1A0; --amber:#e7b93a; --red:#e5484d;
     --sans:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
-    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--ink);color:var(--cloud);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -128,6 +128,11 @@
   .disclaimer{font-size:.68rem;color:var(--muted-2);margin-top:14px;line-height:1.5}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   @media print{.no-print{display:none!important}body{background:#fff;color:#111}.card{border-color:#ddd}}
+
+/* Vault Racing brand: gold carries navy ink; wordmark stays white */
+.band-nav a.on,.nav-cta,.btn.orange,.lot .lno,.lot .lacts a.pri,.lot .lthumb .tno{color:#12203A}
+.lock b{color:#F7F8FA}.lock span{color:#DFE2E8}
+img.logo{border-radius:8px}
 </style>
 </head>
 <body>
@@ -137,8 +142,8 @@
 <!-- ===== brand header band ===== -->
 <div class="band">
   <div class="band-in">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true"><use href="#crest"/></svg>
-    <div class="lock"><b>Vault</b><span>Racing</span></div>
+    <img class="logo" src="icon.svg" alt="vault racing">
+    <div class="lock"><b>vault</b><span>racing</span></div>
     <div class="tag">Precision in Pedigree. <em>Performance in Mind.</em></div>
     <div class="props">
       <div class="prop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3Z"/><path d="M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/></svg><small>Data-Driven<br>Breeding</small></div>
@@ -285,7 +290,7 @@
   </div>
 
   <div class="footer-band">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true" style="height:40px"><use href="#crest"/></svg>
+    <img class="logo" src="icon.svg" alt="vault racing" style="height:40px">
     <div class="tagbig">Better Data. Smarter Decisions. <span class="o">Better Results.</span></div>
     <div class="contact">vaultracing.ai · gareth@vaultracing.ai<br>Newmarket, Suffolk, United Kingdom</div>
   </div>
@@ -306,7 +311,7 @@ var DIMS = [
   {k:'symmetry', label:'Overall symmetry',    v:85, w:1.1}
 ];
 var $=function(s){return document.querySelector(s)};
-function bandOf(v){ if(v>=90)return['ELITE','#25c07f']; if(v>=80)return['GOOD – ELITE','#25c07f'];
+function bandOf(v){ if(v>=90)return['ELITE','#2CC1A0']; if(v>=80)return['GOOD – ELITE','#2CC1A0'];
   if(v>=70)return['GOOD','#8fd14f']; if(v>=60)return['FAIR','#e7b93a']; return['WATCH','#e5484d']; }
 function cls(v){ return v>=80?'g':v>=65?'a':'r'; }
 
@@ -348,8 +353,8 @@ function renderOverall(){
 }
 
 /* ---------- stride timeline ---------- */
-var PHASES=[['Flight',17,'#8fd14f'],['Forelimb contact',18,'#38a3f5'],['Weight acceptance',28,'#E9632B'],
-  ['Hindlimb drive',20,'#f0894a'],['Suspension',17,'#25c07f']];
+var PHASES=[['Flight',17,'#8fd14f'],['Forelimb contact',18,'#38a3f5'],['Weight acceptance',28,'#DCB64A'],
+  ['Hindlimb drive',20,'#dcb64a'],['Suspension',17,'#2CC1A0']];
 function renderTimeline(){
   var tl=$('#timeline'), lg=$('#tl-legend'); tl.innerHTML=''; lg.innerHTML='';
   PHASES.forEach(function(p){

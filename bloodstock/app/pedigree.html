@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vault Racing — Pedigree Analysis</title>
-<meta name="theme-color" content="#0B1B33">
+<meta name="theme-color" content="#12203A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B0E17; --navy:#0B1B33; --panel:#0f1626; --panel-2:#14203a;
+    --ink:#0B0E17; --navy:#12203A; --panel:#0f1626; --panel-2:#14203a;
     --line:#25334d; --cloud:#E6ECF5; --muted:#8598b5; --muted-2:#5f7089;
-    --orange:#E9632B; --orange-2:#F0894A; --blue:#38a3f5; --green:#25c07f; --amber:#e7b93a; --red:#e5484d;
+    --orange:#DCB64A; --orange-2:#E8C563; --blue:#38a3f5; --green:#2CC1A0; --amber:#e7b93a; --red:#e5484d;
     --sans:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
-    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--ink);color:var(--cloud);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -90,6 +90,11 @@
   .btn{font-family:var(--sans);font-size:.8rem;font-weight:600;color:var(--cloud);background:#16233c;border:1px solid var(--line);border-radius:5px;padding:7px 11px;cursor:pointer}
   .btn.orange{background:var(--orange);border-color:var(--orange);color:#fff}
   @media print{.no-print{display:none!important}}
+
+/* Vault Racing brand: gold carries navy ink; wordmark stays white */
+.band-nav a.on,.nav-cta,.btn.orange,.lot .lno,.lot .lacts a.pri,.lot .lthumb .tno{color:#12203A}
+.lock b{color:#F7F8FA}.lock span{color:#DFE2E8}
+img.logo{border-radius:8px}
 </style>
 </head>
 <body>
@@ -98,8 +103,8 @@
 
 <div class="band">
   <div class="band-in">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true"><use href="#crest"/></svg>
-    <div class="lock"><b>Vault</b><span>Racing</span></div>
+    <img class="logo" src="icon.svg" alt="vault racing">
+    <div class="lock"><b>vault</b><span>racing</span></div>
     <div class="tag">Precision in Pedigree. <em>Performance in Mind.</em></div>
     <nav class="band-nav">
       <a href="index.html">Scanner</a>
@@ -183,7 +188,7 @@
   </div>
 
   <div class="footer-band">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true" style="height:38px"><use href="#crest"/></svg>
+    <img class="logo" src="icon.svg" alt="vault racing" style="height:38px">
     <div class="tagbig">Real horses. <span class="o">Real insight.</span></div>
     <div class="contact">vaultracing.ai · Newmarket, Suffolk, United Kingdom</div>
   </div>
@@ -262,7 +267,7 @@ function renderScore(){
   var full=Math.round(v/2), st='';
   for(var i=1;i<=5;i++)st+='<span class="'+(i<=full?'on':'')+'">★</span>';
   $('#ov-stars').innerHTML=st;
-  var verdict=v>=8?['BUY','#25c07f']:v>=6.5?['SHORTLIST','#e7b93a']:['PASS','#e5484d'];
+  var verdict=v>=8?['BUY','#2CC1A0']:v>=6.5?['SHORTLIST','#e7b93a']:['PASS','#e5484d'];
   $('#verdict').textContent=verdict[0];$('#verdict').style.background=verdict[1];
 }
 

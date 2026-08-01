@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vault Racing — Bio-Metric Score Report</title>
-<meta name="theme-color" content="#0B1B33">
+<meta name="theme-color" content="#12203A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B0E17; --navy:#0B1B33; --panel:#0f1626; --panel-2:#14203a;
+    --ink:#0B0E17; --navy:#12203A; --panel:#0f1626; --panel-2:#14203a;
     --line:#25334d; --cloud:#E6ECF5; --muted:#8598b5; --muted-2:#5f7089;
-    --orange:#E9632B; --orange-2:#F0894A; --blue:#38a3f5; --green:#25c07f; --amber:#e7b93a; --red:#e5484d;
+    --orange:#DCB64A; --orange-2:#E8C563; --blue:#38a3f5; --green:#2CC1A0; --amber:#e7b93a; --red:#e5484d;
     --sans:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
-    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--ink);color:var(--cloud);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -90,6 +90,11 @@
   .btn{font-family:var(--sans);font-size:.8rem;font-weight:600;color:var(--cloud);background:#16233c;border:1px solid var(--line);border-radius:5px;padding:7px 11px;cursor:pointer}
   .btn.orange{background:var(--orange);border-color:var(--orange);color:#fff}
   @media print{.no-print{display:none!important}}
+
+/* Vault Racing brand: gold carries navy ink; wordmark stays white */
+.band-nav a.on,.nav-cta,.btn.orange,.lot .lno,.lot .lacts a.pri,.lot .lthumb .tno{color:#12203A}
+.lock b{color:#F7F8FA}.lock span{color:#DFE2E8}
+img.logo{border-radius:8px}
 </style>
 </head>
 <body>
@@ -98,8 +103,8 @@
 
 <div class="band">
   <div class="band-in">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true"><use href="#crest"/></svg>
-    <div class="lock"><b>Vault</b><span>Racing</span></div>
+    <img class="logo" src="icon.svg" alt="vault racing">
+    <div class="lock"><b>vault</b><span>racing</span></div>
     <div class="tag">Precision in Pedigree. <em>Performance in Mind.</em></div>
     <nav class="band-nav">
       <a href="index.html">Scanner</a>
@@ -175,7 +180,7 @@
   </div>
 
   <div class="footer-band">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true" style="height:38px"><use href="#crest"/></svg>
+    <img class="logo" src="icon.svg" alt="vault racing" style="height:38px">
     <div class="tagbig">Stronger today. <span class="o">Champions tomorrow.</span></div>
     <div class="contact">vaultracing.ai · Newmarket, Suffolk, United Kingdom</div>
   </div>
@@ -185,7 +190,7 @@
 
 <script>
 var $=function(s){return document.querySelector(s)};
-function col(v){return v>=90?'#25c07f':v>=80?'#8fd14f':v>=70?'#e7b93a':v>=60?'#f0894a':'#e5484d';}
+function col(v){return v>=90?'#2CC1A0':v>=80?'#8fd14f':v>=70?'#e7b93a':v>=60?'#dcb64a':'#e5484d';}
 function band(v){return v>=90?'Excellent':v>=80?'Very good':v>=70?'Good':v>=60?'Fair':'Watch';}
 
 var DIMS=[
@@ -216,14 +221,14 @@ function drawRadar(){
     var anchor=Math.abs(Math.cos(a))<0.3?'middle':(Math.cos(a)>0?'start':'end');
     var nm=DIMS[i].name.split(' ')[0];
     g+='<text x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" fill="#8598b5" font-size="11" font-family="Outfit,sans-serif" text-anchor="'+anchor+'" dominant-baseline="middle">'+nm+'</text>';
-    g+='<text x="'+lx.toFixed(1)+'" y="'+(ly+13).toFixed(1)+'" fill="'+col(DIMS[i].v)+'" font-size="11" font-weight="700" font-family="JetBrains Mono,monospace" text-anchor="'+anchor+'" dominant-baseline="middle">'+DIMS[i].v+'</text>';
+    g+='<text x="'+lx.toFixed(1)+'" y="'+(ly+13).toFixed(1)+'" fill="'+col(DIMS[i].v)+'" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace" text-anchor="'+anchor+'" dominant-baseline="middle">'+DIMS[i].v+'</text>';
   }
   // data polygon
   var dp='';
   for(var i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n, rr=R*DIMS[i].v/100;dp+=(cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1)+' ';}
-  g+='<polygon points="'+dp.trim()+'" fill="rgba(233,99,43,.22)" stroke="#E9632B" stroke-width="2"/>';
+  g+='<polygon points="'+dp.trim()+'" fill="rgba(220,182,74,.22)" stroke="#DCB64A" stroke-width="2"/>';
   for(var i=0;i<n;i++){var a=-Math.PI/2+i*2*Math.PI/n, rr=R*DIMS[i].v/100;
-    g+='<circle cx="'+(cx+rr*Math.cos(a)).toFixed(1)+'" cy="'+(cy+rr*Math.sin(a)).toFixed(1)+'" r="3.4" fill="#E9632B"/>';}
+    g+='<circle cx="'+(cx+rr*Math.cos(a)).toFixed(1)+'" cy="'+(cy+rr*Math.sin(a)).toFixed(1)+'" r="3.4" fill="#DCB64A"/>';}
   $('#radar').innerHTML=g;
 }
 
@@ -249,7 +254,7 @@ function drawOverall(){
   var v=overall(),c=col(v);
   $('#ov-num').textContent=v;$('#ov-num').style.color=c;
   $('#ov-lab').textContent=band(v);$('#ov-lab').style.color=c;
-  var verdict=v>=85?['BUY','#25c07f']:v>=75?['SHORTLIST','#e7b93a']:['PASS','#e5484d'];
+  var verdict=v>=85?['BUY','#2CC1A0']:v>=75?['SHORTLIST','#e7b93a']:['PASS','#e5484d'];
   $('#verdict').textContent=verdict[0];$('#verdict').style.background=verdict[1];
 }
 
@@ -267,12 +272,12 @@ function drawInsights(){
 /* risk donut = inverse of overall, banded */
 function drawRisk(){
   var ov=overall(), risk=Math.max(2,Math.round((100-ov)*0.9));
-  var lab=risk<=15?['LOW RISK','#25c07f']:risk<=30?['MODERATE','#e7b93a']:['ELEVATED','#e5484d'];
+  var lab=risk<=15?['LOW RISK','#2CC1A0']:risk<=30?['MODERATE','#e7b93a']:['ELEVATED','#e5484d'];
   var size=110,stroke=13,r=(size-stroke)/2,c=2*Math.PI*r,cx=size/2,cy=size/2,len=c*risk/100;
   $('#risk-donut').innerHTML='<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
     '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#1c2a44" stroke-width="'+stroke+'"/>'+
     '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+lab[1]+'" stroke-width="'+stroke+'" stroke-linecap="round" stroke-dasharray="'+len.toFixed(1)+' '+(c-len).toFixed(1)+'" transform="rotate(-90 '+cx+' '+cy+')"/>'+
-    '<text x="'+cx+'" y="'+(cy+5)+'" fill="'+lab[1]+'" font-size="20" font-weight="700" font-family="JetBrains Mono,monospace" text-anchor="middle">'+risk+'%</text></svg>';
+    '<text x="'+cx+'" y="'+(cy+5)+'" fill="'+lab[1]+'" font-size="20" font-weight="700" font-family="IBM Plex Mono,monospace" text-anchor="middle">'+risk+'%</text></svg>';
   $('#risk-pct').textContent=lab[0];$('#risk-pct').style.color=lab[1];$('#risk-pct').style.fontSize='1.1rem';
   $('#risk-lab').textContent='Modelled structural / soundness risk';
 }

@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vault Racing — Mating Analysis</title>
-<meta name="theme-color" content="#0B1B33">
+<meta name="theme-color" content="#12203A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B0E17; --navy:#0B1B33; --panel:#0f1626; --panel-2:#14203a;
+    --ink:#0B0E17; --navy:#12203A; --panel:#0f1626; --panel-2:#14203a;
     --line:#25334d; --cloud:#E6ECF5; --muted:#8598b5; --muted-2:#5f7089;
-    --orange:#E9632B; --orange-2:#F0894A; --blue:#38a3f5; --green:#25c07f; --amber:#e7b93a; --red:#e5484d;
+    --orange:#DCB64A; --orange-2:#E8C563; --blue:#38a3f5; --green:#2CC1A0; --amber:#e7b93a; --red:#e5484d;
     --sans:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
-    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--ink);color:var(--cloud);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -88,6 +88,11 @@
   .btn{font-family:var(--sans);font-size:.8rem;font-weight:600;color:var(--cloud);background:#16233c;border:1px solid var(--line);border-radius:5px;padding:7px 11px;cursor:pointer}
   .btn.orange{background:var(--orange);border-color:var(--orange);color:#fff}
   @media print{.no-print{display:none!important}}
+
+/* Vault Racing brand: gold carries navy ink; wordmark stays white */
+.band-nav a.on,.nav-cta,.btn.orange,.lot .lno,.lot .lacts a.pri,.lot .lthumb .tno{color:#12203A}
+.lock b{color:#F7F8FA}.lock span{color:#DFE2E8}
+img.logo{border-radius:8px}
 </style>
 </head>
 <body>
@@ -96,8 +101,8 @@
 
 <div class="band">
   <div class="band-in">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true"><use href="#crest"/></svg>
-    <div class="lock"><b>Vault</b><span>Racing</span></div>
+    <img class="logo" src="icon.svg" alt="vault racing">
+    <div class="lock"><b>vault</b><span>racing</span></div>
     <div class="tag">Precision in Pedigree. <em>Performance in Mind.</em></div>
     <nav class="band-nav">
       <a href="index.html">Scanner</a>
@@ -188,7 +193,7 @@
   </div>
 
   <div class="footer-band">
-    <svg class="logo" viewBox="0 0 160 160" aria-hidden="true" style="height:38px"><use href="#crest"/></svg>
+    <img class="logo" src="icon.svg" alt="vault racing" style="height:38px">
     <div class="tagbig">Pedigree. Performance. <span class="o">Prediction.</span></div>
     <div class="contact">vaultracing.ai · Newmarket, Suffolk, United Kingdom</div>
   </div>
@@ -198,13 +203,13 @@
 
 <script>
 var $=function(s){return document.querySelector(s)};
-function band(v){return v>=85?['EXCELLENT','#25c07f']:v>=75?['STRONG','#8fd14f']:v>=65?['FAIR','#e7b93a']:['GUARDED','#e5484d'];}
+function band(v){return v>=85?['EXCELLENT','#2CC1A0']:v>=75?['STRONG','#8fd14f']:v>=65?['FAIR','#e7b93a']:['GUARDED','#e5484d'];}
 
 /* dosage profile (editable %) */
-var PIE=[['Speed',41,'#E9632B'],['Stamina',27,'#38a3f5'],['Balance',25,'#25c07f'],['Other',7,'#8598b5']];
+var PIE=[['Speed',41,'#DCB64A'],['Stamina',27,'#38a3f5'],['Balance',25,'#2CC1A0'],['Other',7,'#8598b5']];
 /* influential sire lines (crossing patterns) */
-var DON=[['Danzig line',24,'#E9632B'],['Northern Dancer',20,'#38a3f5'],['Mr Prospector',16,'#25c07f'],
-  ['Sir Ivor',12,'#e7b93a'],['Buckpasser',10,'#a06cf0'],['Nureyev',8,'#f0894a'],['Other',10,'#8598b5']];
+var DON=[['Danzig line',24,'#DCB64A'],['Northern Dancer',20,'#38a3f5'],['Mr Prospector',16,'#2CC1A0'],
+  ['Sir Ivor',12,'#e7b93a'],['Buckpasser',10,'#a06cf0'],['Nureyev',8,'#dcb64a'],['Other',10,'#8598b5']];
 /* star factors */
 var STARS=[['Class',4.5],['Speed',4],['Stamina',4],['Soundness',4],['Balance',4.5],['Commercial appeal',4.5]];
 
@@ -278,10 +283,10 @@ function renderDonut(){
 function renderScore(){
   var v=matingScore(),b=band(v);
   $('#score-gauge').innerHTML='<svg width="128" height="128" viewBox="0 0 128 128">'+ring(v,128,11,64,64,b[1])+
-    '<text x="64" y="64" fill="'+b[1]+'" font-size="32" font-weight="700" font-family="JetBrains Mono,monospace" text-anchor="middle">'+v+'</text>'+
+    '<text x="64" y="64" fill="'+b[1]+'" font-size="32" font-weight="700" font-family="IBM Plex Mono,monospace" text-anchor="middle">'+v+'</text>'+
     '<text x="64" y="84" fill="#8598b5" font-size="11" text-anchor="middle" font-family="Outfit,sans-serif">/ 100</text></svg>';
   var pill=$('#score-band');pill.textContent=b[0];pill.style.background=b[1]+'22';pill.style.color=b[1];
-  var verdict=v>=82?['BREED','#25c07f']:v>=70?['CONSIDER','#e7b93a']:['HOLD','#e5484d'];
+  var verdict=v>=82?['BREED','#2CC1A0']:v>=70?['CONSIDER','#e7b93a']:['HOLD','#e5484d'];
   $('#verdict').textContent=verdict[0];$('#verdict').style.background=verdict[1];
 }
 function renderRec(){
