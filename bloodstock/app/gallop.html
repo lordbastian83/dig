@@ -505,6 +505,8 @@ function drawJointMap(){
 function renderAll(){ renderRings(); renderOverall(); renderTimeline(); renderSymmetry(); renderReadout(); drawJointMap(); }
 function stamp(){ var d=$('#m-date').value; $('#stamp').textContent = d? ' · '+d : ''; }
 $('#m-date').addEventListener('input',stamp);
+// prefill the horse from a ?h= link (e.g. opened from a horse profile)
+(function(){var m=/[?&]h=([^&]+)/.exec(location.search); if(m){var f=$('#m-horse'); if(f&&!f.value)f.value=decodeURIComponent(m[1]).slice(0,120);}})();
 renderAll(); stamp();
 </script>
 </body>

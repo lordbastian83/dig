@@ -1957,6 +1957,25 @@ function breedingPanel(h, nk, dos, fam) {
     </div>`;
 }
 
+// Bio-Metric horse figure for the profile: the brand silhouette + quick links
+// to the full Conformation and Motion analysers (horse name carried across).
+function horseFigureHTML(h) {
+  const q = `?h=${encodeURIComponent(h.name || '')}`;
+  return `<div class="mp-figure">
+    <svg class="mp-horse" viewBox="150 148 625 404" aria-hidden="true">
+      <line x1="396" y1="360" x2="418" y2="504" stroke="#8a3a1e" stroke-width="7" stroke-linecap="round" stroke-opacity=".5"/>
+      <line x1="652" y1="332" x2="696" y2="504" stroke="#8a3a1e" stroke-width="7" stroke-linecap="round" stroke-opacity=".5"/>
+      <polygon points="170,232 215,195 238,172 300,196 405,205 520,202 628,192 672,205 700,300 712,392 686,300 662,262 655,330 672,392 668,452 664,486 662,504 636,504 640,452 648,392 628,322 560,352 470,372 402,352 408,420 404,460 400,486 398,504 372,504 376,452 380,392 388,352 360,300 250,282 205,268" fill="#12233f" stroke="#E9632B" stroke-width="2.2" stroke-linejoin="round"/>
+      <polygon points="238,172 232,150 251,164" fill="#12233f" stroke="#E9632B" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="223" cy="209" r="3.2" fill="#0a1120"/>
+    </svg>
+    <div class="mp-figure-actions">
+      <a class="mp-analyse" href="analysis.html${q}">🐎 Conformation analysis ▸</a>
+      <a class="mp-analyse" href="gallop.html${q}">🎥 Motion / gallop analysis ▸</a>
+    </div>
+  </div>`;
+}
+
 /* ---------- horse profile modal — everything we know ---------- */
 let modalHorse = null;
 function openHorseModal(h) {
@@ -2006,6 +2025,8 @@ function openHorseModal(h) {
       <b>🏜 Why it fits Dubai (${dubaiPct(r)}/100):</b> ${r.dubai.reasons.join(' · ')}.
       ${dubaiPct(r) < 55 ? ' Fit is modest — better value elsewhere than as a Meydan type.' : ''}
     </div>` : ''}
+
+    ${horseFigureHTML(h)}
 
     ${historyChartHTML(h)}
 

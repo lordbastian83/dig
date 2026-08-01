@@ -375,6 +375,8 @@ function renderAll(){drawCallouts();drawBadge();drawScorePanel();
     if(bad){bad.textContent=rate;bad.style.background=RCOL[rate]+'22';bad.style.color=RCOL[rate];}
   });
 }
+// prefill the subject from a ?h= link (e.g. opened from a horse profile)
+(function(){var m=/[?&]h=([^&]+)/.exec(location.search); if(m){var f=$('#m-horse'); if(f&&!f.value)f.value=decodeURIComponent(m[1]).slice(0,120);}})();
 drawHorse(); drawEditor(); renderAll();
 </script>
 </body>
