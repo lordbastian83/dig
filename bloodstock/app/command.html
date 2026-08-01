@@ -72,7 +72,9 @@
   td{padding:9px 6px;border-bottom:1px solid #16233c}
   td.r,th.r{text-align:right}
   .lot{display:flex;align-items:center;gap:9px}
-  .thumb{width:34px;height:26px;border-radius:3px;background:linear-gradient(135deg,#1a2a44,#24344f);flex:none}
+  .thumb{width:34px;height:26px;border-radius:3px;background:linear-gradient(135deg,#152742,#1e304b);flex:none;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;--sx:#9fb1cb}
+  .thumb.C{--sx:#5aa0ef}.thumb.F{--sx:#f0894a}.thumb.G{--sx:#9fb1cb}
+  .thumb svg{height:118%;width:auto;fill:var(--sx)}
   .pill{font-family:var(--mono);font-size:.74rem;font-weight:700;padding:2px 7px;border-radius:99px}
   .rec{color:var(--green);font-weight:600}
 
@@ -95,6 +97,8 @@
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="horse" viewBox="-6 -8 172 147"><path d="M 116.2 131.1 L 110.6 131.1 L 109.5 130.0 L 108.7 126.1 L 107.0 124.4 L 105.4 103.5 L 103.1 109.8 L 103.1 121.0 L 104.4 124.0 L 108.2 128.7 L 105.0 129.8 L 101.1 129.8 L 100.1 128.7 L 99.6 124.9 L 97.9 123.1 L 100.5 87.8 L 100.1 78.3 L 99.4 77.6 L 70.5 75.9 L 62.7 73.7 L 50.7 68.1 L 47.9 70.5 L 44.0 78.7 L 41.0 88.2 L 39.2 98.1 L 39.2 107.6 L 41.0 112.8 L 43.6 118.8 L 50.0 126.1 L 48.5 127.7 L 43.3 127.2 L 41.8 125.7 L 40.5 121.8 L 37.1 118.8 L 34.5 101.1 L 30.6 92.9 L 30.6 89.5 L 31.9 85.6 L 31.3 84.5 L 24.6 91.2 L 18.5 102.4 L 17.3 110.2 L 17.3 119.2 L 22.9 126.1 L 24.2 129.6 L 21.3 130.7 L 17.0 129.8 L 14.7 127.4 L 14.7 123.6 L 11.2 121.8 L 11.2 119.7 L 13.4 111.5 L 13.8 91.2 L 19.4 83.9 L 21.6 78.3 L 21.1 73.1 L 16.8 60.2 L 16.0 54.1 L 16.4 47.7 L 19.8 41.2 L 19.8 39.9 L 18.8 39.7 L 17.3 41.6 L 14.7 48.9 L 13.4 86.9 L 9.5 101.6 L 7.5 103.5 L 7.1 102.2 L 6.3 104.8 L 4.7 103.7 L 4.1 99.2 L 3.5 102.0 L 2.6 101.6 L 2.6 95.1 L 1.5 97.9 L 0.0 90.8 L 0.0 58.0 L 1.7 47.7 L 4.7 40.8 L 9.3 36.7 L 13.6 34.9 L 25.2 34.1 L 36.0 31.5 L 47.2 31.5 L 61.5 34.9 L 70.5 36.2 L 79.6 36.2 L 91.2 34.5 L 99.8 30.6 L 110.0 17.9 L 115.8 12.1 L 120.1 9.1 L 127.4 5.6 L 138.7 4.3 L 143.4 0.0 L 143.4 4.3 L 146.8 0.0 L 146.6 4.5 L 145.3 6.7 L 150.1 11.9 L 152.2 18.8 L 159.6 31.7 L 160.0 34.3 L 156.3 39.7 L 153.3 39.7 L 152.0 40.5 L 150.5 39.5 L 147.5 33.9 L 144.3 31.1 L 133.5 26.7 L 132.4 28.7 L 128.5 44.2 L 125.9 49.8 L 123.8 69.2 L 118.6 76.5 L 113.9 92.5 L 113.0 99.4 L 110.0 110.2 L 110.0 119.7 L 111.3 123.1 L 117.7 128.7 L 117.7 130.5 L 116.2 131.1 Z"/></symbol></defs></svg>
+
 
 <div class="band">
   <div class="band-in">
@@ -228,8 +232,10 @@ $('#traits').innerHTML=TRAITS.map(function(t){return '<div class="trait"><span>'
 /* top opportunities */
 var OPPS=[['237','Bay Colt',87,'£240k'],['412','Chestnut Filly',84,'£180k'],['589','Grey Colt',82,'£165k'],
   ['712','Bay Filly',80,'£150k'],['145','Bay Colt',78,'£120k']];
-$('#opps').innerHTML=OPPS.map(function(o){var col=bandCol(o[2]);return '<tr>'+
-  '<td><span class="lot"><span class="thumb"></span>Lot '+o[0]+'</span></td><td>'+o[1]+'</td>'+
+$('#opps').innerHTML=OPPS.map(function(o){var col=bandCol(o[2]);
+  var sx=/Filly/.test(o[1])?'F':/Colt/.test(o[1])?'C':'G';
+  return '<tr>'+
+  '<td><span class="lot"><span class="thumb '+sx+'"><svg viewBox="-6 -8 172 147" aria-hidden="true"><use href="#horse"/></svg></span>Lot '+o[0]+'</span></td><td>'+o[1]+'</td>'+
   '<td class="r mono">'+o[3]+'</td>'+
   '<td class="r"><span class="pill" style="color:'+col+';background:'+col+'22">'+o[2]+'</span></td>'+
   '<td class="r rec">'+(o[2]>=85?'BUY':o[2]>=80?'BID':'WATCH')+'</td></tr>';}).join('');
