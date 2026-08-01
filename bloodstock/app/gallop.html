@@ -350,6 +350,7 @@ function ring(v,size,stroke){
 function renderRings(){
   var el=$('#rings'); el.innerHTML='';
   DIMS.forEach(function(d){
+    d.v=+d.v||0;   // sanitize any loaded value before it reaches innerHTML
     var wrap=document.createElement('div'); wrap.className='ring';
     wrap.innerHTML='<div style="position:relative">'+ring(d.v,84,8)+
       '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">'+

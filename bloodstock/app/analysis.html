@@ -313,6 +313,7 @@ function drawScorePanel(){
 function drawEditor(){
   var e=$('#editor'); e.innerHTML='';
   METRICS.forEach(function(m){
+    m.val=+m.val||0; if(RATINGS.indexOf(m.rate)<0)m.rate='GOOD';   // sanitize any loaded values before they reach innerHTML
     var row=document.createElement('div'); row.className='met';
     var opts=RATINGS.map(function(r){return '<option'+(r===m.rate?' selected':'')+'>'+r+'</option>';}).join('');
     row.innerHTML='<span class="nm"><i style="background:'+(RCOL[m.rate])+'"></i>'+m.name+'</span>'+
