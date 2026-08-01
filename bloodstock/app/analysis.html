@@ -309,20 +309,22 @@ function drawScorePanel(){
   vv.textContent=verdict[0]; vv.style.background=verdict[1];
 }
 
-/* ---- metrics editor ---- */
+/* ---- metrics editor — built with DOM APIs only (no HTML strings), so no
+       loaded value is ever reinterpreted as HTML ---- */
 function drawEditor(){
-  var e=$('#editor'); e.innerHTML='';
+  var e=$('#editor'); while(e.firstChild) e.removeChild(e.firstChild);
   METRICS.forEach(function(m){
-    m.val=+m.val||0; if(RATINGS.indexOf(m.rate)<0)m.rate='GOOD';   // sanitize any loaded values before they reach innerHTML
+    m.val=+m.val||0; if(RATINGS.indexOf(m.rate)<0)m.rate='GOOD';   // normalise loaded values
     var row=document.createElement('div'); row.className='met';
-    var opts=RATINGS.map(function(r){return '<option'+(r===m.rate?' selected':'')+'>'+r+'</option>';}).join('');
-    // Build with only static text + a Number-coerced score; the rating colour is
-    // applied via .style after render (renderAll), never interpolated into HTML.
-    row.innerHTML='<span class="nm"><i></i>'+m.name+'</span>'+
-      '<input type="number" value="'+(+m.val||0)+'" data-id="'+m.id+'">'+
-      '<select data-id="'+m.id+'">'+opts+'</select>';
-    row.querySelector('input').addEventListener('input',function(ev){m.val=+ev.target.value||0;renderAll();});
-    row.querySelector('select').addEventListener('change',function(ev){m.rate=ev.target.value;renderAll();});
+    var nm=document.createElement('span'); nm.className='nm';
+    var dot=document.createElement('i'); dot.style.background=RCOL[m.rate];
+    nm.appendChild(dot); nm.appendChild(document.createTextNode(m.name));
+    var inp=document.createElement('input'); inp.type='number'; inp.value=String(+m.val||0); inp.setAttribute('data-id',m.id);
+    var sel=document.createElement('select'); sel.setAttribute('data-id',m.id);
+    RATINGS.forEach(function(rt){var o=document.createElement('option'); o.textContent=rt; if(rt===m.rate)o.selected=true; sel.appendChild(o);});
+    row.appendChild(nm); row.appendChild(inp); row.appendChild(sel);
+    inp.addEventListener('input',function(ev){m.val=+ev.target.value||0;renderAll();});
+    sel.addEventListener('change',function(ev){m.rate=ev.target.value;renderAll();});
     e.appendChild(row);
   });
 }
