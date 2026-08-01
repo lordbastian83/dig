@@ -50,7 +50,7 @@
   .card h2 .n{color:var(--orange);font-weight:700}
 
   /* diagram */
-  .stage{position:relative;aspect-ratio:3/2;width:100%;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#0b1626 center/cover no-repeat}
+  .stage{position:relative;aspect-ratio:3/2;width:100%;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#eef2f8 center/contain no-repeat}
   .stage-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;text-align:center;color:var(--muted);padding:22px}
   .stage-empty svg{width:46px;height:46px;color:var(--orange)}
   .stage-empty b{font-size:1.15rem;color:var(--cloud)}
@@ -158,7 +158,7 @@
         <button class="btn" id="photo-btn">Add / change photo</button>
         <input id="photo-input" type="file" accept="image/*" hidden>
         <button class="btn" id="photo-clear" hidden>Remove photo</button>
-        <label><input type="checkbox" id="toggle-labels" checked> Labels</label>
+        <label><input type="checkbox" id="toggle-labels"> Labels</label>
         <button class="btn" id="reset-kp">Reset points</button>
       </div>
       <div class="kp-legend"><span><i style="background:#3b82f6"></i>Skeletal markers</span><span><i style="background:#ef4444"></i>Soft-tissue markers</span><span><i style="background:#22c55e"></i>Hoof markers</span></div>
@@ -229,23 +229,25 @@ var RCOL={OPTIMAL:'#25c07f',GOOD:'#8fd14f',FAIR:'#e7b93a',WATCH:'#e5484d'};
 var RPTS={OPTIMAL:100,GOOD:90,FAIR:72,WATCH:52};
 // mode: 'range' (band is best) · 'high' (higher is better) · 'low' (lower is better)
 // cat: sk = skeletal (blue) · soft = soft-tissue (red) · hoof (green)
+// px/py are % positions tuned to the default horse base image (right-facing:
+// head/muzzle on the right, hindquarters/tail on the left). Drag to re-align on your own photo.
 var METRICS=[
-  {id:'poll',  name:'Head carriage',       val:3,  unit:'°',opt:[0,6],   mode:'low',  cat:'sk',  px:22,py:24},
-  {id:'neck',  name:'Neck set',            val:63, unit:'°',opt:[55,70],  mode:'range',cat:'soft',px:27,py:38},
-  {id:'should',name:'Shoulder angle',      val:47, unit:'°',opt:[43,52],  mode:'range',cat:'sk',  px:38,py:46},
-  {id:'girth', name:'Girth depth',         val:82, unit:'%',opt:[78,90],  mode:'high', cat:'soft',px:40,py:56},
-  {id:'humer', name:'Humerus angle',       val:58, unit:'°',opt:[52,62],  mode:'range',cat:'sk',  px:42,py:60},
-  {id:'knee',  name:'Fore knee deviation', val:2,  unit:'°',opt:[0,4],    mode:'low',  cat:'sk',  px:40,py:74},
-  {id:'fpast', name:'Fore pastern angle',  val:53, unit:'°',opt:[50,56],  mode:'range',cat:'sk',  px:39,py:85},
-  {id:'fhoof', name:'Fore hoof balance',   val:88, unit:'%',opt:[82,96],  mode:'high', cat:'hoof',px:39,py:93},
-  {id:'with',  name:'Wither definition',   val:84, unit:'%',opt:[78,100], mode:'high', cat:'sk',  px:44,py:30},
-  {id:'back',  name:'Back length ratio',   val:47, unit:'%',opt:[43,49],  mode:'range',cat:'sk',  px:55,py:29},
-  {id:'loin',  name:'Loin coupling',       val:86, unit:'%',opt:[80,100], mode:'high', cat:'soft',px:63,py:29},
-  {id:'croup', name:'Croup slope',         val:27, unit:'°',opt:[22,33],  mode:'range',cat:'sk',  px:72,py:28},
-  {id:'hip',   name:'Hip angle',           val:49, unit:'°',opt:[44,54],  mode:'range',cat:'sk',  px:72,py:40},
-  {id:'stifle',name:'Stifle angle',        val:123,unit:'°',opt:[118,128],mode:'range',cat:'sk',  px:71,py:56},
-  {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',cat:'sk',  px:76,py:74},
-  {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],  mode:'high', cat:'hoof',px:74,py:93}
+  {id:'poll',  name:'Head carriage',       val:3,  unit:'°',opt:[0,6],   mode:'low',  cat:'sk',  px:87,py:11},
+  {id:'neck',  name:'Neck set',            val:63, unit:'°',opt:[55,70],  mode:'range',cat:'soft',px:80,py:19},
+  {id:'should',name:'Shoulder angle',      val:47, unit:'°',opt:[43,52],  mode:'range',cat:'sk',  px:75,py:43},
+  {id:'girth', name:'Girth depth',         val:82, unit:'%',opt:[78,90],  mode:'high', cat:'soft',px:71,py:52},
+  {id:'humer', name:'Humerus angle',       val:58, unit:'°',opt:[52,62],  mode:'range',cat:'sk',  px:73,py:58},
+  {id:'knee',  name:'Fore knee deviation', val:2,  unit:'°',opt:[0,4],    mode:'low',  cat:'sk',  px:70,py:72},
+  {id:'fpast', name:'Fore pastern angle',  val:53, unit:'°',opt:[50,56],  mode:'range',cat:'sk',  px:68,py:85},
+  {id:'fhoof', name:'Fore hoof balance',   val:88, unit:'%',opt:[82,96],  mode:'high', cat:'hoof',px:68,py:93},
+  {id:'with',  name:'Wither definition',   val:84, unit:'%',opt:[78,100], mode:'high', cat:'sk',  px:70,py:22},
+  {id:'back',  name:'Back length ratio',   val:47, unit:'%',opt:[43,49],  mode:'range',cat:'sk',  px:49,py:23},
+  {id:'loin',  name:'Loin coupling',       val:86, unit:'%',opt:[80,100], mode:'high', cat:'soft',px:34,py:24},
+  {id:'croup', name:'Croup slope',         val:27, unit:'°',opt:[22,33],  mode:'range',cat:'sk',  px:23,py:26},
+  {id:'hip',   name:'Hip angle',           val:49, unit:'°',opt:[44,54],  mode:'range',cat:'sk',  px:27,py:36},
+  {id:'stifle',name:'Stifle angle',        val:123,unit:'°',opt:[118,128],mode:'range',cat:'sk',  px:27,py:57},
+  {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',cat:'sk',  px:20,py:70},
+  {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],  mode:'high', cat:'hoof',px:16,py:93}
 ];
 var CATCOL={sk:'#3b82f6',soft:'#ef4444',hoof:'#22c55e'};
 var CATNAME={sk:'Skeletal',soft:'Soft tissue',hoof:'Hoof'};
@@ -262,8 +264,15 @@ function optLabel(m){ return m.mode==='low'?('≤'+m.opt[1]+m.unit):m.mode==='hi
 function scoreVal(){var s=0;METRICS.forEach(function(m){s+=RPTS[rateOf(m)]||72;});return Math.round(s/METRICS.length);}
 function bandOf(v){if(v>=90)return['ELITE','#25c07f'];if(v>=80)return['GOOD – ELITE','#25c07f'];if(v>=70)return['GOOD','#8fd14f'];if(v>=60)return['FAIR','#e7b93a'];return['WATCH','#e5484d'];}
 
-/* ---- draggable keypoint markers over the uploaded photo ---- */
+/* ---- draggable keypoint markers over the horse image ---- */
+var DEFAULT_HORSE='img/horse-base.png';   // real, public-domain horse (scikit-image / Weizmann)
 var hasPhoto=false;
+function showDefaultHorse(){
+  $('#stage').style.backgroundColor='#eef2f8';
+  $('#stage').style.backgroundImage='url("'+DEFAULT_HORSE+'")';
+  hasPhoto=true; $('#empty').style.display='none'; $('#stage-badge').hidden=false;
+  $('#photo-clear').hidden=true; renderAll();
+}
 function attachDrag(kp,m){
   kp.addEventListener('pointerdown',function(ev){
     ev.preventDefault(); kp.setPointerCapture(ev.pointerId); kp.classList.add('dragging');
@@ -345,6 +354,8 @@ function drawEditor(){
 /* ---- photo (the star of the map) — set as a CSS background on the stage ---- */
 function loadPhoto(f){
   if(!f || !/^image\//.test(f.type)){ if(f) alert('Please choose an image file.'); return; }
+  $('#stage').style.backgroundColor='#0b1626';
+  $('#stage').style.backgroundSize='cover';
   $('#stage').style.backgroundImage='url("'+URL.createObjectURL(f)+'")';
   hasPhoto=true; $('#empty').style.display='none'; $('#stage-badge').hidden=false;
   $('#photo-clear').hidden=false; renderAll();
@@ -353,8 +364,7 @@ $('#photo-btn').addEventListener('click',function(){$('#photo-input').click();})
 $('#empty-btn').addEventListener('click',function(){$('#photo-input').click();});
 $('#photo-input').addEventListener('change',function(ev){ loadPhoto(ev.target.files[0]); });
 $('#photo-clear').addEventListener('click',function(){
-  $('#stage').style.backgroundImage=''; hasPhoto=false; $('#empty').style.display='';
-  $('#stage-badge').hidden=true; this.hidden=true; $('#photo-input').value=''; drawMarkers();
+  $('#photo-input').value=''; $('#stage').style.backgroundSize='contain'; showDefaultHorse();
 });
 $('#toggle-labels').addEventListener('change',drawMarkers);
 $('#reset-kp').addEventListener('click',function(){ METRICS.forEach(function(m,i){m.px=DEFAULT_POS[i][0];m.py=DEFAULT_POS[i][1];}); drawMarkers(); });
@@ -387,6 +397,7 @@ function renderAll(){drawMarkers(); if(hasPhoto)drawStageBadge(); drawScorePanel
 // load a photo from a URL (catalogue / data feed) — style assignment only, https only
 function setPhotoURL(url){
   if(!url || !/^https:\/\//i.test(url)) return false;
+  $('#stage').style.backgroundColor='#0b1626'; $('#stage').style.backgroundSize='cover';
   $('#stage').style.backgroundImage='url("'+encodeURI(url)+'")';
   hasPhoto=true; $('#empty').style.display='none'; $('#stage-badge').hidden=false; $('#photo-clear').hidden=false; renderAll();
   return true;
@@ -402,7 +413,7 @@ function setPhotoURL(url){
     if(h) setPhotoURL(h.image||h.img);
   }).catch(function(){});
 })();
-drawEditor(); renderAll();
+drawEditor(); showDefaultHorse();
 </script>
 </body>
 </html>

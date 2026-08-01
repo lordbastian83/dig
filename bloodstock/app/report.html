@@ -313,7 +313,12 @@ $('#print').addEventListener('click',function(){window.print();});
 /* horse photo slot — real photo from the feed (by ?h= name) or an upload; never a drawing */
 (function(){
   var box=$('#rphoto'), inp=$('#rphoto-input');
-  function set(url,isBlob){ if(!isBlob && !/^https:\/\//i.test(url)) return; box.style.backgroundImage='url("'+(isBlob?url:encodeURI(url))+'")'; $('#rphoto-empty').style.display='none'; }
+  function set(url,isBlob){ if(!isBlob && !/^https:\/\//i.test(url)) return;
+    box.style.backgroundColor='#0b1626'; box.style.backgroundSize='cover';
+    box.style.backgroundImage='url("'+(isBlob?url:encodeURI(url))+'")'; $('#rphoto-empty').style.display='none'; }
+  // default: a real, public-domain horse so the slot is never empty or a drawing
+  box.style.backgroundColor='#eef2f8'; box.style.backgroundSize='contain';
+  box.style.backgroundImage='url("img/horse-base.png")'; $('#rphoto-empty').style.display='none';
   box.addEventListener('click',function(){inp.click();});
   inp.addEventListener('change',function(e){var f=e.target.files[0]; if(f&&/^image\//.test(f.type)) set(URL.createObjectURL(f),true);});
   var m=/[?&]h=([^&]+)/.exec(location.search); if(m){ var name=decodeURIComponent(m[1]);
