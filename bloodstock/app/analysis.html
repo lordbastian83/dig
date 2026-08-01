@@ -378,8 +378,24 @@ function renderAll(){drawMarkers(); if(hasPhoto)drawStageBadge(); drawScorePanel
     if(bad){bad.textContent=rate;bad.style.background=RCOL[rate]+'22';bad.style.color=RCOL[rate];}
   });
 }
-// prefill the subject from a ?h= link (e.g. opened from a horse profile)
-(function(){var m=/[?&]h=([^&]+)/.exec(location.search); if(m){var f=$('#m-horse'); if(f&&!f.value)f.value=decodeURIComponent(m[1]).slice(0,120);}})();
+// load a photo from a URL (catalogue / data feed) — style assignment only, https only
+function setPhotoURL(url){
+  if(!url || !/^https:\/\//i.test(url)) return false;
+  $('#stage').style.backgroundImage='url("'+encodeURI(url)+'")';
+  hasPhoto=true; $('#empty').style.display='none'; $('#stage-badge').hidden=false; $('#photo-clear').hidden=false; renderAll();
+  return true;
+}
+// prefill the subject from a ?h= link, and auto-pull that horse's photo from the scanner's data feed
+(function(){
+  var m=/[?&]h=([^&]+)/.exec(location.search); if(!m) return;
+  var name=decodeURIComponent(m[1]).slice(0,120);
+  var f=$('#m-horse'); if(f&&!f.value)f.value=name;
+  fetch('candidates.json').then(function(r){return r.ok?r.json():null;}).then(function(d){
+    if(!d)return; var list=d.candidates||d;
+    var h=list.filter(function(x){return String(x.name||'').toLowerCase()===name.toLowerCase();})[0];
+    if(h) setPhotoURL(h.image||h.img);
+  }).catch(function(){});
+})();
 drawEditor(); renderAll();
 </script>
 </body>

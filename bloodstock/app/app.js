@@ -1962,6 +1962,15 @@ function breedingPanel(h, nk, dos, fam) {
 function horseFigureHTML(h) {
   const q = `?h=${encodeURIComponent(h.name || '')}`;
   return `<div class="mp-analyse-panel">
+    <svg class="mp-kphorse" viewBox="12 60 416 268" aria-hidden="true">
+      <defs><filter id="mpg" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <path d="M 30 152 C 34 130 48 112 62 104 C 68 100 73 99 77 97 C 98 82 132 92 160 116 C 165 119 169 120 174 120 C 220 116 270 114 302 116 C 322 118 336 122 344 132 C 350 142 350 150 348 156 C 344 190 340 220 338 244 L 337 300 L 344 316 L 326 316 L 324 300 L 325 244 C 326 220 330 208 322 200 C 292 214 230 220 168 214 C 160 213 154 214 150 218 L 146 300 L 152 316 L 134 316 L 136 300 L 137 244 C 137 220 132 205 126 194 C 120 176 112 162 102 152 C 94 145 82 146 72 152 C 62 158 52 166 44 168 C 38 166 33 160 30 152 Z" fill="#0c1a2e" stroke="#e9632b" stroke-width="1.6" stroke-opacity=".55" stroke-linejoin="round"/>
+      <path d="M77 97 C 73 86 72 80 74 76 C 79 82 84 89 86 94 Z" fill="#0c1a2e" stroke="#e9632b" stroke-width="1.4" stroke-opacity=".55"/>
+      <path d="M87 94 C 85 84 85 78 88 75 C 92 81 96 88 97 92 Z" fill="#0c1a2e" stroke="#e9632b" stroke-width="1.4" stroke-opacity=".55"/>
+      <g stroke="#e9632b" stroke-width="1.4" stroke-opacity=".5" fill="none" stroke-linecap="round"><polyline points="76,100 104,150 138,178 176,122 250,116 298,120 330,122 322,150 326,200 338,246 335,308"/><polyline points="138,178 154,210 143,255 140,290 140,308"/><polyline points="138,178 150,198"/></g>
+      <g fill="#e9632b" fill-opacity=".22" filter="url(#mpg)"><circle cx="76" cy="100" r="6"/><circle cx="104" cy="150" r="6"/><circle cx="138" cy="178" r="6"/><circle cx="150" cy="198" r="6"/><circle cx="154" cy="210" r="6"/><circle cx="143" cy="255" r="6"/><circle cx="140" cy="290" r="6"/><circle cx="140" cy="308" r="6"/><circle cx="176" cy="122" r="6"/><circle cx="250" cy="116" r="6"/><circle cx="298" cy="120" r="6"/><circle cx="330" cy="122" r="6"/><circle cx="322" cy="150" r="6"/><circle cx="326" cy="200" r="6"/><circle cx="338" cy="246" r="6"/><circle cx="335" cy="308" r="6"/></g>
+      <g fill="#f0894a" stroke="#0a1120" stroke-width="1"><circle cx="76" cy="100" r="3.4"/><circle cx="104" cy="150" r="3.4"/><circle cx="138" cy="178" r="3.4"/><circle cx="150" cy="198" r="3.4"/><circle cx="154" cy="210" r="3.4"/><circle cx="143" cy="255" r="3.4"/><circle cx="140" cy="290" r="3.4"/><circle cx="140" cy="308" r="3.4"/><circle cx="176" cy="122" r="3.4"/><circle cx="250" cy="116" r="3.4"/><circle cx="298" cy="120" r="3.4"/><circle cx="330" cy="122" r="3.4"/><circle cx="322" cy="150" r="3.4"/><circle cx="326" cy="200" r="3.4"/><circle cx="338" cy="246" r="3.4"/><circle cx="335" cy="308" r="3.4"/></g>
+    </svg>
     <span class="mp-analyse-lab">Bio-Metric analysis</span>
     <div class="mp-figure-actions">
       <a class="mp-analyse" href="analysis.html${q}">🐎 Conformation ▸</a>

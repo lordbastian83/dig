@@ -96,6 +96,7 @@ function normalise(rows) {
       ped: r.ped != null && r.ped !== '' ? String(r.ped) : null,
       blackType: boolish(r.blackType),
       damLabel: r.damLabel != null && r.damLabel !== '' ? String(r.damLabel) : null,
+      image: r.image != null && /^https:\/\//i.test(String(r.image)) ? String(r.image).trim() : null,
     }))
     .filter((r) => r.name);
 }
@@ -145,6 +146,7 @@ export async function fetchLiveMarket() {
         ped: prev.ped ?? r.ped,
         blackType: prev.blackType ?? r.blackType,
         damLabel: prev.damLabel ?? r.damLabel,
+        image: prev.image ?? r.image,
       });
     }
     if (rows.length) console.error(`  feed ${src.name}: ${rows.length} rows`);
@@ -204,6 +206,7 @@ export async function applyLiveFeeds(candidates) {
     if (m.ped != null) { h.ped = m.ped; h.pedLive = true; matched++; }
     if (m.blackType != null) h.blackType = m.blackType;
     if (m.damLabel != null) h.damLabel = m.damLabel;
+    if (m.image != null) h.image = m.image;   // photo URL → shown in profile + auto-loaded in the conformation tool
   }
   // 2) The Racing API — live/forecast betting odds for declared runners
   const odds = await racingApiOdds().catch(() => new Map());

@@ -1221,7 +1221,8 @@ kbd {
 .bd-lab { font-size: .56rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .07em; }
 
 /* Bio-Metric analysis links inside the horse-profile modal */
-.mp-analyse-panel { margin: 12px 0 4px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--navy-2); }
+.mp-analyse-panel { margin: 12px 0 4px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: radial-gradient(120% 90% at 50% 22%, #0f1d33, #0a1120); }
+.mp-kphorse { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto 12px; }
 .mp-analyse-lab { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-muted); font-weight: 600; }
 .mp-figure-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .mp-analyse { font-size: .82rem; font-weight: 600; color: #fff; background: var(--orange, #E9632B); border-radius: 5px; padding: 10px 13px; text-decoration: none; text-align: center; transition: background .15s; }
