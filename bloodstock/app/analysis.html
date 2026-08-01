@@ -61,12 +61,15 @@
   .diagram-tools label{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
 
   /* metrics editor */
-  .met{display:grid;grid-template-columns:1fr auto auto;gap:8px 10px;align-items:center;font-size:.82rem;padding:7px 0;border-bottom:1px solid #1a2740}
+  .met{display:grid;grid-template-columns:1fr 60px auto 74px;gap:7px 9px;align-items:center;font-size:.8rem;padding:7px 0;border-bottom:1px solid #1a2740}
   .met:last-child{border-bottom:0}
   .met .nm{color:#c9d5e8}
   .met .nm i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:0}
-  .met input{width:66px;text-align:right;font-family:var(--mono);background:#0c1424;color:var(--cloud);border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-size:.8rem}
-  .met select{font-family:var(--sans);background:#0c1424;color:var(--cloud);border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-size:.72rem}
+  .met input{width:58px;text-align:right;font-family:var(--mono);background:#0c1424;color:var(--cloud);border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-size:.8rem}
+  .met .opt{font-family:var(--mono);font-size:.66rem;color:var(--muted);white-space:nowrap}
+  .met .rbadge{font-size:.58rem;font-weight:700;padding:3px 0;border-radius:99px;text-transform:uppercase;text-align:center;letter-spacing:.03em}
+  .met-head{display:grid;grid-template-columns:1fr 60px auto 74px;gap:7px 9px;font-size:.56rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-2);padding-bottom:5px;border-bottom:1px solid var(--line);margin-bottom:2px}
+  .met-head span:nth-child(2),.met-head span:nth-child(4){text-align:center}
 
   .score-badge{display:flex;align-items:center;gap:16px;margin-bottom:6px}
   .band-pill{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:99px;text-transform:uppercase}
@@ -173,7 +176,8 @@
           <label>Sire<input id="m-sire" placeholder="e.g. Dubawi"></label>
           <label>Date<input id="m-date" type="date"></label>
         </div>
-        <h2 style="margin-top:4px">Keypoint metrics</h2>
+        <h2 style="margin-top:4px">Biomechanical scoring — 16 data points</h2>
+        <div class="met-head"><span>Landmark</span><span>Meas.</span><span>Optimal</span><span>Grade</span></div>
         <div id="editor"></div>
       </div>
 
@@ -205,80 +209,82 @@ var SVGNS='http://www.w3.org/2000/svg';
 var $=function(s){return document.querySelector(s)};
 function el(tag,attrs,text){var e=document.createElementNS(SVGNS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e;}
 
-/* ---- horse wireframe (brand low-poly), scaled ×3.5 + offset (140,90) ---- */
-var HORSE_EDGES=[
-  [70,40,104,42,128,38,142,40],
-  [34,15,30,24,10,46,26,48,35,41,50,27,70,40],
-  [30,24,50,27],
-  [35,41,60,46,66,74],
-  [60,46,64,52,70,40],
-  [66,74,104,82,128,70],
-  [128,38,140,60,128,70],
-  [142,40,152,78,140,60],
-  [64,52,66,74,64,93,63,109,62,120],
-  [128,70,134,95,133,111,132,121]
-];
-var HORSE_NODES=[[34,15],[10,46],[50,27],[70,40],[104,42],[128,38],[142,40],[152,78],[140,60],[66,74],[104,82],[128,70],[62,120],[132,121],[60,46],[64,93],[134,95]];
-var SC=3.5, OX=150, OY=95;
-function tx(x){return x*SC+OX} function ty(y){return y*SC+OY}
-
+/* ---- a filled, recognisable thoroughbred silhouette (side profile, facing left) ---- */
+var OUTLINE=[[170,232],[215,195],[238,172],[300,196],[405,205],[520,202],[628,192],[672,205],[700,300],[712,392],
+  [686,300],[662,262],[655,330],[672,392],[668,452],[664,486],[662,504],[636,504],[640,452],[648,392],[628,322],
+  [560,352],[470,372],[402,352],[408,420],[404,460],[400,486],[398,504],[372,504],[376,452],[380,392],[388,352],
+  [360,300],[250,282],[205,268]];
 function drawHorse(){
-  var g=$('#horse'); g.innerHTML='';
-  HORSE_EDGES.forEach(function(pts){
-    var p=''; for(var i=0;i<pts.length;i+=2){p+=tx(pts[i]).toFixed(1)+','+ty(pts[i+1]).toFixed(1)+' ';}
-    g.appendChild(el('polyline',{points:p.trim(),fill:'none',stroke:'#E9632B',
-      'stroke-width':2.4,'stroke-linejoin':'round','stroke-linecap':'round','stroke-opacity':.85}));
+  var g=$('#horse'); while(g.firstChild)g.removeChild(g.firstChild);
+  // far-side legs, behind, for depth
+  [[[396,360],[418,504]],[[652,332],[696,504]]].forEach(function(L){
+    g.appendChild(el('line',{x1:L[0][0],y1:L[0][1],x2:L[1][0],y2:L[1][1],stroke:'#8a3a1e','stroke-width':7,'stroke-linecap':'round','stroke-opacity':.5}));
   });
-  HORSE_NODES.forEach(function(n){ g.appendChild(el('circle',{cx:tx(n[0]),cy:ty(n[1]),r:3.4,fill:'#E9632B','fill-opacity':.7})); });
+  g.appendChild(el('polygon',{points:OUTLINE.map(function(p){return p[0]+','+p[1];}).join(' '),
+    fill:'#0f2138',stroke:'#E9632B','stroke-width':2.2,'stroke-linejoin':'round'}));
+  g.appendChild(el('polygon',{points:'238,172 232,150 251,164',fill:'#0f2138',stroke:'#E9632B','stroke-width':2,'stroke-linejoin':'round'})); // ear
+  g.appendChild(el('circle',{cx:223,cy:209,r:3.2,fill:'#0a1120'})); // eye
 }
 
-/* ---- keypoint metrics: node in logo-space, label side + row ---- */
-var RATINGS=['IDEAL','OPTIMAL','GOOD','SUPPORTED','FAIR','WATCH'];
-var RCOL={IDEAL:'#25c07f',OPTIMAL:'#25c07f',GOOD:'#8fd14f',SUPPORTED:'#38a3f5',FAIR:'#e7b93a',WATCH:'#e5484d'};
-var RPTS={IDEAL:100,OPTIMAL:96,GOOD:88,SUPPORTED:85,FAIR:70,WATCH:52};
-// node coords are in logo space (pre-transform)
+/* ---- 16-point biomechanical scoring. Each landmark has an optimal range;
+       the grade is derived from the measured value's deviation (expert, not manual). ---- */
+var RCOL={OPTIMAL:'#25c07f',GOOD:'#8fd14f',FAIR:'#e7b93a',WATCH:'#e5484d'};
+var RPTS={OPTIMAL:100,GOOD:90,FAIR:72,WATCH:52};
+// mode: 'range' (band is best) · 'high' (higher is better) · 'low' (lower is better)
 var METRICS=[
-  {id:'eye',   name:'Eye set',            val:93,unit:'°',rate:'GOOD',   node:[41,27], side:'l',row:0},
-  {id:'muzzle',name:'Muzzle',             val:81,unit:'°',rate:'GOOD',   node:[10,46], side:'l',row:1},
-  {id:'should',name:'Shoulder angle',     val:47,unit:'°',rate:'GOOD',   node:[62,50], side:'l',row:2},
-  {id:'chest', name:'Chest depth',        val:82,unit:'%',rate:'GOOD',   node:[66,74], side:'l',row:3},
-  {id:'fore',  name:'Fore limb alignment',val:89,unit:'°',rate:'OPTIMAL',node:[64,93], side:'l',row:4},
-  {id:'hoof',  name:'Hoof balance',       val:88,unit:'%',rate:'SUPPORTED',node:[62,120],side:'l',row:5},
-  {id:'back',  name:'Back line level',    val:85,unit:'°',rate:'GOOD',   node:[104,42],side:'r',row:0},
-  {id:'hip',   name:'Hip angle',          val:49,unit:'°',rate:'GOOD',   node:[130,40],side:'r',row:1},
-  {id:'stride',name:'Stride balance',     val:90,unit:'°',rate:'IDEAL',  node:[104,82],side:'r',row:2},
-  {id:'hind',  name:'Hind limb alignment',val:87,unit:'°',rate:'OPTIMAL',node:[134,95],side:'r',row:3}
+  // left column (fore-end + head), top→bottom by node-y
+  {id:'poll',  name:'Head carriage',       val:3,  unit:'°',opt:[0,6],  mode:'low', node:[238,178],side:'l',row:0},
+  {id:'neck',  name:'Neck set',            val:63, unit:'°',opt:[55,70],mode:'range',node:[252,278],side:'l',row:1},
+  {id:'should',name:'Shoulder angle',      val:47, unit:'°',opt:[43,52],mode:'range',node:[372,285],side:'l',row:2},
+  {id:'girth', name:'Girth depth',         val:82, unit:'%',opt:[78,90],mode:'high', node:[392,330],side:'l',row:3},
+  {id:'humer', name:'Humerus angle',       val:58, unit:'°',opt:[52,62],mode:'range',node:[400,345],side:'l',row:4},
+  {id:'knee',  name:'Fore knee deviation', val:2,  unit:'°',opt:[0,4],  mode:'low', node:[378,392],side:'l',row:5},
+  {id:'fpast', name:'Fore pastern angle',  val:53, unit:'°',opt:[50,56],mode:'range',node:[399,478],side:'l',row:6},
+  {id:'fhoof', name:'Fore hoof balance',   val:88, unit:'%',opt:[82,96],mode:'high', node:[385,502],side:'l',row:7},
+  // right column (top-line + hind-end), top→bottom by node-y
+  {id:'croup', name:'Croup slope',         val:27, unit:'°',opt:[22,33],mode:'range',node:[632,196],side:'r',row:0},
+  {id:'back',  name:'Back length ratio',   val:47, unit:'%',opt:[43,49],mode:'range',node:[520,203],side:'r',row:1},
+  {id:'with',  name:'Wither definition',   val:84, unit:'%',opt:[78,100],mode:'high',node:[405,205],side:'r',row:2},
+  {id:'loin',  name:'Loin coupling',       val:86, unit:'%',opt:[80,100],mode:'high',node:[585,205],side:'r',row:3},
+  {id:'hip',   name:'Hip angle',           val:49, unit:'°',opt:[44,54],mode:'range',node:[628,240],side:'r',row:4},
+  {id:'stifle',name:'Stifle angle',        val:123,unit:'°',opt:[118,128],mode:'range',node:[628,322],side:'r',row:5},
+  {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',node:[665,392],side:'r',row:6},
+  {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],mode:'high', node:[655,500],side:'r',row:7}
 ];
-var LROWS_Y=[70,152,234,316,398,480];   // left column label centre-y
-var RROWS_Y=[150,250,350,450];          // right column label centre-y (clear of the corner badge)
-var LX=8, RX=760, LABW=210;
+var ROWS_Y=[44,111,178,245,312,379,446,513];
+var LX=8, RX=762, LABW=210;
+
+// derive grade from the value's position relative to its optimal range
+function rateOf(m){
+  var v=+m.val||0, lo=m.opt[0], hi=m.opt[1];
+  if(m.mode==='low'){ if(v<=hi) return v<=hi*0.5?'OPTIMAL':'GOOD'; return (v-hi)<=Math.max(hi,2)?'FAIR':'WATCH'; }
+  if(m.mode==='high'){ if(v>=hi) return 'OPTIMAL'; if(v>=lo) return 'GOOD'; return v>=lo*0.9?'FAIR':'WATCH'; }
+  if(v>=lo&&v<=hi){ var mid=(lo+hi)/2, half=(hi-lo)/2||1; return Math.abs(v-mid)<=half*0.6?'OPTIMAL':'GOOD'; }
+  var d=v<lo?lo-v:v-hi, span=(hi-lo)||1; return d<=span*0.7?'FAIR':'WATCH';
+}
+function optLabel(m){ return m.mode==='low'?('≤'+m.opt[1]+m.unit):m.mode==='high'?('≥'+m.opt[0]+m.unit):(m.opt[0]+'–'+m.opt[1]+m.unit); }
 
 function drawCallouts(){
-  var g=$('#callouts'); g.innerHTML='';
+  var g=$('#callouts'); while(g.firstChild)g.removeChild(g.firstChild);
   if($('#toggle-labels') && !$('#toggle-labels').checked) return;
   METRICS.forEach(function(m){
-    var nx=tx(m.node[0]), ny=ty(m.node[1]);
-    var col=RCOL[m.rate]||'#8fd14f';
-    var lx=m.side==='l'?LX:RX, ly=(m.side==='l'?LROWS_Y:RROWS_Y)[m.row];
-    var anchorX=m.side==='l'?lx+LABW:lx;          // inner edge of the chip
-    // leader line
-    g.appendChild(el('line',{x1:anchorX,y1:ly,x2:nx,y2:ny,stroke:col,'stroke-width':1.3,'stroke-opacity':.65}));
-    g.appendChild(el('circle',{cx:anchorX,cy:ly,r:2.6,fill:col}));
-    // glowing node
-    g.appendChild(el('circle',{cx:nx,cy:ny,r:7,fill:col,'fill-opacity':.25,filter:'url(#glow)'}));
-    g.appendChild(el('circle',{cx:nx,cy:ny,r:3.6,fill:col,stroke:'#0a1120','stroke-width':1.2}));
-    // chip
+    var nx=m.node[0], ny=m.node[1], rate=rateOf(m), col=RCOL[rate];
+    var lx=m.side==='l'?LX:RX, ly=ROWS_Y[m.row], anchorX=m.side==='l'?lx+LABW:lx;
+    g.appendChild(el('line',{x1:anchorX,y1:ly,x2:nx,y2:ny,stroke:col,'stroke-width':1.2,'stroke-opacity':.6}));
+    g.appendChild(el('circle',{cx:anchorX,cy:ly,r:2.4,fill:col}));
+    g.appendChild(el('circle',{cx:nx,cy:ny,r:7,fill:col,'fill-opacity':.22,filter:'url(#glow)'}));
+    g.appendChild(el('circle',{cx:nx,cy:ny,r:3.4,fill:col,stroke:'#0a1120','stroke-width':1.1}));
     var chip=el('g',{});
-    chip.appendChild(el('rect',{x:lx,y:ly-19,width:LABW,height:38,rx:5,fill:'#0c1a30','fill-opacity':.92,stroke:col,'stroke-width':1}));
-    var tX=lx+12, ta='start';
-    chip.appendChild(el('text',{x:tX,y:ly-3,fill:'#dbe6f5','font-size':13,'font-weight':600,'font-family':'Outfit, sans-serif','text-anchor':ta},m.name));
-    chip.appendChild(el('text',{x:tX,y:ly+14,fill:col,'font-size':12,'font-weight':700,'font-family':'JetBrains Mono, monospace','text-anchor':ta},m.val+m.unit+'  ·  '+m.rate));
+    chip.appendChild(el('rect',{x:lx,y:ly-17,width:LABW,height:34,rx:5,fill:'#0c1a30','fill-opacity':.94,stroke:col,'stroke-width':1}));
+    var tX=lx+11;
+    chip.appendChild(el('text',{x:tX,y:ly-3,fill:'#dbe6f5','font-size':12.5,'font-weight':600,'font-family':'Outfit, sans-serif'},m.name));
+    chip.appendChild(el('text',{x:tX,y:ly+12,fill:col,'font-size':11.5,'font-weight':700,'font-family':'JetBrains Mono, monospace'},(+m.val||0)+m.unit+'  ·  opt '+optLabel(m)));
     g.appendChild(chip);
   });
 }
 
 /* ---- score badge (top-centre of diagram) ---- */
-function scoreVal(){var s=0;METRICS.forEach(function(m){s+=RPTS[m.rate]||70;});return Math.round(s/METRICS.length);}
+function scoreVal(){var s=0;METRICS.forEach(function(m){s+=RPTS[rateOf(m)]||72;});return Math.round(s/METRICS.length);}
 function bandOf(v){if(v>=90)return['ELITE','#25c07f'];if(v>=80)return['GOOD – ELITE','#25c07f'];if(v>=70)return['GOOD','#8fd14f'];if(v>=60)return['FAIR','#e7b93a'];return['WATCH','#e5484d'];}
 function ringSVG(v,size,stroke,cx,cy){
   var r=(size-stroke)/2,c=2*Math.PI*r,col=bandOf(v)[1],off=c*(1-v/100),g=el('g',{});
@@ -287,8 +293,8 @@ function ringSVG(v,size,stroke,cx,cy){
   return {g:g,col:col};
 }
 function drawBadge(){
-  var g=$('#scorebadge'); g.innerHTML=''; var v=scoreVal(),b=bandOf(v);
-  var cx=888,cy=64,ring=ringSVG(v,86,8,cx,cy); g.appendChild(ring.g);
+  var g=$('#scorebadge'); while(g.firstChild)g.removeChild(g.firstChild); var v=scoreVal(),b=bandOf(v);
+  var cx=490,cy=58,ring=ringSVG(v,84,8,cx,cy); g.appendChild(ring.g);
   g.appendChild(el('text',{x:cx,y:cy+2,fill:ring.col,'font-size':26,'font-weight':700,'font-family':'JetBrains Mono, monospace','text-anchor':'middle'},v));
   g.appendChild(el('text',{x:cx,y:cy+18,fill:'#8598b5','font-size':9,'text-anchor':'middle','font-family':'Outfit, sans-serif'},'/100'));
   g.appendChild(el('text',{x:cx,y:cy+58,fill:ring.col,'font-size':11,'font-weight':700,'text-anchor':'middle','font-family':'Outfit, sans-serif','letter-spacing':'.5'},b[0]));
@@ -314,17 +320,18 @@ function drawScorePanel(){
 function drawEditor(){
   var e=$('#editor'); while(e.firstChild) e.removeChild(e.firstChild);
   METRICS.forEach(function(m){
-    m.val=+m.val||0; if(RATINGS.indexOf(m.rate)<0)m.rate='GOOD';   // normalise loaded values
+    m.val=+m.val||0;
+    var rate=rateOf(m);
     var row=document.createElement('div'); row.className='met';
     var nm=document.createElement('span'); nm.className='nm';
-    var dot=document.createElement('i'); dot.style.background=RCOL[m.rate];
+    var dot=document.createElement('i'); dot.style.background=RCOL[rate];
     nm.appendChild(dot); nm.appendChild(document.createTextNode(m.name));
     var inp=document.createElement('input'); inp.type='number'; inp.value=String(+m.val||0); inp.setAttribute('data-id',m.id);
-    var sel=document.createElement('select'); sel.setAttribute('data-id',m.id);
-    RATINGS.forEach(function(rt){var o=document.createElement('option'); o.textContent=rt; if(rt===m.rate)o.selected=true; sel.appendChild(o);});
-    row.appendChild(nm); row.appendChild(inp); row.appendChild(sel);
+    var opt=document.createElement('span'); opt.className='opt'; opt.textContent=optLabel(m);
+    var bad=document.createElement('span'); bad.className='rbadge'; bad.textContent=rate;
+    bad.style.background=RCOL[rate]+'22'; bad.style.color=RCOL[rate];
+    row.appendChild(nm); row.appendChild(inp); row.appendChild(opt); row.appendChild(bad);
     inp.addEventListener('input',function(ev){m.val=+ev.target.value||0;renderAll();});
-    sel.addEventListener('change',function(ev){m.rate=ev.target.value;renderAll();});
     e.appendChild(row);
   });
 }
@@ -346,7 +353,7 @@ $('#toggle-labels').addEventListener('change',drawCallouts);
 /* ---- persistence ---- */
 var FIELDS=['m-horse','m-type','m-sire','m-date'];
 $('#save').addEventListener('click',function(){
-  var o={metrics:{},fields:{}}; METRICS.forEach(function(m){o.metrics[m.id]={val:m.val,rate:m.rate};});
+  var o={metrics:{},fields:{}}; METRICS.forEach(function(m){o.metrics[m.id]=+m.val||0;});
   FIELDS.forEach(function(f){o.fields[f]=$('#'+f).value;});
   var key='bmt-conf:'+(($('#m-horse').value||'report').trim());
   localStorage.setItem(key,JSON.stringify(o)); localStorage.setItem('bmt-conf:last',key);
@@ -355,15 +362,18 @@ $('#save').addEventListener('click',function(){
 $('#load').addEventListener('click',function(){
   var key=localStorage.getItem('bmt-conf:last'); if(!key){alert('No saved report yet.');return;}
   var o=JSON.parse(localStorage.getItem(key)||'null'); if(!o)return;
-  METRICS.forEach(function(m){if(o.metrics&&o.metrics[m.id]){m.val=o.metrics[m.id].val;m.rate=o.metrics[m.id].rate;}});
+  METRICS.forEach(function(m){if(o.metrics&&o.metrics[m.id]!=null)m.val=+o.metrics[m.id]||0;});
   if(o.fields)FIELDS.forEach(function(f){if(o.fields[f]!=null)$('#'+f).value=o.fields[f];});
   drawEditor(); renderAll();
 });
 $('#print').addEventListener('click',function(){window.print();});
 
 function renderAll(){drawCallouts();drawBadge();drawScorePanel();
-  // recolor editor dots without rebuilding inputs
-  document.querySelectorAll('#editor .met').forEach(function(row,i){var dot=row.querySelector('.nm i');if(dot)dot.style.background=RCOL[METRICS[i].rate];});
+  document.querySelectorAll('#editor .met').forEach(function(row,i){
+    var rate=rateOf(METRICS[i]), dot=row.querySelector('.nm i'), bad=row.querySelector('.rbadge');
+    if(dot)dot.style.background=RCOL[rate];
+    if(bad){bad.textContent=rate;bad.style.background=RCOL[rate]+'22';bad.style.color=RCOL[rate];}
+  });
 }
 drawHorse(); drawEditor(); renderAll();
 </script>
