@@ -57,7 +57,9 @@
   .stage-empty small{max-width:360px;line-height:1.5}
   .kp-layer{position:absolute;inset:0}
   .kp{position:absolute;transform:translate(-50%,-50%);cursor:grab;touch-action:none;z-index:2}
-  .kp .dot{width:13px;height:13px;border-radius:50%;background:currentColor;border:2px solid #0a1120;box-shadow:0 0 0 3px rgba(8,14,26,.35),0 0 9px 2px currentColor}
+  .kp .dot{width:20px;height:20px;border-radius:50%;background:currentColor;border:2px solid #0a1120;box-shadow:0 0 0 2px rgba(8,14,26,.4),0 0 8px 1px currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;font-family:var(--mono)}
+  .kp-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:.72rem;color:var(--muted)}
+  .kp-legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px}
   .kp .lab{position:absolute;left:15px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:11px;font-weight:600;color:#e6ecf5;background:rgba(9,17,30,.86);border:1px solid currentColor;border-radius:4px;padding:2px 6px;pointer-events:none}
   .kp .lab b{font-family:var(--mono);margin-left:5px}
   .kp.right .lab{left:auto;right:15px}
@@ -159,6 +161,7 @@
         <label><input type="checkbox" id="toggle-labels" checked> Labels</label>
         <button class="btn" id="reset-kp">Reset points</button>
       </div>
+      <div class="kp-legend"><span><i style="background:#3b82f6"></i>Skeletal markers</span><span><i style="background:#ef4444"></i>Soft-tissue markers</span><span><i style="background:#22c55e"></i>Hoof markers</span></div>
     </div>
 
     <!-- ===== score + metrics editor ===== -->
@@ -225,24 +228,27 @@ function el(tag,attrs,text){var e=document.createElementNS(SVGNS,tag);for(var k 
 var RCOL={OPTIMAL:'#25c07f',GOOD:'#8fd14f',FAIR:'#e7b93a',WATCH:'#e5484d'};
 var RPTS={OPTIMAL:100,GOOD:90,FAIR:72,WATCH:52};
 // mode: 'range' (band is best) · 'high' (higher is better) · 'low' (lower is better)
+// cat: sk = skeletal (blue) · soft = soft-tissue (red) · hoof (green)
 var METRICS=[
-  {id:'poll',  name:'Head carriage',       val:3,  unit:'°',opt:[0,6],   mode:'low',  px:22,py:24},
-  {id:'neck',  name:'Neck set',            val:63, unit:'°',opt:[55,70],  mode:'range',px:27,py:38},
-  {id:'should',name:'Shoulder angle',      val:47, unit:'°',opt:[43,52],  mode:'range',px:38,py:46},
-  {id:'girth', name:'Girth depth',         val:82, unit:'%',opt:[78,90],  mode:'high', px:40,py:56},
-  {id:'humer', name:'Humerus angle',       val:58, unit:'°',opt:[52,62],  mode:'range',px:42,py:60},
-  {id:'knee',  name:'Fore knee deviation', val:2,  unit:'°',opt:[0,4],    mode:'low',  px:40,py:74},
-  {id:'fpast', name:'Fore pastern angle',  val:53, unit:'°',opt:[50,56],  mode:'range',px:39,py:85},
-  {id:'fhoof', name:'Fore hoof balance',   val:88, unit:'%',opt:[82,96],  mode:'high', px:39,py:93},
-  {id:'with',  name:'Wither definition',   val:84, unit:'%',opt:[78,100], mode:'high', px:44,py:30},
-  {id:'back',  name:'Back length ratio',   val:47, unit:'%',opt:[43,49],  mode:'range',px:55,py:29},
-  {id:'loin',  name:'Loin coupling',       val:86, unit:'%',opt:[80,100], mode:'high', px:63,py:29},
-  {id:'croup', name:'Croup slope',         val:27, unit:'°',opt:[22,33],  mode:'range',px:72,py:28},
-  {id:'hip',   name:'Hip angle',           val:49, unit:'°',opt:[44,54],  mode:'range',px:72,py:40},
-  {id:'stifle',name:'Stifle angle',        val:123,unit:'°',opt:[118,128],mode:'range',px:71,py:56},
-  {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',px:76,py:74},
-  {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],  mode:'high', px:74,py:93}
+  {id:'poll',  name:'Head carriage',       val:3,  unit:'°',opt:[0,6],   mode:'low',  cat:'sk',  px:22,py:24},
+  {id:'neck',  name:'Neck set',            val:63, unit:'°',opt:[55,70],  mode:'range',cat:'soft',px:27,py:38},
+  {id:'should',name:'Shoulder angle',      val:47, unit:'°',opt:[43,52],  mode:'range',cat:'sk',  px:38,py:46},
+  {id:'girth', name:'Girth depth',         val:82, unit:'%',opt:[78,90],  mode:'high', cat:'soft',px:40,py:56},
+  {id:'humer', name:'Humerus angle',       val:58, unit:'°',opt:[52,62],  mode:'range',cat:'sk',  px:42,py:60},
+  {id:'knee',  name:'Fore knee deviation', val:2,  unit:'°',opt:[0,4],    mode:'low',  cat:'sk',  px:40,py:74},
+  {id:'fpast', name:'Fore pastern angle',  val:53, unit:'°',opt:[50,56],  mode:'range',cat:'sk',  px:39,py:85},
+  {id:'fhoof', name:'Fore hoof balance',   val:88, unit:'%',opt:[82,96],  mode:'high', cat:'hoof',px:39,py:93},
+  {id:'with',  name:'Wither definition',   val:84, unit:'%',opt:[78,100], mode:'high', cat:'sk',  px:44,py:30},
+  {id:'back',  name:'Back length ratio',   val:47, unit:'%',opt:[43,49],  mode:'range',cat:'sk',  px:55,py:29},
+  {id:'loin',  name:'Loin coupling',       val:86, unit:'%',opt:[80,100], mode:'high', cat:'soft',px:63,py:29},
+  {id:'croup', name:'Croup slope',         val:27, unit:'°',opt:[22,33],  mode:'range',cat:'sk',  px:72,py:28},
+  {id:'hip',   name:'Hip angle',           val:49, unit:'°',opt:[44,54],  mode:'range',cat:'sk',  px:72,py:40},
+  {id:'stifle',name:'Stifle angle',        val:123,unit:'°',opt:[118,128],mode:'range',cat:'sk',  px:71,py:56},
+  {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',cat:'sk',  px:76,py:74},
+  {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],  mode:'high', cat:'hoof',px:74,py:93}
 ];
+var CATCOL={sk:'#3b82f6',soft:'#ef4444',hoof:'#22c55e'};
+var CATNAME={sk:'Skeletal',soft:'Soft tissue',hoof:'Hoof'};
 var DEFAULT_POS=METRICS.map(function(m){return [m.px,m.py];});
 
 function rateOf(m){
@@ -277,11 +283,11 @@ function drawMarkers(){
   var layer=$('#kp-layer'); while(layer.firstChild)layer.removeChild(layer.firstChild);
   if(!hasPhoto) return;
   var showLab=$('#toggle-labels').checked;
-  METRICS.forEach(function(m){
-    var col=RCOL[rateOf(m)];
+  METRICS.forEach(function(m,i){
+    var col=CATCOL[m.cat]||'#3b82f6';
     var kp=document.createElement('div'); kp.className='kp'+(m.px>62?' right':'');
     kp.style.left=m.px+'%'; kp.style.top=m.py+'%'; kp.style.color=col;
-    var dot=document.createElement('div'); dot.className='dot'; kp.appendChild(dot);
+    var dot=document.createElement('div'); dot.className='dot'; dot.textContent=(i+1); kp.appendChild(dot);
     if(showLab){
       var lab=document.createElement('div'); lab.className='lab';
       lab.appendChild(document.createTextNode(m.name));
