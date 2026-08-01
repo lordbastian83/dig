@@ -167,7 +167,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
       <div class="card">
         <h2>Market trend — median price index</h2>
-        <svg class="spark" id="spark" viewBox="0 0 320 70" preserveAspectRatio="none"></svg>
+        <svg class="spark" id="spark" viewBox="0 0 320 70" preserveAspectRatio="none" aria-hidden="true"></svg>
         <div class="sub" style="font-size:.72rem;display:flex;justify-content:space-between"><span>Jan</span><span>trend <b class="up">+6.2%</b></span></div>
       </div>
     </div>
@@ -232,7 +232,7 @@ $('#kpis').innerHTML=KPIS.map(function(k){return '<div class="kpi"><div class="k
 /* AI performance index gauge */
 (function(){
   var v=82,size=118,stroke=11,r=(size-stroke)/2,c=2*Math.PI*r,off=c*(1-v/100),col=bandCol(v);
-  $('#idx-gauge').innerHTML='<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+  $('#idx-gauge').innerHTML='<svg role="img" aria-label="AI performance index '+v+' out of 100" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
     '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="#1c2a44" stroke-width="'+stroke+'"/>'+
     '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="'+stroke+'" stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" transform="rotate(-90 '+size/2+' '+size/2+')"/>'+
     '<text x="'+size/2+'" y="'+(size/2)+'" fill="'+col+'" font-size="30" font-weight="700" font-family="IBM Plex Mono,monospace" text-anchor="middle">'+v+'</text>'+
@@ -275,7 +275,7 @@ $('#opps').innerHTML=OPPS.map(function(o){var col=bandCol(o[2]);
     arcs+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+s[2]+'" stroke-width="'+stroke+'" '+
       'stroke-dasharray="'+len.toFixed(1)+' '+(c-len).toFixed(1)+'" stroke-dashoffset="'+(-acc).toFixed(1)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
     acc+=len;});
-  $('#donut').innerHTML='<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+arcs+
+  $('#donut').innerHTML='<svg role="img" aria-label="Risk profile, mostly low risk" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+arcs+
     '<text x="'+cx+'" y="'+(cy-3)+'" fill="#2CC1A0" font-size="22" font-weight="700" font-family="IBM Plex Mono,monospace" text-anchor="middle">LOW</text>'+
     '<text x="'+cx+'" y="'+(cy+15)+'" fill="#8598b5" font-size="9" text-anchor="middle" font-family="Outfit,sans-serif">RISK LEVEL</text></svg>';
   $('#risk-legend').innerHTML=segs.map(function(s){return '<div><i style="background:'+s[2]+'"></i>'+s[0]+'<b>'+s[1]+'%</b></div>';}).join('');

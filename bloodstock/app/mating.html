@@ -241,13 +241,13 @@ function pieChart(segs,size){
     var x1=cx+r*Math.cos(a),y1=cy+r*Math.sin(a),x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2),large=frac>0.5?1:0;
     out+='<path d="M'+cx+' '+cy+' L'+x1.toFixed(1)+' '+y1.toFixed(1)+' A'+r+' '+r+' 0 '+large+' 1 '+x2.toFixed(1)+' '+y2.toFixed(1)+' Z" fill="'+s[2]+'" stroke="#0b1626" stroke-width="1.5"/>';
     a=a2;});
-  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+out+'</svg>';
+  return '<svg aria-hidden="true" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+out+'</svg>';
 }
 function donutChart(segs,size){
   size=size||120;var stroke=17,r=(size-stroke)/2,c=2*Math.PI*r,cx=size/2,cy=size/2,acc=0,total=segs.reduce(function(s,x){return s+x[1];},0)||1,out='';
   segs.forEach(function(s){var len=c*s[1]/total;
     out+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+s[2]+'" stroke-width="'+stroke+'" stroke-dasharray="'+len.toFixed(1)+' '+(c-len).toFixed(1)+'" stroke-dashoffset="'+(-acc).toFixed(1)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';acc+=len;});
-  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+out+'</svg>';
+  return '<svg aria-hidden="true" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+out+'</svg>';
 }
 
 /* ---- scoring ---- */
@@ -299,7 +299,7 @@ function renderDonut(){
 }
 function renderScore(){
   var v=matingScore(),b=band(v);
-  $('#score-gauge').innerHTML='<svg width="128" height="128" viewBox="0 0 128 128">'+ring(v,128,11,64,64,b[1])+
+  $('#score-gauge').innerHTML='<svg role="img" aria-label="Mating analysis score '+v+' out of 100, '+b[0]+'" width="128" height="128" viewBox="0 0 128 128">'+ring(v,128,11,64,64,b[1])+
     '<text x="64" y="64" fill="'+b[1]+'" font-size="32" font-weight="700" font-family="IBM Plex Mono,monospace" text-anchor="middle">'+v+'</text>'+
     '<text x="64" y="84" fill="#8598b5" font-size="11" text-anchor="middle" font-family="Outfit,sans-serif">/ 100</text></svg>';
   var pill=$('#score-band');pill.textContent=b[0];pill.style.background=b[1]+'22';pill.style.color=b[1];

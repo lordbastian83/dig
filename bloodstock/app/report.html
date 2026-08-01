@@ -292,7 +292,7 @@ function drawRisk(){
   var ov=overall(), risk=Math.max(2,Math.round((100-ov)*0.9));
   var lab=risk<=15?['LOW RISK','#2CC1A0']:risk<=30?['MODERATE','#e7b93a']:['ELEVATED','#e5484d'];
   var size=110,stroke=13,r=(size-stroke)/2,c=2*Math.PI*r,cx=size/2,cy=size/2,len=c*risk/100;
-  $('#risk-donut').innerHTML='<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+  $('#risk-donut').innerHTML='<svg role="img" aria-label="Risk score '+risk+' percent, '+lab[0]+'" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
     '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#1c2a44" stroke-width="'+stroke+'"/>'+
     '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+lab[1]+'" stroke-width="'+stroke+'" stroke-linecap="round" stroke-dasharray="'+len.toFixed(1)+' '+(c-len).toFixed(1)+'" transform="rotate(-90 '+cx+' '+cy+')"/>'+
     '<text x="'+cx+'" y="'+(cy+5)+'" fill="'+lab[1]+'" font-size="20" font-weight="700" font-family="IBM Plex Mono,monospace" text-anchor="middle">'+risk+'%</text></svg>';
