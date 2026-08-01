@@ -1234,3 +1234,18 @@ kbd {
 .lockup .sub-line{color:#DFE2E8}
 .hero-media .hero-horse{object-fit:contain}
 img.logo-mark{border-radius:8px}
+
+/* Mobile overflow fix: wide data tables (min-width:640) must scroll inside their
+   card, not stretch the whole page. Grid/flex items default to min-width:auto
+   (=min-content), so pin them to 0 and cap the scroll container at the card width. */
+main > *, .card { min-width: 0; }
+.card > * { min-width: 0; }
+.table-wrap { max-width: 100%; }
+
+/* Mobile header: wrap the brand nav instead of running it off-screen */
+.site-header { flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .site-header { gap: .5rem .55rem; }
+  .site-header .tagline { display: none; }
+  .nav-cta { font-size: .72rem; }
+}
