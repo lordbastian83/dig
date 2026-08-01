@@ -145,7 +145,7 @@ main > section, main > .hero { scroll-margin-top: 116px; }
 .site-header h1 {
   font-family: var(--sans);  /* the wordmark is the brand sans, never the heading serif */
   font-size: 1.7rem; margin: 0; font-weight: 700; color: var(--cloud);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.01em; white-space: nowrap;
   display: inline-flex; align-items: flex-end;
 }
 .nav-cta {
@@ -231,8 +231,8 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
   width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
   border: 1px solid var(--border);
 }
-.hero-media img + button + .hero-horse,
-.hero-media img + .hero-horse { display: none; }  /* photo wins when present */
+.hero-media img:not([hidden]) + button + .hero-horse,
+.hero-media img:not([hidden]) + .hero-horse { display: none; }  /* photo wins only when actually shown */
 .hero-horse { width: 100%; height: 100%; }
 #hero-set {
   position: absolute; bottom: -6px; right: -6px;

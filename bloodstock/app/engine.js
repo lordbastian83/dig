@@ -1,4 +1,4 @@
-/* vault racing — shared valuation engine.
+/* Bio-Metric Thoroughbreds — shared valuation engine.
    Loaded by the browser app (script tag → globalThis.VaultRacingEngine) and
    by the pipeline notifier (node import), exactly like budsignal's engine.js,
    so a lot scores identically on the site and in alerts. */

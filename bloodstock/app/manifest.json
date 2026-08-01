@@ -1,13 +1,18 @@
 {
-  "name": "vault racing — scanner",
-  "short_name": "vault racing",
-  "description": "The Imperial Emperor screen: score sales lots, compute hard max bids, keep a watchlist. Analysis tool — not financial advice.",
+  "name": "Bio-Metric Thoroughbreds \u2014 scanner",
+  "short_name": "Bio-Metric",
+  "description": "The Imperial Emperor screen: score sales lots, compute hard max bids, keep a watchlist. Analysis tool \u2014 not financial advice.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#12203A",
   "theme_color": "#12203A",
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
   ]
 }
