@@ -27,7 +27,7 @@
   .logo{height:52px;width:auto;flex:none}
   .lock{display:flex;flex-direction:column;line-height:1}
   .lock b{font-size:1.5rem;font-weight:700;letter-spacing:-.01em}
-  .lock span{font-size:.58rem;text-transform:uppercase;letter-spacing:.34em;color:var(--orange);margin-top:.2rem}
+  .lock span{font-size:.6rem;text-transform:lowercase;letter-spacing:.28em;color:var(--orange);margin-top:.2rem}
   .tag{font-size:.8rem;color:var(--muted)}
   .tag em{color:var(--orange);font-style:normal;font-weight:600}
   .band-nav{margin-left:auto;display:flex;gap:8px}
@@ -57,15 +57,15 @@
   .stage-empty small{max-width:360px;line-height:1.5}
   .kp-layer{position:absolute;inset:0}
   .kp{position:absolute;transform:translate(-50%,-50%);cursor:grab;touch-action:none;z-index:2}
-  .kp .dot{width:20px;height:20px;border-radius:50%;background:currentColor;border:2px solid #0a1120;box-shadow:0 0 0 2px rgba(8,14,26,.4),0 0 8px 1px currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;font-family:var(--mono)}
+  .kp .dot{width:23px;height:23px;border-radius:50%;background:var(--kc,#3f8fe0);border:2px solid #fff;box-shadow:0 0 0 1.5px rgba(10,17,32,.55),0 0 11px 2px var(--kc,#3f8fe0);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#0a1526;font-family:var(--mono)}
   .kp-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:.72rem;color:var(--muted)}
   .kp-legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px}
-  .kp .lab{position:absolute;left:15px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:11px;font-weight:600;color:#e6ecf5;background:rgba(9,17,30,.86);border:1px solid currentColor;border-radius:4px;padding:2px 6px;pointer-events:none}
+  .kp .lab{position:absolute;left:16px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:11px;font-weight:600;color:#e6ecf5;background:rgba(9,17,30,.9);border:1px solid var(--kc,#3f8fe0);border-radius:4px;padding:2px 6px;pointer-events:none}
   .kp .lab b{font-family:var(--mono);margin-left:5px}
   .kp.right .lab{left:auto;right:15px}
   .kp.dragging{cursor:grabbing}
   .kp.dragging .dot{box-shadow:0 0 0 4px rgba(220,182,74,.3),0 0 12px 3px currentColor}
-  .stage-badge{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:8px;background:rgba(9,17,30,.82);border:1px solid var(--line);border-radius:8px;padding:6px 11px;z-index:3}
+  .stage-badge{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:8px;background:rgba(9,17,30,.82);border:1px solid var(--line);border-radius:8px;padding:6px 11px;z-index:3}
   .stage-badge .bv{font-family:var(--mono);font-size:1.5rem;font-weight:700;line-height:1}
   .stage-badge .bl{font-size:.56rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
   .diagram-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
@@ -155,7 +155,7 @@ img.logo{border-radius:8px}
         <label><input type="checkbox" id="toggle-labels"> Labels</label>
         <button class="btn" id="reset-kp">Reset points</button>
       </div>
-      <div class="kp-legend"><span><i style="background:#3b82f6"></i>Skeletal markers</span><span><i style="background:#ef4444"></i>Soft-tissue markers</span><span><i style="background:#22c55e"></i>Hoof markers</span></div>
+      <div class="kp-legend"><span><i style="background:#3f8fe0"></i>Skeletal markers</span><span><i style="background:#DCB64A"></i>Soft-tissue markers</span><span><i style="background:#2CC1A0"></i>Hoof markers</span></div>
     </div>
 
     <!-- ===== score + metrics editor ===== -->
@@ -237,7 +237,7 @@ var METRICS=[
   {id:'hock',  name:'Hock angle',          val:147,unit:'°',opt:[140,152],mode:'range',cat:'sk',  px:20,py:70},
   {id:'hhoof', name:'Hind hoof balance',   val:86, unit:'%',opt:[83,97],  mode:'high', cat:'hoof',px:16,py:93}
 ];
-var CATCOL={sk:'#3b82f6',soft:'#ef4444',hoof:'#22c55e'};
+var CATCOL={sk:'#3f8fe0',soft:'#DCB64A',hoof:'#2CC1A0'};
 var CATNAME={sk:'Skeletal',soft:'Soft tissue',hoof:'Hoof'};
 var DEFAULT_POS=METRICS.map(function(m){return [m.px,m.py];});
 
@@ -281,9 +281,9 @@ function drawMarkers(){
   if(!hasPhoto) return;
   var showLab=$('#toggle-labels').checked;
   METRICS.forEach(function(m,i){
-    var col=CATCOL[m.cat]||'#3b82f6';
+    var col=CATCOL[m.cat]||'#3f8fe0';
     var kp=document.createElement('div'); kp.className='kp'+(m.px>62?' right':'');
-    kp.style.left=m.px+'%'; kp.style.top=m.py+'%'; kp.style.color=col;
+    kp.style.left=m.px+'%'; kp.style.top=m.py+'%'; kp.style.color=col; kp.style.setProperty('--kc',col);
     var dot=document.createElement('div'); dot.className='dot'; dot.textContent=(i+1); kp.appendChild(dot);
     if(showLab){
       var lab=document.createElement('div'); lab.className='lab';
