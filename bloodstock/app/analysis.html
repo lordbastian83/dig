@@ -52,7 +52,7 @@
   /* diagram */
   .diagram{position:relative;background:radial-gradient(120% 90% at 50% 30%,#0f1d33,#0a1120);border:1px solid var(--line);border-radius:10px;overflow:hidden}
   .diagram svg{position:relative;z-index:1;display:block;width:100%;height:auto}
-  .photo-under{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:0}
+  .photo-under{position:absolute;inset:0;width:100%;height:100%;background-size:cover;background-position:center;display:none;z-index:0}
   .diagram-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
   .btn{font-family:var(--sans);font-size:.8rem;font-weight:600;color:var(--cloud);background:#16233c;border:1px solid var(--line);border-radius:5px;padding:7px 11px;cursor:pointer;transition:.15s}
   .btn:hover{border-color:var(--orange);color:#fff}
@@ -127,7 +127,7 @@
     <div class="card">
       <h2><span class="n">▸</span> Keypoint conformation map</h2>
       <div class="diagram" id="diagram">
-        <img id="photo" class="photo-under" alt="">
+        <div id="photo" class="photo-under" role="img" aria-label="uploaded horse photo"></div>
         <svg id="svg" viewBox="0 0 980 560" aria-label="Horse conformation keypoint diagram">
           <defs>
             <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
@@ -335,10 +335,11 @@ $('#photo-input').addEventListener('change',function(ev){
   var f=ev.target.files[0]; if(!f)return;
   // Only accept image files; render as a plain <img> underlay (object URL, in-browser).
   if(!/^image\//.test(f.type)){alert('Please choose an image file.');return;}
-  var img=$('#photo'); img.src=URL.createObjectURL(f); img.style.display='block';
+  // Render the photo as a CSS background (object URL) — a style assignment, never an HTML/URL attribute sink.
+  var box=$('#photo'); box.style.backgroundImage='url("'+URL.createObjectURL(f)+'")'; box.style.display='block';
   $('#photo-clear').hidden=false;
 });
-$('#photo-clear').addEventListener('click',function(){var img=$('#photo');img.style.display='none';img.removeAttribute('src');this.hidden=true;$('#photo-input').value='';});
+$('#photo-clear').addEventListener('click',function(){var box=$('#photo');box.style.display='none';box.style.backgroundImage='';this.hidden=true;$('#photo-input').value='';});
 $('#toggle-wire').addEventListener('change',function(){$('#horse').style.display=this.checked?'':'none';});
 $('#toggle-labels').addEventListener('change',drawCallouts);
 
