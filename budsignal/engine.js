@@ -291,6 +291,7 @@
       const a = ind.atr[s.i];
       const dir = s.side === 'long' ? 1 : -1;
       const tr = trailingScore(candles, s.i, s.side, s.entry, a);
+      s.stop = s.entry - dir * CFG.STOP_ATR * a; // the stop validation scores
       s.strategy = 'breakout';
       s.exitMode = 'trail';
       s.target = null; // no fixed target — the trailing stop is the exit
@@ -341,6 +342,7 @@
       if (base == null || atrPct[s.i] == null || atrPct[s.i] <= base) continue;
       const dir = s.side === 'long' ? 1 : -1;
       const tr = trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
+      s.stop = s.entry - dir * CFG.STOP_ATR * ind.atr[s.i];
       s.strategy = 'scalp';
       s.exitMode = 'trail';
       s.target = null;
@@ -361,7 +363,12 @@
   // (Donchian-55 on daily candles + trailing exit: validate +1.5%/trade net,
   // PF 1.9, pooled across markets). Daily candles are aggregated from the 4h
   // feed, so no extra data source is needed.
-  const SWING = { LOOKBACK: 55, EARLY_LOOKBACK: 20, CANDLE_MS: 86400000 };
+  // Exits grid-validated 2026-09: stop 2x / trail 3x / 24-day window beat the
+  // prior 1.5/2/18 in BOTH walk-forward periods (train +0.39% vs +0.23%,
+  // validate +2.26% vs +1.51% per trade net). Applies to the main 55-day
+  // stream only — the early-20 variant was not grid-tested and keeps the
+  // defaults it was validated with.
+  const SWING = { LOOKBACK: 55, EARLY_LOOKBACK: 20, CANDLE_MS: 86400000, STOP_ATR: 2, TRAIL_ATR: 3, EVAL: 24 };
 
   function toDailyCandles(candles) {
     const by = new Map();
@@ -382,7 +389,13 @@
     const ind = computeIndicators(daily);
     const score = (s) => {
       const dir = s.side === 'long' ? 1 : -1;
-      const tr = trailingScore(daily, s.i, s.side, s.entry, ind.atr[s.i]);
+      const a = ind.atr[s.i];
+      const stopAtr = s.early ? CFG.STOP_ATR : SWING.STOP_ATR;
+      const tr = s.early
+        ? trailingScore(daily, s.i, s.side, s.entry, a)
+        : trailingScore(daily, s.i, s.side, s.entry, a, { stopAtr: SWING.STOP_ATR, trailAtr: SWING.TRAIL_ATR, evalN: SWING.EVAL });
+      // displayed/sized stop = the stop the validation actually scored
+      s.stop = s.entry - dir * stopAtr * a;
       s.strategy = 'swing';
       s.exitMode = 'trail';
       s.target = null;
@@ -517,6 +530,17 @@
   // not add any.
   const STREAM_RISK = { swing: 1.25, swingEarly: 0.75, breakout: 1.0, scalp: 0.5 };
 
+  // Side-split validation (2026-09): shorts lose net in at least one
+  // walk-forward period on both the 4h breakout and daily swing-55 streams,
+  // while longs carry all the edge. Funded = real-money-eligible by stream,
+  // side, and (for breakout) per-market edge.
+  function fundedSide(sig) {
+    if (sig.side !== 'short') return true;
+    if (sig.strategy === 'breakout') return false;
+    if (sig.strategy === 'swing' && !sig.early) return false;
+    return true; // scalp combo and early swing were validated with both sides
+  }
+
   function riskMultiplier(sig) {
     if (!sig || !sig.strategy || sig.strategy === 'cross') return 1;
     if (sig.strategy === 'swing') return sig.early ? STREAM_RISK.swingEarly : STREAM_RISK.swing;
@@ -565,6 +589,6 @@
     closedPrefix, closedOf, favorableRate,
     trailingScore, trailingComparison,
     mlFeatures, mlScore, mlTrain,
-    tradePlan, riskMultiplier,
+    tradePlan, riskMultiplier, fundedSide,
   };
 })();
