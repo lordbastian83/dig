@@ -534,6 +534,89 @@ async function main() {
     }
   }
 
+  // ---- WTI deep-dive ----
+  // Owner-requested single-market focus. Testing many variants on ONE market
+  // is a multiple-comparisons trap, so the bar is stricter than the global
+  // 70/30: a THREE-way split (tune 50% / select 25% / confirm 25%), and a
+  // variant is only a candidate if net-positive in ALL THREE segments with
+  // >=15 confirm trades. Even a pass is not funded directly — it would run
+  // as a tracked paper stream first.
+  {
+    const cost = 0.05;
+    const candles = DEMO ? demoCandles(78, 99) : await fetchHistory('CLUSD', { years: Math.max(YEARS, 5) });
+    if (candles.length < (DEMO ? 500 : 2000)) {
+      lines.push('## WTI deep-dive', '', `Insufficient history (${candles.length} candles) — skipped.`, '');
+    } else {
+      const daily = E.toDailyCandles(candles);
+      const segFor = (arr) => {
+        const tA = arr[Math.floor(arr.length * 0.5)].t;
+        const tB = arr[Math.floor(arr.length * 0.75)].t;
+        return (t) => (t < tA ? 'a' : t < tB ? 'b' : 'c');
+      };
+      const run = (arr, opts, side, exitOpts, session) => {
+        const ind = E.computeIndicators(arr);
+        const seg = segFor(arr);
+        const pools = { a: [], b: [], c: [] };
+        for (const s of E.computeBreakoutSignals(arr, ind, opts)) {
+          if (side && s.side !== side) continue;
+          if (session) {
+            const hr = new Date(s.t).getUTCHours();
+            if (hr < 12 || hr >= 20) continue; // NY energy hours
+          }
+          const tr = E.trailingScore(arr, s.i, s.side, s.entry, ind.atr[s.i], exitOpts);
+          if (!tr.closed) continue;
+          pools[seg(s.t)].push(tr.movePct - cost);
+        }
+        return pools;
+      };
+      const crossRun = (arr) => {
+        const ind = E.computeIndicators(arr);
+        const seg = segFor(arr);
+        const pools = { a: [], b: [], c: [] };
+        for (const s of E.closedOf(E.computeSignals(arr, ind, true))) pools[seg(s.t)].push(s.movePct - cost);
+        return pools;
+      };
+      const swingExits = { stopAtr: E.SWING.STOP_ATR, trailAtr: E.SWING.TRAIL_ATR, evalN: E.SWING.EVAL };
+      const variants = [
+        ['4h breakout-20', () => run(candles, { lookback: 20 }, null)],
+        ['4h breakout-20 longs', () => run(candles, { lookback: 20 }, 'long')],
+        ['4h breakout-55', () => run(candles, {}, null)],
+        ['4h breakout-55 longs', () => run(candles, {}, 'long')],
+        ['4h breakout-55 shorts', () => run(candles, {}, 'short')],
+        ['4h breakout-100', () => run(candles, { lookback: 100 }, null)],
+        ['4h breakout-100 longs', () => run(candles, { lookback: 100 }, 'long')],
+        ['4h breakout-55 NY session (12-20 UTC)', () => run(candles, {}, null, undefined, true)],
+        ['4h filtered cross', () => crossRun(candles)],
+        ['daily breakout-20', () => run(daily, { lookback: 20 }, null)],
+        ['daily breakout-20 longs', () => run(daily, { lookback: 20 }, 'long')],
+        ['daily breakout-55 (swing exits)', () => run(daily, {}, null, swingExits)],
+        ['daily breakout-55 longs (swing exits)', () => run(daily, {}, 'long', swingExits)],
+        ['daily breakout-100', () => run(daily, { lookback: 100 }, null)],
+      ];
+      lines.push(
+        '## WTI deep-dive',
+        '',
+        `${candles.length} 4h candles (${day(candles[0].t)} → ${day(candles[candles.length - 1].t)}), ${daily.length} daily. ` +
+        'Three-way split (tune / select / confirm); a candidate must be net-positive in ALL segments with ≥15 confirm trades. ' +
+        `${variants.length} variants tested — with this many looks at one market, treat even a triple pass as a paper candidate, not a funded stream.`,
+        '',
+        '| Variant | Tune (net) | Select (net) | Confirm (net) | Verdict |',
+        '|---|---|---|---|---|',
+      );
+      for (const [label, fn] of variants) {
+        const p = fn();
+        const A = stats(p.a), B = stats(p.b), C = stats(p.c);
+        const pass = A && B && C && A.avg > 0 && B.avg > 0 && C.avg > 0 && C.n >= 15;
+        const v = !A || !B || !C ? '⚠️ too few trades'
+          : pass ? '✅ triple pass — paper candidate'
+          : '❌ fails at least one segment';
+        lines.push(`| ${label} | ${fmtStats(A)} | ${fmtStats(B)} | ${fmtStats(C)} | ${v} |`);
+      }
+      lines.push('');
+      console.log('WTI deep-dive evaluated');
+    }
+  }
+
   // ---- ML meta-labeling: train on train-period baseline signals, judge on validate ----
   let mlPassed = false;
   if (mlRows.train.length >= 100 && mlRows.validate.length >= 30) {
