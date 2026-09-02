@@ -5,6 +5,8 @@ name: BudSignal walk-forward research
 # budsignal-data branch. Requires the FMP_API_KEY secret.
 
 on:
+  schedule:
+    - cron: '30 6 1 * *'   # monthly re-validation: edges decay, verdicts must not
   workflow_dispatch:
     inputs:
       years:

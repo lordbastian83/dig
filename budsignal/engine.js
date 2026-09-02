@@ -265,19 +265,20 @@
   // stop trails TRAIL_ATR behind the best price seen (chandelier), letting
   // winners run for up to TRAIL_EVAL candles. Used only for the measured
   // fixed-vs-trailing comparison — the shipped signal levels stay fixed.
-  function trailingScore(candles, i, side, entry, a) {
+  function trailingScore(candles, i, side, entry, a,
+    { stopAtr = CFG.STOP_ATR, trailAtr = CFG.TRAIL_ATR, evalN = CFG.TRAIL_EVAL } = {}) {
     const dir = side === 'long' ? 1 : -1;
-    let stop = entry - dir * CFG.STOP_ATR * a;
+    let stop = entry - dir * stopAtr * a;
     let best = entry;
-    for (let j = i + 1; j <= i + CFG.TRAIL_EVAL && j < candles.length; j++) {
+    for (let j = i + 1; j <= i + evalN && j < candles.length; j++) {
       const hitStop = dir === 1 ? candles[j].l <= stop : candles[j].h >= stop;
       if (hitStop) return { closed: true, exit: stop, movePct: (dir * (stop - entry) / entry) * 100 };
       best = dir === 1 ? Math.max(best, candles[j].h) : Math.min(best, candles[j].l);
-      const trailed = best - dir * CFG.TRAIL_ATR * a;
+      const trailed = best - dir * trailAtr * a;
       if (dir === 1 ? trailed > stop : trailed < stop) stop = trailed;
     }
-    const last = Math.min(i + CFG.TRAIL_EVAL, candles.length - 1);
-    if (last - i < CFG.TRAIL_EVAL) return { closed: false, exit: null, movePct: null };
+    const last = Math.min(i + evalN, candles.length - 1);
+    if (last - i < evalN) return { closed: false, exit: null, movePct: null };
     return { closed: true, exit: candles[last].c, movePct: (dir * (candles[last].c - entry) / entry) * 100 };
   }
 
