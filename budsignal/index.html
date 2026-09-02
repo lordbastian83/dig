@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LordBastian Signal Generator</title>
 <meta name="description" content="LordBastian Signal Generator — rules-based swing-trading signals for crypto, gold, indices and FX, computed in the open. Educational tool — not financial advice.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231a1a19'/%3E%3Cpath d='M10 22 L16 9 L22 22' stroke='%230ca30c' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23142033'/%3E%3Crect x='8' y='12' width='4' height='10' rx='1' fill='%2335c9f5'/%3E%3Crect x='15' y='7' width='4' height='12' rx='1' fill='%2322c55e'/%3E%3Crect x='22' y='14' width='4' height='9' rx='1' fill='%2335c9f5'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#070b12">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=61">
+<link rel="stylesheet" href="styles.css?v=62">
 </head>
 <body>
 
 <header class="site-header">
   <a class="brand" href="#top">
-    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#242423"/><path d="M10 22 L16 9 L22 22" stroke="#0ca30c" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#142033"/><rect x="8" y="12" width="4" height="10" rx="1" fill="#35c9f5"/><rect x="9.5" y="8" width="1" height="18" fill="#35c9f5"/><rect x="15" y="7" width="4" height="12" rx="1" fill="#22c55e"/><rect x="16.5" y="4" width="1" height="19" fill="#22c55e"/><rect x="22" y="14" width="4" height="9" rx="1" fill="#35c9f5"/><rect x="23.5" y="10" width="1" height="17" fill="#35c9f5"/></svg>
     <span>LordBastian Signals</span>
   </a>
   <button class="refresh-btn" id="refresh-btn" type="button" title="Refresh prices and signals" aria-label="Refresh data">↻</button>
@@ -43,7 +43,7 @@
 
   <!-- ============ Terminal masthead ============ -->
   <section class="hero">
-    <p class="hero-kicker">LordBastian Terminal · Crypto / Gold / Indices / FX · 1H · 4H · 1D</p>
+    <p class="hero-kicker">Crypto / Gold / Indices / FX · 1H · 4H · 1D</p>
     <h1>Trading signals computed in the open.</h1>
     <p class="hero-sub">
       Long and short entries from a fixed, published rule set: EMA trend crosses and Donchian
@@ -61,9 +61,9 @@
         <span class="term-cell">UTC <strong id="term-clock">—</strong></span>
         <span class="term-cell">FEED <strong><span id="data-source">connecting…</span></strong></span>
         <span class="term-cell">BUILD <strong id="term-build">—</strong></span>
+        <button class="key-jump" id="key-jump" type="button" hidden>⚠ demo prices — add your free data key</button>
       </div>
     </div>
-    <a class="cta" href="#dashboard">Open dashboard</a>
   </section>
 
   <!-- ============ Dashboard ============ -->
@@ -234,7 +234,7 @@
   <section id="methodology" class="section">
     <h2><span class="fn-code">RULE</span>How signals work</h2>
     <p class="section-sub">The full rule set. There is no discretionary step — what you read here is exactly what the code does.</p>
-    <details class="fold" id="rule-fold">
+    <details class="fold" id="rule-fold" open>
     <summary>Expand full rule set</summary>
     <div class="method-grid">
       <div class="method-card">
@@ -399,7 +399,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=61"></script>
-<script src="app.js?v=61"></script>
+<script src="engine.js?v=62"></script>
+<script src="app.js?v=62"></script>
 </body>
 </html>
