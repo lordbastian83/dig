@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=62">
+<link rel="stylesheet" href="styles.css?v=63">
 </head>
 <body>
 
@@ -200,7 +200,7 @@
         <summary>Playbook: allocation &amp; exit rules</summary>
         <h4>When several markets fire at once</h4>
         <ul>
-          <li><strong>Only validated streams qualify for real money:</strong> 🌊 daily swing signals (strongest edge), ◆ 4h breakouts on ✅ markets, and ⚡ 1h scalps (thin edge — Telegram only). Everything else (the cross stream, breakouts on ❌ markets) is paper/informational — the walk-forward research says it doesn't pay after costs.</li>
+          <li><strong>Only validated streams qualify for real money:</strong> 🌊 daily swing signals (strongest edge), ◆ 4h breakouts on ✅ markets, and ⚡ 1h scalps (thin edge — Telegram only). <strong>Longs only on swing-55 and breakout</strong> — shorts failed side-split validation and show as paper. Everything else (the cross stream, breakouts on ❌ markets) is paper/informational too.</li>
           <li><strong>Risk is edge-weighted, not flat:</strong> from a 1% base — 🌊 swing-55 risks 1.25%, ◆ 4h breakout 1%, 🌊 early swing 0.75%, ⚡ scalp 0.5%. Stronger validated edge earns more risk; every size stays far below the theoretical optimum. The plan and every alert already apply this.</li>
           <li><strong>Cap total open risk at 3% of the account</strong> — at most 3 positions open at once. NAS100 and SPX500 (and often US30) move together: treat two US-index positions as closer to one double-sized trade.</li>
           <li><strong>Drawdown throttle:</strong> if the account falls 10% from its high, halve every position size until it makes a new high. Losing streaks are when systems get abandoned or over-traded — this rule makes them survivable instead.</li>
@@ -209,7 +209,7 @@
         </ul>
         <h4>When to close — no discretion</h4>
         <ul>
-          <li><strong>Breakout / swing / scalp trades:</strong> initial stop 2×ATR from entry. After every candle close (4h, daily, or 1h respectively), move the stop to 2×ATR below the highest close since entry (above the lowest close, for shorts) — it only ever tightens. Close when price hits the stop, or at market after 18 candles (3 days / 18 days / 18 hours), whichever comes first. No profit target: that's what lets the occasional big winner pay for the frequent small losses.</li>
+          <li><strong>Breakout / scalp trades:</strong> initial stop 1.5×ATR, trail 2×ATR behind the best close after every candle (4h / 1h), hard exit after 18 candles (3 days / 18 hours). <strong>Swing-55 trades:</strong> initial stop 2×ATR, trail 3×ATR on daily closes, hard exit after 24 days (grid-validated). The stop only ever tightens; no profit target — the occasional big winner pays for the frequent small losses.</li>
           <li><strong>Cross trades (paper only):</strong> stop 1.5×ATR, target 2×ATR, stop to breakeven once 1×ATR in profit, time-exit after 24h.</li>
           <li><strong>Never widen a stop, never add to a loser, never re-enter a market the same day after a stop-out.</strong></li>
         </ul>
@@ -255,7 +255,7 @@
       </div>
       <div class="method-card">
         <h3><span class="step-num">🌊</span>Swing stream (daily)</h3>
-        <p>The same Donchian breakout on <em>daily</em> candles, trailing 2×ATR on daily closes (max 18 days). The 55-day variant is the strongest edge the walk-forward found (+1.5%/trade net in validation, PF 1.9); a validated 20-day "early swing" variant fires more often with a thinner edge (+0.5%/trade, PF 1.25) and is labelled separately. Fewer, bigger trades — cost drag shrinks as the timeframe grows.</p>
+        <p>The same Donchian breakout on <em>daily</em> candles. The 55-day stream is the strongest edge the walk-forward found — its exits are grid-validated (2×ATR stop, 3×ATR trail on daily closes, max 24 days: +2.3%/trade net in validation, PF 2.8, longs only for real money). The 20-day "early swing" variant fires more often with a thinner edge (2×ATR trail, max 18 days) and is labelled separately.</p>
       </div>
       <div class="method-card">
         <h3><span class="step-num">⚡</span>Scalp stream (1h)</h3>
@@ -399,7 +399,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=62"></script>
-<script src="app.js?v=62"></script>
+<script src="engine.js?v=63"></script>
+<script src="app.js?v=63"></script>
 </body>
 </html>

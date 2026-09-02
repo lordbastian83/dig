@@ -192,11 +192,12 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
   const trail = bk || scalp || swing;
   const arrow = `${sig.side === 'long' ? '🟢 LONG' : '🔴 SHORT'}${bk ? ' BREAKOUT' : scalp ? ' SCALP (1h)' : swing ? (sig.early ? ' EARLY SWING (daily-20)' : ' SWING (daily)') : ''}`;
   const windowEnd = fmtTime(sig.t + (sig.candleMs || E.CFG.CANDLE_MS));
-  const maxHold = scalp ? '18 hours' : swing ? '18 days' : '3 days';
+  const maxHold = scalp ? '18 hours' : swing ? (sig.early ? '18 days' : '24 days') : '3 days';
+  const trailMult = swing && !sig.early ? 3 : 2;
   const lines = [
     `${arrow} — <b>${cfg.pair}</b>`,
     trail
-      ? `Entry $${fmtPrice(sig.entry)} · Initial stop $${fmtPrice(sig.stop)} · Exit: 2×ATR trailing stop (max ${maxHold})`
+      ? `Entry $${fmtPrice(sig.entry)} · Initial stop $${fmtPrice(sig.stop)} · Exit: ${trailMult}×ATR trailing stop (max ${maxHold})`
       : `Entry $${fmtPrice(sig.entry)} · Stop $${fmtPrice(sig.stop)} · Target $${fmtPrice(sig.target)}`,
     (sig.confidence != null ? `Confidence ${sig.confidence}/100 · ` : '') +
       (mlModel && sig.rsiAt != null ? `AI score ${Math.round(E.mlScore(sig, mlModel) * 100)}% · ` : '') +
@@ -211,10 +212,12 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
         : `${plan.units.toFixed(plan.units < 1 ? 4 : 2)} units ≈ $${Math.round(plan.notionalUsd).toLocaleString('en-US')}`;
     lines.push(`💷 Plan: risk £${plan.riskGbp.toFixed(0)} (${plan.riskPctEff}% of £${ACCOUNT_GBP.toLocaleString('en-US')}${plan.riskPctEff !== RISK_PCT ? ', edge-weighted' : ''}) → ${size}${plan.rateApprox ? ' · approx £→$' : ''}`);
     lines.push(trail
-      ? `Close: raise stop to 2×ATR ${sig.side === 'long' ? 'below the highest' : 'above the lowest'} close after every ${scalp ? '1h' : swing ? 'daily' : '4h'} candle; hard exit after ${maxHold}`
+      ? `Close: raise stop to ${trailMult}×ATR ${sig.side === 'long' ? 'below the highest' : 'above the lowest'} close after every ${scalp ? '1h' : swing ? 'daily' : '4h'} candle; hard exit after ${maxHold}`
       : `Close: at target or stop; stop to entry once 1×ATR in profit; time-exit after 24h`);
   }
-  lines.push(scalp
+  lines.push(!E.fundedSide(sig)
+    ? `❌ <i>Paper only — SHORT signals failed side-split validation on this stream (longs carry the edge). Watch, don't fund.</i>`
+    : scalp
     ? `✅ Qualifies for real money — validated filtered scalp stream (thin edge: ~+0.2%/trade net over 100 validation trades; the session/volatility/market filters are what make it work)`
     : swing
       ? (sig.early

@@ -644,7 +644,7 @@
       badge.textContent = `${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}${s.strategy === 'breakout' ? ' · BREAKOUT' : s.strategy === 'swing' ? (s.early ? ' · EARLY SWING (DAILY-20)' : ' · SWING (DAILY)') : ''}`;
       $('signal-when').textContent = `${currentAsset} · fired ${fmtTime(s.t)} UTC`;
       copy.textContent = s.strategy === 'swing'
-        ? `Price closed ${s.side === 'long' ? `above its ${s.early ? '20' : '55'}-day high` : `below its ${s.early ? '20' : '55'}-day low`} on the daily chart — ${s.early ? 'the validated early-swing variant (thinner edge than the main daily-55 stream)' : 'the strongest validated stream'}. Exit is a 2×ATR trailing stop evaluated on daily closes (max 18 days). The entry window is one daily candle.`
+        ? `Price closed ${s.side === 'long' ? `above its ${s.early ? '20' : '55'}-day high` : `below its ${s.early ? '20' : '55'}-day low`} on the daily chart — ${s.early ? 'the validated early-swing variant (thinner edge than the main daily-55 stream)' : 'the strongest validated stream'}. Exit is a ${s.early ? '2' : '3'}×ATR trailing stop evaluated on daily closes (max ${s.early ? '18' : '24'} days). The entry window is one daily candle.`
         : s.strategy === 'breakout'
         ? (s.side === 'long'
           ? 'Price closed above its 55-candle high — a momentum breakout. Exit is a 2×ATR trailing stop rather than a fixed target: winners run, losers are cut. The entry window is one 4-hour candle.'
@@ -724,7 +724,9 @@
     const bk = s.strategy === 'breakout';
     const swing = s.strategy === 'swing';
     const es = edgeStatus?.assets?.[currentAsset];
-    const verdict = swing
+    const verdict = !E.fundedSide(s)
+      ? '<p class="plan-verdict no">❌ Paper only — SHORT signals failed side-split validation on this stream (longs carry the edge). Watch it, don\'t fund it.</p>'
+      : swing
       ? (s.early
         ? '<p class="plan-verdict ok">✅ Qualifies for real money — validated early-swing variant (+0.5%/trade net in validation, PF 1.25 — thinner edge than the main daily-55 stream).</p>'
         : '<p class="plan-verdict ok">✅ Qualifies for real money — the daily swing stream is the strongest validated edge (+1.5%/trade net in validation, PF 1.9).</p>')
@@ -741,7 +743,7 @@
         ? `set volume so <strong>position value ≈ $${fmtUsd(plan.notionalUsd)}</strong> — the chart uses an ETF proxy, so size by position value, not units`
         : `<strong>${plan.units.toFixed(plan.units < 1 ? 4 : 2)} ${currentAsset}</strong> ≈ $${fmtUsd(plan.notionalUsd)} position value`;
     const closeRule = bk || swing
-      ? `<strong>Close:</strong> when price hits the trailing stop — it starts at $${fmtPrice(s.stop)} and after every ${swing ? 'daily' : '4-hour'} close moves to 2×ATR ${s.side === 'long' ? 'below the highest' : 'above the lowest'} close since entry, never loosening. Hard exit at market after ${swing ? '18 days' : '3 days'}.`
+      ? `<strong>Close:</strong> when price hits the trailing stop — it starts at $${fmtPrice(s.stop)} and after every ${swing ? 'daily' : '4-hour'} close moves to ${swing && !s.early ? 3 : 2}×ATR ${s.side === 'long' ? 'below the highest' : 'above the lowest'} close since entry, never loosening. Hard exit at market after ${swing ? (s.early ? '18 days' : '24 days') : '3 days'}.`
       : `<strong>Close:</strong> at target $${fmtPrice(s.target)} or stop $${fmtPrice(s.stop)}; move the stop to entry once 1×ATR in profit; exit at market after 24h.`;
     body.innerHTML = `
       ${verdict}
@@ -851,7 +853,7 @@
     if (!body) return;
     if (!lastRecs) return;
     const px = new Map((lastSweepRows || []).map((r) => [r.a, r]));
-    const maxHoldH = (r) => (r.strategy === 'scalp' ? 18 : r.strategy === 'swing' ? 18 * 24 : 3 * 24);
+    const maxHoldH = (r) => (r.strategy === 'scalp' ? 18 : r.strategy === 'swing' ? (r.early ? 18 : 24) * 24 : 3 * 24);
     const all = lastRecs.filter((r) => r.outcome === 'open' && r.entry && r.stop && ASSETS[r.asset]);
     const open = all.filter((r) => (Date.now() - r.t) / 3600000 <= maxHoldH(r) * 1.5)
       .sort((a, b) => b.t - a.t);
@@ -871,8 +873,8 @@
       const stopPct = Math.abs(r.entry - r.stop) / r.entry * 100;
       const movePct = now != null ? (dir * (now - r.entry) / r.entry) * 100 : null;
       const R = stopPct && movePct != null ? movePct / stopPct : null;
-      const funded = r.strategy === 'swing' || r.strategy === 'scalp' ||
-        (r.strategy === 'breakout' && edgeStatus?.assets?.[r.asset]?.edge === true);
+      const funded = E.fundedSide(r) && (r.strategy === 'swing' || r.strategy === 'scalp' ||
+        (r.strategy === 'breakout' && edgeStatus?.assets?.[r.asset]?.edge === true));
       const gbp = R != null && funded ? acctGbp() * 0.01 * E.riskMultiplier(r) * R : null;
       const ageH = (Date.now() - r.t) / 3600000;
       const stream = r.strategy === 'breakout' ? '◆ Breakout' : r.strategy === 'swing' ? (r.early ? '🌊 Early swing' : '🌊 Swing') : r.strategy === 'scalp' ? '⚡ Scalp' : 'Cross';
