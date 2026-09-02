@@ -1,6 +1,6 @@
 # LordBastian Signal Generator — walk-forward research
 
-Generated 2026-09-02T20:45:11.624Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
+Generated 2026-09-02T21:10:53.714Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
 
 A variant only counts as an improvement if it beats its comparator in **both** periods — train-only wins are fitted noise.
 
@@ -221,6 +221,27 @@ Daily candles aggregated from the same history. Fewer, bigger trades — the dir
 |---|---|---|---|
 | long | 128 · 43% fav · avg +0.45% · PF 1.49 | 41 · 44% fav · avg +2.28% · PF 4.31 | ✅ carries its weight |
 | short | 30 · 37% fav · avg -0.72% · PF 0.56 | 23 · 30% fav · avg +0.14% · PF 1.10 | ❌ loses net in at least one period |
+
+## WTI deep-dive
+
+4473 4h candles (2023-10-01 → 2026-09-02), 908 daily. Three-way split (tune / select / confirm); a candidate must be net-positive in ALL segments with ≥15 confirm trades. 14 variants tested — with this many looks at one market, treat even a triple pass as a paper candidate, not a funded stream.
+
+| Variant | Tune (net) | Select (net) | Confirm (net) | Verdict |
+|---|---|---|---|---|
+| 4h breakout-20 | 114 · 31% fav · avg -0.27% · PF 0.69 | 56 · 30% fav · avg -0.14% · PF 0.85 | 50 · 38% fav · avg +0.97% · PF 1.75 | ❌ fails at least one segment |
+| 4h breakout-20 longs | 61 · 28% fav · avg -0.29% · PF 0.65 | 31 · 26% fav · avg -0.40% · PF 0.62 | 31 · 45% fav · avg +1.97% · PF 2.86 | ❌ fails at least one segment |
+| 4h breakout-55 | 68 · 24% fav · avg -0.64% · PF 0.37 | 28 · 25% fav · avg -0.09% · PF 0.90 | 30 · 43% fav · avg +2.05% · PF 2.89 | ❌ fails at least one segment |
+| 4h breakout-55 longs | 33 · 24% fav · avg -0.41% · PF 0.54 | 14 · 14% fav · avg -0.08% · PF 0.90 | 19 · 42% fav · avg +2.91% · PF 4.63 | ❌ fails at least one segment |
+| 4h breakout-55 shorts | 35 · 23% fav · avg -0.86% · PF 0.24 | 14 · 36% fav · avg -0.11% · PF 0.89 | 11 · 45% fav · avg +0.57% · PF 1.36 | ❌ fails at least one segment |
+| 4h breakout-100 | 44 · 27% fav · avg -0.50% · PF 0.46 | 16 · 31% fav · avg +0.20% · PF 1.27 | 20 · 45% fav · avg +2.95% · PF 4.62 | ❌ fails at least one segment |
+| 4h breakout-100 longs | 19 · 26% fav · avg -0.19% · PF 0.72 | 8 · 25% fav · avg +0.44% · PF 1.56 | 14 · 36% fav · avg +3.63% · PF 6.41 | ❌ fails at least one segment |
+| 4h breakout-55 NY session (12-20 UTC) | 8 · 13% fav · avg -1.26% · PF 0.02 | 7 · 57% fav · avg +1.75% · PF 6.74 | 6 · 67% fav · avg +2.08% · PF 5.46 | ❌ fails at least one segment |
+| 4h filtered cross | 11 · 18% fav · avg -0.38% · PF 0.51 | 3 · 100% fav · avg +0.91% · PF ∞ | 4 · 50% fav · avg -0.32% · PF 0.67 | ❌ fails at least one segment |
+| daily breakout-20 | 19 · 37% fav · avg -0.80% · PF 0.55 | 10 · 20% fav · avg -0.73% · PF 0.71 | 10 · 50% fav · avg +3.36% · PF 1.89 | ❌ fails at least one segment |
+| daily breakout-20 longs | 10 · 30% fav · avg -0.45% · PF 0.69 | 5 · 20% fav · avg +0.31% · PF 1.12 | 6 · 67% fav · avg +6.43% · PF 3.79 | ❌ fails at least one segment |
+| daily breakout-55 (swing exits) | 9 · 44% fav · avg -0.04% · PF 0.98 | 4 · 50% fav · avg +0.19% · PF 1.13 | 5 · 40% fav · avg +18.12% · PF 5.87 | ❌ fails at least one segment |
+| daily breakout-55 longs (swing exits) | 5 · 80% fav · avg +3.18% · PF 14.91 | 1 · 100% fav · avg +5.99% · PF ∞ | 3 · 67% fav · avg +35.90% · PF 73.35 | ❌ fails at least one segment |
+| daily breakout-100 | 5 · 40% fav · avg -1.01% · PF 0.16 | 4 · 25% fav · avg -1.90% · PF 0.29 | 4 · 25% fav · avg +7.15% · PF 3.13 | ❌ fails at least one segment |
 
 ## AI meta-label experiment
 
