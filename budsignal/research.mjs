@@ -465,6 +465,75 @@ async function main() {
     console.log('daily-candle study evaluated');
   }
 
+  // ---- Exit & side refinement on the validated streams ----
+  // The live exits (initial stop 1.5xATR, 2xATR chandelier, 18-candle
+  // window) were chosen a priori and never grid-tested; shorts have looked
+  // weaker than longs everywhere. Both are tested here on the exact
+  // validated entries. Pre-registered adoption rule: a variant replaces the
+  // live config only if net-positive in BOTH periods, >=30 validate trades,
+  // and it beats the current config's net average in BOTH periods.
+  {
+    const evalCombo = (which, opts, side) => {
+      const pool = { train: [], validate: [] };
+      for (const [asset] of Object.entries(ASSETS)) {
+        const c4 = histories[asset];
+        if (!c4 || c4.length < 800) continue;
+        const cost = costOf(asset);
+        const candles = which === 'bk4h' ? c4 : E.toDailyCandles(c4);
+        if (which === 'bk4h' && !edgeAssets.has(asset)) continue;
+        if (which !== 'bk4h' && candles.length < 400) continue;
+        const ind = E.computeIndicators(candles);
+        const splitT = candles[Math.floor(candles.length * 0.7)].t;
+        for (const s of E.computeBreakoutSignals(candles, ind, which === 'bk4h' ? {} : { lookback: 55 })) {
+          if (side && s.side !== side) continue;
+          const tr = E.trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i], opts);
+          if (!tr.closed) continue;
+          pool[s.t < splitT ? 'train' : 'validate'].push({ m: tr.movePct, c: cost });
+        }
+      }
+      return { tr: stats(net(pool.train)), va: stats(net(pool.validate)) };
+    };
+    const CUR = { stopAtr: 1.5, trailAtr: 2, evalN: 18 };
+    for (const [which, label] of [['bk4h', `4h breakout (edge markets: ${[...edgeAssets].join(', ') || 'none'})`], ['swingD', 'daily swing-55 (pooled)']]) {
+      const cur = evalCombo(which, CUR, null);
+      const verdict = (r) => {
+        if (!r.tr || !r.va || r.va.n < 30) return '⚠️ sample too small';
+        if (!(r.tr.avg > 0 && r.va.avg > 0)) return '❌ not net-positive both periods';
+        if (r.tr.avg > (cur.tr?.avg ?? -99) && r.va.avg > (cur.va?.avg ?? -99)) return '✅ beats live config both periods';
+        return '· no improvement';
+      };
+      lines.push(
+        `## Exit grid — ${label}`,
+        '',
+        '| stop / trail / window | Train (net) | Validate (net) | Verdict |',
+        '|---|---|---|---|',
+        `| **1.5 / 2 / 18 (live)** | ${fmtStats(cur.tr)} | ${fmtStats(cur.va)} | baseline |`,
+      );
+      for (const stopAtr of [1.5, 2])
+        for (const trailAtr of [1.5, 2, 3])
+          for (const evalN of [12, 18, 24]) {
+            if (stopAtr === CUR.stopAtr && trailAtr === CUR.trailAtr && evalN === CUR.evalN) continue;
+            const r = evalCombo(which, { stopAtr, trailAtr, evalN }, null);
+            lines.push(`| ${stopAtr} / ${trailAtr} / ${evalN} | ${fmtStats(r.tr)} | ${fmtStats(r.va)} | ${verdict(r)} |`);
+          }
+      lines.push(
+        '',
+        `## Side split — ${label} (live exits)`,
+        '',
+        '| Side | Train (net) | Validate (net) | Verdict |',
+        '|---|---|---|---|',
+      );
+      for (const side of ['long', 'short']) {
+        const r = evalCombo(which, CUR, side);
+        const v = !r.tr || !r.va || r.va.n < 15 ? '⚠️ sample too small'
+          : r.tr.avg > 0 && r.va.avg > 0 ? '✅ carries its weight' : '❌ loses net in at least one period';
+        lines.push(`| ${side} | ${fmtStats(r.tr)} | ${fmtStats(r.va)} | ${v} |`);
+      }
+      lines.push('');
+      console.log(`exit/side refinement evaluated: ${which}`);
+    }
+  }
+
   // ---- ML meta-labeling: train on train-period baseline signals, judge on validate ----
   let mlPassed = false;
   if (mlRows.train.length >= 100 && mlRows.validate.length >= 30) {
