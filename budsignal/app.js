@@ -842,47 +842,53 @@
 
   // Positions blotter: the ledger's open trades marked to the latest sweep
   // price. R is measured against the initial stop; £ applies the account's
-  // edge-weighted plan size for that stream.
+  // edge-weighted plan size for that stream. Ledger orphans (rows still
+  // "open" long past their stream's hard time-exit — feed-timestamp drift)
+  // are counted, not displayed: marking a dead row to today's price prints
+  // ±1000R nonsense.
   function renderBlotter() {
     const body = $('pos-body');
     if (!body) return;
     if (!lastRecs) return;
     const px = new Map((lastSweepRows || []).map((r) => [r.a, r]));
-    const open = lastRecs.filter((r) => r.outcome === 'open' && r.entry && r.stop && ASSETS[r.asset])
+    const maxHoldH = (r) => (r.strategy === 'scalp' ? 18 : r.strategy === 'swing' ? 18 * 24 : 3 * 24);
+    const all = lastRecs.filter((r) => r.outcome === 'open' && r.entry && r.stop && ASSETS[r.asset]);
+    const open = all.filter((r) => (Date.now() - r.t) / 3600000 <= maxHoldH(r) * 1.5)
       .sort((a, b) => b.t - a.t);
+    const orphans = all.length - open.length;
+    const orphanNote = orphans
+      ? `<tr><td colspan="9" class="table-empty">${orphans} stale ledger orphan${orphans > 1 ? 's' : ''} hidden (past their stream's hard exit — record-keeping artifacts, not live positions).</td></tr>`
+      : '';
     if (!open.length) {
-      body.innerHTML = '<tr><td colspan="9" class="table-empty">Flat — no open positions in the ledger.</td></tr>';
+      body.innerHTML = '<tr><td colspan="9" class="table-empty">Flat — no open positions in the ledger.</td></tr>' + orphanNote;
       return;
     }
     body.innerHTML = open.map((r) => {
       const dir = r.side === 'long' ? 1 : -1;
       const sweep = px.get(r.asset);
-      const now = sweep?.price ?? null;
+      // a demo price is not a mark — without live data the P&L columns stay blank
+      const now = sweep && !sweep.demo ? sweep.price : null;
       const stopPct = Math.abs(r.entry - r.stop) / r.entry * 100;
-      const movePct = now != null ? (dir * (now - r.entry) / r.entry) * 100 : r.movePct;
+      const movePct = now != null ? (dir * (now - r.entry) / r.entry) * 100 : null;
       const R = stopPct && movePct != null ? movePct / stopPct : null;
       const funded = r.strategy === 'swing' || r.strategy === 'scalp' ||
         (r.strategy === 'breakout' && edgeStatus?.assets?.[r.asset]?.edge === true);
       const gbp = R != null && funded ? acctGbp() * 0.01 * E.riskMultiplier(r) * R : null;
       const ageH = (Date.now() - r.t) / 3600000;
-      // rows still "open" long past their stream's hard time-exit are ledger
-      // orphans (feed timestamps drifted), not live positions — say so
-      const maxHoldH = r.strategy === 'scalp' ? 18 : r.strategy === 'swing' ? 18 * 24 : 3 * 24;
-      const stale = ageH > maxHoldH * 1.5;
       const stream = r.strategy === 'breakout' ? '◆ Breakout' : r.strategy === 'swing' ? (r.early ? '🌊 Early swing' : '🌊 Swing') : r.strategy === 'scalp' ? '⚡ Scalp' : 'Cross';
       const cls = (v) => (v >= 0 ? 'move-pos' : 'move-neg');
-      return `<tr${stale ? ' class="pos-stale"' : ''}>
-        <td>${ASSETS[r.asset].tab}${sweep?.demo ? '<span class="radar-dist">*</span>' : ''}</td>
-        <td>${stream}${funded ? '' : ' <span class="radar-dist">paper</span>'}${stale ? ' <span class="radar-hot">stale</span>' : ''}</td>
+      return `<tr>
+        <td>${ASSETS[r.asset].tab}</td>
+        <td>${stream}${funded ? '' : ' <span class="radar-dist">paper</span>'}</td>
         <td><span class="side-badge ${r.side}">${r.side === 'long' ? '▲ LONG' : '▼ SHORT'}</span></td>
         <td class="num">$${fmtPrice(r.entry)}</td>
-        <td class="num">${now != null ? '$' + fmtPrice(now) : '—'}</td>
+        <td class="num">${now != null ? '$' + fmtPrice(now) : '<span class="radar-dist">no live feed</span>'}</td>
         <td class="num ${movePct != null ? cls(movePct) : ''}">${movePct != null ? fmtPct(movePct) : '—'}</td>
         <td class="num ${R != null ? cls(R) : ''}">${R != null ? (R >= 0 ? '+' : '') + R.toFixed(2) + 'R' : '—'}</td>
         <td class="num ${gbp != null ? cls(gbp) : ''}">${gbp != null ? (gbp >= 0 ? '+£' : '−£') + fmtUsd(Math.abs(gbp)) : '—'}</td>
         <td class="num">${ageH < 48 ? ageH.toFixed(0) + 'h' : (ageH / 24).toFixed(1) + 'd'}</td>
       </tr>`;
-    }).join('');
+    }).join('') + orphanNote;
   }
 
   // Watchlist: trend vs 20-day mean, last, 24h change, expected daily range
@@ -1337,6 +1343,9 @@
     const { source, candles } = await fetchCandles(asset);
     if (asset !== currentAsset) return; // user switched assets mid-fetch
     $('data-source').textContent = `${source} · updated ${fmtClock(Date.now())} UTC`;
+    // demo feed gets one clear call to action instead of scattered tags
+    const kj = $('key-jump');
+    if (kj) kj.hidden = !/demo/i.test(source);
     if (candles.length < E.CFG.EMA_SLOW + 5) return;
 
     // Signals are computed on CLOSED candles only, so they never repaint
@@ -1389,6 +1398,13 @@
   };
   $('acct-size').addEventListener('input', onAcctChange);
   $('acct-risk').addEventListener('input', onAcctChange);
+
+  $('key-jump')?.addEventListener('click', () => {
+    const row = $('key-row');
+    row.hidden = false;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('fmp-key').focus();
+  });
 
   // Manual refresh: re-pull prices, signals, radar, and the ledger on demand.
   $('refresh-btn').addEventListener('click', async () => {

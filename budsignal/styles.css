@@ -853,3 +853,12 @@ a { color: var(--text-primary); }
 .watchlist-card > h3,
 .equity-card > h3,
 .trade-plan > .plan-head { border-top: 2px solid var(--amber); }
+
+/* demo-feed call to action in the status box */
+.key-jump {
+  margin-top: 2px; align-self: flex-start;
+  border: 1px solid var(--amber-dim); border-radius: 3px;
+  background: var(--amber-wash); color: var(--amber);
+  font: inherit; font-weight: 700; padding: 4px 10px; cursor: pointer;
+}
+.key-jump:hover { background: var(--amber); color: var(--page); }
