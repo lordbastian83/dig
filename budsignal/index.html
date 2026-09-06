@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=68">
+<link rel="stylesheet" href="styles.css?v=69">
 </head>
 <body>
 
@@ -125,6 +125,13 @@
       <p class="watchlist-note">▲▼ trend vs 20-day mean · ±Rng expected daily range from ATR (volatility forecast, not direction) · Brk distance to nearest 4h breakout trigger</p>
     </aside>
     </div>
+
+    <div class="lookup-row">
+      <span class="fcast-tag">LOOKUP</span>
+      <input id="lookup-input" type="search" placeholder="search any live market — AAPL, XAGUSD, USDJPY…" autocomplete="off" spellcheck="false" aria-label="Search live markets">
+      <span class="lookup-note">view-only quotes — unvalidated markets never get signals or sizing</span>
+    </div>
+    <div class="lookup-results" id="lookup-results" hidden></div>
   </section>
 
   <!-- ============ Breakout radar ============ -->
@@ -149,6 +156,12 @@
       <p class="section-sub corr-sub" id="eia-line">Computing next EIA report time…</p>
       <ul class="news-list" id="news-list"><li class="radar-dist">Loading…</li></ul>
       <p class="watchlist-note">Context only, never a signal input: public news is in the price within seconds of the wire — what IS predictable is the timing of scheduled volatility (the EIA print), not its direction. Report time shifts a day on US-holiday weeks.</p>
+    </div>
+    <div class="equity-card wire-card">
+      <h3>Market wire — sentiment &amp; headlines</h3>
+      <p class="section-sub corr-sub" id="sent-line">Loading sentiment…</p>
+      <ul class="news-list" id="wire-list"><li class="radar-dist">Loading…</li></ul>
+      <p class="watchlist-note">Context only, never a signal input: sentiment-extreme entries were tested as a strategy and failed walk-forward validation (see the research report), and public headlines are in the price within seconds of the wire. Nothing on this card sizes a trade.</p>
     </div>
   </section>
 
@@ -429,7 +442,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=68"></script>
-<script src="app.js?v=68"></script>
+<script src="engine.js?v=69"></script>
+<script src="app.js?v=69"></script>
 </body>
 </html>

@@ -1048,3 +1048,49 @@ a { color: var(--text-primary); }
   cursor: default;
 }
 .forecast-row span[title] { cursor: default; }
+
+/* ---------- market wire + radar column rebalance ---------- */
+
+@media (min-width: 921px) {
+  #radar .corr-card { grid-row: 3; }
+  #radar .wire-card { grid-column: 2; margin-top: 0; }
+}
+
+/* ---------- live market lookup ---------- */
+
+.lookup-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 14px;
+  font-family: var(--mono);
+}
+.lookup-row input {
+  flex: 0 1 340px; min-width: 0;
+  padding: 7px 12px;
+  background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 4px;
+  font-family: var(--mono); font-size: 12px;
+}
+.lookup-row input:focus { outline: none; border-color: var(--amber-dim); }
+.lookup-row input::placeholder { color: var(--text-muted); }
+.lookup-note { font-size: 10.5px; color: var(--text-muted); }
+.lookup-results {
+  margin-top: 8px; padding: 4px 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 4px;
+  font-family: var(--mono); font-size: 12px;
+}
+.lu-row {
+  display: grid; grid-template-columns: 110px 1fr 110px 80px; gap: 12px;
+  padding: 7px 0; border-bottom: 1px solid var(--grid); align-items: baseline;
+}
+.lu-row:last-of-type { border-bottom: none; }
+.lu-sym { font-weight: 700; color: var(--amber); letter-spacing: 0.05em; }
+.lu-name { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-row .num { text-align: right; font-variant-numeric: tabular-nums; }
+.lu-note { padding: 7px 0 4px; font-size: 10.5px; }
+@media (max-width: 640px) {
+  .lookup-note { display: none; }
+  .lookup-row input { flex: 1; }
+  .lu-row { grid-template-columns: 90px 1fr 70px; }
+  .lu-row .num:last-child { display: none; }
+}

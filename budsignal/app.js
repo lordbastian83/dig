@@ -1247,6 +1247,110 @@
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+  // One shared headline fetch (10-minute cache) feeds both the crude desk
+  // and the market wire, so two panels cost one API call.
+  // Returns: array = headlines, null = no key configured, undefined = fetch failed.
+  let newsCache = { t: 0, items: null };
+  async function fetchGeneralNews() {
+    const key = localStorage.getItem(FMP_KEY_STORE);
+    if (!key) return null;
+    if (newsCache.items && Date.now() - newsCache.t < 10 * 60 * 1000) return newsCache.items;
+    const urls = [
+      `https://financialmodelingprep.com/stable/news/general-latest?page=0&limit=60&apikey=${encodeURIComponent(key)}`,
+      `https://financialmodelingprep.com/api/v3/general_news?page=0&apikey=${encodeURIComponent(key)}`,
+    ];
+    for (const u of urls) {
+      try {
+        const r = await fetch(u, { signal: AbortSignal.timeout(9000) });
+        if (!r.ok) continue;
+        const j = await r.json();
+        if (Array.isArray(j) && j.length) { newsCache = { t: Date.now(), items: j }; return j; }
+      } catch (e) { /* try next */ }
+    }
+    return undefined;
+  }
+
+  const newsLine = (n) => {
+    const when = String(n.publishedDate || n.date || '').slice(0, 16).replace('T', ' ');
+    const href = /^https?:\/\//.test(n.url || '') ? esc(n.url) : null;
+    const title = esc((n.title || '').slice(0, 130));
+    return `<li>${href ? `<a href="${href}" target="_blank" rel="noopener">${title}</a>` : title}` +
+      `<span class="radar-dist"> · ${esc(n.site || n.publisher || '')} ${esc(when)}</span></li>`;
+  };
+
+  // Market wire: latest general headlines + crowd sentiment. Context only —
+  // sentiment-extreme entries were TESTED as a strategy (funding-rate mean
+  // reversion in the research pipeline) and failed out-of-sample, and public
+  // headlines are in the price within seconds. Nothing here sizes a trade.
+  async function renderSentiment() {
+    const el = $('sent-line');
+    if (!el) return;
+    try {
+      const r = await fetch('https://api.alternative.me/fng/?limit=2', { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) throw new Error('http');
+      const j = await r.json();
+      const now = j?.data?.[0];
+      const prev = j?.data?.[1];
+      if (!now) throw new Error('shape');
+      const v = +now.value;
+      const cls = v <= 25 ? 'move-neg' : v >= 75 ? 'move-pos' : '';
+      el.innerHTML = `Crypto Fear &amp; Greed: <strong class="${cls}">${v} — ${esc(now.value_classification || '')}</strong>` +
+        (prev ? `<span class="radar-dist"> · yesterday ${esc(String(prev.value))}</span>` : '') +
+        ' — crowd mood as context. Sentiment-extreme entries failed walk-forward validation, so this number never sizes a trade.';
+    } catch (e) {
+      el.textContent = 'Sentiment feed unavailable right now (Fear & Greed via alternative.me).';
+    }
+  }
+
+  async function renderWire() {
+    const list = $('wire-list');
+    if (!list) return;
+    renderSentiment();
+    const items = await fetchGeneralNews();
+    if (items === null) { list.innerHTML = '<li class="radar-dist">Add your FMP data key above to load market headlines.</li>'; return; }
+    if (!items) { list.innerHTML = '<li class="radar-dist">Headlines unavailable on this data plan.</li>'; return; }
+    list.innerHTML = items.slice(0, 8).map(newsLine).join('');
+  }
+
+  /* ---------------- live market lookup (view-only) ---------------- */
+
+  // Search any ticker via FMP and show a live quote. Deliberately view-only:
+  // markets outside the validated eight never get signals or sizing — a new
+  // market earns its way in through the monthly research audition, not a
+  // search box.
+  async function runLookup(q) {
+    const box = $('lookup-results');
+    if (!box) return;
+    q = q.trim();
+    if (!q) { box.hidden = true; return; }
+    const key = localStorage.getItem(FMP_KEY_STORE);
+    box.hidden = false;
+    if (!key) { box.innerHTML = '<div class="radar-dist">Add your FMP data key (top of the dashboard) to search live markets.</div>'; return; }
+    box.innerHTML = '<div class="radar-dist">Searching…</div>';
+    try {
+      const r = await fetch(`https://financialmodelingprep.com/api/v3/search?query=${encodeURIComponent(q)}&limit=6&apikey=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(9000) });
+      if (!r.ok) throw new Error('http');
+      const hits = (await r.json()).filter((h) => h && h.symbol).slice(0, 6);
+      if (!hits.length) { box.innerHTML = '<div class="radar-dist">No matches.</div>'; return; }
+      const quotes = new Map();
+      try {
+        const qr = await fetch(`https://financialmodelingprep.com/api/v3/quote/${hits.map((h) => encodeURIComponent(h.symbol)).join(',')}?apikey=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(9000) });
+        if (qr.ok) for (const x of await qr.json()) quotes.set(x.symbol, x);
+      } catch (e) { /* names without quotes still help */ }
+      box.innerHTML = hits.map((h) => {
+        const qt = quotes.get(h.symbol);
+        const chg = qt?.changesPercentage;
+        return `<div class="lu-row"><span class="lu-sym">${esc(h.symbol)}</span><span class="lu-name">${esc(h.name || '')}</span>` +
+          (qt && qt.price != null
+            ? `<span class="num">$${fmtPrice(qt.price)}</span><span class="num ${chg >= 0 ? 'move-pos' : 'move-neg'}">${chg != null ? fmtPct(chg) : ''}</span>`
+            : '<span class="radar-dist">no live quote</span>') +
+          '</div>';
+      }).join('') + '<div class="radar-dist lu-note">View-only. Markets outside the validated eight never get signals or sizing here — new markets audition through the monthly research gate.</div>';
+    } catch (e) {
+      box.innerHTML = '<div class="radar-dist">Search unavailable (rate limit or data plan).</div>';
+    }
+  }
+
   // Headlines are context, never a signal input: public news is in the price
   // within seconds. The genuinely predictable part is the TIMING of scheduled
   // volatility — the EIA weekly petroleum print — so that gets a countdown.
@@ -1259,32 +1363,13 @@
     eia.textContent = `Next EIA weekly petroleum report: ${fmtTime(next)} UTC` +
       ` (${hrs < 48 ? 'in ~' + hrs.toFixed(0) + 'h' : 'in ~' + Math.ceil(hrs / 24) + ' days'})` +
       ' — WTI usually spikes around the print. Manage entries and stops accordingly; the direction of the reaction is not predictable.';
-    const key = localStorage.getItem(FMP_KEY_STORE);
-    if (!key) { list.innerHTML = '<li class="radar-dist">Add your FMP data key above to load crude headlines.</li>'; return; }
-    const urls = [
-      `https://financialmodelingprep.com/stable/news/general-latest?page=0&limit=60&apikey=${encodeURIComponent(key)}`,
-      `https://financialmodelingprep.com/api/v3/general_news?page=0&apikey=${encodeURIComponent(key)}`,
-    ];
-    let items = null;
-    for (const u of urls) {
-      try {
-        const r = await fetch(u, { signal: AbortSignal.timeout(9000) });
-        if (!r.ok) continue;
-        const j = await r.json();
-        if (Array.isArray(j) && j.length) { items = j; break; }
-      } catch (e) { /* try next */ }
-    }
+    const items = await fetchGeneralNews();
+    if (items === null) { list.innerHTML = '<li class="radar-dist">Add your FMP data key above to load crude headlines.</li>'; return; }
     if (!items) { list.innerHTML = '<li class="radar-dist">Headlines unavailable on this data plan.</li>'; return; }
     const RE = /\b(oil|crude|opec|eia|barrel|wti|brent|petroleum)\b/i;
     const oil = items.filter((n) => RE.test(`${n.title || ''} ${n.text || ''}`)).slice(0, 8);
     list.innerHTML = oil.length
-      ? oil.map((n) => {
-          const when = String(n.publishedDate || n.date || '').slice(0, 16).replace('T', ' ');
-          const href = /^https?:\/\//.test(n.url || '') ? esc(n.url) : null;
-          const title = esc((n.title || '').slice(0, 130));
-          return `<li>${href ? `<a href="${href}" target="_blank" rel="noopener">${title}</a>` : title}` +
-            `<span class="radar-dist"> · ${esc(n.site || n.publisher || '')} ${esc(when)}</span></li>`;
-        }).join('')
+      ? oil.map(newsLine).join('')
       : '<li class="radar-dist">No crude-related headlines in the latest batch.</li>';
   }
 
@@ -1803,10 +1888,28 @@
   loadPerformance();
   renderRadar();
   renderOilNews();
+  renderWire();
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
   setInterval(loadPerformance, 30 * 60 * 1000); // ledger updates every 4h
   setInterval(renderRadar, 30 * 60 * 1000); // radar sweeps all markets — keep it slow
   setInterval(renderOilNews, 30 * 60 * 1000);
+  setInterval(renderWire, 30 * 60 * 1000);
+
+  // live market lookup: debounced as-you-type, immediate on Enter
+  {
+    const inp = $('lookup-input');
+    if (inp) {
+      let deb = null;
+      inp.addEventListener('input', () => {
+        clearTimeout(deb);
+        deb = setTimeout(() => runLookup(inp.value), 450);
+      });
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { clearTimeout(deb); runLookup(inp.value); }
+        if (e.key === 'Escape') { inp.value = ''; runLookup(''); }
+      });
+    }
+  }
 
   // ledger CSV export — the raw records, for spreadsheets or your own research
   $('csv-btn')?.addEventListener('click', () => {
