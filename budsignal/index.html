@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=64">
+<link rel="stylesheet" href="styles.css?v=65">
 </head>
 <body>
 
@@ -61,6 +61,7 @@
         <span class="term-cell">UTC <strong id="term-clock">—</strong></span>
         <span class="term-cell">FEED <strong><span id="data-source">connecting…</span></strong></span>
         <span class="term-cell">BUILD <strong id="term-build">—</strong></span>
+        <span class="term-cell">PAPER DESK <strong id="term-paper">—</strong></span>
         <button class="key-jump" id="key-jump" type="button" hidden>⚠ demo prices — add your free data key</button>
       </div>
     </div>
@@ -71,6 +72,10 @@
     <h2><span class="fn-code">MKT</span>Live dashboard</h2>
 
     <div class="asset-tabs" id="asset-tabs" role="tablist" aria-label="Asset"></div>
+
+    <div class="crew" id="crew" aria-label="Desk status"></div>
+
+    <div class="carto" id="carto" aria-label="Market map"></div>
 
     <div class="key-row" id="key-row" hidden>
       <div class="key-field">
@@ -233,6 +238,11 @@
         <thead><tr><th>Market</th><th>Stream</th><th>Side</th><th class="num">Entry</th><th class="num">Now</th><th class="num">P&amp;L</th><th class="num">R</th><th class="num">£ @ plan</th><th class="num">Age</th></tr></thead>
         <tbody id="pos-body"><tr><td colspan="9" class="table-empty">Loading ledger…</td></tr></tbody>
       </table>
+    </div>
+    <div class="equity-card log-card">
+      <h3>Desk log</h3>
+      <ul class="desk-log" id="desk-log"><li class="radar-dist">Waiting for the ledger…</li></ul>
+      <p class="watchlist-note">Every line is a real recorded event from the signal ledger and the market sweep — nothing simulated, nothing narrated.</p>
     </div>
   </section>
 
@@ -405,7 +415,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=64"></script>
-<script src="app.js?v=64"></script>
+<script src="engine.js?v=65"></script>
+<script src="app.js?v=65"></script>
 </body>
 </html>
