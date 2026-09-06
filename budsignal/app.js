@@ -794,6 +794,7 @@
           d24: ((price - ref.c) / ref.c) * 100,
           trendUp: sma20 != null ? price > sma20 : null,
           rngPct: dAtr ? (dAtr / price) * 100 : null,
+          spark: closes.slice(-30),
           rets, active,
         };
       } catch (e) { return null; }
@@ -819,6 +820,9 @@
     lastSweepRows = list;
     renderLiveBar(list);
     renderBlotter();
+    renderCarto(list);
+    renderCrew();
+    renderDeskLog();
   }
   let lastSweepRows = null;
 
@@ -941,6 +945,85 @@
       return `<td class="num ${cls}">${v.toFixed(2)}</td>`;
     }).join('')}</tr>`).join('');
     body.innerHTML = head + rows;
+  }
+
+  /* ---------------- desk furniture: cartogram, crew, log ---------------- */
+
+  // Market cartogram: one tile per market — 24h change tint, 30-day
+  // sparkline, tap to switch the chart. Same sweep data as the watchlist.
+  function renderCarto(list) {
+    const box = $('carto');
+    if (!box) return;
+    const rows = [...list].sort((x, y) => (ASSETS[x.a].tab > ASSETS[y.a].tab ? 1 : -1));
+    box.innerHTML = rows.map((r) => `
+      <button type="button" class="carto-tile ${r.d24 >= 0 ? 'pos' : 'neg'} ${r.a === currentAsset ? 'active' : ''}" data-asset="${r.a}">
+        <span class="carto-head"><span class="carto-sym">${ASSETS[r.a].tab}</span><span class="carto-delta">${fmtPct(r.d24)}</span></span>
+        <canvas class="carto-spark" width="176" height="44"></canvas>
+      </button>`).join('');
+    box.querySelectorAll('.carto-tile').forEach((tile, i) => {
+      const r = rows[i];
+      const cv = tile.querySelector('canvas');
+      const ctx = cv.getContext('2d');
+      const s = r.spark || [];
+      if (s.length > 2) {
+        const lo = Math.min(...s), hi = Math.max(...s);
+        ctx.strokeStyle = r.d24 >= 0 ? COLORS.up : COLORS.down;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        s.forEach((v, j) => {
+          const x = 4 + (j / (s.length - 1)) * 168;
+          const y = 6 + (1 - (v - lo) / Math.max(1e-9, hi - lo)) * 32;
+          j ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        });
+        ctx.stroke();
+      }
+      tile.addEventListener('click', () => {
+        currentAsset = r.a;
+        localStorage.setItem('budsignal-asset', currentAsset);
+        refresh();
+        renderCarto(list);
+      });
+    });
+  }
+
+  // Desk crew: the pipeline's real roles with live status — the honest
+  // version of the agent-swarm strip. Every value is measured, none narrated.
+  function renderCrew() {
+    const box = $('crew');
+    if (!box) return;
+    const sweep = lastSweepRows || [];
+    const liveN = sweep.reduce((n, r) => n + (r.active?.length || 0), 0);
+    const openN = lastRecs ? lastRecs.filter((r) => r.outcome === 'open' && ASSETS[r.asset]).length : null;
+    const closedN = lastRecs ? lastRecs.filter((r) => r.outcome !== 'open').length : null;
+    const eiaH = (E.nextEiaTime() - Date.now()) / 3600000;
+    const roles = [
+      ['SCAN', 'sweeps 8 markets · 4h + daily', sweep.length ? `${sweep.length} live` : 'starting…'],
+      ['SIGNAL', 'validated streams only', liveN ? `${liveN} firing` : 'flat'],
+      ['SIZE', 'edge-weighted, longs funded', `1% base · £${fmtUsd(acctGbp())}`],
+      ['CLOSE', 'trailing exits, no discretion', 'armed'],
+      ['LEDGER', 'append-only record', closedN != null ? `${closedN} closed · ${openN} open` : 'loading'],
+      ['AUDIT', 'monthly walk-forward revalidation', eiaH <= 24 ? `EIA in ~${eiaH.toFixed(0)}h` : 'verdicts current'],
+    ];
+    box.innerHTML = roles.map(([tag, sub, val]) => `
+      <span class="crew-chip"><span class="crew-tag">${tag}</span><span class="crew-val">${val}</span><span class="crew-sub">${sub}</span></span>`).join('');
+  }
+
+  // Desk log: the ledger rendered as an event stream — most recent first.
+  function renderDeskLog() {
+    const box = $('desk-log');
+    if (!box || !lastRecs) return;
+    const tag = (r) => (r.strategy === 'swing' ? (r.early ? 'SWNG20' : 'SWING') : r.strategy === 'breakout' ? 'BRKOUT' : r.strategy === 'scalp' ? 'SCALP' : 'CROSS');
+    const rows = [...lastRecs].filter((r) => ASSETS[r.asset]).sort((a, b) => b.t - a.t).slice(0, 14);
+    const sweepAt = lastSweepRows ? `<li><span class="log-tag t-scan">SCAN</span> sweep complete · ${lastSweepRows.length} markets · ${fmtClock(Date.now())} UTC</li>` : '';
+    box.innerHTML = sweepAt + rows.map((r) => {
+      const open = r.outcome === 'open';
+      const pnlCls = r.movePct >= 0 ? 'move-pos' : 'move-neg';
+      const status = open ? '<span class="radar-dist">open</span>' : `<span class="${pnlCls}">${fmtPct(r.movePct)}</span>`;
+      return `<li><span class="log-tag ${open ? 't-sig' : 't-close'}">${open ? 'SIG' : 'CLOSE'}</span>` +
+        `<span class="log-tag t-strm">${tag(r)}</span> ${ASSETS[r.asset].tab} ` +
+        `<span class="${r.side === 'long' ? 'move-pos' : 'move-neg'}">${r.side === 'long' ? '▲' : '▼'}</span> ` +
+        `@ $${fmtPrice(r.entry)} · ${status}<span class="radar-dist"> · ${fmtTime(r.t)}</span></li>`;
+    }).join('');
   }
 
   // Ticker tape: every market's price and 24h change from the radar sweep.
@@ -1116,6 +1199,11 @@
       if (worst == null || pnl < worst) worst = pnl;
     }
     const ret = (equity / start - 1) * 100;
+    const tp = $('term-paper');
+    if (tp) {
+      tp.textContent = `£${fmtUsd(equity)} (${fmtPct(ret)})`;
+      tp.className = ret >= 0 ? 'move-pos' : 'move-neg';
+    }
     renderTearsheet(trades, start, equity, maxDD);
     $('paper-equity').textContent = `£${fmtUsd(equity)}`;
     $('paper-start').textContent = `started at £${fmtUsd(start)}`;
@@ -1378,6 +1466,8 @@
     lastRecs = recs;
     renderPaperAccount(recs);
     renderBlotter();
+    renderCrew();
+    renderDeskLog();
   }
   let lastRecs = null;
 
