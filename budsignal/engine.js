@@ -569,6 +569,17 @@
     };
   }
 
+  // Next EIA Weekly Petroleum Status Report: Wednesdays 14:30 UTC (shifts a
+  // day on US-holiday weeks — treated as approximate). Scheduled volatility
+  // awareness for WTI only; never a signal input — the direction of the
+  // reaction is not predictable, only its timing.
+  function nextEiaTime(now = Date.now()) {
+    const d = new Date(now);
+    const add = (3 - d.getUTCDay() + 7) % 7;
+    const cand = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + add, 14, 30);
+    return cand > now ? cand : cand + 7 * 86400000;
+  }
+
   // Signals must only ever be computed on CLOSED candles — a forming candle's
   // close changes until it closes, so a signal computed on it could appear
   // and then vanish ("repainting"). Returns the prefix of `candles` whose
@@ -589,6 +600,6 @@
     closedPrefix, closedOf, favorableRate,
     trailingScore, trailingComparison,
     mlFeatures, mlScore, mlTrain,
-    tradePlan, riskMultiplier, fundedSide,
+    tradePlan, riskMultiplier, fundedSide, nextEiaTime,
   };
 })();
