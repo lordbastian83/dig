@@ -170,8 +170,10 @@ async function composeHeartbeat() {
   const boTop = near.filter((n) => n.bo4)
     .sort((a, b) => a.bo4.pct - b.bo4.pct).slice(0, 3)
     .map((n) => `${n.asset}: ${n.bo4.side} 4h breakout ${n.bo4.pct.toFixed(1)}% away${n.boD ? ` · daily ${n.boD.side} ${n.boD.pct.toFixed(1)}%` : ''}`);
+  const eiaH = (E.nextEiaTime() - Date.now()) / 3600000;
   const text = [
     `🫀 <b>Daily check</b> — ${scanned} markets scanned, ${fired ? `${fired} signal(s) fired in the last 24h` : 'no setups today'}.`,
+    eiaH <= 24 ? `🛢 EIA petroleum report in ~${eiaH.toFixed(0)}h — WTI volatility window (timing is predictable, direction is not)` : '',
     top.length ? 'Closest to a cross:' : '',
     ...top,
     boTop.length ? 'Closest to a breakout:' : '',

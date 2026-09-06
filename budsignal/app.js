@@ -752,7 +752,7 @@
         <div><span class="lvl-label">Size</span><span class="lvl-value">${sizeLine}</span></div>
         <div><span class="lvl-label">Stop distance</span><span class="lvl-value">${plan.stopPct.toFixed(2)}% from entry — sized so a stop-out costs £${fmtUsd(plan.riskGbp)}</span></div>
       </div>
-      <p class="plan-note">${closeRule}${plan.rateApprox ? ' · £→$ conversion is approximate (add a data key to load live cable)' : ''}</p>`;
+      <p class="plan-note">${closeRule}${plan.rateApprox ? ' · £→$ conversion is approximate (add a data key to load live cable)' : ''}${(() => { if (currentAsset !== 'OIL') return ''; const h = (E.nextEiaTime() - Date.now()) / 3600000; return h <= 8 ? ` · ⚠ EIA petroleum report in ~${h.toFixed(0)}h — expect a volatility spike around the print` : ''; })()}</p>`;
   }
 
   /* ---------------- breakout radar ---------------- */
@@ -954,6 +954,51 @@
       `<span class="tape-delta ${r.d24 >= 0 ? 'pos' : 'neg'}">${r.d24 >= 0 ? '▲' : '▼'}${fmtPct(r.d24)}</span>` +
       `${r.demo ? '<span class="tape-px" style="opacity:.5">demo</span>' : ''}</span>`).join('');
     track.innerHTML = items + items;
+  }
+
+  /* ---------------- crude desk (WTI events + headlines) ---------------- */
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // Headlines are context, never a signal input: public news is in the price
+  // within seconds. The genuinely predictable part is the TIMING of scheduled
+  // volatility — the EIA weekly petroleum print — so that gets a countdown.
+  async function renderOilNews() {
+    const list = $('news-list');
+    const eia = $('eia-line');
+    if (!list || !eia) return;
+    const next = E.nextEiaTime();
+    const hrs = (next - Date.now()) / 3600000;
+    eia.textContent = `Next EIA weekly petroleum report: ${fmtTime(next)} UTC` +
+      ` (${hrs < 48 ? 'in ~' + hrs.toFixed(0) + 'h' : 'in ~' + Math.ceil(hrs / 24) + ' days'})` +
+      ' — WTI usually spikes around the print. Manage entries and stops accordingly; the direction of the reaction is not predictable.';
+    const key = localStorage.getItem(FMP_KEY_STORE);
+    if (!key) { list.innerHTML = '<li class="radar-dist">Add your FMP data key above to load crude headlines.</li>'; return; }
+    const urls = [
+      `https://financialmodelingprep.com/stable/news/general-latest?page=0&limit=60&apikey=${encodeURIComponent(key)}`,
+      `https://financialmodelingprep.com/api/v3/general_news?page=0&apikey=${encodeURIComponent(key)}`,
+    ];
+    let items = null;
+    for (const u of urls) {
+      try {
+        const r = await fetch(u, { signal: AbortSignal.timeout(9000) });
+        if (!r.ok) continue;
+        const j = await r.json();
+        if (Array.isArray(j) && j.length) { items = j; break; }
+      } catch (e) { /* try next */ }
+    }
+    if (!items) { list.innerHTML = '<li class="radar-dist">Headlines unavailable on this data plan.</li>'; return; }
+    const RE = /\b(oil|crude|opec|eia|barrel|wti|brent|petroleum)\b/i;
+    const oil = items.filter((n) => RE.test(`${n.title || ''} ${n.text || ''}`)).slice(0, 8);
+    list.innerHTML = oil.length
+      ? oil.map((n) => {
+          const when = String(n.publishedDate || n.date || '').slice(0, 16).replace('T', ' ');
+          const href = /^https?:\/\//.test(n.url || '') ? esc(n.url) : null;
+          const title = esc((n.title || '').slice(0, 130));
+          return `<li>${href ? `<a href="${href}" target="_blank" rel="noopener">${title}</a>` : title}` +
+            `<span class="radar-dist"> · ${esc(n.site || n.publisher || '')} ${esc(when)}</span></li>`;
+        }).join('')
+      : '<li class="radar-dist">No crude-related headlines in the latest batch.</li>';
   }
 
   function renderTrackRecord(signals, baseline, candles, ind, breakout) {
@@ -1412,7 +1457,7 @@
   $('refresh-btn').addEventListener('click', async () => {
     const btn = $('refresh-btn');
     btn.classList.add('spinning');
-    try { await Promise.allSettled([refresh(), loadPerformance(), renderRadar()]); }
+    try { await Promise.allSettled([refresh(), loadPerformance(), renderRadar(), renderOilNews()]); }
     finally { btn.classList.remove('spinning'); }
   });
 
@@ -1422,9 +1467,11 @@
   loadGbpUsd().then(renderTradePlan);
   loadPerformance();
   renderRadar();
+  renderOilNews();
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
   setInterval(loadPerformance, 30 * 60 * 1000); // ledger updates every 4h
   setInterval(renderRadar, 30 * 60 * 1000); // radar sweeps all markets — keep it slow
+  setInterval(renderOilNews, 30 * 60 * 1000);
 
   // ledger CSV export — the raw records, for spreadsheets or your own research
   $('csv-btn')?.addEventListener('click', () => {
