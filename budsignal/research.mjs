@@ -617,6 +617,108 @@ async function main() {
     }
   }
 
+  // ---- WTI intraday scalp + EIA event conditioning ----
+  // Owner-requested: intraday oil scalps, "using news". Headlines are not a
+  // testable input (public news is in the price within seconds, and archived
+  // headline feeds are survivorship-biased), but the SCHEDULED news event —
+  // the EIA weekly petroleum print, Wednesdays 14:30 UTC — has a known
+  // timestamp, so conditioning entries on event timing IS testable. Same
+  // single-market discipline as the deep-dive: three-way split, net-positive
+  // in ALL segments with >=15 confirm trades, and even a pass only earns a
+  // tracked paper stream, never direct funding.
+  {
+    const cost = costOf('OIL');
+    const candles = DEMO
+      ? demoCandles(78, 123)
+      : await fetchHistory('CLUSD', { interval: '1hour', years: Math.min(YEARS, 2), chunkDays: 25 });
+    if (candles.length < (DEMO ? 500 : 2000)) {
+      lines.push('## WTI intraday scalp + EIA conditioning', '', `Insufficient 1h history (${candles.length} candles) — skipped.`, '');
+    } else {
+      // most recent Wednesday 14:30 UTC at or before t (holiday weeks shift
+      // the real print a day — accepted noise, called out in the copy)
+      const lastEia = (t) => {
+        const d = new Date(t);
+        const back = (d.getUTCDay() - 3 + 7) % 7;
+        let cand = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - back, 14, 30);
+        if (cand > t) cand -= 7 * 86400000;
+        return cand;
+      };
+      const ind = E.computeIndicators(candles);
+      const seg = (() => {
+        const tA = candles[Math.floor(candles.length * 0.5)].t;
+        const tB = candles[Math.floor(candles.length * 0.75)].t;
+        return (t) => (t < tA ? 'a' : t < tB ? 'b' : 'c');
+      })();
+      // trailing 200-candle average of ATR%, for the high-vol gate
+      const atrPct = candles.map((k, i) => (ind.atr[i] != null ? ind.atr[i] / k.c : null));
+      const pre = [0], cnt = [0];
+      for (let i = 0; i < atrPct.length; i++) {
+        pre.push(pre[i] + (atrPct[i] ?? 0));
+        cnt.push(cnt[i] + (atrPct[i] != null ? 1 : 0));
+      }
+      const avgAtrPct = (i) => {
+        const lo = Math.max(0, i - 200);
+        const n = cnt[i] - cnt[lo];
+        return n > 50 ? (pre[i] - pre[lo]) / n : null;
+      };
+      const run = (lookback, side, keep) => {
+        const pools = { a: [], b: [], c: [] };
+        for (const s of E.computeBreakoutSignals(candles, ind, lookback ? { lookback } : {})) {
+          if (side && s.side !== side) continue;
+          if (keep && !keep(s)) continue;
+          const tr = E.trailingScore(candles, s.i, s.side, s.entry, ind.atr[s.i]);
+          if (!tr.closed) continue;
+          pools[seg(s.t)].push(tr.movePct - cost);
+        }
+        return pools;
+      };
+      const inNySession = (s) => { const h = new Date(s.t).getUTCHours(); return h >= 12 && h < 20; };
+      const highVol = (s) => { const b = avgAtrPct(s.i); return b != null && atrPct[s.i] != null && atrPct[s.i] > b; };
+      const afterEia = (s) => (s.t - lastEia(s.t)) / 3600000 <= 24;
+      const nearEia = (s) => {
+        const last = lastEia(s.t);
+        return Math.min(s.t - last, last + 7 * 86400000 - s.t) / 3600000 <= 4;
+      };
+      const variants = [
+        ['1h breakout-55', () => run(0, null)],
+        ['1h breakout-55 longs', () => run(0, 'long')],
+        ['1h breakout-20 (faster)', () => run(20, null)],
+        ['1h breakout-20 longs', () => run(20, 'long')],
+        ['NY energy session only (12–20 UTC)', () => run(0, null, inNySession)],
+        ['High volatility only (ATR% > trailing avg)', () => run(0, null, highVol)],
+        ['Session + high-vol', () => run(0, null, (s) => inNySession(s) && highVol(s))],
+        ['EIA-after: entries ≤24h after the print', () => run(0, null, afterEia)],
+        ['EIA-after, longs only', () => run(0, 'long', afterEia)],
+        ['EIA-after + NY session', () => run(0, null, (s) => afterEia(s) && inNySession(s))],
+        ['EIA-avoid: skip entries within ±4h of the print', () => run(0, null, (s) => !nearEia(s))],
+        ['Breakout-20 + session + high-vol', () => run(20, null, (s) => inNySession(s) && highVol(s))],
+      ];
+      lines.push(
+        '## WTI intraday scalp + EIA conditioning',
+        '',
+        `${candles.length} 1h candles (${day(candles[0].t)} → ${day(candles[candles.length - 1].t)}), round-trip cost ${cost.toFixed(2)}%. ` +
+        'Headlines cannot be a signal input — public news is priced in within seconds and archived feeds are survivorship-biased — ' +
+        'but the EIA weekly petroleum print is scheduled (Wed 14:30 UTC, shifted a day on US-holiday weeks — accepted timing noise), ' +
+        'so event-timing conditions are testable. Three-way split; a candidate must be net-positive in ALL segments with ≥15 confirm trades. ' +
+        `${variants.length} variants on one market = a multiple-comparisons trap, so even a triple pass is a paper candidate only.`,
+        '',
+        '| Variant | Tune (net) | Select (net) | Confirm (net) | Verdict |',
+        '|---|---|---|---|---|',
+      );
+      for (const [label, fn] of variants) {
+        const p = fn();
+        const A = stats(p.a), B = stats(p.b), C = stats(p.c);
+        const pass = A && B && C && A.avg > 0 && B.avg > 0 && C.avg > 0 && C.n >= 15;
+        const v = !A || !B || !C ? '⚠️ too few trades'
+          : pass ? '✅ triple pass — paper candidate'
+          : '❌ fails at least one segment';
+        lines.push(`| ${label} | ${fmtStats(A)} | ${fmtStats(B)} | ${fmtStats(C)} | ${v} |`);
+      }
+      lines.push('');
+      console.log('WTI intraday scalp + EIA conditioning evaluated');
+    }
+  }
+
   // ---- ML meta-labeling: train on train-period baseline signals, judge on validate ----
   let mlPassed = false;
   if (mlRows.train.length >= 100 && mlRows.validate.length >= 30) {
