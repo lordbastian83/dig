@@ -235,12 +235,21 @@
 
     let lo = Infinity, hi = -Infinity;
     for (const c of view) { lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
+    // reserve room to the right for the 24h volatility cone (6 × 4h slots)
+    const FUT = 6;
+    const lastIdx = candles.length - 1;
+    const coneAtr = ind.atr[lastIdx];
+    if (coneAtr != null) {
+      hi = Math.max(hi, candles[lastIdx].c + coneAtr * Math.sqrt(FUT));
+      lo = Math.min(lo, candles[lastIdx].c - coneAtr * Math.sqrt(FUT));
+    }
     const span = (hi - lo) || 1;
     lo -= span * 0.05; hi += span * 0.05;
 
-    const x = (i) => padL + ((i - start) + 0.5) * (plotW / view.length);
+    const slots = view.length + FUT;
+    const x = (i) => padL + ((i - start) + 0.5) * (plotW / slots);
     const y = (p) => padT + (1 - (p - lo) / (hi - lo)) * plotH;
-    chart.view = { start, x, y, padL, padR, padT, padB, plotW, plotH, lo, hi, W, H };
+    chart.view = { start, x, y, padL, padR, padT, padB, plotW, plotH, lo, hi, W, H, slots };
 
     // gridlines + right price axis, clean steps
     const step = niceStep((hi - lo) / 5);
@@ -266,6 +275,32 @@
       const label = `${d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })} ${d.getUTCDate()}`;
       ctx.fillStyle = COLORS.muted;
       ctx.fillText(label, cx, H - padB + 8);
+    }
+
+    // Forward volatility cone: the honest forecast. It says where price is
+    // LIKELY to be over the next 24h (±1×ATR·√t band), never which way it
+    // goes — the size of the move is forecastable, the direction is not.
+    if (coneAtr != null) {
+      const c0 = candles[lastIdx].c;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x(lastIdx), y(c0));
+      for (let k = 1; k <= FUT; k++) ctx.lineTo(x(lastIdx + k), y(c0 + coneAtr * Math.sqrt(k)));
+      for (let k = FUT; k >= 1; k--) ctx.lineTo(x(lastIdx + k), y(c0 - coneAtr * Math.sqrt(k)));
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(53, 201, 245, 0.07)';
+      ctx.fill();
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = 'rgba(53, 201, 245, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = COLORS.muted;
+      ctx.font = '9.5px system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('±1σ 24H', x(lastIdx + FUT), y(c0 + coneAtr * Math.sqrt(FUT)) - 3);
+      ctx.restore();
     }
 
     // trade levels for the latest visible signal: entry / stop / target lines
@@ -297,7 +332,7 @@
     }
 
     // candles — thin bodies with a surface gap between neighbors
-    const slot = plotW / view.length;
+    const slot = plotW / slots;
     const bodyW = Math.min(24, Math.max(2, Math.floor(slot) - 2));
     for (let i = 0; i < view.length; i++) {
       const c = view[i];
@@ -387,8 +422,7 @@
     if (!v) return;
     const rect = chart.canvas.getBoundingClientRect();
     const mx = ev.clientX - rect.left;
-    const n = chart.candles.length - v.start;
-    let idx = v.start + Math.floor((mx - v.padL) / (v.plotW / n));
+    let idx = v.start + Math.floor((mx - v.padL) / (v.plotW / (v.slots || chart.candles.length - v.start)));
     idx = Math.max(v.start, Math.min(chart.candles.length - 1, idx));
     drawChart(idx);
 
@@ -619,6 +653,85 @@
     $('ind-atr').textContent = ind.atr[i] != null ? `$${fmtPrice(ind.atr[i])}` : '—';
     const volRatio = ind.volSma[i] ? candles[i].v / ind.volSma[i] : null;
     $('ind-vol').textContent = volRatio ? `${(volRatio * 100).toFixed(0)}%` : '—';
+  }
+
+  /* ---------------- forecast strip: what is honestly forecastable ---------------- */
+
+  // Historical base rate: of the times this market closed within `maxDistPct`
+  // of its 55-candle Donchian trigger, how often did the breakout actually
+  // fire (close through the band) within the next 6 candles? Measured on the
+  // loaded history — a counting exercise, not a directional call.
+  function fireStats(candles, maxDistPct) {
+    const LB = 55;
+    let cases = 0, fired = 0;
+    for (let i = LB; i < candles.length - 6; i++) {
+      let bandHi = -Infinity, bandLo = Infinity;
+      for (let j = i - LB; j < i; j++) {
+        if (candles[j].c > bandHi) bandHi = candles[j].c;
+        if (candles[j].c < bandLo) bandLo = candles[j].c;
+      }
+      const c = candles[i].c;
+      const dUp = ((bandHi - c) / c) * 100;
+      const dDn = ((c - bandLo) / c) * 100;
+      const up = dUp <= dDn;
+      const d = Math.min(dUp, dDn);
+      if (d < 0 || d > maxDistPct) continue;
+      cases++;
+      for (let k = 1; k <= 6; k++) {
+        if (up ? candles[i + k].c > bandHi : candles[i + k].c < bandLo) { fired++; break; }
+      }
+    }
+    return { cases, fired };
+  }
+
+  let fcData = null; // {candles, ind} for the current asset, closed candles only
+
+  function renderForecast() {
+    const row = $('forecast-row');
+    if (!row || !fcData) return;
+    const { candles, ind } = fcData;
+    const i = candles.length - 1;
+    const c = candles[i].c;
+    const atr = ind.atr[i];
+    const items = [];
+    if (atr != null) {
+      const r = atr * Math.sqrt(6);
+      items.push(`<span title="ATR-based volatility forecast: price is likely to stay within this band over the next 24h (±1σ). The SIZE of the move is forecastable — the direction is not.">24h range <strong>±$${fmtPrice(r)} · ±${((r / c) * 100).toFixed(1)}%</strong></span>`);
+    }
+    const radar = candles.length > 60 ? E.breakoutRadar(candles) : null;
+    if (radar) {
+      const up = radar.upPct <= radar.downPct;
+      const d = Math.min(radar.upPct, radar.downPct);
+      items.push(`<span title="Distance from the last closed candle to the nearest 55-candle Donchian trigger — the level where the next breakout signal fires.">Next trigger <strong class="${up ? 'move-pos' : 'move-neg'}">${up ? '▲' : '▼'} $${fmtPrice(up ? radar.up : radar.down)}</strong> <strong>${d.toFixed(1)}% away</strong></span>`);
+      const band = Math.min(5, Math.max(1, Math.ceil(d)));
+      const fs = fireStats(candles, band);
+      if (fs.cases >= 20) {
+        items.push(`<span title="Measured on this market's loaded history: of the ${fs.cases} times price closed within ${band}% of a trigger, the breakout fired within 24h in ${((fs.fired / fs.cases) * 100).toFixed(0)}% of them. A base rate, not a prediction of direction.">Fire odds from ≤${band}% <strong>${((fs.fired / fs.cases) * 100).toFixed(0)}%</strong> <span class="radar-dist">n=${fs.cases}</span></span>`);
+      }
+    }
+    if (lastRecs) {
+      const avgR = (keep) => {
+        const Rs = [];
+        for (const r of lastRecs) {
+          if (r.outcome === 'open' || !r.entry || !r.stop || !keep(r)) continue;
+          const stopPct = (Math.abs(r.entry - r.stop) / r.entry) * 100;
+          if (stopPct) Rs.push((r.movePct - (PAPER_COSTS[r.asset] ?? 0.05)) / stopPct);
+        }
+        return Rs.length >= 15 ? { avg: Rs.reduce((a, b) => a + b, 0) / Rs.length, n: Rs.length } : null;
+      };
+      const bk = avgR((r) => r.strategy === 'breakout');
+      const sw = avgR((r) => r.strategy === 'swing' && !r.early);
+      const fmt = (s) => `${s.avg >= 0 ? '+' : ''}${s.avg.toFixed(2)}R`;
+      if (bk || sw) {
+        items.push(`<span title="Average recorded outcome per trade in risk units, from the append-only ledger${bk ? ` — breakout over ${bk.n} closed trades` : ''}${sw ? `, swing over ${sw.n}` : ''}. What a trade has been worth on average, not what the next one will do.">Ledger expectancy <strong>${bk ? `◆ ${fmt(bk)}` : ''}${bk && sw ? ' · ' : ''}${sw ? `🌊 ${fmt(sw)}` : ''}</strong></span>`);
+      }
+    }
+    if (currentAsset === 'OIL') {
+      const h = (E.nextEiaTime() - Date.now()) / 3600000;
+      if (h <= 48) items.push(`<span title="The one scheduled, predictable volatility event on this market: the EIA weekly petroleum print.">EIA print <strong>~${h.toFixed(0)}h</strong></span>`);
+    }
+    row.hidden = !items.length;
+    row.innerHTML = `<span class="fcast-tag" title="Only what is honestly forecastable appears here: expected range, trigger distance, measured base rates and event timing — never direction.">FORECAST</span>` + items.join('');
   }
 
   // "Next candle" countdown — the moment the next 4h candle closes is the
@@ -1561,6 +1674,7 @@
     renderCrew();
     renderDeskLog();
     renderActionQueue();
+    renderForecast();
   }
   let lastRecs = null;
 
@@ -1629,6 +1743,8 @@
     renderHero(candles);
     renderTiles(closedCandles, closedInd, signals, baseline, breakout);
     renderIndicators(candles, ind);
+    fcData = { candles: closedCandles, ind: closedInd };
+    renderForecast();
     renderCountdown();
     renderCurrentSignal(closedCandles, closedInd, signals, breakout, swing);
     renderTrackRecord(signals, baseline, closedCandles, closedInd, [...breakout, ...swing]);
