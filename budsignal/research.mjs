@@ -632,7 +632,11 @@ async function main() {
       ? demoCandles(78, 123)
       : await fetchHistory('CLUSD', { interval: '1hour', years: Math.min(YEARS, 2), chunkDays: 25 });
     if (candles.length < (DEMO ? 500 : 2000)) {
-      lines.push('## WTI intraday scalp + EIA conditioning', '', `Insufficient 1h history (${candles.length} candles) — skipped.`, '');
+      lines.push(
+        '## WTI intraday scalp + EIA conditioning', '',
+        `Insufficient 1h history (${candles.length} candles) — skipped. ` +
+        'When the count is 0 this is usually a data-plan limit, not a market gap: FMP answers 1-hour CLUSD requests with HTTP 402/403 on plans without intraday commodity history (the job log shows the per-chunk errors). ' +
+        'The study runs automatically on the next research pass once 1h WTI data is available.', '');
     } else {
       // most recent Wednesday 14:30 UTC at or before t (holiday weeks shift
       // the real print a day — accepted noise, called out in the copy)
