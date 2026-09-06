@@ -237,6 +237,27 @@
           <li><strong>Never widen a stop, never add to a loser, never re-enter a market the same day after a stop-out.</strong></li>
         </ul>
         </details>
+        <details class="fold">
+        <summary>Going live: first-week checklist</summary>
+        <h4>Before the first live trade (do this the night before)</h4>
+        <ul>
+          <li><strong>Start flat.</strong> The positions and P&amp;L on this page are the paper ledger's history — do <em>not</em> mirror any open row into your broker. Real money only goes on <em>new</em> signals that fire after you go live. Entering an old signal late means entering without its edge.</li>
+          <li><strong>Set your real balance</strong> in the Account £ box above (it drives every size on this page and in the alerts), and add your data key so prices are live, not demo.</li>
+          <li><strong>Check Telegram alerts are arriving</strong> — the bot checks 4h streams every 4 hours and the scalp stream hourly. The alert and this page always agree; if they ever don't, trade neither and investigate.</li>
+          <li><strong>Know the calendar:</strong> daily signals appear just after 00:00 UTC; the EIA petroleum print (Wednesday 14:30 UTC) spikes WTI volatility on schedule.</li>
+        </ul>
+        <h4>First month: half size</h4>
+        <ul>
+          <li>Run <strong>0.5% base risk instead of 1%</strong> (set Risk/trade to 0.5) for the first month. The edge doesn't need full size to prove itself, and the most likely early losses are execution mistakes — wrong lot size, missed stop, late entry — which cost half as much at half size. Move to 1% only after a month of trades that match the ledger.</li>
+          <li><strong>Every entry goes in with its stop attached.</strong> Market order + stop order in the same ticket, sized from the plan panel. No stop, no trade.</li>
+        </ul>
+        <h4>What to expect (honestly)</h4>
+        <ul>
+          <li>The validated edges are per-trade averages of roughly <strong>+0.2% to +2.3% per trade</strong> depending on stream — not per day. Weeks of nothing, then clusters, is normal behavior for breakout systems.</li>
+          <li>The paper account's headline return includes backfilled history and compounding — it is a record, <strong>not a forecast</strong>. The Monte Carlo tile below shows the drawdown you should expect to sit through; if that number would make you abandon the system, size down until it wouldn't.</li>
+          <li>Losing streaks are part of a positive edge. The system is only abandoned by the monthly revalidation — never by a bad week.</li>
+        </ul>
+        </details>
       </div>
     </div>
   </section>
