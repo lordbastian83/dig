@@ -540,20 +540,9 @@
 
   /* ---------------- page rendering ---------------- */
 
+  // Asset switching lives in the cartogram tiles, the watchlist rows and the
+  // ←/→ keys — this only manages the API-key row's visibility now.
   function renderAssetTabs() {
-    const wrap = $('asset-tabs');
-    wrap.innerHTML = Object.entries(ASSETS).map(([a, cfg]) =>
-      `<button class="asset-tab${a === currentAsset ? ' active' : ''}" role="tab"
-        aria-selected="${a === currentAsset}" data-asset="${a}">${cfg.tab}</button>`).join('');
-    wrap.querySelectorAll('button').forEach((b) => {
-      b.addEventListener('click', () => {
-        if (b.dataset.asset === currentAsset) return;
-        currentAsset = b.dataset.asset;
-        localStorage.setItem('budsignal-asset', currentAsset);
-        refresh();
-      });
-    });
-
     // The API-key row only concerns non-crypto (FMP / Twelve Data) assets.
     const keyRow = $('key-row');
     keyRow.hidden = ASSETS[currentAsset].kind !== 'market';
@@ -572,6 +561,20 @@
   }
 
   function renderTiles(candles, ind, signals, baseline, breakout) {
+    // Regime lives in the chart header now — a quiet annotation, not a tile.
+    {
+      const el = $('chart-regime');
+      if (el) {
+        const i = candles.length - 1;
+        const bull = ind.emaFast[i] != null && ind.emaSlow[i] != null && ind.emaFast[i] > ind.emaSlow[i];
+        const trending = ind.adx[i] != null && ind.adx[i] >= E.CFG.ADX_MIN;
+        const adx = ind.adx[i] != null ? ind.adx[i].toFixed(0) : '—';
+        el.innerHTML = trending
+          ? `REGIME <span class="${bull ? 'pos' : 'neg'}">${bull ? '▲ UPTREND' : '▼ DOWNTREND'}</span> · ADX ${adx}`
+          : `REGIME CHOP · ADX ${adx} &lt; ${E.CFG.ADX_MIN} — gated`;
+      }
+    }
+    if (!$('tiles')) return; // the dashboard stat tiles were retired
     const all = [...signals, ...breakout];
     const closed = E.closedOf(all);
     const favorable = closed.filter((s) => s.movePct > 0);
@@ -1001,13 +1004,12 @@
     const roles = [
       ['SCAN', 'sweeps 8 markets · 4h + daily', sweep.length ? `${sweep.length} live` : 'starting…'],
       ['SIGNAL', 'validated streams only', liveN ? `${liveN} firing` : 'flat'],
-      ['SIZE', 'edge-weighted, longs funded', `1% base · £${fmtUsd(acctGbp())}`],
-      ['CLOSE', 'trailing exits, no discretion', 'armed'],
-      ['LEDGER', 'append-only record', closedN != null ? `${closedN} closed · ${openN} open` : 'loading'],
-      ['AUDIT', 'monthly walk-forward revalidation', edges != null ? `${edges} breakout edge${edges === 1 ? '' : 's'} ✅` : 'verdicts current'],
+      ['SIZE', 'edge-weighted, longs funded', `1% · £${fmtUsd(acctGbp())}`],
+      ['LEDGER', 'append-only record', closedN != null ? `${closedN}c / ${openN}o` : 'loading'],
+      ['AUDIT', 'monthly walk-forward revalidation', edges != null ? `${edges} edges ✅` : 'current'],
     ];
-    box.innerHTML = roles.map(([tag, sub, val]) => `
-      <span class="crew-chip"><span class="crew-tag">${tag}</span><span class="crew-val">${val}</span><span class="crew-sub">${sub}</span></span>`).join('');
+    box.innerHTML = roles.map(([tag, sub, val]) =>
+      `<span class="dl-item" title="${sub}"><span class="dl-tag">${tag}</span>${val}</span>`).join('');
   }
 
   // Desk log: the ledger rendered as an event stream — most recent first.
@@ -1039,15 +1041,15 @@
     const mins = d.getUTCHours() * 60 + d.getUTCMinutes();
     const hh = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
     const rows = [
-      ['TOKYO', 0, 8 * 60],
-      ['LONDON', 7 * 60, 16 * 60],
-      ['NEW YORK', 12.5 * 60, 21 * 60],
-      ['SCALP WINDOW', E.SCALP.HOUR_FROM * 60, E.SCALP.HOUR_TO * 60],
+      ['TOK', 'Tokyo', 0, 8 * 60],
+      ['LDN', 'London', 7 * 60, 16 * 60],
+      ['NY', 'New York', 12.5 * 60, 21 * 60],
+      ['SCALP', 'Scalp window — the 1h stream\'s validated session gate (Gold + NAS100)', E.SCALP.HOUR_FROM * 60, E.SCALP.HOUR_TO * 60],
     ];
-    box.innerHTML = rows.map(([name, a, b]) => {
+    box.innerHTML = rows.map(([short, name, a, b]) => {
       const on = mins >= a && mins < b;
-      return `<span class="sess-chip ${on ? 'on' : ''}"><span class="sess-dot"></span>${name}<span class="sess-hours">${hh(a)}–${hh(b)}</span></span>`;
-    }).join('') + '<span class="sess-note">UTC · scalp window = the 1h stream\'s validated session gate (Gold + NAS100)</span>';
+      return `<span class="dl-sess ${on ? 'on' : ''}" title="${name} · ${hh(a)}–${hh(b)} UTC"><span class="sess-dot"></span>${short}</span>`;
+    }).join('');
   }
 
   // Action queue: the whole platform reduced to "what do I do right now".
