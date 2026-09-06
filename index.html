@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LordBastian Signal Generator</title>
+<meta name="description" content="LordBastian Signal Generator — rules-based swing-trading signals for crypto, gold, indices and FX, computed in the open. Educational tool — not financial advice.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23142033'/%3E%3Crect x='8' y='12' width='4' height='10' rx='1' fill='%2335c9f5'/%3E%3Crect x='15' y='7' width='4' height='12' rx='1' fill='%2322c55e'/%3E%3Crect x='22' y='14' width='4' height='9' rx='1' fill='%2335c9f5'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#070b12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="styles.css?v=69">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand" href="#top">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#142033"/><rect x="8" y="12" width="4" height="10" rx="1" fill="#35c9f5"/><rect x="9.5" y="8" width="1" height="18" fill="#35c9f5"/><rect x="15" y="7" width="4" height="12" rx="1" fill="#22c55e"/><rect x="16.5" y="4" width="1" height="19" fill="#22c55e"/><rect x="22" y="14" width="4" height="9" rx="1" fill="#35c9f5"/><rect x="23.5" y="10" width="1" height="17" fill="#35c9f5"/></svg>
+    <span>LordBastian Signals</span>
+  </a>
+  <button class="refresh-btn" id="refresh-btn" type="button" title="Refresh prices and signals" aria-label="Refresh data">↻</button>
+  <nav class="site-nav">
+    <a href="#dashboard">Dashboard</a>
+    <a href="#radar">Radar</a>
+    <a href="#signal">Current signal</a>
+    <a href="#positions">Positions</a>
+    <a href="#methodology">How it works</a>
+    <a href="#track-record">Track record</a>
+    <a href="#performance">Performance</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- ============ Ticker tape ============ -->
+  <div class="tape" aria-hidden="true"><div class="tape-track" id="tape-track"><span class="tape-item"><span class="tape-sym">SCANNING MARKETS</span></span></div></div>
+
+  <!-- live signals from ANY market (the signal card below only shows the selected one) -->
+  <div class="live-bar" id="live-bar" hidden></div>
+
+  <!-- ============ Terminal masthead: one bar, no prose ============ -->
+  <section class="hero">
+    <h1 class="sr-only">LordBastian Signal Generator — trading signals computed in the open</h1>
+    <div class="term-bar">
+      <div class="hero-price" aria-live="polite">
+        <span class="hero-price-label" id="hero-symbol">BTC / USD</span>
+        <span class="hero-price-value" id="hero-price">—</span>
+        <span class="hero-price-delta" id="hero-delta"></span>
+      </div>
+      <div class="term-status">
+        <span class="term-cell">UTC <strong id="term-clock">—</strong></span>
+        <span class="term-cell">FEED <strong><span id="data-source">connecting…</span></strong></span>
+        <span class="term-cell">BUILD <strong id="term-build">—</strong></span>
+        <span class="term-cell">PAPER DESK <strong id="term-paper">—</strong></span>
+        <button class="key-jump" id="key-jump" type="button" hidden>⚠ demo prices — add your free data key</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Dashboard ============ -->
+  <section id="dashboard" class="section">
+    <h2><span class="fn-code">MKT</span>Live dashboard</h2>
+
+    <div class="deskline">
+      <span class="deskline-seg" id="crew" aria-label="Desk status"></span>
+      <span class="deskline-sep" aria-hidden="true"></span>
+      <span class="deskline-seg" id="sess" aria-label="Trading sessions"></span>
+    </div>
+
+    <div class="carto" id="carto" aria-label="Market map — tap a tile to switch the chart"></div>
+
+    <div class="key-row" id="key-row" hidden>
+      <div class="key-field">
+        <label for="fmp-key">FMP API key</label>
+        <input id="fmp-key" type="password" placeholder="key from financialmodelingprep.com" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="key-field">
+        <label for="td-key">Twelve Data API key (optional)</label>
+        <input id="td-key" type="password" placeholder="free key from twelvedata.com" autocomplete="off" spellcheck="false">
+      </div>
+      <button id="keys-save" type="button">Save</button>
+      <span class="key-note">Gold, US30 and GBP/USD load via <a href="https://financialmodelingprep.com" target="_blank" rel="noopener">Financial Modeling Prep</a> or <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">Twelve Data</a> — paste whichever key you have (FMP is tried first). Keys are stored only in this browser and sent only to the data provider. Without one, these markets show labeled demo data.</span>
+    </div>
+
+    <div class="workspace">
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3 id="chart-title">BTC / USD · 4h candles</h3>
+        <span class="chart-regime" id="chart-regime"></span>
+        <div class="legend" aria-label="Chart legend">
+          <span class="legend-item"><span class="key key-up"></span>Up candle</span>
+          <span class="legend-item"><span class="key key-down"></span>Down candle</span>
+          <span class="legend-item"><span class="key key-line key-ema20"></span>EMA 20</span>
+          <span class="legend-item"><span class="key key-line key-ema50"></span>EMA 50</span>
+          <span class="legend-item"><span class="key-glyph">▲▼</span>Cross signal</span>
+          <span class="legend-item"><span class="key-glyph">◆</span>Breakout</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chart" aria-label="Bitcoin 4-hour candlestick chart with EMA 20 and EMA 50 overlays and signal markers. Details available in the track record table below."></canvas>
+        <div class="tooltip" id="tooltip" hidden></div>
+      </div>
+      <div class="indicator-row" id="indicators">
+        <span>RSI 14 <strong id="ind-rsi">—</strong></span>
+        <span>ADX 14 <strong id="ind-adx">—</strong></span>
+        <span>EMA 20 <strong id="ind-ema20">—</strong></span>
+        <span>EMA 50 <strong id="ind-ema50">—</strong></span>
+        <span>EMA 200 <strong id="ind-ema200">—</strong></span>
+        <span>ATR 14 <strong id="ind-atr">—</strong></span>
+        <span>Volume vs 20-avg <strong id="ind-vol">—</strong></span>
+        <span>Next candle <strong id="ind-next">—</strong></span>
+      </div>
+      <div class="indicator-row forecast-row" id="forecast-row" hidden></div>
+    </div>
+
+    <aside class="watchlist-card">
+      <h3>Watchlist</h3>
+      <table class="record-table watchlist">
+        <thead><tr><th>Sym</th><th class="num">Last</th><th class="num">24h</th><th class="num">±Rng</th><th class="num">Brk</th></tr></thead>
+        <tbody id="watchlist-body"><tr><td colspan="5" class="table-empty">Scanning…</td></tr></tbody>
+      </table>
+      <p class="watchlist-note">▲▼ trend vs 20-day mean · ±Rng expected daily range from ATR (volatility forecast, not direction) · Brk distance to nearest 4h breakout trigger</p>
+    </aside>
+    </div>
+
+    <div class="lookup-row">
+      <span class="fcast-tag">LOOKUP</span>
+      <input id="lookup-input" type="search" placeholder="search any live market — AAPL, XAGUSD, USDJPY…" autocomplete="off" spellcheck="false" aria-label="Search live markets">
+      <span class="lookup-note">view-only quotes — unvalidated markets never get signals or sizing</span>
+    </div>
+    <div class="lookup-results" id="lookup-results" hidden></div>
+  </section>
+
+  <!-- ============ Breakout radar ============ -->
+  <section id="radar" class="section">
+    <h2><span class="fn-code">RADR</span>Breakout radar</h2>
+    <p class="section-sub">Quiet days still tell you something: how far each market sits from triggering its next breakout signal. Distances are from the last closed candle to the Donchian band — under 1% means a single decent candle could fire it.</p>
+    <div class="table-wrap">
+      <table class="record-table radar-table">
+        <thead><tr><th>Market</th><th class="num">Price</th><th>◆ 4h trigger</th><th>🌊 Daily trigger</th></tr></thead>
+        <tbody id="radar-body"><tr><td colspan="4" class="table-empty">Scanning markets…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="equity-card corr-card">
+      <h3>Cross-market correlation · 60 trading days</h3>
+      <p class="section-sub corr-sub">Pearson correlation of daily returns. Markets above 0.6 move together: two positions in them is closer to one double-sized bet — the 3-position cap counts them accordingly.</p>
+      <div class="table-wrap">
+        <table class="record-table corr-table"><tbody id="corr-body"><tr><td class="table-empty">Computing…</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="equity-card news-card">
+      <h3>Crude desk — WTI events &amp; headlines</h3>
+      <p class="section-sub corr-sub" id="eia-line">Computing next EIA report time…</p>
+      <ul class="news-list" id="news-list"><li class="radar-dist">Loading…</li></ul>
+      <p class="watchlist-note">Context only, never a signal input: public news is in the price within seconds of the wire — what IS predictable is the timing of scheduled volatility (the EIA print), not its direction. Report time shifts a day on US-holiday weeks.</p>
+    </div>
+    <div class="equity-card wire-card">
+      <h3>Market wire — sentiment &amp; headlines</h3>
+      <p class="section-sub corr-sub" id="sent-line">Loading sentiment…</p>
+      <ul class="news-list" id="wire-list"><li class="radar-dist">Loading…</li></ul>
+      <p class="watchlist-note">Context only, never a signal input: sentiment-extreme entries were tested as a strategy and failed walk-forward validation (see the research report), and public headlines are in the price within seconds of the wire. Nothing on this card sizes a trade.</p>
+    </div>
+  </section>
+
+  <!-- ============ Current signal ============ -->
+  <section id="signal" class="section">
+    <h2><span class="fn-code">SIG</span>Current signal</h2>
+
+    <div class="signal-card action-queue">
+      <div class="aq-head">
+        <h3>Do now</h3>
+        <span class="aq-stamp" id="aq-stamp"></span>
+      </div>
+      <ul class="aq-list" id="aq-list"><li><span class="radar-dist">Waiting for the market sweep…</span></li></ul>
+      <p class="watchlist-note">The whole platform reduced to a checklist: every funded signal firing anywhere, every open position approaching its hard exit, and scheduled-volatility warnings. When it says stand down, standing down is the trade.</p>
+    </div>
+
+    <div class="signal-card" id="signal-card">
+      <div class="signal-state">
+        <span class="signal-badge neutral" id="signal-badge">—</span>
+        <span class="signal-when" id="signal-when"></span>
+      </div>
+      <p class="signal-copy" id="signal-copy">Waiting for market data…</p>
+      <div class="signal-levels" id="signal-levels" hidden>
+        <div><span class="lvl-label">Entry</span><span class="lvl-value" id="lvl-entry">—</span></div>
+        <div><span class="lvl-label">Stop</span><span class="lvl-value" id="lvl-stop">—</span></div>
+        <div><span class="lvl-label">Target</span><span class="lvl-value" id="lvl-target">—</span></div>
+        <div><span class="lvl-label">Entry window</span><span class="lvl-value" id="lvl-window">—</span></div>
+        <div><span class="lvl-label">Confidence</span><span class="lvl-value" id="lvl-conf">—</span></div>
+        <div id="lvl-ai-wrap" hidden><span class="lvl-label">AI score</span><span class="lvl-value" id="lvl-ai">—</span></div>
+      </div>
+    </div>
+
+    <div class="signal-card trade-plan">
+      <div class="plan-head">
+        <h3>Your trade plan</h3>
+        <div class="plan-inputs">
+          <label>Account £ <input id="acct-size" type="number" min="100" step="100" inputmode="decimal"></label>
+          <label>Risk / trade % <input id="acct-risk" type="number" min="0.25" max="5" step="0.25" inputmode="decimal"></label>
+        </div>
+      </div>
+      <div class="plan-body" id="plan-body">Waiting for market data…</div>
+      <div class="plan-rules">
+        <details class="fold">
+        <summary>Playbook: allocation &amp; exit rules</summary>
+        <h4>When several markets fire at once</h4>
+        <ul>
+          <li><strong>Only validated streams qualify for real money:</strong> 🌊 daily swing signals (strongest edge), ◆ 4h breakouts on ✅ markets, and ⚡ 1h scalps (thin edge — Telegram only). <strong>Longs only on swing-55 and breakout</strong> — shorts failed side-split validation and show as paper. Everything else (the cross stream, breakouts on ❌ markets) is paper/informational too.</li>
+          <li><strong>Risk is edge-weighted, not flat:</strong> from a 1% base — 🌊 swing-55 risks 1.25%, ◆ 4h breakout 1%, 🌊 early swing 0.75%, ⚡ scalp 0.5%. Stronger validated edge earns more risk; every size stays far below the theoretical optimum. The plan and every alert already apply this.</li>
+          <li><strong>Cap total open risk at 3% of the account</strong> — at most 3 positions open at once. NAS100 and SPX500 (and often US30) move together: treat two US-index positions as closer to one double-sized trade.</li>
+          <li><strong>Drawdown throttle:</strong> if the account falls 10% from its high, halve every position size until it makes a new high. Losing streaks are when systems get abandoned or over-traded — this rule makes them survivable instead.</li>
+          <li><strong>If more than 3 qualify, take the markets with the strongest validated edge first</strong> (per the research report's per-market table) and skip the rest. Never respond to more signals by shrinking stops or doubling risk.</li>
+          <li><strong>One position per market.</strong> A new signal on a market you're already in changes nothing — manage the open trade by its own exit rules.</li>
+        </ul>
+        <h4>When to close — no discretion</h4>
+        <ul>
+          <li><strong>Breakout / scalp trades:</strong> initial stop 1.5×ATR, trail 2×ATR behind the best close after every candle (4h / 1h), hard exit after 18 candles (3 days / 18 hours). <strong>Swing-55 trades:</strong> initial stop 2×ATR, trail 3×ATR on daily closes, hard exit after 24 days (grid-validated). The stop only ever tightens; no profit target — the occasional big winner pays for the frequent small losses.</li>
+          <li><strong>Cross trades (paper only):</strong> stop 1.5×ATR, target 2×ATR, stop to breakeven once 1×ATR in profit, time-exit after 24h.</li>
+          <li><strong>Never widen a stop, never add to a loser, never re-enter a market the same day after a stop-out.</strong></li>
+        </ul>
+        </details>
+        <details class="fold">
+        <summary>Going live: first-week checklist</summary>
+        <h4>Before the first live trade (do this the night before)</h4>
+        <ul>
+          <li><strong>Start flat.</strong> The positions and P&amp;L on this page are the paper ledger's history — do <em>not</em> mirror any open row into your broker. Real money only goes on <em>new</em> signals that fire after you go live. Entering an old signal late means entering without its edge.</li>
+          <li><strong>Set your real balance</strong> in the Account £ box above (it drives every size on this page and in the alerts), and add your data key so prices are live, not demo.</li>
+          <li><strong>Check Telegram alerts are arriving</strong> — the bot checks 4h streams every 4 hours and the scalp stream hourly. The alert and this page always agree; if they ever don't, trade neither and investigate.</li>
+          <li><strong>Know the calendar:</strong> daily signals appear just after 00:00 UTC; the EIA petroleum print (Wednesday 14:30 UTC) spikes WTI volatility on schedule.</li>
+        </ul>
+        <h4>First month: half size</h4>
+        <ul>
+          <li>Run <strong>0.5% base risk instead of 1%</strong> (set Risk/trade to 0.5) for the first month. The edge doesn't need full size to prove itself, and the most likely early losses are execution mistakes — wrong lot size, missed stop, late entry — which cost half as much at half size. Move to 1% only after a month of trades that match the ledger.</li>
+          <li><strong>Every entry goes in with its stop attached.</strong> Market order + stop order in the same ticket, sized from the plan panel. No stop, no trade.</li>
+        </ul>
+        <h4>What to expect (honestly)</h4>
+        <ul>
+          <li>The validated edges are per-trade averages of roughly <strong>+0.2% to +2.3% per trade</strong> depending on stream — not per day. Weeks of nothing, then clusters, is normal behavior for breakout systems.</li>
+          <li>The paper account's headline return includes backfilled history and compounding — it is a record, <strong>not a forecast</strong>. The Monte Carlo tile below shows the drawdown you should expect to sit through; if that number would make you abandon the system, size down until it wouldn't.</li>
+          <li>Losing streaks are part of a positive edge. The system is only abandoned by the monthly revalidation — never by a bad week.</li>
+        </ul>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Open positions ============ -->
+  <section id="positions" class="section">
+    <h2><span class="fn-code">POS</span>Open positions</h2>
+    <p class="section-sub">Every trade the ledger currently has open, marked to the latest sweep price. £ figures use your account settings and the stream's edge-weighted size. Paper rows are streams that never earned real money.</p>
+    <div class="table-wrap">
+      <table class="record-table pos-table">
+        <thead><tr><th>Market</th><th>Stream</th><th>Side</th><th class="num">Entry</th><th class="num">Now</th><th class="num">P&amp;L</th><th class="num">R</th><th class="num">£ @ plan</th><th class="num">Age</th></tr></thead>
+        <tbody id="pos-body"><tr><td colspan="9" class="table-empty">Loading ledger…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="equity-card log-card">
+      <h3>Desk log</h3>
+      <ul class="desk-log" id="desk-log"><li class="radar-dist">Waiting for the ledger…</li></ul>
+      <p class="watchlist-note">Every line is a real recorded event from the signal ledger and the market sweep — nothing simulated, nothing narrated.</p>
+    </div>
+  </section>
+
+  <!-- ============ Methodology ============ -->
+  <section id="methodology" class="section">
+    <h2><span class="fn-code">RULE</span>How signals work</h2>
+    <p class="section-sub">The full rule set. There is no discretionary step — what you read here is exactly what the code does.</p>
+    <details class="fold" id="rule-fold" open>
+    <summary>Expand full rule set</summary>
+    <div class="method-grid">
+      <div class="method-card">
+        <h3><span class="step-num">1</span>Trend cross</h3>
+        <p>A candidate forms when the 20-period EMA crosses the 50-period EMA on the 4-hour chart. Cross up → long candidate; cross down → short candidate. The signal candle itself must close in the cross's direction.</p>
+      </div>
+      <div class="method-card">
+        <h3><span class="step-num">2</span>Regime gates</h3>
+        <p>Longs are only taken above the 200-period EMA and shorts only below it; ADX 14 must read 20 or higher (EMA crosses whipsaw in chop); and the 50-EMA itself must already be sloping the trade's way over the last 12 hours.</p>
+      </div>
+      <div class="method-card">
+        <h3><span class="step-num">3</span>Momentum &amp; volume</h3>
+        <p>RSI 14 must confirm without being exhausted: 45–70 for longs, 30–55 for shorts. Volume above its 20-period average raises confidence. Stops sit 1.5 × ATR 14 from entry, targets 2 × ATR — and once price moves 1 × ATR in favor, the stop moves to breakeven.</p>
+      </div>
+      <div class="method-card">
+        <h3><span class="step-num">◆</span>Breakout stream</h3>
+        <p>A second, independent strategy: long when price closes above its 55-candle high, short below its 55-candle low, exiting on a 2×ATR trailing stop (no fixed target, max 3 days). Funded only on markets where it kept a net edge out-of-sample — see the research report.</p>
+      </div>
+      <div class="method-card">
+        <h3><span class="step-num">🌊</span>Swing stream (daily)</h3>
+        <p>The same Donchian breakout on <em>daily</em> candles. The 55-day stream is the strongest edge the walk-forward found — its exits are grid-validated (2×ATR stop, 3×ATR trail on daily closes, max 24 days: +2.3%/trade net in validation, PF 2.8, longs only for real money). The 20-day "early swing" variant fires more often with a thinner edge (2×ATR trail, max 18 days) and is labelled separately.</p>
+      </div>
+      <div class="method-card">
+        <h3><span class="step-num">⚡</span>Scalp stream (1h)</h3>
+        <p>Donchian breakout on 1-hour candles, alert-only via Telegram (checked hourly). Raw 1h trading fails after costs — this stream only fires during London/NY hours, in above-average volatility, on Gold and NAS100. That filtered combination was net-positive in both walk-forward periods (+0.22%/trade, 100 validation trades). The edge is thin: the filters are mandatory, not decoration.</p>
+      </div>
+      <div class="method-card">
+        <h3><span class="step-num">4</span>4-hour entry window</h3>
+        <p>A signal is valid for one candle — four hours from the close that produced it. If unfilled, it expires. Outcomes are scored over the following 24 hours: target, stop, or expiry at market. Signals are evaluated on closed candles only, so they never repaint mid-candle.</p>
+      </div>
+    </div>
+    </details>
+  </section>
+
+  <!-- ============ Track record ============ -->
+  <section id="track-record" class="section">
+    <h2><span class="fn-code">HIST</span>Track record <button id="csv-btn" class="ghost-btn" type="button" title="Download the full signal ledger as CSV">⇩ Ledger CSV</button></h2>
+    <p class="section-sub" id="track-sub">Every signal the rule set produced over the loaded history — recomputed from raw candles on each page load, so it cannot be curated.</p>
+    <div class="equity-card" id="equity-wrap" hidden>
+      <h3>Cumulative move across closed signals</h3>
+      <div class="chart-wrap">
+        <canvas id="equity" aria-label="Cumulative percentage move across closed signals over the loaded history. Per-signal values are in the table below."></canvas>
+        <div class="tooltip" id="equity-tooltip" hidden></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="record-table">
+        <thead>
+          <tr><th>Signal time (UTC)</th><th>Strategy</th><th>Side</th><th class="num">Entry</th><th class="num">Exit</th><th>Outcome</th><th class="num">Move</th></tr>
+        </thead>
+        <tbody id="record-body">
+          <tr><td colspan="7" class="table-empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ Live performance ============ -->
+  <section id="performance" class="section">
+    <h2><span class="fn-code">PERF</span>Live performance</h2>
+    <p class="section-sub" id="perf-sub">Loading the signal ledger…</p>
+    <div id="perf-content" hidden>
+      <div class="tiles">
+        <div class="tile">
+          <span class="tile-label">Signals recorded</span>
+          <span class="tile-value" id="perf-total">—</span>
+          <span class="tile-note" id="perf-total-note">—</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">Favorable move rate</span>
+          <span class="tile-value" id="perf-winrate">—</span>
+          <span class="tile-note">closed signals, all markets</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">Average move per signal</span>
+          <span class="tile-value" id="perf-avg">—</span>
+          <span class="tile-note">to exit, in signal direction</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">Profit factor</span>
+          <span class="tile-value" id="perf-pf">—</span>
+          <span class="tile-note">gross favorable ÷ gross adverse move</span>
+        </div>
+      </div>
+      <div class="table-wrap perf-table">
+        <table class="record-table">
+          <thead><tr><th>Market</th><th class="num">Closed</th><th class="num">Favorable</th><th class="num">Avg move</th><th class="num">Profit factor</th></tr></thead>
+          <tbody id="perf-assets"></tbody>
+        </table>
+      </div>
+      <h3 class="perf-h3">Paper account — what trading every signal would do</h3>
+      <p class="section-sub">A virtual account the size of yours (set it in the trade-plan panel above) taking every closed signal in the ledger chronologically, risking 1% of equity per trade (position sized to the stop), net of estimated per-market costs. This is the honest bridge between "signal" and "trade" — live, compounding, never curated.</p>
+      <div class="tiles">
+        <div class="tile">
+          <span class="tile-label">Paper equity</span>
+          <span class="tile-value" id="paper-equity">—</span>
+          <span class="tile-note" id="paper-start">—</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">Total return</span>
+          <span class="tile-value" id="paper-return">—</span>
+          <span class="tile-note" id="paper-trades">—</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">Max drawdown</span>
+          <span class="tile-value" id="paper-dd">—</span>
+          <span class="tile-note">worst peak-to-trough</span>
+        </div>
+        <div class="tile">
+          <span class="tile-label">Best / worst trade</span>
+          <span class="tile-value" id="paper-best">—</span>
+          <span class="tile-note" id="paper-worst">—</span>
+        </div>
+      </div>
+
+      <h3 class="perf-h3">Quant tearsheet</h3>
+      <p class="section-sub">Institutional-style statistics computed from the paper account above — same trades, same edge-weighted sizing, nothing curated. Sharpe and expectancy only mean something once the live sample grows; early numbers lean on backfill.</p>
+      <div class="tiles" id="ts-tiles">
+        <div class="tile"><span class="tile-label">Annualised return</span><span class="tile-value" id="ts-cagr">—</span><span class="tile-note">geometric, from the equity curve</span></div>
+        <div class="tile"><span class="tile-label">Sharpe ratio</span><span class="tile-value" id="ts-sharpe">—</span><span class="tile-note" id="ts-sharpe-note">annualised, per-trade returns</span></div>
+        <div class="tile"><span class="tile-label">Expectancy</span><span class="tile-value" id="ts-expect">—</span><span class="tile-note" id="ts-payoff">—</span></div>
+        <div class="tile"><span class="tile-label">MAR ratio</span><span class="tile-value" id="ts-mar">—</span><span class="tile-note">annualised return ÷ max drawdown</span></div>
+        <div class="tile"><span class="tile-label">Monte Carlo risk</span><span class="tile-value" id="ts-mc">—</span><span class="tile-note">95th-pct drawdown, next 100 trades</span></div>
+        <div class="tile"><span class="tile-label">Trade rate</span><span class="tile-value" id="ts-rate">—</span><span class="tile-note" id="ts-span">—</span></div>
+      </div>
+      <div class="equity-card">
+        <h3>Paper equity &amp; drawdown</h3>
+        <canvas id="ts-curve" height="240"></canvas>
+      </div>
+      <div class="ts-grid">
+        <div class="equity-card">
+          <h3>Trade outcomes (R multiples)</h3>
+          <canvas id="ts-hist" height="170"></canvas>
+        </div>
+        <div class="equity-card">
+          <h3>Monthly returns</h3>
+          <div class="table-wrap ts-monthly-wrap">
+            <table class="record-table ts-monthly"><tbody id="ts-monthly-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="perf-h3">Attribution by stream</h3>
+      <p class="section-sub">Which stream actually earns, in risk units. R = net move ÷ stop distance (costs included), so a +2R swing and a +2R scalp are directly comparable even though their % moves differ. The £ weight column is the edge-weighted size each stream gets in the paper account and the plan.</p>
+      <div class="table-wrap perf-table">
+        <table class="record-table">
+          <thead><tr><th>Stream</th><th class="num">Closed</th><th class="num">Win</th><th class="num">Avg R</th><th class="num">Σ R</th><th class="num">£ weight</th></tr></thead>
+          <tbody id="attr-body"><tr><td colspan="6" class="table-empty">Loading ledger…</td></tr></tbody>
+        </table>
+      </div>
+
+      <h3 class="perf-h3">Where to improve</h3>
+      <p class="section-sub">The same ledger sliced by trade side, confidence, and regime — weak segments are where the rules get tightened next.</p>
+      <div class="table-wrap perf-table">
+        <table class="record-table">
+          <thead><tr><th>Segment</th><th class="num">Closed</th><th class="num">Favorable</th><th class="num">Avg move</th></tr></thead>
+          <tbody id="perf-buckets"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p><strong>The LordBastian Signal Generator is an educational tool, not financial advice.</strong>
+  Signals are generated mechanically from public market data by the published rules above.
+  Past performance — including the track record on this page — does not predict future results.
+  Trading Bitcoin involves substantial risk of loss. Never trade money you cannot afford to lose.</p>
+  <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
+</footer>
+
+<script src="engine.js?v=69"></script>
+<script src="app.js?v=69"></script>
+</body>
+</html>
