@@ -13,3 +13,11 @@ input:focus,select:focus,textarea:focus{
   box-shadow:0 0 0 3px rgba(220,182,74,.16);
 }
 .band-nav a,.btn,.lot .lacts a{border-radius:8px}
+
+/* Luxury-editorial headlines — Instrument Serif display serif on every page
+   title, matching the redesigned scanner hero. Gold accent word retained. */
+h1.title{
+  font-family:'Instrument Serif','Cormorant Garamond',Georgia,serif;
+  font-weight:400; font-size:3.1rem; line-height:1.03; letter-spacing:0;
+}
+.hero{padding-top:30px;padding-bottom:8px}
