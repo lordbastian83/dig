@@ -493,8 +493,14 @@ async function main() {
       }
       return { tr: stats(net(pool.train)), va: stats(net(pool.validate)) };
     };
-    const CUR = { stopAtr: 1.5, trailAtr: 2, evalN: 18 };
+    // live exit config per stream, straight from the engine so the "(live)"
+    // baseline row can never drift from what actually trades
+    const CURS = {
+      bk4h: { stopAtr: E.CFG.STOP_ATR, trailAtr: E.CFG.TRAIL_ATR, evalN: E.CFG.TRAIL_EVAL },
+      swingD: { stopAtr: E.SWING.STOP_ATR, trailAtr: E.SWING.TRAIL_ATR, evalN: E.SWING.EVAL },
+    };
     for (const [which, label] of [['bk4h', `4h breakout (edge markets: ${[...edgeAssets].join(', ') || 'none'})`], ['swingD', 'daily swing-55 (pooled)']]) {
+      const CUR = CURS[which];
       const cur = evalCombo(which, CUR, null);
       const verdict = (r) => {
         if (!r.tr || !r.va || r.va.n < 30) return '⚠️ sample too small';
@@ -507,7 +513,7 @@ async function main() {
         '',
         '| stop / trail / window | Train (net) | Validate (net) | Verdict |',
         '|---|---|---|---|',
-        `| **1.5 / 2 / 18 (live)** | ${fmtStats(cur.tr)} | ${fmtStats(cur.va)} | baseline |`,
+        `| **${CUR.stopAtr} / ${CUR.trailAtr} / ${CUR.evalN} (live)** | ${fmtStats(cur.tr)} | ${fmtStats(cur.va)} | baseline |`,
       );
       for (const stopAtr of [1.5, 2])
         for (const trailAtr of [1.5, 2, 3])
