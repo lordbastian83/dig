@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=65">
+<link rel="stylesheet" href="styles.css?v=66">
 </head>
 <body>
 
@@ -74,6 +74,8 @@
     <div class="asset-tabs" id="asset-tabs" role="tablist" aria-label="Asset"></div>
 
     <div class="crew" id="crew" aria-label="Desk status"></div>
+
+    <div class="sess" id="sess" aria-label="Trading sessions"></div>
 
     <div class="carto" id="carto" aria-label="Market map"></div>
 
@@ -181,6 +183,16 @@
   <!-- ============ Current signal ============ -->
   <section id="signal" class="section">
     <h2><span class="fn-code">SIG</span>Current signal</h2>
+
+    <div class="signal-card action-queue">
+      <div class="aq-head">
+        <h3>Do now</h3>
+        <span class="aq-stamp" id="aq-stamp"></span>
+      </div>
+      <ul class="aq-list" id="aq-list"><li><span class="radar-dist">Waiting for the market sweep…</span></li></ul>
+      <p class="watchlist-note">The whole platform reduced to a checklist: every funded signal firing anywhere, every open position approaching its hard exit, and scheduled-volatility warnings. When it says stand down, standing down is the trade.</p>
+    </div>
+
     <div class="signal-card" id="signal-card">
       <div class="signal-state">
         <span class="signal-badge neutral" id="signal-badge">—</span>
@@ -394,6 +406,15 @@
         </div>
       </div>
 
+      <h3 class="perf-h3">Attribution by stream</h3>
+      <p class="section-sub">Which stream actually earns, in risk units. R = net move ÷ stop distance (costs included), so a +2R swing and a +2R scalp are directly comparable even though their % moves differ. The £ weight column is the edge-weighted size each stream gets in the paper account and the plan.</p>
+      <div class="table-wrap perf-table">
+        <table class="record-table">
+          <thead><tr><th>Stream</th><th class="num">Closed</th><th class="num">Win</th><th class="num">Avg R</th><th class="num">Σ R</th><th class="num">£ weight</th></tr></thead>
+          <tbody id="attr-body"><tr><td colspan="6" class="table-empty">Loading ledger…</td></tr></tbody>
+        </table>
+      </div>
+
       <h3 class="perf-h3">Where to improve</h3>
       <p class="section-sub">The same ledger sliced by trade side, confidence, and regime — weak segments are where the rules get tightened next.</p>
       <div class="table-wrap perf-table">
@@ -415,7 +436,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=65"></script>
-<script src="app.js?v=65"></script>
+<script src="engine.js?v=66"></script>
+<script src="app.js?v=66"></script>
 </body>
 </html>

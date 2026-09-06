@@ -823,6 +823,8 @@
     renderCarto(list);
     renderCrew();
     renderDeskLog();
+    renderActionQueue();
+    renderSessions();
   }
   let lastSweepRows = null;
 
@@ -995,14 +997,14 @@
     const liveN = sweep.reduce((n, r) => n + (r.active?.length || 0), 0);
     const openN = lastRecs ? lastRecs.filter((r) => r.outcome === 'open' && ASSETS[r.asset]).length : null;
     const closedN = lastRecs ? lastRecs.filter((r) => r.outcome !== 'open').length : null;
-    const eiaH = (E.nextEiaTime() - Date.now()) / 3600000;
+    const edges = edgeStatus?.assets ? Object.values(edgeStatus.assets).filter((x) => x.edge === true).length : null;
     const roles = [
       ['SCAN', 'sweeps 8 markets · 4h + daily', sweep.length ? `${sweep.length} live` : 'starting…'],
       ['SIGNAL', 'validated streams only', liveN ? `${liveN} firing` : 'flat'],
       ['SIZE', 'edge-weighted, longs funded', `1% base · £${fmtUsd(acctGbp())}`],
       ['CLOSE', 'trailing exits, no discretion', 'armed'],
       ['LEDGER', 'append-only record', closedN != null ? `${closedN} closed · ${openN} open` : 'loading'],
-      ['AUDIT', 'monthly walk-forward revalidation', eiaH <= 24 ? `EIA in ~${eiaH.toFixed(0)}h` : 'verdicts current'],
+      ['AUDIT', 'monthly walk-forward revalidation', edges != null ? `${edges} breakout edge${edges === 1 ? '' : 's'} ✅` : 'verdicts current'],
     ];
     box.innerHTML = roles.map(([tag, sub, val]) => `
       <span class="crew-chip"><span class="crew-tag">${tag}</span><span class="crew-val">${val}</span><span class="crew-sub">${sub}</span></span>`).join('');
@@ -1024,6 +1026,93 @@
         `<span class="${r.side === 'long' ? 'move-pos' : 'move-neg'}">${r.side === 'long' ? '▲' : '▼'}</span> ` +
         `@ $${fmtPrice(r.entry)} · ${status}<span class="radar-dist"> · ${fmtTime(r.t)}</span></li>`;
     }).join('');
+  }
+
+  // Session clocks: which markets are awake right now (approximate UTC
+  // hours, ignoring DST shifts by design — this is orientation, not an
+  // execution calendar). The scalp-window chip mirrors the 1h stream's
+  // actual session gate from the engine config.
+  function renderSessions() {
+    const box = $('sess');
+    if (!box) return;
+    const d = new Date();
+    const mins = d.getUTCHours() * 60 + d.getUTCMinutes();
+    const hh = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    const rows = [
+      ['TOKYO', 0, 8 * 60],
+      ['LONDON', 7 * 60, 16 * 60],
+      ['NEW YORK', 12.5 * 60, 21 * 60],
+      ['SCALP WINDOW', E.SCALP.HOUR_FROM * 60, E.SCALP.HOUR_TO * 60],
+    ];
+    box.innerHTML = rows.map(([name, a, b]) => {
+      const on = mins >= a && mins < b;
+      return `<span class="sess-chip ${on ? 'on' : ''}"><span class="sess-dot"></span>${name}<span class="sess-hours">${hh(a)}–${hh(b)}</span></span>`;
+    }).join('') + '<span class="sess-note">UTC · scalp window = the 1h stream\'s validated session gate (Gold + NAS100)</span>';
+  }
+
+  // Action queue: the whole platform reduced to "what do I do right now".
+  // Funded signals firing on ANY market, funded positions approaching their
+  // hard time-exit, and scheduled-volatility warnings — or an explicit
+  // stand-down. Everything here is derived from the same sweep, ledger and
+  // edge verdicts the rest of the page uses.
+  function renderActionQueue() {
+    const list = $('aq-list');
+    if (!list) return;
+    const stamp = $('aq-stamp');
+    if (stamp) stamp.textContent = `as of ${fmtClock(Date.now())} UTC`;
+    const sweep = lastSweepRows || [];
+    const items = [];
+    const streamName = (s) => (s.strategy === 'swing' ? (s.early ? 'early swing' : 'swing') : s.strategy === 'scalp' ? 'scalp' : s.strategy === 'breakout' ? 'breakout' : 'cross');
+    const isFunded = (s, asset) => E.fundedSide(s) && (s.strategy === 'swing' || s.strategy === 'scalp' ||
+      (s.strategy === 'breakout' && edgeStatus?.assets?.[asset]?.edge === true));
+    for (const r of sweep) {
+      for (const s of (r.active || [])) {
+        const sideHtml = `<span class="${s.side === 'long' ? 'move-pos' : 'move-neg'}">${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}</span>`;
+        if (isFunded(s, r.a)) {
+          const risk = acctGbp() * (riskPct() / 100) * E.riskMultiplier(s);
+          items.push({ tag: 'OPEN', cls: 'aq-open', asset: r.a, html: `${ASSETS[r.a].tab} ${sideHtml} ${streamName(s)} @ $${fmtPrice(s.entry)} — risk £${fmtUsd(risk)} (${(riskPct() * E.riskMultiplier(s)).toFixed(2)}% edge-weighted). Tap for size, stop and exit.` });
+        } else {
+          items.push({ tag: 'WATCH', cls: 'aq-watch', asset: r.a, html: `${ASSETS[r.a].tab} ${sideHtml} ${streamName(s)} @ $${fmtPrice(s.entry)} — paper only (${s.side === 'short' ? 'shorts failed side-split validation on this stream' : 'no validated edge on this market'}).` });
+        }
+      }
+    }
+    if (lastRecs) {
+      const maxHoldH = (r) => (r.strategy === 'scalp' ? 18 : r.strategy === 'swing' ? (r.early ? 18 : 24) * 24 : 3 * 24);
+      for (const r of lastRecs) {
+        if (r.outcome !== 'open' || !ASSETS[r.asset] || !r.entry || !r.stop) continue;
+        const hold = maxHoldH(r);
+        const ageH = (Date.now() - r.t) / 3600000;
+        if (ageH > hold * 1.5) continue; // ledger orphan, not a live position
+        if (!isFunded(r, r.asset)) continue;
+        const sideGlyph = `<span class="${r.side === 'long' ? 'move-pos' : 'move-neg'}">${r.side === 'long' ? '▲' : '▼'}</span>`;
+        if (ageH >= hold) {
+          items.push({ tag: 'CLOSE NOW', cls: 'aq-warn', asset: r.asset, html: `${ASSETS[r.asset].tab} ${sideGlyph} ${streamName(r)} from $${fmtPrice(r.entry)} is past its hard time-exit (${fmtTime(r.t + hold * 3600000)} UTC) — if you still hold it, close at market now.` });
+        } else if (hold - ageH <= hold * 0.25) {
+          items.push({ tag: 'CLOSE BY', cls: 'aq-close', asset: r.asset, html: `${ASSETS[r.asset].tab} ${sideGlyph} ${streamName(r)} from $${fmtPrice(r.entry)} reaches its hard time-exit ${fmtTime(r.t + hold * 3600000)} UTC — close at market then if the trailing stop hasn't already taken it out.` });
+        }
+      }
+    }
+    const eiaH = (E.nextEiaTime() - Date.now()) / 3600000;
+    const oilLive = sweep.some((r) => r.a === 'OIL' && r.active?.length) ||
+      (lastRecs || []).some((r) => r.asset === 'OIL' && r.outcome === 'open' && ASSETS[r.asset]);
+    if (eiaH <= 8 && oilLive) {
+      items.push({ tag: 'CAUTION', cls: 'aq-warn', html: `EIA petroleum report in ~${Math.max(1, eiaH).toFixed(0)}h — a scheduled WTI volatility spike. Don't open new oil risk into the print; existing stops stay where they are.` });
+    }
+    const openN = items.filter((i) => i.tag === 'OPEN').length;
+    if (openN > 3) {
+      items.push({ tag: 'CAP', cls: 'aq-warn', html: `${openN} signals qualify but the playbook caps total open risk at 3% — take the strongest validated edges first and skip the rest. Never shrink stops to fit more trades.` });
+    }
+    if (!items.length) {
+      items.push({ tag: 'STAND DOWN', cls: 'aq-flat', html: 'No funded signal is live and no open position needs action. Flat is a position — doing nothing is the correct trade right now.' });
+    }
+    list.innerHTML = items.map((i) =>
+      `<li class="${i.asset ? 'aq-link' : ''}"${i.asset ? ` data-asset="${i.asset}"` : ''}><span class="aq-tag ${i.cls}">${i.tag}</span><span class="aq-body">${i.html}</span></li>`).join('');
+    list.querySelectorAll('li[data-asset]').forEach((li) => li.addEventListener('click', () => {
+      currentAsset = li.dataset.asset;
+      localStorage.setItem('budsignal-asset', currentAsset);
+      refresh();
+      document.getElementById('signal').scrollIntoView({ behavior: 'smooth' });
+    }));
   }
 
   // Ticker tape: every market's price and 24h change from the radar sweep.
@@ -1465,11 +1554,49 @@
 
     lastRecs = recs;
     renderPaperAccount(recs);
+    renderAttribution(recs);
     renderBlotter();
     renderCrew();
     renderDeskLog();
+    renderActionQueue();
   }
   let lastRecs = null;
+
+  // Attribution: closed ledger trades grouped by stream, measured in R
+  // (net move ÷ stop distance, costs included) — the only unit where a
+  // swing trade and a scalp are directly comparable. Uses the same R
+  // computation as the paper account, so the two can never disagree.
+  function renderAttribution(recs) {
+    const body = $('attr-body');
+    if (!body) return;
+    const META = [
+      ['swing', '🌊 Swing (daily-55)', '1.25%'],
+      ['swingEarly', '🌊 Early swing (daily-20)', '0.75%'],
+      ['breakout', '◆ Breakout (4h)', '1.00%'],
+      ['scalp', '⚡ Scalp (1h)', '0.50%'],
+      ['cross', 'Cross (paper only)', '—'],
+    ];
+    const keyOf = (r) => (r.strategy === 'swing' ? (r.early ? 'swingEarly' : 'swing') : r.strategy === 'breakout' || r.strategy === 'scalp' ? r.strategy : 'cross');
+    const groups = new Map(META.map(([k]) => [k, []]));
+    for (const r of recs) {
+      if (r.outcome === 'open' || !r.entry || !r.stop) continue;
+      const stopPct = Math.abs(r.entry - r.stop) / r.entry * 100;
+      if (!stopPct) continue;
+      groups.get(keyOf(r)).push((r.movePct - (PAPER_COSTS[r.asset] ?? 0.05)) / stopPct);
+    }
+    body.innerHTML = META.map(([k, label, weight]) => {
+      const Rs = groups.get(k);
+      if (!Rs.length) return `<tr><td>${label}</td><td class="num">0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">${weight}</td></tr>`;
+      const sum = Rs.reduce((a, b) => a + b, 0);
+      const avg = sum / Rs.length;
+      const win = Rs.filter((r) => r > 0).length / Rs.length * 100;
+      const cls = (v) => (v >= 0 ? 'move-pos' : 'move-neg');
+      return `<tr><td>${label}</td><td class="num">${Rs.length}</td><td class="num">${win.toFixed(0)}%</td>` +
+        `<td class="num ${cls(avg)}">${avg >= 0 ? '+' : ''}${avg.toFixed(2)}R</td>` +
+        `<td class="num ${cls(sum)}">${sum >= 0 ? '+' : ''}${sum.toFixed(1)}R</td>` +
+        `<td class="num">${weight}</td></tr>`;
+    }).join('');
+  }
 
   /* ---------------- boot ---------------- */
 
@@ -1593,6 +1720,8 @@
   tickClock();
   setInterval(tickClock, 1000);
   setInterval(renderCountdown, 30 * 1000);
+  renderSessions();
+  setInterval(renderSessions, 60 * 1000);
 
   // Self-update: installed PWAs resume old sessions instead of reloading, so
   // the deployed build stamps version.json and the app reloads itself the
