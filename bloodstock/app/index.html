@@ -18,6 +18,7 @@
 <meta name="twitter:title" content="Vault Racing — scanner">
 <meta name="twitter:description" content="Score thoroughbred sales lots against a hard max bid, scan horses in training, and find the value the market hasn't priced yet.">
 <meta name="twitter:image" content="og-image.jpg">
+<link rel="preload" as="image" href="img/hero-horse.jpg" fetchpriority="high">
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="styles.css?v=20260730x">
 </head>
@@ -66,7 +67,8 @@
     <!-- Editorial hero portrait. A user-set https photo URL, if saved, replaces
          its src (see heroImage() in app.js); on load failure it hides itself. -->
     <img id="hero-img" class="hero-photo" src="img/hero-horse.jpg"
-         alt="Thoroughbred galloping" onerror="this.style.display='none'">
+         alt="Thoroughbred galloping" fetchpriority="high" decoding="async"
+         onerror="this.style.display='none'">
     <div class="hero-veil" aria-hidden="true"></div>
     <div class="hero-text">
       <h2>Find the next<br>Imperial Emperor</h2>
@@ -101,7 +103,7 @@
         <p>Guide against modelled value and a hard max bid — the edge the ring hasn't priced in yet.</p>
       </article>
     </div>
-    <img class="story-emblem" src="img/horse-portrait.jpg" alt="" aria-hidden="true">
+    <img class="story-emblem" src="img/horse-portrait.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async">
   </section>
 
   <!-- ============ 0a · At-a-glance dashboard ============ -->
@@ -543,7 +545,7 @@
 
   <!-- ============ 5 · Editorial closer ============ -->
   <section class="creed" aria-label="The mandate">
-    <img class="creed-photo" src="img/horse-arabian.jpg" alt="" aria-hidden="true">
+    <img class="creed-photo" src="img/horse-arabian.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async">
     <div class="creed-veil" aria-hidden="true"></div>
     <div class="creed-inner">
       <span class="creed-kicker">The mandate</span>
