@@ -208,7 +208,8 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
 /* ---------- hero: compact terminal briefing strip ---------- */
 .hero {
   position: relative;
-  display: flex; align-items: center; gap: 1.5rem;
+  display: flex; align-items: flex-end;
+  min-height: clamp(300px, 34vw, 380px);
   background:
     radial-gradient(90% 130% at 90% -10%, rgba(212,175,55,0.10), transparent 55%),
     radial-gradient(120% 160% at 82% 20%, #17263f 0%, var(--navy-2) 60%);
@@ -216,44 +217,58 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
   padding: 2rem 2.2rem; box-shadow: 0 1px 2px rgba(0,0,0,.22), 0 18px 40px -22px rgba(0,0,0,.7);
   overflow: hidden;
 }
+/* Full-bleed editorial portrait, anchored right; the horse emerges from the dark. */
+.hero-photo {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100%; height: 100%; object-fit: cover; object-position: 72% 42%;
+}
+/* Navy veil: keeps the text side legible, feathers the photo's edges into the
+   panel, and floats a soft gold glow top-right. */
+.hero-veil {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(58% 85% at 90% -14%, rgba(212,175,55,.18), transparent 60%),
+    linear-gradient(95deg, var(--navy-2) 3%, rgba(18,32,58,.94) 26%,
+      rgba(18,32,58,.55) 48%, rgba(18,32,58,.20) 70%, rgba(18,32,58,.55) 100%),
+    linear-gradient(0deg, rgba(8,15,27,.80), transparent 46%);
+}
 .hero::after {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; z-index: 3;
   background: linear-gradient(var(--gold), transparent);
 }
 .hero::before {
-  content: 'TARGET PROFILE'; position: absolute; top: 0; left: 0;
+  content: 'TARGET PROFILE'; position: absolute; top: 0; left: 0; z-index: 3;
   font-family: var(--mono); font-size: .56rem; letter-spacing: .16em; color: var(--ink-muted);
   background: var(--navy-3); padding: .12rem .5rem; border-bottom-right-radius: 2px;
   border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
 }
-.hero-text { flex: 1; padding-top: .5rem; }
+.hero-text { position: relative; z-index: 2; flex: 1; max-width: 60%; }
 .hero-text h2 {
-  font-family: var(--serif); font-size: 2.9rem; line-height: 1; font-weight: 400;
-  text-transform: none; letter-spacing: 0; margin: 0 0 .5rem; color: #fff;
+  font-family: var(--serif); font-size: clamp(2.4rem, 4.6vw, 3.3rem); line-height: 1; font-weight: 400;
+  text-transform: none; letter-spacing: 0; margin: 0 0 .6rem; color: #fff;
+  text-shadow: 0 2px 24px rgba(6,12,22,.6);
 }
-.hero-line { margin: .15rem 0; font-size: .92rem; color: var(--cloud); max-width: 96ch; font-family: var(--sans); }
+.hero-line { margin: .2rem 0; font-size: .92rem; color: var(--cloud); max-width: 52ch; font-family: var(--sans); text-shadow: 0 1px 10px rgba(6,12,22,.5); }
 .hero-line.dim { display: block; color: var(--ink-muted); font-style: italic; font-size: .85rem; }
 .hero-line.dim { display: none; }
-.hero-media { flex: none; margin: 0; width: 92px; height: 92px; position: relative; display: flex; align-items: center; justify-content: center; }
-.hero-media .hero-horse { width: 100%; height: 100%; filter: drop-shadow(0 6px 18px rgba(0,0,0,.35)); }
-.hero-media img {
-  width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
-  border: 1px solid var(--border);
-}
-.hero-media img:not([hidden]) + button + .hero-horse,
-.hero-media img:not([hidden]) + .hero-horse { display: none; }  /* photo wins only when actually shown */
-.hero-horse { width: 100%; height: 100%; }
 #hero-set {
-  position: absolute; bottom: -6px; right: -6px;
+  position: absolute; bottom: 8px; right: 10px; z-index: 3;
   font-size: .6rem; padding: .15rem .5rem; opacity: 0;
   background: rgba(10,18,30,.9); color: var(--ink-muted); border: 1px solid var(--border);
   border-radius: 6px; cursor: pointer; transition: opacity .15s ease;
 }
-.hero-media:hover #hero-set { opacity: 1; }
+.hero:hover #hero-set { opacity: 1; }
 #hero-set:hover { color: var(--cloud); }
 @media (max-width: 640px) {
-  .hero { gap: .7rem; }
-  .hero-media { width: 46px; height: 46px; }
+  .hero { min-height: 260px; padding: 1.4rem 1.4rem; }
+  .hero-text { max-width: 82%; }
+  .hero-photo { object-position: 74% 38%; }
+  .hero-veil {
+    background:
+      radial-gradient(58% 85% at 90% -14%, rgba(212,175,55,.16), transparent 60%),
+      linear-gradient(95deg, var(--navy-2) 6%, rgba(18,32,58,.92) 40%, rgba(18,32,58,.55) 100%),
+      linear-gradient(0deg, rgba(8,15,27,.88), transparent 52%);
+  }
 }
 
 /* terminal panel: sharp corners, tight, hairline framed. Panels stretch to
@@ -1244,7 +1259,6 @@ kbd {
 /* Vault Racing brand override */
 .nav-cta{color:#12203A}
 .lockup .sub-line{color:#DFE2E8}
-.hero-media .hero-horse{object-fit:contain}
 img.logo-mark{border-radius:8px}
 
 /* Mobile overflow fix: wide data tables (min-width:640) must scroll inside their
@@ -1273,6 +1287,7 @@ main > *, .card { min-width: 0; }
   box-shadow: 0 1px 2px rgba(0,0,0,.22), 0 18px 40px -22px rgba(0,0,0,.7);
 }
 .story::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(var(--gold), transparent); }
+.story-head{ position:relative; z-index:1; }
 .story-kicker{
   display:inline-block; font-family:var(--mono); font-size:.62rem; font-weight:600;
   letter-spacing:.28em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem;
@@ -1289,8 +1304,11 @@ main > *, .card { min-width: 0; }
 .story-col h3{ font-family:var(--sans); font-size:.8rem; text-transform:uppercase; letter-spacing:.14em; color:#fff; margin:0 0 .5rem; font-weight:600; }
 .story-col p{ font-family:var(--sans); font-size:.9rem; line-height:1.55; color:var(--ink-muted); margin:0; }
 .story-emblem{
-  position:absolute; right:-3%; bottom:-14%; width:min(42%, 560px); height:auto;
-  opacity:.05; pointer-events:none; filter:grayscale(1) brightness(2); z-index:0;
+  position:absolute; right:0; top:0; bottom:0; width:min(48%, 640px); height:100%;
+  object-fit:cover; object-position:78% center; z-index:0; pointer-events:none;
+  opacity:.9;
+  -webkit-mask-image:linear-gradient(90deg, transparent 0%, transparent 22%, #000 82%);
+          mask-image:linear-gradient(90deg, transparent 0%, transparent 22%, #000 82%);
 }
 @media (max-width:760px){
   .story-cols{ grid-template-columns:1fr; }

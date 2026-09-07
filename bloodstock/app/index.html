@@ -63,19 +63,18 @@
 
   <!-- ============ 0 · Hero: the horse this whole system chases ============ -->
   <section class="hero">
+    <!-- Editorial hero portrait. A user-set https photo URL, if saved, replaces
+         its src (see heroImage() in app.js); on load failure it hides itself. -->
+    <img id="hero-img" class="hero-photo" src="img/hero-horse.jpg"
+         alt="Thoroughbred portrait" onerror="this.style.display='none'">
+    <div class="hero-veil" aria-hidden="true"></div>
     <div class="hero-text">
       <h2>Find the next<br>Imperial Emperor</h2>
       <p class="hero-line">Dubawi &times; Zhukova &middot; sold for $300,000 &middot;
       won the G1 Al Maktoum Challenge at Meydan.</p>
       <p class="hero-line dim">The radar hunts his profile daily, before the ring prices it in.</p>
     </div>
-    <figure class="hero-media">
-      <!-- Default visual is the Bio-Metric keypoint-horse (always renders, no
-           external asset). A user-set https photo URL, if saved, shows instead. -->
-      <img id="hero-img" alt="Racehorse" hidden onerror="this.hidden=true">
-      <button id="hero-set" title="Set the hero image from a URL">set image</button>
-      <img class="hero-horse" src="icon.svg" alt="">
-    </figure>
+    <button id="hero-set" title="Set the hero image from a URL">set image</button>
   </section>
 
   <!-- ============ 0· · Editorial method band ============ -->
@@ -102,7 +101,7 @@
         <p>Guide against modelled value and a hard max bid — the edge the ring hasn't priced in yet.</p>
       </article>
     </div>
-    <img class="story-emblem" src="img/horse-base.png" alt="" aria-hidden="true">
+    <img class="story-emblem" src="img/horse-portrait.jpg" alt="" aria-hidden="true">
   </section>
 
   <!-- ============ 0a · At-a-glance dashboard ============ -->
