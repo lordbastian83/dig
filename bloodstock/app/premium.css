@@ -35,3 +35,26 @@ h1.title{
 }
 .hero > *{ position:relative; z-index:1; }
 @media (max-width:760px){ .hero::after{ opacity:.13; } }
+
+/* Mobile tool-page nav: collapse the eight-item band nav behind a menu.
+   The toggle is injected by nav.js and hidden on desktop. */
+.band-toggle{
+  display:none; align-items:center; gap:.5rem;
+  font-size:.74rem; font-weight:600; letter-spacing:.02em; color:var(--cloud);
+  background:#16233c; border:1px solid var(--line); border-radius:6px;
+  padding:.45rem .7rem; cursor:pointer;
+}
+.band-toggle-bars, .band-toggle-bars::before, .band-toggle-bars::after{
+  content:''; display:block; width:15px; height:1.5px; background:currentColor; border-radius:2px; position:relative;
+}
+.band-toggle-bars::before{ position:absolute; top:-5px; left:0; }
+.band-toggle-bars::after{ position:absolute; top:5px; left:0; }
+.band-in.nav-open .band-toggle-bars{ background:transparent; }
+.band-in.nav-open .band-toggle-bars::before{ transform:translateY(5px) rotate(45deg); }
+.band-in.nav-open .band-toggle-bars::after{ transform:translateY(-5px) rotate(-45deg); }
+@media (max-width:640px){
+  .band-toggle{ display:inline-flex; margin-left:auto; }
+  .band-nav{ display:none; flex-basis:100%; margin-left:0; }
+  .band-in.nav-open .band-nav{ display:flex; flex-direction:column; gap:6px; }
+  .band-in.nav-open .band-nav a{ padding:.65rem .8rem; }
+}
