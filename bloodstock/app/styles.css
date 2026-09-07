@@ -1261,3 +1261,40 @@ main > *, .card { min-width: 0; }
   .site-header .tagline { display: none; }
   .nav-cta { font-size: .72rem; }
 }
+
+/* ---------- editorial method band (luxury storytelling) ---------- */
+.story{
+  grid-column: 1 / -1; position: relative; overflow: hidden;
+  background:
+    radial-gradient(60% 120% at 88% -10%, rgba(212,175,55,.07), transparent 55%),
+    linear-gradient(180deg, #0e1526, #0b0f1a);
+  border: 1px solid var(--line); border-radius: 14px;
+  padding: clamp(1.8rem, 3.6vw, 3.2rem) clamp(1.4rem, 3.6vw, 3rem);
+  box-shadow: 0 1px 2px rgba(0,0,0,.22), 0 18px 40px -22px rgba(0,0,0,.7);
+}
+.story::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(var(--gold), transparent); }
+.story-kicker{
+  display:inline-block; font-family:var(--mono); font-size:.62rem; font-weight:600;
+  letter-spacing:.28em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem;
+}
+.story-h{
+  font-family:var(--serif); font-weight:400; font-size:clamp(1.9rem, 3.6vw, 3rem);
+  line-height:1.04; letter-spacing:0; color:#fff; margin:0 0 1rem; max-width:22ch;
+}
+.story-lede{ font-family:var(--sans); font-size:1.02rem; line-height:1.6; color:var(--cloud); max-width:64ch; margin:0 0 2.2rem; }
+.story-cols{ display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--line); position:relative; z-index:1; }
+.story-col{ padding:1.8rem 2rem 0 0; }
+.story-col + .story-col{ border-left:1px solid var(--line); padding-left:2rem; }
+.story-n{ font-family:var(--serif); font-size:1.7rem; color:var(--gold); display:block; margin-bottom:.35rem; }
+.story-col h3{ font-family:var(--sans); font-size:.8rem; text-transform:uppercase; letter-spacing:.14em; color:#fff; margin:0 0 .5rem; font-weight:600; }
+.story-col p{ font-family:var(--sans); font-size:.9rem; line-height:1.55; color:var(--ink-muted); margin:0; }
+.story-emblem{
+  position:absolute; right:-3%; bottom:-14%; width:min(42%, 560px); height:auto;
+  opacity:.05; pointer-events:none; filter:grayscale(1) brightness(2); z-index:0;
+}
+@media (max-width:760px){
+  .story-cols{ grid-template-columns:1fr; }
+  .story-col{ padding:1.4rem 0 0; }
+  .story-col + .story-col{ border-left:0; border-top:1px solid var(--line); padding-left:0; }
+  .story-emblem{ display:none; }
+}
