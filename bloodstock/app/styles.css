@@ -1279,12 +1279,38 @@ main > *, .card { min-width: 0; }
 .card > * { min-width: 0; }
 .table-wrap { max-width: 100%; }
 
-/* Mobile header: wrap the brand nav instead of running it off-screen */
+/* Mobile header: collapse the brand nav behind a menu instead of a
+   three-row wall of buttons. The hamburger is desktop-hidden. */
 .site-header { flex-wrap: wrap; }
+.nav-toggle {
+  display: none; align-items: center; gap: .5rem;
+  font-family: var(--sans); font-size: .74rem; font-weight: 600; letter-spacing: .02em;
+  color: var(--cloud); background: transparent; border: 1px solid var(--line);
+  border-radius: 8px; padding: .4rem .7rem; cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.nav-toggle:hover { color: #fff; border-color: var(--orange); background: var(--orange-wash); }
+.nav-toggle-bars, .nav-toggle-bars::before, .nav-toggle-bars::after {
+  content: ''; display: block; width: 15px; height: 1.5px; background: currentColor; border-radius: 2px;
+  position: relative; transition: transform .2s ease, opacity .2s ease;
+}
+.nav-toggle-bars::before { position: absolute; top: -5px; left: 0; }
+.nav-toggle-bars::after  { position: absolute; top:  5px; left: 0; }
+.topbar.nav-open .nav-toggle-bars { background: transparent; }
+.topbar.nav-open .nav-toggle-bars::before { transform: translateY(5px) rotate(45deg); }
+.topbar.nav-open .nav-toggle-bars::after  { transform: translateY(-5px) rotate(-45deg); }
+
 @media (max-width: 640px) {
   .site-header { gap: .5rem .55rem; }
   .site-header .tagline { display: none; }
-  .nav-cta { font-size: .72rem; }
+  .nav-toggle { display: inline-flex; margin-left: auto; }
+  /* the seven links + Compact collapse into the menu */
+  .nav-cta, .density-toggle { display: none; flex-basis: 100%; margin-left: 0; }
+  .nav-cta { font-size: .82rem; padding: .6rem .7rem; }
+  .topbar.nav-open .nav-cta,
+  .topbar.nav-open .density-toggle { display: block; }
+  .topbar.nav-open .density-toggle { width: 100%; text-align: left; }
+  .topbar.nav-open .site-header { padding-bottom: .7rem; }
 }
 
 /* ---------- editorial method band (luxury storytelling) ---------- */

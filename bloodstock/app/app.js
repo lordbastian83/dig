@@ -2758,6 +2758,17 @@ fetch(NEWS_URL)
   });
 })();
 
+/* ---------- mobile nav: collapse the header behind a menu ---------- */
+(function mobileNav() {
+  const btn = $('#nav-toggle'), bar = document.querySelector('.topbar');
+  if (!btn || !bar) return;
+  const set = (open) => { bar.classList.toggle('nav-open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+  btn.addEventListener('click', () => set(!bar.classList.contains('nav-open')));
+  // Close after choosing a destination, or on Escape.
+  bar.querySelectorAll('.nav-cta').forEach(a => a.addEventListener('click', () => set(false)));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') set(false); });
+})();
+
 /* ---------- budget control ---------- */
 function syncBudgetUI() {
   const P = loadParams();
