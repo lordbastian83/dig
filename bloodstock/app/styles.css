@@ -209,7 +209,7 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
 .hero {
   position: relative;
   display: flex; align-items: flex-end;
-  min-height: clamp(300px, 34vw, 380px);
+  min-height: clamp(320px, 38vw, 450px);
   background:
     radial-gradient(90% 130% at 90% -10%, rgba(212,175,55,0.10), transparent 55%),
     radial-gradient(120% 160% at 82% 20%, #17263f 0%, var(--navy-2) 60%);
@@ -220,7 +220,7 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
 /* Full-bleed editorial portrait, anchored right; the horse emerges from the dark. */
 .hero-photo {
   position: absolute; inset: 0; z-index: 0;
-  width: 100%; height: 100%; object-fit: cover; object-position: 72% 42%;
+  width: 100%; height: 100%; object-fit: cover; object-position: 56% 44%;
 }
 /* Navy veil: keeps the text side legible, feathers the photo's edges into the
    panel, and floats a soft gold glow top-right. */
@@ -262,7 +262,7 @@ main > .card:not([id])   { grid-column: span 6; }  /* the 6-filter reference pan
 @media (max-width: 640px) {
   .hero { min-height: 260px; padding: 1.4rem 1.4rem; }
   .hero-text { max-width: 82%; }
-  .hero-photo { object-position: 74% 38%; }
+  .hero-photo { object-position: 60% 42%; }
   .hero-veil {
     background:
       radial-gradient(58% 85% at 90% -14%, rgba(212,175,55,.16), transparent 60%),
