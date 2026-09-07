@@ -452,7 +452,18 @@ td b { font-weight: 600; }
 .gap-cell small { display: block; font-size: .72rem; }
 .gap-cell .verdict-bid { color: var(--green); }
 .row-reject { opacity: .5; }
-.empty { color: var(--ink-muted); text-align: center; padding: 1.4rem; }
+.empty { color: var(--ink-muted); text-align: center; padding: 2rem 1.4rem; font-size: .9rem; line-height: 1.6; }
+/* Intentional "awaiting data" mark — a gold ring, not a void. */
+.empty::before {
+  content: ''; display: block; width: 26px; height: 26px; margin: 0 auto .85rem;
+  border-radius: 50%; border: 1px solid rgba(212,175,55,.45);
+  background: radial-gradient(circle at 50% 45%, rgba(212,175,55,.22), rgba(212,175,55,.02) 65%);
+}
+/* Standalone empty paragraphs read as a poised drop-zone, not a broken panel. */
+p.empty {
+  border: 1px dashed var(--line); border-radius: 11px;
+  background: rgba(255,255,255,.012); padding: 2.2rem 1.5rem;
+}
 .del-btn { padding: .2rem .55rem; color: var(--ink-muted); }
 .del-btn:hover { color: var(--cloud); }
 .status-sel { font-size: .85rem; padding: .3rem .4rem; }
