@@ -1419,3 +1419,30 @@ main > *, .card { min-width: 0; }
 .primary, .budget-step, .band-nav a, .btn { transition: transform .12s ease, background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
 .primary:active, .budget-step:active { transform: translateY(1px); }
 .quicknav a { transition: color .12s ease, background .12s ease, border-color .12s ease; }
+
+/* ---- Accessibility: skip link + keyboard focus rings ---- */
+.skip-link{
+  position:absolute; left:.5rem; top:-3rem; z-index:100;
+  background:var(--gold); color:#06121F; padding:.55rem 1rem; border-radius:0 0 8px 8px;
+  font-family:var(--sans); font-weight:700; font-size:.85rem; text-decoration:none;
+  transition:top .15s ease;
+}
+.skip-link:focus{ top:0; }
+a:focus-visible, button:focus-visible, summary:focus-visible,
+[tabindex]:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+  outline:2px solid var(--gold); outline-offset:2px;
+}
+
+/* ---- Back to top: appears once the page has scrolled ---- */
+.to-top{
+  position:fixed; right:16px; bottom:16px; z-index:30;
+  width:42px; height:42px; border-radius:50%; display:grid; place-items:center;
+  background:rgba(14,26,46,.9); color:var(--gold); border:1px solid var(--gold-deep);
+  cursor:pointer; opacity:0; transform:translateY(10px); pointer-events:none;
+  box-shadow:0 8px 24px -8px rgba(0,0,0,.7); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  transition:opacity .2s ease, transform .2s ease, background .15s ease, color .15s ease;
+}
+.to-top.show{ opacity:1; transform:none; pointer-events:auto; }
+.to-top:hover{ background:var(--gold); color:#06121F; }
+.to-top svg{ width:18px; height:18px; }
+@media print{ .to-top, .skip-link{ display:none !important; } }

@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="styles.css?v=20260730x">
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 <div class="topbar">
 <header class="site-header" id="site-header">
   <!-- Vault Racing brand lockup: the horseshoe-in-'u' mark (navy/white),
@@ -60,7 +61,7 @@
   <div class="ticker-track" id="ticker-track"></div>
 </div>
 
-<main>
+<main id="main" tabindex="-1">
 
   <!-- Shared-snapshot import banner (shown when opened from a share link) -->
   <div id="share-banner" class="share-banner" hidden></div>
@@ -598,6 +599,10 @@
   challenged &mdash; analysis, not financial advice.
   <a href="/.auth/logout" id="logout-link" hidden>Sign out</a>
 </footer>
+
+<button id="to-top" class="to-top" aria-label="Back to top" title="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
 
 <script src="engine.js?v=20260730v"></script>
 <script src="app.js?v=20260730v"></script>

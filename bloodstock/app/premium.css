@@ -58,3 +58,27 @@ h1.title{
   .band-in.nav-open .band-nav{ display:flex; flex-direction:column; gap:6px; }
   .band-in.nav-open .band-nav a{ padding:.65rem .8rem; }
 }
+
+/* ---- Accessibility + back-to-top (tool pages; injected by nav.js) ---- */
+.skip-link{
+  position:absolute; left:.5rem; top:-3rem; z-index:100;
+  background:var(--gold,#D4AF37); color:#06121F; padding:.55rem 1rem; border-radius:0 0 8px 8px;
+  font-weight:700; font-size:.85rem; text-decoration:none; transition:top .15s ease;
+}
+.skip-link:focus{ top:0; }
+a:focus-visible, button:focus-visible, summary:focus-visible,
+[tabindex]:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+  outline:2px solid var(--gold,#D4AF37); outline-offset:2px;
+}
+.to-top{
+  position:fixed; right:16px; bottom:16px; z-index:30;
+  width:42px; height:42px; border-radius:50%; display:grid; place-items:center;
+  background:rgba(14,26,46,.9); color:var(--gold,#D4AF37); border:1px solid var(--gold-deep,#A8862B);
+  cursor:pointer; opacity:0; transform:translateY(10px); pointer-events:none;
+  box-shadow:0 8px 24px -8px rgba(0,0,0,.7); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  transition:opacity .2s ease, transform .2s ease, background .15s ease, color .15s ease;
+}
+.to-top.show{ opacity:1; transform:none; pointer-events:auto; }
+.to-top:hover{ background:var(--gold,#D4AF37); color:#06121F; }
+.to-top svg{ width:18px; height:18px; }
+@media print{ .to-top, .skip-link{ display:none !important; } }
