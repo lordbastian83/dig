@@ -1402,3 +1402,20 @@ main > *, .card { min-width: 0; }
       linear-gradient(0deg, rgba(8,15,27,.80), transparent 55%);
   }
 }
+
+/* ---- Scroll reveal: gentle fade + rise as sections enter view ----
+   Applied only by JS (reveal-init added at runtime), and only when the
+   viewer hasn't asked for reduced motion — so content is never hidden
+   without working script. */
+@media (prefers-reduced-motion: no-preference){
+  .reveal-init{ opacity:0; transform:translateY(16px); will-change:opacity, transform; }
+  .reveal-in{
+    opacity:1; transform:none;
+    transition:opacity .6s ease, transform .7s cubic-bezier(.2,.7,.2,1);
+  }
+}
+
+/* ---- Micro-polish: smoother, more tactile controls ---- */
+.primary, .budget-step, .band-nav a, .btn { transition: transform .12s ease, background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
+.primary:active, .budget-step:active { transform: translateY(1px); }
+.quicknav a { transition: color .12s ease, background .12s ease, border-color .12s ease; }

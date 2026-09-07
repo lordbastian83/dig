@@ -2769,6 +2769,24 @@ fetch(NEWS_URL)
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') set(false); });
 })();
 
+/* ---------- scroll reveal: gentle fade + rise on the editorial bands ---------- */
+(function scrollReveal() {
+  if (!('IntersectionObserver' in window)) return;
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const els = document.querySelectorAll('.story, .creed, main > .card');
+  if (!els.length) return;
+  els.forEach(e => e.classList.add('reveal-init'));
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      en.target.classList.remove('reveal-init');
+      en.target.classList.add('reveal-in');
+      io.unobserve(en.target);
+    });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+  els.forEach(e => io.observe(e));
+})();
+
 /* ---------- budget control ---------- */
 function syncBudgetUI() {
   const P = loadParams();
