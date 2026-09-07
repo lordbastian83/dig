@@ -675,6 +675,7 @@ $('#horse-form').addEventListener('submit', (e) => {
   list.unshift(h);
   saveList(list);
   renderList();
+  toast(`Scored ${h.name || 'lot'} — added to your watchlist.`);
 });
 
 $('#demo-btn').addEventListener('click', () => {
@@ -787,7 +788,11 @@ function b64decode(s) { try { return JSON.parse(decodeURIComponent(escape(atob(s
 let toastTimer = null;
 function toast(msg) {
   let t = $('#toast');
-  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+  if (!t) {
+    t = document.createElement('div'); t.id = 'toast'; t.className = 'toast';
+    t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite');
+    document.body.appendChild(t);
+  }
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
@@ -1131,11 +1136,13 @@ if ($('#cat-sale')) $('#cat-sale').addEventListener('change', (e) => {
 if ($('#cat-addbuys')) $('#cat-addbuys').addEventListener('click', () => {
   const P = loadParams();
   const buys = CATALOGUE.filter((h) => { const [v] = catVerdict(h, evaluate(h, P)); return v === 'BUY' || v === 'BUY-fit'; });
-  if (!buys.length) { alert('No BUY-rated lots to add (import guide prices to grade against, or loosen the screen).'); return; }
+  if (!buys.length) { toast('No BUY-rated lots to add — import guide prices to grade against, or loosen the screen.'); return; }
   const list = loadList(); const have = new Set(list.map((x) => x.name.toLowerCase()));
   const added = buys.filter((h) => !have.has(h.name.toLowerCase()));
   saveList([...added, ...list]); renderList();
-  alert(`Added ${added.length} BUY-rated lot${added.length === 1 ? '' : 's'} to the watchlist.`);
+  toast(added.length
+    ? `Added ${added.length} BUY-rated lot${added.length === 1 ? '' : 's'} to the watchlist.`
+    : 'Those BUY-rated lots are already on your watchlist.');
 });
 
 // Minimal CSV parser — quoted fields, the dialect this app exports.
@@ -1190,12 +1197,14 @@ $('#params-save').addEventListener('click', () => {
   });
   saveParams(P);
   renderList();
+  toast('Model saved — every max bid rescored.');
 });
 
 $('#params-reset').addEventListener('click', () => {
   localStorage.removeItem(LS_PARAMS);
   renderParams();
   renderList();
+  toast('Model reset to defaults.');
 });
 
 /* ---------- radar finds (published daily by scan.mjs) ---------- */

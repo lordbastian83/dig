@@ -1236,8 +1236,8 @@ kbd {
 /* toast */
 .toast {
   position: fixed; left: 50%; bottom: 1.4rem; transform: translateX(-50%) translateY(1rem);
-  background: var(--navy-3); color: var(--cloud); border: 1px solid var(--cyan); border-radius: 3px;
-  padding: .55rem .9rem; font-size: .8rem; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  background: var(--navy-3); color: var(--cloud); border: 1px solid var(--cyan); border-radius: 9px;
+  padding: .6rem 1rem; font-size: .82rem; z-index: 200; box-shadow: 0 12px 34px rgba(0,0,0,.5);
   opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
