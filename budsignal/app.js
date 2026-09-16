@@ -664,6 +664,23 @@
   // of its 55-candle Donchian trigger, how often did the breakout actually
   // fire (close through the band) within the next 6 candles? Measured on the
   // loaded history — a counting exercise, not a directional call.
+  // Calibration for the ±1σ 24h range forecast: at every past candle,
+  // forecast close ± ATR·√6 and check whether the close 6 candles (24h)
+  // later landed inside. Terminal-close criterion, so the ≈68% normal
+  // benchmark applies directly.
+  function rangeHitRate(candles, ind) {
+    let n = 0, hits = 0;
+    for (let i = 0; i < candles.length - 6; i++) {
+      const atr = ind.atr[i];
+      if (atr == null) continue;
+      const band = atr * Math.sqrt(6);
+      n++;
+      const end = candles[i + 6].c;
+      if (end >= candles[i].c - band && end <= candles[i].c + band) hits++;
+    }
+    return n ? { n, pct: (hits / n) * 100 } : null;
+  }
+
   function fireStats(candles, maxDistPct) {
     const LB = 55;
     let cases = 0, fired = 0;
@@ -700,6 +717,14 @@
     if (atr != null) {
       const r = atr * Math.sqrt(6);
       items.push(`<span title="ATR-based volatility forecast: price is likely to stay within this band over the next 24h (±1σ). The SIZE of the move is forecastable — the direction is not.">24h range <strong>±$${fmtPrice(r)} · ±${((r / c) * 100).toFixed(1)}%</strong></span>`);
+      // The forecast grades itself: replay the same ±1σ rule over the loaded
+      // history and report how often the close 24h later actually landed
+      // inside the band. Honest calibration ≈ 68% if moves were normal;
+      // fat-tailed markets score lower on big days — and that shows here.
+      const g = rangeHitRate(candles, ind);
+      if (g && g.n >= 100) {
+        items.push(`<span title="Self-grading: the same ±1σ·24h forecast replayed over ${g.n} past candles on this market — the close 24h later landed inside the band ${g.pct.toFixed(0)}% of the time. Textbook ±1σ coverage is ≈68%, but ATR-based bands usually run a touch wider, so healthy readings sit in the 70s–80s; a number falling toward 60% means volatility is outrunning the forecast. Measured, not promised.">Range grade <strong>${g.pct.toFixed(0)}%</strong> <span class="radar-dist">n=${g.n}</span></span>`);
+      }
     }
     const radar = candles.length > 60 ? E.breakoutRadar(candles) : null;
     if (radar) {
