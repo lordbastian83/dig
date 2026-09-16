@@ -980,8 +980,78 @@
     renderDeskLog();
     renderActionQueue();
     renderSessions();
+    renderBriefing();
   }
   let lastSweepRows = null;
+
+  /* ---------------- desk briefing ---------------- */
+
+  // One machine-written paragraph answering "what do I need to know right
+  // now" — assembled entirely from figures already computed on this page.
+  // Synthesis, not advice: every clause traces to a panel below it.
+  let lastWireTone = null; // {tagged, net} from the news desk
+  function renderBriefing() {
+    const el = $('briefing');
+    if (!el) return;
+    const bits = [];
+    // sessions
+    {
+      const d = new Date();
+      const mins = d.getUTCHours() * 60 + d.getUTCMinutes();
+      const open = [];
+      if (mins < 8 * 60) open.push('Tokyo');
+      if (mins >= 7 * 60 && mins < 16 * 60) open.push('London');
+      if (mins >= 12.5 * 60 && mins < 21 * 60) open.push('New York');
+      bits.push(open.length ? `${open.join(' + ')} open` : 'All major sessions closed');
+    }
+    // funded signals firing / nearest trigger
+    if (lastSweepRows) {
+      const funded = [];
+      for (const r of lastSweepRows) {
+        for (const s of (r.active || [])) {
+          if (E.fundedSide(s) && (s.strategy === 'swing' || (s.strategy === 'breakout' && edgeStatus?.assets?.[r.a]?.edge === true))) {
+            funded.push(`${ASSETS[r.a].tab} ${s.side === 'long' ? '▲' : '▼'} ${s.strategy === 'swing' ? (s.early ? 'early swing' : 'swing') : 'breakout'}`);
+          }
+        }
+      }
+      if (funded.length) {
+        bits.push(`<strong class="move-pos">${funded.length} funded signal${funded.length > 1 ? 's' : ''} live</strong> (${funded.slice(0, 3).join(', ')}) — see the Do-now queue`);
+      } else {
+        const near = lastSweepRows[0]; // sweep list is sorted by 4h trigger distance
+        if (near?.n4) bits.push(`no funded signal live; nearest trigger ${ASSETS[near.a].tab} ${near.n4.side} <strong>${near.n4.pct.toFixed(1)}% away</strong>`);
+        else bits.push('no funded signal live');
+      }
+    }
+    // open funded positions and the next hard exit
+    if (lastRecs) {
+      const maxHoldH = (r) => (r.strategy === 'scalp' ? 18 : r.strategy === 'swing' ? (r.early ? 18 : 24) * 24 : 3 * 24);
+      const open = lastRecs.filter((r) => {
+        if (r.outcome !== 'open' || !ASSETS[r.asset] || !r.entry || !r.stop) return false;
+        const ageH = (Date.now() - r.t) / 3600000;
+        if (ageH > maxHoldH(r) * 1.5) return false;
+        return E.fundedSide(r) && (r.strategy === 'swing' || r.strategy === 'scalp' || (r.strategy === 'breakout' && edgeStatus?.assets?.[r.asset]?.edge === true));
+      });
+      if (open.length) {
+        const next = open.reduce((a, r) => Math.min(a, r.t + maxHoldH(r) * 3600000), Infinity);
+        const dLeft = (next - Date.now()) / 86400000;
+        bits.push(`${open.length} funded position${open.length > 1 ? 's' : ''} open, next hard exit ${dLeft <= 0 ? '<strong class="move-neg">overdue — check the queue</strong>' : dLeft < 1.5 ? `<strong>${Math.max(1, Math.round(dLeft * 24))}h</strong>` : `in ${Math.round(dLeft)}d`}`);
+      } else {
+        bits.push('ledger flat on funded streams');
+      }
+    }
+    // scheduled volatility
+    {
+      const h = (E.nextEiaTime() - Date.now()) / 3600000;
+      if (h <= 48) bits.push(`EIA oil print in <strong>~${Math.max(1, h).toFixed(0)}h</strong> — no fresh WTI risk into it`);
+    }
+    // wire tone
+    if (lastWireTone && lastWireTone.tagged >= 5) {
+      const n = lastWireTone.net;
+      bits.push(`wire tone ${n > 1 ? '<strong class="move-pos">leaning positive</strong>' : n < -1 ? '<strong class="move-neg">leaning negative</strong>' : 'mixed'} (net ${n > 0 ? '+' : ''}${n} over ${lastWireTone.tagged} tagged headlines — context, not signal)`);
+    }
+    el.hidden = false;
+    el.innerHTML = `<span class="fcast-tag" title="Assembled live from the panels on this page — every clause traces to a number below. Synthesis, not advice or prediction.">BRIEF</span> ${bits.join(' · ')}.`;
+  }
 
   // Live bar: signals firing on ANY market right now — the signal card only
   // covers the selected one, and a Gold signal shouldn't hide behind a BTC
@@ -1429,6 +1499,8 @@
     }
     const a = analyzeNews(items);
     const tagged = a.docs.filter((d) => d.markets.length).length;
+    lastWireTone = { tagged, net: a.docs.reduce((x, d) => x + d.tone, 0) };
+    renderBriefing();
     if (pipe) {
       pipe.innerHTML = [
         ['INGEST', `${items.length} headlines`],
@@ -1914,6 +1986,7 @@
     renderDeskLog();
     renderActionQueue();
     renderForecast();
+    renderBriefing();
   }
   let lastRecs = null;
 
