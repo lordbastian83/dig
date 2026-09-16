@@ -1156,3 +1156,13 @@ mark.hl-num { background: var(--surface-2); color: var(--text-primary); font-wei
    does not apply, and wire grid items must never dictate page width */
 .record-table.wire-mkts { min-width: 0; }
 .wire-grid > *, .wire-side > * { min-width: 0; }
+
+/* ---------- desk briefing ---------- */
+
+.briefing {
+  margin: 10px 0 0;
+  font-family: var(--mono); font-size: 12px; line-height: 1.7;
+  color: var(--text-muted);
+}
+.briefing strong { color: var(--text-primary); font-weight: 700; }
+.briefing .fcast-tag { margin-right: 4px; }
