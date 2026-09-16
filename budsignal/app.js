@@ -179,7 +179,10 @@
     for (let i = 0; i < CANDLE_LIMIT; i++) {
       if (i % 40 === 0) drift = (rand() - 0.5) * 0.004;
       const o = price;
-      const shock = (rand() - 0.5) * 0.02 + drift;
+      // gentle pull toward the base price so a long walk stays plausible —
+      // without it a lucky seed drifted EUR/USD to $2.07 in "demo" mode
+      const revert = (basePrice / price - 1) * 0.01;
+      const shock = (rand() - 0.5) * 0.02 + drift + revert;
       const c = o * (1 + shock);
       const h = Math.max(o, c) * (1 + rand() * 0.006);
       const l = Math.min(o, c) * (1 - rand() * 0.006);
@@ -1328,7 +1331,8 @@
     ['SPX500', /s&p ?500|\bs&p\b|\bspx\b/i],
     ['US30', /\bdow\b/i],
   ];
-  const MKT_HL = /\bgold\b|\bxau\b|bullion|\boil\b|crude|opec|\bwti\b|brent|petroleum|bitcoin|\bbtc\b|crypto|sterling|\bpound\b|bank of england|\beuro\b|\becb\b|nasdaq|s&p ?500|\bspx\b|\bdow\b|dollar|\bfed\b|fomc/gi;
+  // runs on HTML-ESCAPED titles, so "&" may appear as "&amp;"
+  const MKT_HL = /\bgold\b|\bxau\b|bullion|\boil\b|crude|opec|\bwti\b|brent|petroleum|bitcoin|\bbtc\b|crypto|sterling|\bpound\b|bank of england|\beuro\b|\becb\b|nasdaq|s&(?:amp;)?p ?500|\bs&(?:amp;)?p\b|\bspx\b|\bdow\b|dollar|\bfed\b|fomc/gi;
   const TOPICS = [
     ['Rates & central banks', /\bfed\b|fomc|rate (?:cut|hike|decision)s?|central bank|\becb\b|\bboe\b|\bboj\b|powell|inflation|\bcpi\b|interest rate/i],
     ['Earnings & guidance', /earnings|guidance|profit|revenue|quarterly|forecast[s]?|outlook/i],
