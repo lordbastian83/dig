@@ -1094,3 +1094,65 @@ a { color: var(--text-primary); }
   .lu-row { grid-template-columns: 90px 1fr 70px; }
   .lu-row .num:last-child { display: none; }
 }
+
+/* ---------- news desk (wire pipeline) ---------- */
+
+.wire-pipe { margin: 4px 0 14px; }
+
+.wire-grid { display: grid; gap: 14px; }
+@media (min-width: 921px) {
+  .wire-grid { grid-template-columns: 1.5fr 1fr; align-items: start; }
+  .wire-grid > * { min-width: 0; }
+}
+.wire-side { display: grid; gap: 14px; }
+
+.wire-stream li.wire-item {
+  display: block; white-space: normal;
+  padding: 9px 0;
+}
+.wire-meta {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px;
+  margin-top: 4px; font-size: 10.5px;
+}
+.wt {
+  font-weight: 700; padding: 0 6px; border-radius: 3px;
+  background: var(--surface-2); color: var(--text-muted);
+}
+.wt-pos { background: var(--up-wash); color: var(--up); }
+.wt-neg { background: var(--down-wash); color: var(--down); }
+.wchip {
+  padding: 0 6px; border-radius: 3px;
+  background: var(--amber-wash); color: var(--amber);
+  font-weight: 700; letter-spacing: 0.04em;
+}
+.wchip-topic { background: var(--surface-2); color: var(--text-secondary); font-weight: 400; }
+
+mark.hl { background: transparent; padding: 0 2px; border-radius: 2px; color: inherit; }
+mark.hl-pos { background: var(--up-wash); color: var(--up); }
+mark.hl-neg { background: var(--down-wash); color: var(--down); }
+mark.hl-mkt { background: var(--amber-wash); color: var(--amber); }
+mark.hl-num { background: var(--surface-2); color: var(--text-primary); font-weight: 700; }
+
+.topic-list { list-style: none; margin: 0; padding: 0; font-family: var(--mono); font-size: 12px; }
+.topic-list li {
+  display: grid; grid-template-columns: minmax(0, 1fr) 90px 34px;
+  gap: 10px; align-items: center;
+  padding: 7px 0; border-bottom: 1px solid var(--grid);
+}
+.topic-list li:last-child { border-bottom: none; }
+.topic-name { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topic-bar { height: 5px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+.topic-bar span { display: block; height: 100%; background: var(--amber); opacity: 0.75; }
+.topic-n { text-align: right; color: var(--text-primary); font-weight: 700; }
+
+/* lookup, now a radar card */
+.lookup-card .lookup-row { margin-top: 4px; }
+.lookup-card .lookup-results { border: none; background: transparent; padding: 0 0 4px; margin-top: 4px; }
+@media (min-width: 921px) {
+  #radar .lookup-card { grid-column: 2; margin-top: 14px; }
+}
+
+/* the tone table is three narrow columns — the global 640px table floor
+   does not apply, and wire grid items must never dictate page width */
+.record-table.wire-mkts { min-width: 0; }
+.wire-grid > *, .wire-side > * { min-width: 0; }

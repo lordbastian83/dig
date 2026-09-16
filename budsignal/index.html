@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=69">
+<link rel="stylesheet" href="styles.css?v=70">
 </head>
 <body>
 
@@ -25,6 +25,7 @@
   <nav class="site-nav">
     <a href="#dashboard">Dashboard</a>
     <a href="#radar">Radar</a>
+    <a href="#wire">Wire</a>
     <a href="#signal">Current signal</a>
     <a href="#positions">Positions</a>
     <a href="#methodology">How it works</a>
@@ -125,13 +126,6 @@
       <p class="watchlist-note">▲▼ trend vs 20-day mean · ±Rng expected daily range from ATR (volatility forecast, not direction) · Brk distance to nearest 4h breakout trigger</p>
     </aside>
     </div>
-
-    <div class="lookup-row">
-      <span class="fcast-tag">LOOKUP</span>
-      <input id="lookup-input" type="search" placeholder="search any live market — AAPL, XAGUSD, USDJPY…" autocomplete="off" spellcheck="false" aria-label="Search live markets">
-      <span class="lookup-note">view-only quotes — unvalidated markets never get signals or sizing</span>
-    </div>
-    <div class="lookup-results" id="lookup-results" hidden></div>
   </section>
 
   <!-- ============ Breakout radar ============ -->
@@ -157,11 +151,46 @@
       <ul class="news-list" id="news-list"><li class="radar-dist">Loading…</li></ul>
       <p class="watchlist-note">Context only, never a signal input: public news is in the price within seconds of the wire — what IS predictable is the timing of scheduled volatility (the EIA print), not its direction. Report time shifts a day on US-holiday weeks.</p>
     </div>
-    <div class="equity-card wire-card">
-      <h3>Market wire — sentiment &amp; headlines</h3>
-      <p class="section-sub corr-sub" id="sent-line">Loading sentiment…</p>
-      <ul class="news-list" id="wire-list"><li class="radar-dist">Loading…</li></ul>
-      <p class="watchlist-note">Context only, never a signal input: sentiment-extreme entries were tested as a strategy and failed walk-forward validation (see the research report), and public headlines are in the price within seconds of the wire. Nothing on this card sizes a trade.</p>
+    <div class="equity-card lookup-card">
+      <h3>Market lookup</h3>
+      <div class="lookup-row">
+        <span class="fcast-tag">LOOKUP</span>
+        <input id="lookup-input" type="search" placeholder="search any live market — AAPL, XAGUSD, USDJPY…" autocomplete="off" spellcheck="false" aria-label="Search live markets">
+      </div>
+      <div class="lookup-results" id="lookup-results" hidden></div>
+      <p class="watchlist-note">View-only quotes — unvalidated markets never get signals or sizing here; new markets audition through the monthly research gate.</p>
+    </div>
+  </section>
+
+  <!-- ============ News desk ============ -->
+  <section id="wire" class="section">
+    <h2><span class="fn-code">WIRE</span>News desk</h2>
+    <p class="section-sub">The live wire, processed in your browser: deduplicated, entity-tagged, topic-clustered and lexicon-scored — every count below is real and recomputed on each fetch. Context, never a signal input: sentiment-extreme entries were tested as a strategy and failed walk-forward validation, and public headlines are in the price within seconds of the wire.</p>
+
+    <div class="deskline wire-pipe" id="wire-pipe" aria-label="Wire pipeline status"></div>
+
+    <div class="wire-grid">
+      <div class="equity-card stream-card">
+        <h3>Tagged stream</h3>
+        <p class="section-sub corr-sub" id="sent-line">Loading sentiment…</p>
+        <ul class="news-list wire-stream" id="wire-list"><li class="radar-dist">Loading…</li></ul>
+      </div>
+      <div class="wire-side">
+        <div class="equity-card">
+          <h3>Topic clusters</h3>
+          <ul class="topic-list" id="topic-list"><li class="radar-dist">Waiting for headlines…</li></ul>
+        </div>
+        <div class="equity-card">
+          <h3>Wire tone by market</h3>
+          <div class="table-wrap">
+            <table class="record-table wire-mkts">
+              <thead><tr><th>Market</th><th class="num">Tagged</th><th class="num">Net tone</th></tr></thead>
+              <tbody id="wire-mkts"><tr><td colspan="3" class="table-empty">Waiting for headlines…</td></tr></tbody>
+            </table>
+          </div>
+          <p class="watchlist-note">Net keyword-lexicon tone across tagged headlines — a transparent word count, not a model, and never a trade input.</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -442,7 +471,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=69"></script>
-<script src="app.js?v=69"></script>
+<script src="engine.js?v=70"></script>
+<script src="app.js?v=70"></script>
 </body>
 </html>
