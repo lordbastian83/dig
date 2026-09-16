@@ -861,6 +861,17 @@
     const closeRule = bk || swing
       ? `<strong>Close:</strong> when price hits the trailing stop — it starts at $${fmtPrice(s.stop)} and after every ${swing ? 'daily' : '4-hour'} close moves to ${swing && !s.early ? 3 : 2}×ATR ${s.side === 'long' ? 'below the highest' : 'above the lowest'} close since entry, never loosening. Hard exit at market after ${swing ? (s.early ? '18 days' : '24 days') : '3 days'}.`
       : `<strong>Close:</strong> at target $${fmtPrice(s.target)} or stop $${fmtPrice(s.stop)}; move the stop to entry once 1×ATR in profit; exit at market after 24h.`;
+    // CFD overnight financing: swap is charged daily on the FULL notional for
+    // as long as the position is open, so a multi-day swing pays a real,
+    // knowable carry. ~3%/yr is a typical retail CFD financing markup —
+    // an estimate, not FxPro's exact rate (their contract specs are truth).
+    const finLine = (() => {
+      if (!swing) return '';
+      const days = s.early ? 18 : 24;
+      const finUsd = plan.notionalUsd * 0.03 * (days / 365);
+      const finGbp = finUsd / (plan.rate || 1.3);
+      return ` · CFD financing: overnight swap on the $${fmtUsd(plan.notionalUsd)} notional costs roughly £${finGbp.toFixed(2)} if held the full ${days} days (~3%/yr estimate — check FxPro's contract specs; it is part of why only trades with a validated multi-percent edge are worth holding for weeks).`;
+    })();
     body.innerHTML = `
       ${verdict}
       <div class="plan-grid">
@@ -868,7 +879,7 @@
         <div><span class="lvl-label">Size</span><span class="lvl-value">${sizeLine}</span></div>
         <div><span class="lvl-label">Stop distance</span><span class="lvl-value">${plan.stopPct.toFixed(2)}% from entry — sized so a stop-out costs £${fmtUsd(plan.riskGbp)}</span></div>
       </div>
-      <p class="plan-note">${closeRule}${plan.rateApprox ? ' · £→$ conversion is approximate (add a data key to load live cable)' : ''}${(() => { if (currentAsset !== 'OIL') return ''; const h = (E.nextEiaTime() - Date.now()) / 3600000; return h <= 8 ? ` · ⚠ EIA petroleum report in ~${h.toFixed(0)}h — expect a volatility spike around the print` : ''; })()}</p>`;
+      <p class="plan-note">${closeRule}${finLine}${plan.rateApprox ? ' · £→$ conversion is approximate (add a data key to load live cable)' : ''}${(() => { if (currentAsset !== 'OIL') return ''; const h = (E.nextEiaTime() - Date.now()) / 3600000; return h <= 8 ? ` · ⚠ EIA petroleum report in ~${h.toFixed(0)}h — expect a volatility spike around the print` : ''; })()}</p>`;
   }
 
   /* ---------------- breakout radar ---------------- */
@@ -1335,13 +1346,13 @@
     let s = esc(title);
     const stash = [];
     const wrap = (re, cls) => {
-      s = s.replace(re, (m) => { stash.push(`<mark class="hl ${cls}">${m}</mark>`); return ` ${stash.length - 1} `; });
+      s = s.replace(re, (m) => { stash.push(`<mark class="hl ${cls}">${m}</mark>`); return `\u0000${stash.length - 1}\u0000`; });
     };
     wrap(LEX_POS, 'hl-pos');
     wrap(LEX_NEG, 'hl-neg');
     wrap(MKT_HL, 'hl-mkt');
     wrap(/[+-]?\d+(?:\.\d+)?%/g, 'hl-num');
-    return s.replace(/ (\d+) /g, (_, i) => stash[+i]);
+    return s.replace(/\u0000(\d+)\u0000/g, (_, i) => stash[+i]);
   }
 
   function analyzeNews(items) {
