@@ -1302,14 +1302,128 @@
     }
   }
 
+  // ---- wire pipeline: dedupe → entities → topics → tone, all in-browser ----
+  // Transparent keyword lexicons, not a model: every tag below is a visible
+  // word match anyone can check against the headline. Tone is a word count.
+  const LEX_POS = /\b(rall(?:y|ies)|surge[sd]?|gain(?:s|ed)?|jump(?:s|ed)?|beat[s]?|record high|boost(?:s|ed)?|upgrade[sd]?|soar(?:s|ed)?|rise[sn]?|rose|strong(?:er)?|growth|bullish|optimis\w+|ease[sd]?|climb(?:s|ed)?|rebound(?:s|ed)?|recover\w*|higher)\b/gi;
+  const LEX_NEG = /\b(fall[s]?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower)\b/gi;
+  const MKT_TAGS = [
+    ['GOLD', /\bgold\b|\bxau\b|bullion/i],
+    ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b/i],
+    ['BTC', /bitcoin|\bbtc\b|crypto/i],
+    ['GBPUSD', /sterling|\bpound\b|\bgbp\b|bank of england|\bboe\b/i],
+    ['EURUSD', /\beuro\b|\becb\b|euro ?zone/i],
+    ['NAS100', /nasdaq/i],
+    ['SPX500', /s&p ?500|\bs&p\b|\bspx\b/i],
+    ['US30', /\bdow\b/i],
+  ];
+  const MKT_HL = /\bgold\b|\bxau\b|bullion|\boil\b|crude|opec|\bwti\b|brent|petroleum|bitcoin|\bbtc\b|crypto|sterling|\bpound\b|bank of england|\beuro\b|\becb\b|nasdaq|s&p ?500|\bspx\b|\bdow\b|dollar|\bfed\b|fomc/gi;
+  const TOPICS = [
+    ['Rates & central banks', /\bfed\b|fomc|rate (?:cut|hike|decision)s?|central bank|\becb\b|\bboe\b|\bboj\b|powell|inflation|\bcpi\b|interest rate/i],
+    ['Earnings & guidance', /earnings|guidance|profit|revenue|quarterly|forecast[s]?|outlook/i],
+    ['Oil & energy', /\boil\b|crude|opec|\bwti\b|brent|petroleum|energy|natural gas/i],
+    ['Metals', /\bgold\b|silver|copper|bullion|platinum/i],
+    ['Crypto', /bitcoin|crypto|ethereum|\bbtc\b|stablecoin/i],
+    ['FX & dollar', /dollar|currenc|forex|\bfx\b|\byen\b|sterling|\beuro\b/i],
+    ['Geopolitics & trade', /tariff[s]?|sanction[s]?|\bwar\b|geopolit|trade (?:deal|talks)|election|china/i],
+    ['Deals & IPOs', /merger|acquisition|\bipo\b|buyout|takeover/i],
+  ];
+
+  // Tag matched words without ever re-matching inside an inserted tag:
+  // matches are stashed and swapped back in one final pass.
+  function hlTitle(title) {
+    let s = esc(title);
+    const stash = [];
+    const wrap = (re, cls) => {
+      s = s.replace(re, (m) => { stash.push(`<mark class="hl ${cls}">${m}</mark>`); return ` ${stash.length - 1} `; });
+    };
+    wrap(LEX_POS, 'hl-pos');
+    wrap(LEX_NEG, 'hl-neg');
+    wrap(MKT_HL, 'hl-mkt');
+    wrap(/[+-]?\d+(?:\.\d+)?%/g, 'hl-num');
+    return s.replace(/ (\d+) /g, (_, i) => stash[+i]);
+  }
+
+  function analyzeNews(items) {
+    const seen = new Set();
+    const docs = [];
+    let dupes = 0;
+    for (const n of items) {
+      const title = (n.title || '').trim();
+      if (!title) continue;
+      const key = title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 70);
+      if (seen.has(key)) { dupes++; continue; }
+      seen.add(key);
+      const hay = `${title} ${n.text || ''}`;
+      const markets = MKT_TAGS.filter(([, re]) => re.test(hay)).map(([m]) => m);
+      const topics = TOPICS.filter(([, re]) => re.test(hay)).map(([t]) => t);
+      const pos = (title.match(LEX_POS) || []).length;
+      const neg = (title.match(LEX_NEG) || []).length;
+      docs.push({ n, title, markets, topics, tone: pos - neg });
+    }
+    const topicCounts = TOPICS
+      .map(([t]) => [t, docs.filter((d) => d.topics.includes(t)).length])
+      .filter(([, c]) => c > 0)
+      .sort((a, b) => b[1] - a[1]);
+    const mkts = MKT_TAGS
+      .map(([m]) => {
+        const tagged = docs.filter((d) => d.markets.includes(m));
+        return { m, n: tagged.length, net: tagged.reduce((a, d) => a + d.tone, 0) };
+      })
+      .filter((x) => x.n > 0)
+      .sort((a, b) => b.n - a.n);
+    return { docs, dupes, topicCounts, mkts };
+  }
+
   async function renderWire() {
     const list = $('wire-list');
     if (!list) return;
     renderSentiment();
+    const pipe = $('wire-pipe');
     const items = await fetchGeneralNews();
-    if (items === null) { list.innerHTML = '<li class="radar-dist">Add your FMP data key above to load market headlines.</li>'; return; }
-    if (!items) { list.innerHTML = '<li class="radar-dist">Headlines unavailable on this data plan.</li>'; return; }
-    list.innerHTML = items.slice(0, 8).map(newsLine).join('');
+    if (items === null || !items) {
+      const msg = items === null ? 'Add your FMP data key above to load market headlines.' : 'Headlines unavailable on this data plan.';
+      list.innerHTML = `<li class="radar-dist">${msg}</li>`;
+      if (pipe) pipe.innerHTML = `<span class="dl-item"><span class="dl-tag">INGEST</span>0</span><span class="dl-item radar-dist">${items === null ? 'waiting for a data key' : 'feed unavailable'}</span>`;
+      return;
+    }
+    const a = analyzeNews(items);
+    const tagged = a.docs.filter((d) => d.markets.length).length;
+    if (pipe) {
+      pipe.innerHTML = [
+        ['INGEST', `${items.length} headlines`],
+        ['DEDUPE', `${a.docs.length} kept · ${a.dupes} dropped`],
+        ['ENTITIES', `${tagged} market-tagged`],
+        ['TOPICS', `${a.topicCounts.length} clusters`],
+        ['TONE', 'lexicon word count'],
+        ['INDEXED', `${fmtClock(Date.now())} UTC`],
+      ].map(([t, v]) => `<span class="dl-item"><span class="dl-tag">${t}</span>${v}</span>`).join('');
+    }
+    list.innerHTML = a.docs.slice(0, 10).map((d) => {
+      const when = String(d.n.publishedDate || d.n.date || '').slice(0, 16).replace('T', ' ');
+      const href = /^https?:\/\//.test(d.n.url || '') ? esc(d.n.url) : null;
+      const t = hlTitle(d.title.slice(0, 140));
+      const toneTag = d.tone > 0 ? '<span class="wt wt-pos">+' + d.tone + '</span>' : d.tone < 0 ? `<span class="wt wt-neg">${d.tone}</span>` : '<span class="wt">0</span>';
+      const chips = d.markets.map((m) => `<span class="wchip">${ASSETS[m] ? ASSETS[m].tab : m}</span>`).join('') +
+        d.topics.slice(0, 2).map((tp) => `<span class="wchip wchip-topic">${tp}</span>`).join('');
+      return `<li class="wire-item">${href ? `<a href="${href}" target="_blank" rel="noopener">${t}</a>` : t}` +
+        `<span class="wire-meta">${toneTag}${chips}<span class="radar-dist">${esc(d.n.site || d.n.publisher || '')} · ${esc(when)}</span></span></li>`;
+    }).join('') || '<li class="radar-dist">No headlines in the latest batch.</li>';
+    const tl = $('topic-list');
+    if (tl) {
+      const max = a.topicCounts[0]?.[1] || 1;
+      tl.innerHTML = a.topicCounts.map(([t, c]) =>
+        `<li><span class="topic-name">${t}</span><span class="topic-bar"><span style="width:${Math.round((c / max) * 100)}%"></span></span><span class="topic-n">${c}</span></li>`).join('') ||
+        '<li class="radar-dist">No topics matched this batch.</li>';
+    }
+    const mb = $('wire-mkts');
+    if (mb) {
+      mb.innerHTML = a.mkts.map(({ m, n, net }) => {
+        const cls = net > 0 ? 'move-pos' : net < 0 ? 'move-neg' : 'radar-dist';
+        const glyph = net > 0 ? '▲' : net < 0 ? '▼' : '·';
+        return `<tr><td>${ASSETS[m] ? ASSETS[m].tab : m}</td><td class="num">${n}</td><td class="num ${cls}">${glyph} ${net > 0 ? '+' : ''}${net}</td></tr>`;
+      }).join('') || '<tr><td colspan="3" class="table-empty">No tracked market tagged in this batch.</td></tr>';
+    }
   }
 
   /* ---------------- live market lookup (view-only) ---------------- */
