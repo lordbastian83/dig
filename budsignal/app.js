@@ -38,11 +38,11 @@
   if (!ASSETS[currentAsset]) currentAsset = 'BTC';
 
   const COLORS = {
-    up: '#22c55e', down: '#ef4444',
-    ema20: '#4a90e8', ema50: '#c98500',
-    line: '#35c9f5', lineWash: 'rgba(53, 201, 245, 0.10)',
-    grid: '#1a2436', baseline: '#26344e',
-    muted: '#64748f', ink: '#e9eff8', surface: '#0d1420',
+    up: '#2fd66b', down: '#ff5449',
+    ema20: '#57a6ff', ema50: '#8f8f98',
+    line: '#ffb000', lineWash: 'rgba(255, 176, 0, 0.10)',
+    grid: '#1e1e22', baseline: '#2e2e34',
+    muted: '#716c60', ink: '#f2efe6', surface: '#121214',
   };
 
   const $ = (id) => document.getElementById(id);
@@ -291,10 +291,10 @@
       for (let k = 1; k <= FUT; k++) ctx.lineTo(x(lastIdx + k), y(c0 + coneAtr * Math.sqrt(k)));
       for (let k = FUT; k >= 1; k--) ctx.lineTo(x(lastIdx + k), y(c0 - coneAtr * Math.sqrt(k)));
       ctx.closePath();
-      ctx.fillStyle = 'rgba(53, 201, 245, 0.07)';
+      ctx.fillStyle = 'rgba(255, 176, 0, 0.06)';
       ctx.fill();
       ctx.setLineDash([3, 3]);
-      ctx.strokeStyle = 'rgba(53, 201, 245, 0.35)';
+      ctx.strokeStyle = 'rgba(255, 176, 0, 0.35)';
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.setLineDash([]);

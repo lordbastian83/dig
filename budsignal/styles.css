@@ -1166,3 +1166,68 @@ mark.hl-num { background: var(--surface-2); color: var(--text-primary); font-wei
 }
 .briefing strong { color: var(--text-primary); font-weight: 700; }
 .briefing .fcast-tag { margin-right: 4px; }
+
+/* ================================================================
+   CARBON & AMBER WORKSTATION — full reskin, 2026-09-17.
+   The navy/ice-blue Eikon cast retires. True-black carbon panels,
+   classic terminal amber identity, square chrome, denser headers.
+   Tokens flip wholesale, so every tag, tab, title bar, tape symbol
+   and chip re-skins with them.
+   ================================================================ */
+
+:root {
+  --page:           #0a0a0b;
+  --surface-1:      #121214;
+  --surface-2:      #1a1a1e;
+  --text-primary:   #f2efe6;
+  --text-secondary: #b9b4a6;
+  --text-muted:     #716c60;
+  --grid:           #1e1e22;
+  --baseline:       #2e2e34;
+  --border:         #29292f;
+  --up:             #2fd66b;
+  --down:           #ff5449;
+  --ema20:          #57a6ff;
+  --ema50:          #8f8f98;
+  --up-wash:        rgba(47, 214, 107, 0.10);
+  --down-wash:      rgba(255, 84, 73, 0.10);
+  --accent:         #57a6ff;
+  --accent-wash:    rgba(87, 166, 255, 0.12);
+  --amber:          #ffb000;
+  --amber-dim:      #8f6400;
+  --amber-wash:     rgba(255, 176, 0, 0.09);
+}
+
+/* square workstation chrome: no rounded corners anywhere */
+.equity-card, .signal-card, .chart-card, .watchlist-card, .tile,
+.term-bar, .carto-tile, .lookup-card, .key-row, .table-wrap,
+.asset-tab, .live-bar, .live-item, .key-jump, .refresh-btn,
+button, input, .fn-code, .log-tag, .aq-tag, .fcast-tag, .wt, .wchip,
+.crew-tag, .dl-sess, .sess-chip, .side-badge, .tape, .lookup-results {
+  border-radius: 0 !important;
+}
+
+/* heavier panel identity: amber keyline across every card top */
+.equity-card, .chart-card, .watchlist-card, .signal-card, .lookup-card {
+  border-top: 2px solid var(--amber-dim);
+}
+.term-bar { border-top: 2px solid var(--amber); }
+
+/* panel header bands read as machine labels */
+.chart-card > .chart-head, .equity-card h3, .watchlist-card h3,
+.plan-head h3 {
+  letter-spacing: 0.14em;
+}
+
+/* the left rail goes full carbon with an amber active edge */
+@media (min-width: 921px) {
+  .site-header { background: #0d0d0f; }
+  .site-nav a:hover { color: var(--amber); }
+}
+
+/* selected states carry the amber identity */
+.carto-tile.active, .carto-tile:hover { border-color: var(--amber); }
+.wl-active td { background: var(--amber-wash); }
+
+/* ticker tape on carbon */
+.tape { background: #0d0d0f; border-bottom: 1px solid var(--border); }
