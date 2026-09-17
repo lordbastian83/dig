@@ -58,6 +58,22 @@ async function tg(method, body) {
   return j.result;
 }
 
+// Alerts are best-effort; the LEDGER is the record. A blocked bot, a dead
+// chat or a Telegram outage must never kill the run — one 403 once froze
+// the ledger for three weeks because a send was allowed to throw through
+// main(). Every delivery goes through this wrapper: failures are logged
+// and counted, and the run carries on to record outcomes.
+let tgFailures = 0;
+async function tgSend(chatId, text, extra) {
+  try {
+    return await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text, ...(extra || {}) });
+  } catch (e) {
+    tgFailures++;
+    console.error(`WARN telegram send to ${chatId} failed (alert skipped, tracking continues): ${e.message}`);
+    return null;
+  }
+}
+
 // A bot cannot message a @username — it needs numeric chat ids, and only for
 // people who have messaged it first. This is a personal alert bot, so treat
 // every private chat found in the bot's updates as a subscriber (username
@@ -354,7 +370,7 @@ async function main() {
     const text = brief ? `${hb.text}\n\n🧠 ${brief}` : hb.text;
     if (DRY_RUN) { console.log(`DRY RUN heartbeat:\n${text.replace(/<[^>]+>/g, '')}`); saveState(state); return; }
     for (const chatId of chats) {
-      await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+      await tgSend(chatId, text);
     }
     console.log(`heartbeat sent${brief ? ' (with Claude briefing)' : ''}`);
     saveState(state);
@@ -369,7 +385,7 @@ async function main() {
     const brief = await claudeBrief({ kind: 'weekly digest commentary', records: records.slice(-60) });
     if (brief) text += `\n\n🧠 ${brief}`;
     for (const chatId of chats) {
-      await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+      await tgSend(chatId, text);
     }
     console.log('weekly digest sent');
     saveState(state);
@@ -431,7 +447,7 @@ async function main() {
           const text = composeResolution(asset, p);
           if (DRY_RUN) console.log(`DRY RUN — would send scalp resolution for ${asset}: ${text.replace(/<[^>]+>/g, ' ')}`);
           else {
-            for (const chatId of chats) await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+            for (const chatId of chats) await tgSend(chatId, text);
             console.log(`${asset} 1h: scalp resolution sent (${p.outcome} @ ${fmtTime(p.t)})`);
           }
           scalpSent++;
@@ -448,7 +464,7 @@ async function main() {
         const text = composeMessage(asset, sig, null, plan);
         if (DRY_RUN) console.log(`DRY RUN — would send scalp for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);
         else {
-          for (const chatId of chats) await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+          for (const chatId of chats) await tgSend(chatId, text);
           console.log(`${asset} 1h: scalp notification sent (${sig.side} @ ${fmtTime(sig.t)})`);
         }
         state.scalpNotified[asset].push(sig.t);
@@ -485,7 +501,7 @@ async function main() {
         const text = composeResolution(asset, p);
         if (DRY_RUN) console.log(`DRY RUN — would send resolution for ${asset}: ${text.replace(/<[^>]+>/g, ' ')}`);
         else {
-          for (const chatId of chats) await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+          for (const chatId of chats) await tgSend(chatId, text);
           console.log(`${asset}: resolution sent (${p.outcome} @ ${fmtTime(p.t)})`);
         }
         sent++;
@@ -519,7 +535,7 @@ async function main() {
         console.log(`DRY RUN — would send for ${asset}:\n${text.replace(/<[^>]+>/g, '')}`);
       } else {
         for (const chatId of chats) {
-          await tg('sendMessage', { chat_id: chatId, parse_mode: 'HTML', text });
+          await tgSend(chatId, text);
         }
         console.log(`${asset}: signal notification sent (${sig.side} @ ${fmtTime(sig.t)})`);
       }
