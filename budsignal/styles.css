@@ -1265,3 +1265,17 @@ button, input, .fn-code, .log-tag, .aq-tag, .fcast-tag, .wt, .wchip,
 }
 .exec-del:hover { color: var(--down); border-color: var(--down); }
 .exec-card { margin-top: 16px; }
+
+/* ---------- wire market filter ---------- */
+
+.wf-row { cursor: pointer; }
+.wf-row:hover td { background: var(--surface-2); }
+.wf-row.wf-active td { background: var(--amber-wash); }
+.wchip-mkt { border: none; cursor: pointer; font: inherit; }
+.wchip-mkt:hover { filter: brightness(1.2); }
+.wire-filter-note strong { color: var(--amber); }
+.wf-clear {
+  background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+  font-family: var(--mono); font-size: 10px; padding: 1px 7px; cursor: pointer;
+}
+.wf-clear:hover { color: var(--amber); border-color: var(--amber-dim); }

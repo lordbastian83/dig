@@ -1578,6 +1578,9 @@
     return { docs, dupes, topicCounts, mkts };
   }
 
+  let wireData = null;   // last analyzeNews result, so filtering never refetches
+  let wireFilter = null; // asset key, or null for the full stream
+
   async function renderWire() {
     const list = $('wire-list');
     if (!list) return;
@@ -1591,6 +1594,7 @@
       return;
     }
     const a = analyzeNews(items);
+    wireData = a;
     const tagged = a.docs.filter((d) => d.markets.length).length;
     lastWireTone = { tagged, net: a.docs.reduce((x, d) => x + d.tone, 0) };
     renderBriefing();
@@ -1604,16 +1608,33 @@
         ['INDEXED', `${fmtClock(Date.now())} UTC`],
       ].map(([t, v]) => `<span class="dl-item"><span class="dl-tag">${t}</span>${v}</span>`).join('');
     }
-    list.innerHTML = a.docs.slice(0, 10).map((d) => {
+    renderWireViews();
+  }
+
+  // Stream + topic + tone panels, re-renderable when the market filter
+  // changes without touching the network. Clicking a row in the tone table
+  // (or a market chip on a headline) drills the stream down to that market.
+  function renderWireViews() {
+    const a = wireData;
+    const list = $('wire-list');
+    if (!a || !list) return;
+    if (wireFilter && !a.mkts.some((x) => x.m === wireFilter)) wireFilter = null;
+    const note = $('wire-filter-note');
+    if (note) {
+      note.hidden = !wireFilter;
+      if (wireFilter) note.innerHTML = `Showing <strong>${ASSETS[wireFilter].tab}</strong>-tagged headlines only · <button class="wf-clear" id="wf-clear" type="button">✕ show all</button>`;
+    }
+    const docs = wireFilter ? a.docs.filter((d) => d.markets.includes(wireFilter)) : a.docs;
+    list.innerHTML = docs.slice(0, wireFilter ? 14 : 10).map((d) => {
       const when = String(d.n.publishedDate || d.n.date || '').slice(0, 16).replace('T', ' ');
       const href = /^https?:\/\//.test(d.n.url || '') ? esc(d.n.url) : null;
       const t = hlTitle(d.title.slice(0, 140));
       const toneTag = d.tone > 0 ? '<span class="wt wt-pos">+' + d.tone + '</span>' : d.tone < 0 ? `<span class="wt wt-neg">${d.tone}</span>` : '<span class="wt">0</span>';
-      const chips = d.markets.map((m) => `<span class="wchip">${ASSETS[m] ? ASSETS[m].tab : m}</span>`).join('') +
+      const chips = d.markets.map((m) => `<button class="wchip wchip-mkt" data-mkt="${m}" type="button" title="Filter the stream to ${ASSETS[m] ? ASSETS[m].tab : m} headlines">${ASSETS[m] ? ASSETS[m].tab : m}</button>`).join('') +
         d.topics.slice(0, 2).map((tp) => `<span class="wchip wchip-topic">${tp}</span>`).join('');
       return `<li class="wire-item">${href ? `<a href="${href}" target="_blank" rel="noopener">${t}</a>` : t}` +
         `<span class="wire-meta">${toneTag}${chips}<span class="radar-dist">${esc(d.n.site || d.n.publisher || '')} · ${esc(when)}</span></span></li>`;
-    }).join('') || '<li class="radar-dist">No headlines in the latest batch.</li>';
+    }).join('') || `<li class="radar-dist">No ${wireFilter ? ASSETS[wireFilter].tab + '-tagged ' : ''}headlines in the latest batch.</li>`;
     const tl = $('topic-list');
     if (tl) {
       const max = a.topicCounts[0]?.[1] || 1;
@@ -1626,8 +1647,30 @@
       mb.innerHTML = a.mkts.map(({ m, n, net }) => {
         const cls = net > 0 ? 'move-pos' : net < 0 ? 'move-neg' : 'radar-dist';
         const glyph = net > 0 ? '▲' : net < 0 ? '▼' : '·';
-        return `<tr><td>${ASSETS[m] ? ASSETS[m].tab : m}</td><td class="num">${n}</td><td class="num ${cls}">${glyph} ${net > 0 ? '+' : ''}${net}</td></tr>`;
+        return `<tr class="wf-row ${m === wireFilter ? 'wf-active' : ''}" data-mkt="${m}" title="Filter the stream to ${ASSETS[m] ? ASSETS[m].tab : m} headlines"><td>${ASSETS[m] ? ASSETS[m].tab : m}</td><td class="num">${n}</td><td class="num ${cls}">${glyph} ${net > 0 ? '+' : ''}${net}</td></tr>`;
       }).join('') || '<tr><td colspan="3" class="table-empty">No tracked market tagged in this batch.</td></tr>';
+    }
+    // one delegated binding per element, survives re-renders
+    const toggle = (m) => { wireFilter = wireFilter === m ? null : m; renderWireViews(); };
+    if (mb && !mb.dataset.bound) {
+      mb.dataset.bound = '1';
+      mb.addEventListener('click', (e) => {
+        const tr = e.target.closest('tr[data-mkt]');
+        if (tr) toggle(tr.dataset.mkt);
+      });
+    }
+    if (!list.dataset.bound) {
+      list.dataset.bound = '1';
+      list.addEventListener('click', (e) => {
+        const chip = e.target.closest('.wchip-mkt');
+        if (chip) toggle(chip.dataset.mkt);
+      });
+    }
+    if (note && !note.dataset.bound) {
+      note.dataset.bound = '1';
+      note.addEventListener('click', (e) => {
+        if (e.target.closest('.wf-clear')) { wireFilter = null; renderWireViews(); }
+      });
     }
   }
 
