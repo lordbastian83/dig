@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=77">
+<link rel="stylesheet" href="styles.css?v=78">
 </head>
 <body>
 
@@ -73,6 +73,13 @@
     </div>
 
     <div class="carto" id="carto" aria-label="Market map — tap a tile to switch the chart"></div>
+
+    <div class="equity-card scalp-card">
+      <h3>Scalp desk — live 1h stream</h3>
+      <div class="scalp-head"><span id="scalp-clock" class="radar-dist">—</span></div>
+      <div id="scalp-desk"><p class="radar-dist scalp-wait">Loading 1-hour feeds…</p></div>
+      <p class="watchlist-note">The validated 1h combo only: Gold + NAS100, London/NY session (07:00–16:00 UTC), above-average volatility, 0.5% risk weight — a thin edge (+0.22%/trade in validation) where the filters are mandatory. Signals fire on closed hourly candles; the Telegram bot checks the same stream every hour.</p>
+    </div>
 
     <div class="key-row" id="key-row" hidden>
       <div class="key-field">
@@ -492,7 +499,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=77"></script>
-<script src="app.js?v=77"></script>
+<script src="engine.js?v=78"></script>
+<script src="app.js?v=78"></script>
 </body>
 </html>
