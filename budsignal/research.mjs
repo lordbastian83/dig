@@ -540,6 +540,103 @@ async function main() {
     }
   }
 
+  // ---- Pyramiding the daily swing-55: add to winners? ----
+  // The classic trend-following claim: adding units as a trend proves itself
+  // captures more of the move. Tested here as a pre-registered refinement of
+  // the validated swing stream. One self-contained simulator scores every
+  // variant (including the no-add baseline) so comparisons are internally
+  // consistent: SWING exits (2xATR stop from entry, 3xATR trail on daily
+  // closes, 24-day window, close-evaluated), add-on units fill at the close
+  // that first reaches the trigger, all units share the trail and exit
+  // together. Returns are net % on total deployed notional; note honestly
+  // that adds RAISE open risk after a trend starts paying.
+  {
+    const swingSim = (arr, i, side, atr, adds) => {
+      const dir = side === 'long' ? 1 : -1;
+      const entry = arr[i].c;
+      const units = [{ e: entry, w: 1 }];
+      const pend = adds.map((a) => ({ ...a }));
+      let best = entry;
+      const stop0 = entry - dir * 2 * atr;
+      const end = Math.min(arr.length - 1, i + 24);
+      let exitP = arr[end].c;
+      for (let k = i + 1; k <= end; k++) {
+        const c = arr[k].c;
+        if (dir * (c - best) > 0) best = c;
+        const trail = best - dir * 3 * atr;
+        const s = dir === 1 ? Math.max(stop0, trail) : Math.min(stop0, trail);
+        if (dir * (c - s) <= 0) { exitP = c; break; }
+        while (pend.length && dir * (c - entry) >= pend[0].trigAtr * atr) {
+          units.push({ e: c, w: pend[0].size });
+          pend.shift();
+        }
+        exitP = c;
+      }
+      const W = units.reduce((a, u) => a + u.w, 0);
+      return units.reduce((a, u) => a + u.w * ((dir * (exitP - u.e)) / u.e) * 100, 0) / W;
+    };
+    const variants = [
+      ['no adds (live baseline, re-simulated)', []],
+      ['add ½ unit at +1×ATR', [{ trigAtr: 1, size: 0.5 }]],
+      ['add 1 unit at +1×ATR', [{ trigAtr: 1, size: 1 }]],
+      ['add ½ + ½ at +1 and +2×ATR', [{ trigAtr: 1, size: 0.5 }, { trigAtr: 2, size: 0.5 }]],
+    ];
+    const pools = new Map(); // `${vi}|${sideKey}|${period}` -> moves[]
+    const put = (vi, sideKey, period, m) => {
+      const k = `${vi}|${sideKey}|${period}`;
+      if (!pools.has(k)) pools.set(k, []);
+      pools.get(k).push(m);
+    };
+    for (const [asset] of Object.entries(ASSETS)) {
+      const c4 = histories[asset];
+      if (!c4 || c4.length < 800) continue;
+      const daily = E.toDailyCandles(c4);
+      if (daily.length < 400) continue;
+      const ind = E.computeIndicators(daily);
+      const cost = costOf(asset);
+      const splitT = daily[Math.floor(daily.length * 0.7)].t;
+      for (const s of E.computeBreakoutSignals(daily, ind, {})) {
+        const atr = ind.atr[s.i];
+        if (atr == null || s.i >= daily.length - 1) continue;
+        const period = s.t < splitT ? 'train' : 'validate';
+        for (let vi = 0; vi < variants.length; vi++) {
+          const m = swingSim(daily, s.i, s.side, atr, variants[vi][1]) - cost;
+          put(vi, 'both', period, m);
+          if (s.side === 'long') put(vi, 'long', period, m);
+        }
+      }
+    }
+    lines.push(
+      '## Pyramiding the daily swing-55 (add to winners?)',
+      '',
+      'Pre-registered refinement of the validated swing stream: add-on units fill at the close that first reaches the trigger, share the trail, and exit together. ' +
+      'Returns are net % on total deployed notional under one simulator (the baseline row is re-simulated the same way, so rows are directly comparable). ' +
+      'Adoption rule: a variant becomes an execution rule ONLY if it beats the no-adds baseline in BOTH periods with ≥30 validate trades. ' +
+      'Honest caveat: adds raise open risk precisely when a trade is winning — the % edge must beat the baseline to justify that.',
+      '',
+      '| Variant | Side | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|---|',
+    );
+    for (const sideKey of ['both', 'long']) {
+      const base = {
+        tr: stats(pools.get(`0|${sideKey}|train`) || []),
+        va: stats(pools.get(`0|${sideKey}|validate`) || []),
+      };
+      for (let vi = 0; vi < variants.length; vi++) {
+        const tr = stats(pools.get(`${vi}|${sideKey}|train`) || []);
+        const va = stats(pools.get(`${vi}|${sideKey}|validate`) || []);
+        const v = vi === 0 ? 'baseline'
+          : !tr || !va || va.n < 30 ? '⚠️ too few trades'
+          : tr.avg > (base.tr?.avg ?? -99) && va.avg > (base.va?.avg ?? -99)
+            ? '✅ beats baseline both periods — adopt as execution rule'
+            : '❌ no improvement';
+        lines.push(`| ${variants[vi][0]} | ${sideKey === 'both' ? 'both' : '▲ longs'} | ${fmtStats(tr)} | ${fmtStats(va)} | ${v} |`);
+      }
+    }
+    lines.push('');
+    console.log('pyramiding study evaluated');
+  }
+
   // ---- WTI deep-dive ----
   // Owner-requested single-market focus. Testing many variants on ONE market
   // is a multiple-comparisons trap, so the bar is stricter than the global
