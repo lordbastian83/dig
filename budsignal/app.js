@@ -1252,6 +1252,99 @@
     }).join('');
   }
 
+  /* ---------------- execution desk: real fills vs the ledger ---------------- */
+
+  // The user's actual broker fills, logged by hand against ledger signals.
+  // Lives only in localStorage — private, never uploaded. Entry drag is the
+  // % you paid past the signal price in the trade's direction; the result
+  // gap is your closed % vs the ledger's scored move for the same signal.
+  const EXEC_STORE = 'budsignal-fills';
+  const loadFills = () => {
+    try { return JSON.parse(localStorage.getItem(EXEC_STORE)) || []; } catch (e) { return []; }
+  };
+  const saveFills = (f) => { try { localStorage.setItem(EXEC_STORE, JSON.stringify(f)); } catch (e) { /* storage full/blocked */ } };
+  const sigKey = (r) => `${r.asset}|${r.t}`;
+  const sigLabel = (r) => `${ASSETS[r.asset].tab} ${r.side === 'long' ? '▲' : '▼'} ${r.strategy === 'swing' ? (r.early ? 'swing-20' : 'swing-55') : r.strategy} @ $${fmtPrice(r.entry)} · ${fmtTime(r.t).slice(0, 10)}`;
+
+  function renderExec() {
+    const body = $('exec-body');
+    if (!body || !lastRecs) return;
+    const byKey = new Map(lastRecs.map((r) => [sigKey(r), r]));
+    // signal picker: the most recent 25 funded-stream signals
+    const sel = $('exec-sig');
+    if (sel) {
+      const chosen = sel.value;
+      const opts = lastRecs
+        .filter((r) => ASSETS[r.asset] && r.entry && (r.strategy === 'swing' || r.strategy === 'breakout' || r.strategy === 'scalp'))
+        .sort((a, b) => b.t - a.t).slice(0, 25);
+      sel.innerHTML = '<option value="">— pick the signal you took —</option>' +
+        opts.map((r) => `<option value="${sigKey(r)}">${sigLabel(r)}</option>`).join('');
+      sel.value = chosen;
+    }
+    const fills = loadFills();
+    if (!fills.length) {
+      body.innerHTML = '<tr><td colspan="8" class="table-empty">No fills logged yet. After you place a real trade, log it here — a month of fills tells you your true cost per trade.</td></tr>';
+      $('exec-stats').hidden = true;
+      return;
+    }
+    const drags = [], gaps = [];
+    body.innerHTML = fills.map((f, idx) => {
+      const sig = byKey.get(f.sig);
+      const dir = sig ? (sig.side === 'long' ? 1 : -1) : 1;
+      const drag = sig ? ((f.entry - sig.entry) / sig.entry) * dir * 100 : null; // + = paid worse
+      if (drag != null) drags.push(drag);
+      let yours = null, gap = null;
+      if (sig && f.exit != null) {
+        yours = ((f.exit - f.entry) / f.entry) * dir * 100;
+        if (sig.outcome !== 'open') { gap = yours - sig.movePct; gaps.push(gap); }
+      }
+      const cls = (v, flip) => (v == null ? '' : (flip ? -v : v) >= 0 ? 'move-pos' : 'move-neg');
+      return `<tr>
+        <td>${sig ? sigLabel(sig) : '<span class="radar-dist">signal no longer in ledger window</span>'}</td>
+        <td class="num">${sig ? '$' + fmtPrice(sig.entry) : '—'}</td>
+        <td class="num">$${fmtPrice(f.entry)}${f.risk ? ` <span class="radar-dist">£${fmtUsd(f.risk, 2)}</span>` : ''}</td>
+        <td class="num ${cls(drag, true)}">${drag != null ? (drag >= 0 ? '−' : '+') + Math.abs(drag).toFixed(2) + '%' : '—'}</td>
+        <td class="num ${cls(yours)}">${yours != null ? fmtPct(yours) : '<span class="radar-dist">open</span>'}</td>
+        <td class="num ${sig && sig.outcome !== 'open' ? cls(sig.movePct) : ''}">${sig ? (sig.outcome !== 'open' ? fmtPct(sig.movePct) : '<span class="radar-dist">open</span>') : '—'}</td>
+        <td class="num ${cls(gap)}">${gap != null ? fmtPct(gap) : '—'}</td>
+        <td><button class="exec-del" data-i="${idx}" type="button" title="Remove this fill">✕</button></td>
+      </tr>`;
+    }).join('');
+    body.querySelectorAll('.exec-del').forEach((b) => b.addEventListener('click', () => {
+      const f = loadFills();
+      f.splice(+b.dataset.i, 1);
+      saveFills(f);
+      renderExec();
+    }));
+    const st = $('exec-stats');
+    if (st) {
+      const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+      const parts = [`${fills.length} fill${fills.length > 1 ? 's' : ''} logged`];
+      if (drags.length) parts.push(`avg entry drag <strong class="${avg(drags) <= 0 ? 'move-pos' : 'move-neg'}">${avg(drags) >= 0 ? '−' : '+'}${Math.abs(avg(drags)).toFixed(2)}%</strong> per trade`);
+      if (gaps.length) parts.push(`avg result gap vs ledger <strong class="${avg(gaps) >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(avg(gaps))}</strong> (${gaps.length} closed)`);
+      st.hidden = false;
+      st.innerHTML = parts.join(' · ') + ' · <span class="radar-dist">drag is the % you paid past the signal price in the trade\'s direction — it compounds; keep it under your market\'s modeled cost</span>';
+    }
+  }
+
+  function bindExecForm() {
+    const btn = $('exec-save');
+    if (!btn || btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      const sig = $('exec-sig').value;
+      const entry = parseFloat($('exec-entry').value);
+      const risk = parseFloat($('exec-risk').value);
+      const exitV = parseFloat($('exec-exit').value);
+      if (!sig || !(entry > 0)) { $('exec-entry').focus(); return; }
+      const fills = loadFills();
+      fills.unshift({ sig, entry, risk: risk > 0 ? risk : null, exit: exitV > 0 ? exitV : null, logged: Date.now() });
+      saveFills(fills.slice(0, 200));
+      $('exec-entry').value = ''; $('exec-exit').value = '';
+      renderExec();
+    });
+  }
+
   // Session clocks: which markets are awake right now (approximate UTC
   // hours, ignoring DST shifts by design — this is orientation, not an
   // execution calendar). The scalp-window chip mirrors the 1h stream's
@@ -1987,6 +2080,8 @@
     renderActionQueue();
     renderForecast();
     renderBriefing();
+    renderExec();
+    bindExecForm();
   }
   let lastRecs = null;
 

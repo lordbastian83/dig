@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=75">
+<link rel="stylesheet" href="styles.css?v=76">
 </head>
 <body>
 
@@ -292,6 +292,25 @@
       <ul class="desk-log" id="desk-log"><li class="radar-dist">Waiting for the ledger…</li></ul>
       <p class="watchlist-note">Every line is a real recorded event from the signal ledger and the market sweep — nothing simulated, nothing narrated.</p>
     </div>
+
+    <div class="equity-card exec-card">
+      <h3>Execution desk — your real fills vs the ledger</h3>
+      <p class="section-sub corr-sub">The validated edge is what the ledger earns; what YOU earn is that minus execution drag. Log each real fill against the signal you took and the desk measures the gap. Fills are stored only in this browser — nothing leaves your device.</p>
+      <div class="exec-form">
+        <label>Signal <select id="exec-sig"><option value="">— pick the signal you took —</option></select></label>
+        <label>Your entry <input id="exec-entry" type="number" step="any" inputmode="decimal" placeholder="fill price"></label>
+        <label>£ risked <input id="exec-risk" type="number" step="any" min="0" inputmode="decimal" placeholder="e.g. 17.50"></label>
+        <label>Your exit <input id="exec-exit" type="number" step="any" inputmode="decimal" placeholder="blank if open"></label>
+        <button id="exec-save" type="button">Log fill</button>
+      </div>
+      <p class="exec-stats" id="exec-stats" hidden></p>
+      <div class="table-wrap">
+        <table class="record-table exec-table">
+          <thead><tr><th>Signal</th><th class="num">Sig entry</th><th class="num">Your entry</th><th class="num">Entry drag</th><th class="num">Your result</th><th class="num">Ledger</th><th class="num">Gap</th><th></th></tr></thead>
+          <tbody id="exec-body"><tr><td colspan="8" class="table-empty">No fills logged yet. After you place a real trade, log it here — a month of fills tells you your true cost per trade.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </section>
 
   <!-- ============ Methodology ============ -->
@@ -472,7 +491,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=75"></script>
-<script src="app.js?v=75"></script>
+<script src="engine.js?v=76"></script>
+<script src="app.js?v=76"></script>
 </body>
 </html>
