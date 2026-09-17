@@ -994,6 +994,13 @@
     const el = $('briefing');
     if (!el) return;
     const bits = [];
+    // staleness tripwire first: a frozen ledger once went unnoticed for
+    // three weeks — if the bot has not written for >9h (it writes every 4h),
+    // say so before anything else.
+    if (lastPerfStamp) {
+      const ageH = (Date.now() - lastPerfStamp) / 3600000;
+      if (ageH > 9) bits.push(`<strong class="move-neg">⚠ LEDGER STALE — last bot write ${ageH < 48 ? ageH.toFixed(0) + 'h' : (ageH / 24).toFixed(1) + 'd'} ago</strong> (positions and P&L below are frozen at that point; check the budsignal-notify workflow)`);
+    }
     // sessions
     {
       const d = new Date();
@@ -1343,6 +1350,120 @@
       $('exec-entry').value = ''; $('exec-exit').value = '';
       renderExec();
     });
+  }
+
+  /* ---------------- live scalp desk: the 1h stream, on-site ---------------- */
+
+  // The validated 1h scalp combo used to be Telegram-only; scalps are
+  // hourly opportunities, so the site now runs the same engine stream on
+  // live 1h feeds. Fetches are frugal: once at load, then re-synced ~90s
+  // after every hourly close (when a new signal can exist), never faster.
+  let scalpState = null; // { [asset]: { candles, source } | { err } }
+
+  async function fetch1h(cfg, key) {
+    const now = Date.now();
+    const day = (x) => new Date(x).toISOString().slice(0, 10);
+    const range = `from=${day(now - 30 * 86400000)}&to=${day(now)}&apikey=${encodeURIComponent(key)}`;
+    const urls = [
+      `https://financialmodelingprep.com/stable/historical-chart/1hour?symbol=${encodeURIComponent(cfg.fmp)}&${range}`,
+      `https://financialmodelingprep.com/api/v3/historical-chart/1hour/${encodeURIComponent(cfg.fmp)}?${range}`,
+    ];
+    let lastErr = 'no data';
+    for (const url of urls) {
+      try {
+        const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        if (!Array.isArray(j) || !j.length) throw new Error((j && (j['Error Message'] || j.message)) || 'no data');
+        const candles = j.map((v) => ({
+          t: Date.parse(v.date.replace(' ', 'T') + 'Z'),
+          o: +v.open, h: +v.high, l: +v.low, c: +v.close,
+          v: v.volume != null ? +v.volume : 0,
+        })).sort((a, b) => a.t - b.t).slice(-420);
+        return { source: cfg.fmp, candles };
+      } catch (e) { lastErr = e.message; }
+    }
+    throw new Error(lastErr);
+  }
+
+  async function refreshScalpData() {
+    if (!$('scalp-desk')) return;
+    const key = localStorage.getItem(FMP_KEY_STORE);
+    const out = {};
+    for (const a of E.SCALP.ASSETS) {
+      if (!key) { out[a] = { err: 'key' }; continue; }
+      try { out[a] = await fetch1h(ASSETS[a], key); } catch (e) { out[a] = { err: e.message }; }
+    }
+    scalpState = out;
+    renderScalpDesk();
+  }
+
+  function renderScalpDesk() {
+    const box = $('scalp-desk');
+    if (!box) return;
+    const now = Date.now();
+    const clock = $('scalp-clock');
+    if (clock) {
+      const next = (Math.floor(now / 3600000) + 1) * 3600000;
+      const m = Math.floor((next - now) / 60000), sec = Math.floor(((next - now) % 60000) / 1000);
+      const h = new Date(now).getUTCHours();
+      const inSess = h >= E.SCALP.HOUR_FROM && h < E.SCALP.HOUR_TO;
+      clock.innerHTML = `Next 1h close <strong>${m}m ${String(sec).padStart(2, '0')}s</strong> · session ${inSess ? '<strong class="move-pos">OPEN</strong>' : `<strong>closed</strong> (window ${String(E.SCALP.HOUR_FROM).padStart(2, '0')}:00–${E.SCALP.HOUR_TO}:00 UTC)`}`;
+    }
+    if (!scalpState) return;
+    box.innerHTML = E.SCALP.ASSETS.map((a) => {
+      const st = scalpState[a];
+      const name = `<span class="scalp-sym">${ASSETS[a].tab}</span>`;
+      if (st.err === 'key') return `<p class="scalp-row">${name}<span class="radar-dist">add your FMP data key (top of page) for the live 1h feed</span></p>`;
+      if (st.err) return `<p class="scalp-row">${name}<span class="radar-dist">1h feed unavailable (${esc(String(st.err).slice(0, 40))})</span></p>`;
+      const closed = E.closedPrefix(st.candles, now, E.SCALP.CANDLE_MS);
+      if (closed.length < 100) return `<p class="scalp-row">${name}<span class="radar-dist">warming up (${closed.length} candles)</span></p>`;
+      const ind = E.computeIndicators(closed);
+      const i = closed.length - 1;
+      const price = closed[i].c;
+      // same volatility gate the engine and research use
+      const atrPct = ind.atr[i] != null ? ind.atr[i] / price : null;
+      let volOk = null;
+      {
+        let sum = 0, n = 0;
+        for (let k = Math.max(0, i - E.SCALP.VOL_WINDOW); k < i; k++) {
+          if (ind.atr[k] != null) { sum += ind.atr[k] / closed[k].c; n++; }
+        }
+        if (n > 50 && atrPct != null) volOk = atrPct > sum / n;
+      }
+      const h = new Date(now).getUTCHours();
+      const sessOk = h >= E.SCALP.HOUR_FROM && h < E.SCALP.HOUR_TO;
+      const sigs = E.computeScalpStream(closed, ind);
+      const live = sigs.filter((s) => closed[i].t - s.t < E.SCALP.CANDLE_MS * 1.5 && closed[i].t - s.t >= 0);
+      const dot = (ok, label) => `<span class="scalp-gate ${ok ? 'on' : ''}" title="${label} gate ${ok ? 'open' : 'closed'}">${ok ? '●' : '○'} ${label}</span>`;
+      const gates = `${dot(sessOk, 'SESSION')}${dot(volOk === true, 'VOL')}`;
+      let status;
+      if (live.length) {
+        const s = live[live.length - 1];
+        const risk = acctGbp() * (riskPct() / 100) * E.riskMultiplier({ strategy: 'scalp' });
+        status = `<strong class="${s.side === 'long' ? 'move-pos' : 'move-neg'}">● FIRING ${s.side === 'long' ? '▲ LONG' : '▼ SHORT'}</strong> @ $${fmtPrice(s.entry)} · stop $${fmtPrice(s.stop)} · risk £${fmtUsd(risk, 2)} (0.5% weight) · trail 2×ATR, hard exit 18h`;
+      } else if (sessOk && volOk) {
+        const r = E.breakoutRadar(closed);
+        const up = r.upPct <= r.downPct;
+        status = `<strong class="move-pos">ARMED</strong> — gates open, nearest 1h trigger ${up ? '▲' : '▼'} $${fmtPrice(up ? r.up : r.down)} · ${Math.min(r.upPct, r.downPct).toFixed(2)}% away`;
+      } else {
+        status = `<span class="radar-dist">standing down — ${!sessOk ? 'outside the validated session window' : 'volatility below its 200-hour average'}; a breakout now would NOT be a valid scalp</span>`;
+      }
+      return `<p class="scalp-row">${name}<span class="num scalp-px">$${fmtPrice(price)}</span>${gates}<span class="scalp-status">${status}</span></p>`;
+    }).join('');
+  }
+
+  // re-sync ~90s after each hourly close (the only moment a new scalp can
+  // exist), tick the countdown every 20s
+  function scheduleScalp() {
+    if (!$('scalp-desk')) return;
+    refreshScalpData();
+    setInterval(renderScalpDesk, 20 * 1000);
+    const arm = () => {
+      const ms = (Math.floor(Date.now() / 3600000) + 1) * 3600000 + 90 * 1000 - Date.now();
+      setTimeout(() => { refreshScalpData(); arm(); }, Math.max(60 * 1000, ms));
+    };
+    arm();
   }
 
   // Session clocks: which markets are awake right now (approximate UTC
@@ -2115,6 +2236,7 @@
       .join('');
 
     lastRecs = recs;
+    lastPerfStamp = data.updated || null;
     renderPaperAccount(recs);
     renderAttribution(recs);
     renderBlotter();
@@ -2127,6 +2249,7 @@
     bindExecForm();
   }
   let lastRecs = null;
+  let lastPerfStamp = null; // ledger 'updated' stamp, for the staleness tripwire
 
   // Attribution: closed ledger trades grouped by stream, measured in R
   // (net move ÷ stop distance, costs included) — the only unit where a
@@ -2308,6 +2431,7 @@
   setInterval(renderCountdown, 30 * 1000);
   renderSessions();
   setInterval(renderSessions, 60 * 1000);
+  scheduleScalp();
 
   // Self-update: installed PWAs resume old sessions instead of reloading, so
   // the deployed build stamps version.json and the app reloads itself the
@@ -2331,5 +2455,6 @@
     checkVersion();
     refresh();          // resume also re-pulls data, so a reopened app is never stale
     loadPerformance();
+    refreshScalpData();
   });
 })();
