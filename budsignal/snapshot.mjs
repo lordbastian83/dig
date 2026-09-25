@@ -122,7 +122,8 @@ let earnings = [];
 try {
   const from = day(Date.now()), to = day(Date.now() + 14 * 86400000);
   earnings = (await fmp(`earnings-calendar?from=${from}&to=${to}`, `earning_calendar?from=${from}&to=${to}`))
-    .filter((e) => e.symbol && !e.symbol.includes('.'))
+    // Keep large caps only: the raw calendar is mostly OTC tickers with no estimates.
+    .filter((e) => e.symbol && !e.symbol.includes('.') && (e.revenueEstimated ?? 0) >= 1e9)
     .map((e) => ({ symbol: e.symbol, date: e.date, epsEstimated: e.epsEstimated ?? null, revenueEstimated: e.revenueEstimated ?? null }))
     .sort((a, b) => a.date.localeCompare(b.date));
 } catch (e) { earnings = [{ error: e.message }]; }
