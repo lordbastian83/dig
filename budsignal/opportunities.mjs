@@ -490,7 +490,8 @@ for (const idea of ideas) {
 // regime when there is enough history) are actionable; the rest are shown as
 // watch-only so a high score can never promote a setup with no edge.
 const MIN_EDGE_R = 0.05;
-for (const idea of ideas) idea.edge = !!(idea.stat && idea.stat.n >= 30 && idea.stat.expR >= MIN_EDGE_R);
+const MIN_EDGE_N = 100; // smaller samples are noise (a 40-trade setup once promoted a spiking small-cap short)
+for (const idea of ideas) idea.edge = !!(idea.stat && idea.stat.n >= MIN_EDGE_N && idea.stat.expR >= MIN_EDGE_R);
 const rank = (side, edge) => ideas.filter((x) => x.side === side && x.edge === edge).sort((a, b) => b.score - a.score);
 const longs = rank('long', true), shorts = rank('short', true);
 const watchLongs = rank('long', false), watchShorts = rank('short', false);
@@ -538,10 +539,10 @@ const md = [
   '**High-impact US data, next 7 days**',
   ...(econ.length ? econ.slice(0, 20).map((e) => `- ${e.date} ${e.event}${e.estimate != null ? ` (est ${e.estimate}, prev ${e.previous ?? '—'})` : ''}`) : ['- none returned']),
   '',
-  `## Actionable longs (setup expectancy >= +${MIN_EDGE_R}R)`,
+  `## Actionable longs (setup expectancy >= +${MIN_EDGE_R}R over ${MIN_EDGE_N}+ trades)`,
   ...(longs.length ? table(longs.slice(0, TOP_N)) : ['_None today — no long setup with a measured edge fired._']),
   '',
-  `## Actionable shorts (setup expectancy >= +${MIN_EDGE_R}R)`,
+  `## Actionable shorts (setup expectancy >= +${MIN_EDGE_R}R over ${MIN_EDGE_N}+ trades)`,
   ...(shorts.length ? table(shorts.slice(0, TOP_N)) : ['_None today — short setups have not shown an edge on this universe in the current regime._']),
   '',
   '## Watch only (setup fired but has no measured edge)',
