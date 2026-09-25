@@ -486,8 +486,14 @@ for (const idea of ideas) {
   idea.riskGBP = (idea.shares * perShareUsd) / gbpusd;
 }
 
-const rank = (side) => ideas.filter((x) => x.side === side).sort((a, b) => b.score - a.score);
-const longs = rank('long'), shorts = rank('short');
+// Only setups that have actually made money on this universe (in the current
+// regime when there is enough history) are actionable; the rest are shown as
+// watch-only so a high score can never promote a setup with no edge.
+const MIN_EDGE_R = 0.05;
+for (const idea of ideas) idea.edge = !!(idea.stat && idea.stat.n >= 30 && idea.stat.expR >= MIN_EDGE_R);
+const rank = (side, edge) => ideas.filter((x) => x.side === side && x.edge === edge).sort((a, b) => b.score - a.score);
+const longs = rank('long', true), shorts = rank('short', true);
+const watchLongs = rank('long', false), watchShorts = rank('short', false);
 
 /* ---------------- report ---------------- */
 
@@ -532,11 +538,14 @@ const md = [
   '**High-impact US data, next 7 days**',
   ...(econ.length ? econ.slice(0, 20).map((e) => `- ${e.date} ${e.event}${e.estimate != null ? ` (est ${e.estimate}, prev ${e.previous ?? '—'})` : ''}`) : ['- none returned']),
   '',
-  `## Top ${TOP_N} long setups`,
-  ...table(longs.slice(0, TOP_N)),
+  `## Actionable longs (setup expectancy >= +${MIN_EDGE_R}R)`,
+  ...(longs.length ? table(longs.slice(0, TOP_N)) : ['_None today — no long setup with a measured edge fired._']),
   '',
-  `## Top ${TOP_N} short setups`,
-  ...table(shorts.slice(0, TOP_N)),
+  `## Actionable shorts (setup expectancy >= +${MIN_EDGE_R}R)`,
+  ...(shorts.length ? table(shorts.slice(0, TOP_N)) : ['_None today — short setups have not shown an edge on this universe in the current regime._']),
+  '',
+  '## Watch only (setup fired but has no measured edge)',
+  ...[...watchLongs.slice(0, 5), ...watchShorts.slice(0, 5)].map((x) => `- ${x.side === 'long' ? '▲' : '▼'} **${x.symbol}** ${x.label}, score ${x.score.toFixed(0)}, trigger ${px(x.trigger)} — history ${statTxt(x.stat)}${x.why.length > 1 ? `; ${x.why.slice(1).join('; ')}` : ''}`),
   '',
   '## Your holdings',
   ...holdingLines,
@@ -557,6 +566,7 @@ const md = [
 const out = {
   generated_at: new Date().toISOString(), regime, account_gbp: ACCOUNT_GBP, risk_pct: RISK_PCT, gbpusd,
   universe_size: data.size - MACRO.length, ortex_symbols: ortexUsed,
+  watch: [...watchLongs.slice(0, 10), ...watchShorts.slice(0, 10)].map(({ info, ...x }) => ({ ...x, close: info.close })),
   longs: longs.slice(0, 25).map(({ info, ...x }) => ({ ...x, close: info.close, rsi: info.rsi, rs20: info.rs20, atrPct: info.atrPct, earnings: info.earnings })),
   shorts: shorts.slice(0, 25).map(({ info, ...x }) => ({ ...x, close: info.close, rsi: info.rsi, rs20: info.rs20, atrPct: info.atrPct, earnings: info.earnings })),
   setup_stats: stats, econ, holdings: HOLDINGS.map((h) => ({ ...snapshot.get(h), flow: flows.get(h) || null })),
@@ -578,8 +588,8 @@ if (process.env.SEND_TELEGRAM === '1' && process.env.TELEGRAM_BOT_TOKEN) {
   const line = (x) => `${x.side === 'long' ? '▲' : '▼'} <b>${esc(x.symbol)}</b> ${esc(x.label)} · score ${x.score.toFixed(0)}\n   entry ${px(x.trigger)} stop ${px(x.stop)} target ${px(x.target)}${x.shares ? ` · ${x.shares} sh ≈ £${x.costGBP.toFixed(0)}` : ''}`;
   const text = [
     `📊 <b>Opportunity scan</b> ${day(Date.now())} · market ${regime}`,
-    '', '<b>Longs</b>', ...longs.slice(0, 5).map(line),
-    '', '<b>Shorts</b>', ...shorts.slice(0, 5).map(line),
+    '', '<b>Longs</b>', ...(longs.length ? longs.slice(0, 5).map(line) : ['none with a measured edge']),
+    '', '<b>Shorts</b>', ...(shorts.length ? shorts.slice(0, 5).map(line) : ['none with a measured edge']),
     '', '<i>Analysis only, not advice. Full report on the budsignal-data branch.</i>',
   ].join('\n');
   for (const chat of chats) {
