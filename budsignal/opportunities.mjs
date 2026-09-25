@@ -10,7 +10,7 @@
    Env:
      FMP_API_KEY      required
      ORTEX_API_KEY    optional; enables short-interest / borrow enrichment
-     ORTEX_BUDGET     max tickers enriched per run (default 12, ~3 credits each)
+     ORTEX_BUDGET     max tickers enriched per run (default 12, ~4.5 credits each)
      ACCOUNT_GBP      account size for sizing (default 1000)
      RISK_PCT         % of account risked per trade (default 1)
      HOLDINGS         comma list always reviewed (default AMC,SNDL)
@@ -179,6 +179,24 @@ async function shortFlow(symbol, avgVol20) {
       res.ctb = +(v.costToBorrowAll ?? v.costToBorrow ?? v.ctb ?? v.value);
     }
   } catch (e) { res.ctbError = e.message; }
+  await sleep(1200);
+  // ORTEX's own generated signals: the composite Stock Score (growth /
+  // momentum / quality / value, 0-100) and the Short Score (squeeze pressure).
+  try {
+    const sc = (await ortex(`stock/us/${encodeURIComponent(symbol)}/stock_scores?from_date=${day(Date.now() - 10 * 86400000)}`))
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (sc.length) {
+      const v = sc[sc.length - 1];
+      res.stockScore = +v.total; res.momentum = +v.momentum; res.growth = +v.growth; res.quality = +v.quality; res.value = +v.value;
+      res.stockScoreChange = sc.length > 1 ? +v.total - +sc[0].total : 0;
+    }
+  } catch (e) { res.scoreError = e.message; }
+  await sleep(1200);
+  try {
+    const ss = (await ortex(`stock/us/${encodeURIComponent(symbol)}/short_score?from_date=${day(Date.now() - 10 * 86400000)}`))
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (ss.length) res.shortScore = +ss[ss.length - 1].score;
+  } catch (e) { res.shortScoreError = e.message; }
   await sleep(1200);
   return res;
 }
@@ -461,9 +479,22 @@ if (ORTEX_KEY) {
 }
 for (const idea of ideas) {
   const f = flows.get(idea.symbol);
-  if (!f || f.siPctFF == null) continue;
+  if (!f) continue;
   idea.flow = f;
   const long = idea.side === 'long';
+  if (f.stockScore != null) {
+    // ORTEX Stock Score: >70 is a strong name, <40 a weak one. Momentum
+    // confirms the direction we are trading.
+    const dir = long ? 1 : -1;
+    idea.score += clamp(dir * (f.stockScore - 55) / 4, -8, 8);
+    if (f.momentum != null) idea.score += clamp(dir * (f.momentum - 50) / 8, -4, 4);
+    idea.why.push(`ORTEX stock score ${f.stockScore.toFixed(0)} (momentum ${f.momentum?.toFixed(0) ?? '—'}, ${f.stockScoreChange >= 0 ? '+' : ''}${f.stockScoreChange.toFixed(1)} in 10d)`);
+  }
+  if (f.shortScore != null) {
+    if (f.shortScore >= 70) { idea.score += long ? 8 : -15; idea.why.push(`ORTEX short score ${f.shortScore.toFixed(0)}: squeeze pressure${long ? ' (fuel for longs)' : ' (danger for shorts)'}`); }
+    else if (f.shortScore <= 30 && !long) { idea.score += 3; }
+  }
+  if (f.siPctFF == null) continue;
   const chg = f.siChangePct ?? 0;
   if (long) {
     if (chg <= -10) { idea.score += 8; idea.why.push(`shorts covering (SI ${chg.toFixed(0)}% in 3w)`); }
@@ -575,9 +606,18 @@ const runnersUp = eligible.slice(1, 3);
 const f = (x, d = 2) => (x == null || !Number.isFinite(x) ? '—' : x.toFixed(d));
 const px = (x) => (x == null ? '—' : x >= 100 ? x.toFixed(2) : x >= 10 ? x.toFixed(2) : x.toFixed(3));
 const statTxt = (st) => (st ? `${st.winRate.toFixed(0)}% / ${st.expR >= 0 ? '+' : ''}${st.expR.toFixed(2)}R (n=${st.n})` : '—');
-const flowTxt = (fl) => (fl && fl.siPctFF != null ? `${fl.siPctFF.toFixed(1)}% (${fl.siChangePct >= 0 ? '+' : ''}${f(fl.siChangePct, 0)}%)${fl.ctb != null ? `, CTB ${fl.ctb.toFixed(2)}%` : ''}${fl.dtc != null ? `, DTC ${fl.dtc.toFixed(1)}` : ''}` : '—');
+const flowTxt = (fl) => {
+  if (!fl) return '—';
+  const parts = [];
+  if (fl.siPctFF != null) parts.push(`SI ${fl.siPctFF.toFixed(1)}% (${fl.siChangePct >= 0 ? '+' : ''}${f(fl.siChangePct, 0)}%)`);
+  if (fl.ctb != null) parts.push(`CTB ${fl.ctb.toFixed(2)}%`);
+  if (fl.dtc != null) parts.push(`DTC ${fl.dtc.toFixed(1)}`);
+  if (fl.stockScore != null) parts.push(`score ${fl.stockScore.toFixed(0)}/mom ${fl.momentum?.toFixed(0) ?? '—'}`);
+  if (fl.shortScore != null) parts.push(`short score ${fl.shortScore.toFixed(0)}`);
+  return parts.join(', ') || '—';
+};
 const table = (rows) => [
-  '| # | Symbol | Setup | Score | Close | Entry | Stop | Target | Shares | Cost £ | Risk £ | Setup history (win / exp) | ORTEX SI (3w Δ) | Notes |',
+  '| # | Symbol | Setup | Score | Close | Entry | Stop | Target | Shares | Cost £ | Risk £ | Setup history (win / exp) | ORTEX (SI 3w Δ, borrow, scores) | Notes |',
   '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|',
   ...rows.map((x, k) => `| ${k + 1} | **${x.symbol}** | ${x.label}${x.entryType === 'stop' ? ' (stop order)' : ' (at open)'} | ${x.score.toFixed(0)} | ${px(x.info.close)} | ${px(x.trigger)} | ${px(x.stop)} | ${px(x.target)} | ${x.shares || 'too big'} | ${f(x.costGBP, 0)} | ${f(x.riskGBP, 1)} | ${statTxt(x.stat)} | ${flowTxt(x.flow)} | ${x.why.slice(1).join('; ') || ''} |`),
 ];
@@ -628,7 +668,7 @@ const md = [
   ...bestBlock,
   '',
   `Universe ${data.size - MACRO.length} symbols (core + today's movers + upcoming large-cap earnings). Market regime: **${regime}** (SPY ${regime === 'risk-on' ? 'above' : 'not above'} its 200-day with 20 > 50 EMA). Sizing: £${ACCOUNT_GBP} account, ${RISK_PCT}% risk (£${riskGBP.toFixed(0)}) per trade, GBPUSD ${gbpusd.toFixed(4)}, no leverage.`,
-  ORTEX_KEY ? `ORTEX short data on ${ortexUsed} symbols (~${(ortexUsed * 2.7).toFixed(0)} credits).` : 'ORTEX not configured (add the ORTEX_API_KEY secret) — short-flow scoring skipped.',
+  ORTEX_KEY ? `ORTEX short data + stock/short scores on ${ortexUsed} symbols (~${(ortexUsed * 4.5).toFixed(0)} credits).` : 'ORTEX not configured (add the ORTEX_API_KEY secret) — short-flow scoring skipped.',
   '',
   '## Macro',
   macroLine('SPY', 'S&P 500 (SPY)'), macroLine('QQQ', 'Nasdaq 100 (QQQ)'), macroLine('BZUSD', 'Brent'), macroLine('USO', 'WTI proxy (USO)'), macroLine('GCUSD', 'Gold'), macroLine('TLT', '20y Treasuries (TLT)'),
