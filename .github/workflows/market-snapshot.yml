@@ -1,0 +1,43 @@
+name: Market snapshot
+
+# Read-only market snapshot via FMP: WTI/Brent/gold plus a stock watchlist,
+# with trend/RSI/ATR levels and the next two weeks of earnings. Results go to
+# the job log, the step summary and a market-snapshot artifact.
+# Requires the FMP_API_KEY secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: 'Comma-separated FMP symbols (blank = default watchlist)'
+        default: ''
+  push:
+    branches: ['claude/**']
+    paths:
+      - 'budsignal/snapshot.mjs'
+      - '.github/workflows/market-snapshot.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-snapshot
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull snapshot
+        run: node budsignal/snapshot.mjs
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          SYMBOLS: ${{ inputs.symbols }}
+          OUT_FILE: market-snapshot.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: market-snapshot
+          path: market-snapshot.json
+          retention-days: 7
