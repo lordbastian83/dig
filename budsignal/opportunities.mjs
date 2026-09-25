@@ -59,7 +59,7 @@ const CORE = [
   // ETFs: market, sectors, commodities, rates
   'SPY', 'QQQ', 'IWM', 'DIA', 'XLE', 'XLF', 'XLK', 'SMH', 'USO', 'UNG', 'GLD', 'SLV', 'TLT',
 ];
-const MACRO = ['BZUSD', 'GCUSD', 'GBPUSD'];
+const MACRO = ['BZUSD', 'GCUSD', 'GBPUSD', '^FTSE', '^STOXX50E'];
 const ETFS = new Set(['SPY', 'QQQ', 'IWM', 'DIA', 'XLE', 'XLF', 'XLK', 'SMH', 'USO', 'UNG', 'GLD', 'SLV', 'TLT']);
 
 const day = (x) => new Date(x).toISOString().slice(0, 10);
@@ -671,7 +671,7 @@ const md = [
   ORTEX_KEY ? `ORTEX short data + stock/short scores on ${ortexUsed} symbols (~${(ortexUsed * 4.5).toFixed(0)} credits).` : 'ORTEX not configured (add the ORTEX_API_KEY secret) — short-flow scoring skipped.',
   '',
   '## Macro',
-  macroLine('SPY', 'S&P 500 (SPY)'), macroLine('QQQ', 'Nasdaq 100 (QQQ)'), macroLine('BZUSD', 'Brent'), macroLine('USO', 'WTI proxy (USO)'), macroLine('GCUSD', 'Gold'), macroLine('TLT', '20y Treasuries (TLT)'),
+  macroLine('SPY', 'S&P 500 (SPY)'), macroLine('QQQ', 'Nasdaq 100 (QQQ)'), macroLine('^FTSE', 'FTSE 100'), macroLine('^STOXX50E', 'Euro Stoxx 50'), macroLine('BZUSD', 'Brent'), macroLine('USO', 'WTI proxy (USO)'), macroLine('GCUSD', 'Gold'), macroLine('TLT', '20y Treasuries (TLT)'),
   '',
   '**High-impact US data, next 7 days**',
   ...(econ.length ? econ.slice(0, 20).map((e) => `- ${e.date} ${e.event}${e.estimate != null ? ` (est ${e.estimate}, prev ${e.previous ?? '—'})` : ''}`) : ['- none returned']),
@@ -725,8 +725,14 @@ if (process.env.SEND_TELEGRAM === '1' && process.env.TELEGRAM_BOT_TOKEN) {
   try { for (const c of JSON.parse(readFileSync(process.env.STATE_FILE || '.notify-state.json', 'utf8')).chats || []) chats.add(String(c)); } catch { /* no state */ }
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const run = process.env.RUN_LABEL || 'Scan';
+  const strip = ['SPY', '^FTSE', 'BZUSD', 'GCUSD', 'GBPUSD'].map((sym) => {
+    const s = snapshot.get(sym); if (!s) return null;
+    const name = { SPY: 'SPY', '^FTSE': 'FTSE', BZUSD: 'Brent', GCUSD: 'Gold', GBPUSD: 'GBPUSD' }[sym];
+    return `${name} ${px(s.close)} (${s.chg1d >= 0 ? '+' : ''}${s.chg1d.toFixed(1)}%)`;
+  }).filter(Boolean).join(' · ');
   const text = best ? [
     `🎯 <b>${esc(run)}: best trade</b> · ${day(Date.now())} · market ${regime}`,
+    esc(strip),
     '',
     `${best.side === 'long' ? '▲ LONG' : '▼ SHORT'} <b>${esc(best.symbol)}</b> — ${esc(best.label)} (score ${best.score.toFixed(0)})`,
     `Last close ${px(best.info.close)}`,
@@ -744,6 +750,7 @@ if (process.env.SEND_TELEGRAM === '1' && process.env.TELEGRAM_BOT_TOKEN) {
     '', '<i>Check the price before placing: skip it if it has already run past the target or below the stop. Analysis only, not advice.</i>',
   ].join('\n') : [
     `🟰 <b>${esc(run)}: no trade today</b> · ${day(Date.now())} · market ${regime}`,
+    esc(strip),
     'Nothing with a measured edge fits the account without earnings or news risk. Staying flat.',
     ...(watchLongs[0] ? [`Watching: ${esc(watchLongs.slice(0, 3).map((x) => x.symbol).join(', '))}`] : []),
   ].join('\n');

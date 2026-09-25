@@ -11,7 +11,8 @@ name: Opportunity scanner
 on:
   schedule:
     - cron: '20 21 * * 1-5'   # after the US close, once daily bars are final: full scan + pick
-    - cron: '50 12 * * 1-5'   # pre-market (before the 13:30/14:30 UTC open): fresh news + ORTEX, re-confirm the pick
+    - cron: '50 12 * * 1-5'   # US pre-market (before the 13:30/14:30 UTC open): fresh news + ORTEX, re-confirm the pick
+    - cron: '50 6 * * 1-5'    # London open (07:50 BST / 06:50 GMT): overnight news, Europe/Brent/gold, ORTEX morning update
   workflow_dispatch:
     inputs:
       account_gbp:
@@ -54,8 +55,8 @@ jobs:
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
           ORTEX_API_KEY: ${{ secrets.ORTEX_API_KEY }}
-          ORTEX_BUDGET: ${{ github.event.schedule == '50 12 * * 1-5' && '4' || '8' }}   # ~55 credits/day across both runs
-          RUN_LABEL: ${{ github.event.schedule == '50 12 * * 1-5' && 'Pre-market check' || 'After-close scan' }}
+          ORTEX_BUDGET: ${{ github.event.schedule == '20 21 * * 1-5' && '8' || '3' }}   # ~65 credits/day across the three runs
+          RUN_LABEL: ${{ github.event.schedule == '50 6 * * 1-5' && 'London open' || github.event.schedule == '50 12 * * 1-5' && 'US pre-market' || 'After-close scan' }}
           ACCOUNT_GBP: ${{ inputs.account_gbp || vars.ACCOUNT_GBP || '1000' }}
           RISK_PCT: ${{ vars.RISK_PCT || '1' }}
           HOLDINGS: 'AMC,SNDL'
