@@ -496,6 +496,80 @@ const rank = (side, edge) => ideas.filter((x) => x.side === side && x.edge === e
 const longs = rank('long', true), shorts = rank('short', true);
 const watchLongs = rank('long', false), watchShorts = rank('short', false);
 
+/* ---------------- news + TradingView ideas on the finalists ---------------- */
+
+const POS = /\b(upgrades?|upgraded|beats?|raises?|raised|record|buyback|approv\w*|wins?|contract|partnership|surg\w*|jumps?|soars?|outperform\w*|rall\w*)\b/i;
+const NEG = /\b(downgrades?|downgraded|miss(?:es|ed)?|cuts?|lawsuit|probe|investigation|recall\w*|bankrupt\w*|offering|dilut\w*|plung\w*|slump\w*|warns?|warning|delay\w*|fraud|subpoena|layoffs?|halt\w*|sinks?|tumbl\w*)\b/i;
+const strip = (s) => String(s || '').replace(/<!\[CDATA\[|\]\]>/g, '').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').trim();
+
+async function newsFor(sym) {
+  let items = [];
+  try {
+    items = (await fmp(`news/stock?symbols=${encodeURIComponent(sym)}&limit=10`, `stock_news?tickers=${encodeURIComponent(sym)}&limit=10`))
+      .map((n) => ({ title: n.title, date: n.publishedDate || n.date, source: n.site || n.publisher || 'FMP' }));
+  } catch (e) { /* fall back to Yahoo RSS */ }
+  if (!items.length) {
+    try {
+      const r = await fetch(`https://feeds.finance.yahoo.com/rss/2.0/headline?s=${encodeURIComponent(sym)}&region=US&lang=en-US`, { signal: AbortSignal.timeout(15000), headers: { 'user-agent': 'Mozilla/5.0' } });
+      const xml = await r.text();
+      items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => ({
+        title: strip(m[1].match(/<title>([\s\S]*?)<\/title>/)?.[1]),
+        date: strip(m[1].match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]),
+        source: 'Yahoo',
+      }));
+    } catch (e) { /* no news source reachable */ }
+  }
+  const recent = items.filter((n) => n.title && Date.now() - Date.parse(n.date) < 4 * 86400000).slice(0, 8);
+  const sentiment = recent.reduce((s, n) => s + (POS.test(n.title) ? 1 : 0) - (NEG.test(n.title) ? 1 : 0), 0);
+  return { items: recent, sentiment };
+}
+
+// Community ideas on TradingView: counts recent Long vs Short labels on the
+// symbol's ideas page. Best effort — the page layout is not an API, so an
+// unparseable page is reported as unavailable rather than guessed at.
+async function tvIdeas(sym) {
+  try {
+    const r = await fetch(`https://www.tradingview.com/symbols/${encodeURIComponent(sym)}/ideas/`, {
+      signal: AbortSignal.timeout(15000), headers: { 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64)', accept: 'text/html' },
+    });
+    if (!r.ok) return { error: `HTTP ${r.status}` };
+    const html = await r.text();
+    const count = (re) => (html.match(re) || []).length;
+    const long = count(/"direction"\s*:\s*"long"|"is_long"\s*:\s*true|data-direction="long"|>Long</gi);
+    const short = count(/"direction"\s*:\s*"short"|"is_long"\s*:\s*false|data-direction="short"|>Short</gi);
+    return long + short ? { long, short } : { error: 'no idea labels found' };
+  } catch (e) { return { error: e.message }; }
+}
+
+const finalists = [...longs.slice(0, 5), ...shorts.slice(0, 3)];
+for (const idea of finalists) {
+  const [news, tv] = await Promise.all([newsFor(idea.symbol), tvIdeas(idea.symbol)]);
+  idea.news = news;
+  idea.tv = tv;
+  const dir = idea.side === 'long' ? 1 : -1;
+  if (news.sentiment) {
+    idea.score += clamp(dir * news.sentiment * 3, -12, 9);
+    idea.why.push(`news ${news.sentiment > 0 ? 'positive' : 'negative'} (${news.sentiment > 0 ? '+' : ''}${news.sentiment})`);
+  }
+  if (tv.long != null && tv.long + tv.short >= 4) {
+    const bias = (tv.long - tv.short) / (tv.long + tv.short);
+    idea.score += clamp(dir * bias * 5, -5, 5);
+    idea.why.push(`TradingView ideas ${tv.long} long / ${tv.short} short`);
+  }
+  console.log(`finalist ${idea.symbol}: news ${news.items.length} (sent ${news.sentiment}), TV ideas ${tv.error || `${tv.long}L/${tv.short}S`}`);
+}
+longs.sort((a, b) => b.score - a.score);
+shorts.sort((a, b) => b.score - a.score);
+
+// The one trade to execute: best actionable idea that fits the account,
+// has no earnings inside a week and no news running against it.
+const eligible = [...longs, ...shorts]
+  .filter((x) => x.shares > 0 && !(x.daysToEarn != null && x.daysToEarn >= 0 && x.daysToEarn <= 7))
+  .filter((x) => !x.news || (x.side === 'long' ? x.news.sentiment > -2 : x.news.sentiment < 2))
+  .sort((a, b) => b.score - a.score);
+const best = eligible[0] || null;
+const runnersUp = eligible.slice(1, 3);
+
 /* ---------------- report ---------------- */
 
 const f = (x, d = 2) => (x == null || !Number.isFinite(x) ? '—' : x.toFixed(d));
@@ -527,8 +601,31 @@ const holdingLines = HOLDINGS.map((h) => {
   return `- **${h}** ${px(s.close)}: trend ${s.trend}, RSI ${f(s.rsi, 0)}, 20d ${f(s.ret20, 1)}%, trailing stop idea ${px(chandelier)} (22d high close − 3 ATR); ORTEX ${flowTxt(flows.get(h))}`;
 });
 
+const saxoPlan = (x) => {
+  const verb = x.side === 'long' ? 'Buy' : 'Sell';
+  const inst = x.side === 'long' ? 'shares' : 'CFD (Saxo shorts US stocks via CFDs)';
+  const entry = x.entryType === 'stop'
+    ? `${verb} Stop order, ${x.shares} ${inst} at ${px(x.trigger)}, good for 3 sessions (cancel if not filled)`
+    : `Market ${verb.toLowerCase()} ${x.shares} ${inst} at the open`;
+  return `${entry}; attach Stop-Loss ${px(x.stop)} and Take-Profit ${px(x.target)}${x.entryType === 'market' ? (x.side === 'long'
+    ? ` (re-anchor to your fill: stop = fill − ${px(x.risk)}, target = fill + ${px(2 * x.risk)})`
+    : ` (re-anchor to your fill: stop = fill + ${px(x.risk)}, target = fill − ${px(2 * x.risk)})`) : ''}.`;
+};
+const bestBlock = best ? [
+  `## ⭐ Best trade to execute: ${best.side === 'long' ? 'LONG' : 'SHORT'} ${best.symbol}`,
+  `- **Setup:** ${best.label}, score ${best.score.toFixed(0)}; setup history ${statTxt(best.stat)}`,
+  `- **Plan:** ${saxoPlan(best)}`,
+  `- **Money:** ≈ £${best.costGBP.toFixed(0)} position, £${best.riskGBP.toFixed(1)} at risk, £${(2 * best.riskGBP).toFixed(1)} if the target hits`,
+  `- **Why:** ${best.why.slice(1).join('; ') || 'setup + trend'}`,
+  `- **ORTEX:** ${flowTxt(best.flow)} · **TradingView ideas:** ${best.tv ? (best.tv.error ? `unavailable (${best.tv.error})` : `${best.tv.long} long / ${best.tv.short} short`) : '—'}`,
+  ...(best.news?.items.length ? ['- **Latest headlines:**', ...best.news.items.slice(0, 4).map((n) => `  - ${n.title} (${n.source})`)] : ['- **Latest headlines:** none in the last 4 days']),
+  ...(runnersUp.length ? [`- **Runners-up:** ${runnersUp.map((x) => `${x.side === 'long' ? '▲' : '▼'} ${x.symbol} (${x.label}, score ${x.score.toFixed(0)})`).join(', ')}`] : []),
+] : ['## ⭐ Best trade to execute', '_No trade today — nothing with a measured edge fits the account without earnings or news risk. Staying flat is a position._'];
+
 const md = [
   `# Opportunity scan — ${day(Date.now())}`,
+  '',
+  ...bestBlock,
   '',
   `Universe ${data.size - MACRO.length} symbols (core + today's movers + upcoming large-cap earnings). Market regime: **${regime}** (SPY ${regime === 'risk-on' ? 'above' : 'not above'} its 200-day with 20 > 50 EMA). Sizing: £${ACCOUNT_GBP} account, ${RISK_PCT}% risk (£${riskGBP.toFixed(0)}) per trade, GBPUSD ${gbpusd.toFixed(4)}, no leverage.`,
   ORTEX_KEY ? `ORTEX short data on ${ortexUsed} symbols (~${(ortexUsed * 2.7).toFixed(0)} credits).` : 'ORTEX not configured (add the ORTEX_API_KEY secret) — short-flow scoring skipped.',
@@ -566,6 +663,7 @@ const md = [
 
 const out = {
   generated_at: new Date().toISOString(), regime, account_gbp: ACCOUNT_GBP, risk_pct: RISK_PCT, gbpusd,
+  best: best ? (({ info, ...x }) => ({ ...x, close: info.close, plan: saxoPlan(best) }))(best) : null,
   universe_size: data.size - MACRO.length, ortex_symbols: ortexUsed,
   watch: [...watchLongs.slice(0, 10), ...watchShorts.slice(0, 10)].map(({ info, ...x }) => ({ ...x, close: info.close })),
   longs: longs.slice(0, 25).map(({ info, ...x }) => ({ ...x, close: info.close, rsi: info.rsi, rs20: info.rs20, atrPct: info.atrPct, earnings: info.earnings })),
@@ -586,12 +684,28 @@ if (process.env.SEND_TELEGRAM === '1' && process.env.TELEGRAM_BOT_TOKEN) {
   if (process.env.TELEGRAM_CHAT_ID) chats.add(String(process.env.TELEGRAM_CHAT_ID));
   try { for (const c of JSON.parse(readFileSync(process.env.STATE_FILE || '.notify-state.json', 'utf8')).chats || []) chats.add(String(c)); } catch { /* no state */ }
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const line = (x) => `${x.side === 'long' ? '▲' : '▼'} <b>${esc(x.symbol)}</b> ${esc(x.label)} · score ${x.score.toFixed(0)}\n   entry ${px(x.trigger)} stop ${px(x.stop)} target ${px(x.target)}${x.shares ? ` · ${x.shares} sh ≈ £${x.costGBP.toFixed(0)}` : ''}`;
-  const text = [
-    `📊 <b>Opportunity scan</b> ${day(Date.now())} · market ${regime}`,
-    '', '<b>Longs</b>', ...(longs.length ? longs.slice(0, 5).map(line) : ['none with a measured edge']),
-    '', '<b>Shorts</b>', ...(shorts.length ? shorts.slice(0, 5).map(line) : ['none with a measured edge']),
-    '', '<i>Analysis only, not advice. Full report on the budsignal-data branch.</i>',
+  const run = process.env.RUN_LABEL || 'Scan';
+  const text = best ? [
+    `🎯 <b>${esc(run)}: best trade</b> · ${day(Date.now())} · market ${regime}`,
+    '',
+    `${best.side === 'long' ? '▲ LONG' : '▼ SHORT'} <b>${esc(best.symbol)}</b> — ${esc(best.label)} (score ${best.score.toFixed(0)})`,
+    `Last close ${px(best.info.close)}`,
+    `<b>Entry</b> ${px(best.trigger)}${best.entryType === 'stop' ? ' (stop order, 3 sessions)' : ' (market at open)'}`,
+    `<b>Stop</b> ${px(best.stop)}   <b>Target</b> ${px(best.target)}`,
+    `<b>Size</b> ${best.shares} ≈ £${best.costGBP.toFixed(0)} · risk £${best.riskGBP.toFixed(1)} · reward £${(2 * best.riskGBP).toFixed(1)}`,
+    '',
+    `Saxo: ${esc(saxoPlan(best))}`,
+    '',
+    `Why: ${esc(best.why.slice(1).join('; ') || 'setup + trend')}`,
+    `Setup history: ${esc(statTxt(best.stat))}`,
+    ...(best.flow ? [`ORTEX: ${esc(flowTxt(best.flow))}`] : []),
+    ...(best.news?.items.length ? ['', '<b>Headlines</b>', ...best.news.items.slice(0, 3).map((n) => `• ${esc(n.title)}`)] : []),
+    ...(runnersUp.length ? ['', `Runners-up: ${esc(runnersUp.map((x) => `${x.symbol} (${x.side}, ${x.score.toFixed(0)})`).join(', '))}`] : []),
+    '', '<i>Check the price before placing: skip it if it has already run past the target or below the stop. Analysis only, not advice.</i>',
+  ].join('\n') : [
+    `🟰 <b>${esc(run)}: no trade today</b> · ${day(Date.now())} · market ${regime}`,
+    'Nothing with a measured edge fits the account without earnings or news risk. Staying flat.',
+    ...(watchLongs[0] ? [`Watching: ${esc(watchLongs.slice(0, 3).map((x) => x.symbol).join(', '))}`] : []),
   ].join('\n');
   for (const chat of chats) {
     try {
@@ -601,7 +715,7 @@ if (process.env.SEND_TELEGRAM === '1' && process.env.TELEGRAM_BOT_TOKEN) {
         signal: AbortSignal.timeout(15000),
       });
       const j = await r.json();
-      if (!j.ok) console.log(`WARN telegram ${chat}: ${j.description}`);
+      console.log(j.ok ? `Telegram: sent to chat ${String(chat).slice(0, 3)}…` : `WARN telegram ${chat}: ${j.description}`);
     } catch (e) { console.log(`WARN telegram ${chat}: ${e.message}`); }
   }
   if (!chats.size) console.log('Telegram: no chat ids known; digest not sent');
