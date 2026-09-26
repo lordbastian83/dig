@@ -1692,7 +1692,7 @@
       if (r.ok) {
         const j = await r.json();
         for (const it of j.items || []) {
-          merged.push({ title: it.title, url: it.url, site: it.site, publishedDate: new Date(it.t).toISOString().slice(0, 19) });
+          merged.push({ title: it.title, url: it.url, site: it.site, img: it.img || null, publishedDate: new Date(it.t).toISOString().slice(0, 19) });
         }
         counts.rss = (j.items || []).length;
       }
@@ -1830,8 +1830,16 @@
     return m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
   };
 
-  let wireData = null;   // last analyzeNews result, so filtering never refetches
-  let wireFilter = null; // asset key, or null for the full stream
+  let wireData = null;        // last analyzeNews result, so filtering never refetches
+  let wireFilter = null;      // asset key, or null for the full stream
+  let wireTopicFilter = null; // topic name from the category bar, or null for all
+
+  // story photo, when the feed carried one (media:content / enclosure / FMP
+  // image field) — https only, silently removed if the hotlink 404s
+  const storyImg = (n, cls) => {
+    const u = n.img || n.image || null;
+    return u && /^https:\/\//.test(u) ? `<img class="${cls}" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('li,div,section')?.classList.remove('wi-has-thumb');this.remove()">` : '';
+  };
 
   async function renderWire() {
     const list = $('wire-list');
@@ -1871,16 +1879,48 @@
     const list = $('wire-list');
     if (!a || !list) return;
     if (wireFilter && !a.mkts.some((x) => x.m === wireFilter)) wireFilter = null;
+    if (wireTopicFilter && !a.topicCounts.some(([t]) => t === wireTopicFilter)) wireTopicFilter = null;
     const note = $('wire-filter-note');
     if (note) {
       note.hidden = !wireFilter;
       if (wireFilter) note.innerHTML = `Showing <strong>${ASSETS[wireFilter].tab}</strong>-tagged headlines only · <button class="wf-clear" id="wf-clear" type="button">✕ show all</button>`;
     }
     const stamp = (d) => Date.parse(d.n.publishedDate || d.n.date || '') || 0;
+    // category bar: ALL + every live topic cluster, counts included — the
+    // active chip filters the stream the same way the market rows do
+    const cats = $('wire-cats');
+    if (cats) {
+      const chip = (label, topic, count, active) =>
+        `<button class="wcat${active ? ' wcat-active' : ''}" data-topic="${esc(topic)}" type="button">${esc(label)}${count != null ? `<span class="wcat-n">${count}</span>` : ''}</button>`;
+      cats.innerHTML = chip('All news', '', null, !wireTopicFilter) +
+        a.topicCounts.map(([t, c]) => chip(t, t, c, wireTopicFilter === t)).join('');
+      if (!cats.dataset.bound) {
+        cats.dataset.bound = '1';
+        cats.addEventListener('click', (e) => {
+          const b = e.target.closest('.wcat');
+          if (b) { wireTopicFilter = b.dataset.topic || null; renderWireViews(); }
+        });
+      }
+    }
+    // headline ticker under the price tape: the newest wire, never filtered
+    const ntape = $('newstape-track');
+    if (ntape) {
+      const heads = a.docs.slice().sort((x, y) => stamp(y) - stamp(x)).slice(0, 14);
+      if (heads.length) {
+        const seg = heads.map((d) =>
+          `<span class="tape-item"><span class="tape-sym">${esc((d.n.site || d.n.publisher || 'WIRE')).toUpperCase()}</span>` +
+          `<span class="tape-head">${esc(d.title.slice(0, 110))}</span>` +
+          `<span class="tape-px">${relTime(stamp(d))}</span></span>`).join('');
+        ntape.innerHTML = seg + seg; // doubled so the -50% translate loops seamlessly
+        ntape.parentElement.hidden = false;
+      }
+    }
     const toneTag = (d) => (d.tone > 0 ? `<span class="wt wt-pos">+${d.tone}</span>` : d.tone < 0 ? `<span class="wt wt-neg">${d.tone}</span>` : '<span class="wt">0</span>');
     const mktChips = (d) => d.markets.map((m) => `<button class="wchip wchip-mkt" data-mkt="${m}" type="button" title="Filter the stream to ${ASSETS[m] ? ASSETS[m].tab : m} headlines">${ASSETS[m] ? ASSETS[m].tab : m}</button>`).join('');
     const rightMeta = (d) => `<span class="wi-right">${d.topics[0] ? esc(d.topics[0]) + ' · ' : ''}${relTime(stamp(d))}</span>`;
-    const docs = (wireFilter ? a.docs.filter((d) => d.markets.includes(wireFilter)) : a.docs)
+    const docs = a.docs
+      .filter((d) => !wireFilter || d.markets.includes(wireFilter))
+      .filter((d) => !wireTopicFilter || d.topics.includes(wireTopicFilter))
       .slice().sort((x, y) => stamp(y) - stamp(x));
     // lead story: the newest market-tagged headline near the top of the wire
     const lead = docs.slice(0, 6).find((d) => d.markets.length) || docs[0] || null;
@@ -1890,17 +1930,19 @@
         const href = /^https?:\/\//.test(lead.n.url || '') ? esc(lead.n.url) : null;
         const t = hlTitle(lead.title.slice(0, 200));
         leadBox.hidden = false;
-        leadBox.innerHTML = `${href ? `<a class="lead-title" href="${href}" target="_blank" rel="noopener">${t}</a>` : `<span class="lead-title">${t}</span>`}` +
+        leadBox.innerHTML = storyImg(lead.n, 'lead-img') +
+          `${href ? `<a class="lead-title" href="${href}" target="_blank" rel="noopener">${t}</a>` : `<span class="lead-title">${t}</span>`}` +
           `<span class="wire-meta">${toneTag(lead)}${mktChips(lead)}<span class="radar-dist">${esc(lead.n.site || lead.n.publisher || '')} · ${relTime(stamp(lead))}</span></span>`;
       } else { leadBox.hidden = true; leadBox.innerHTML = ''; }
     }
     const rows = docs.filter((d) => d !== lead);
-    list.innerHTML = rows.slice(0, wireFilter ? 16 : 12).map((d) => {
+    list.innerHTML = rows.slice(0, wireFilter || wireTopicFilter ? 16 : 12).map((d) => {
       const href = /^https?:\/\//.test(d.n.url || '') ? esc(d.n.url) : null;
       const t = hlTitle(d.title.slice(0, 140));
-      return `<li class="wire-item"><span class="wi-head">${href ? `<a href="${href}" target="_blank" rel="noopener">${t}</a>` : t}${rightMeta(d)}</span>` +
-        `<span class="wire-meta">${toneTag(d)}${mktChips(d)}<span class="radar-dist">${esc(d.n.site || d.n.publisher || '')}</span></span></li>`;
-    }).join('') || `<li class="radar-dist">No ${wireFilter ? ASSETS[wireFilter].tab + '-tagged ' : ''}headlines in the latest batch.</li>`;
+      const th = storyImg(d.n, 'wi-thumb');
+      return `<li class="wire-item${th ? ' wi-has-thumb' : ''}">${th}<span class="wi-body"><span class="wi-head">${href ? `<a href="${href}" target="_blank" rel="noopener">${t}</a>` : t}${rightMeta(d)}</span>` +
+        `<span class="wire-meta">${toneTag(d)}${mktChips(d)}<span class="radar-dist">${esc(d.n.site || d.n.publisher || '')}</span></span></span></li>`;
+    }).join('') || `<li class="radar-dist">No ${wireTopicFilter ? `“${esc(wireTopicFilter)}” ` : ''}${wireFilter ? ASSETS[wireFilter].tab + '-tagged ' : ''}headlines in the latest batch.</li>`;
     // most charged: the loudest lexicon tones in the whole batch
     const hot = $('wire-hot');
     if (hot) {
