@@ -981,6 +981,7 @@
     renderActionQueue();
     renderSessions();
     renderBriefing();
+    renderWireRt();
   }
   let lastSweepRows = null;
 
@@ -1553,6 +1554,24 @@
     }));
   }
 
+  // Realtime markets rail on the news floor — same sweep the tape uses.
+  function renderWireRt() {
+    const body = $('wire-rt');
+    if (!body || !lastSweepRows) return;
+    body.innerHTML = lastSweepRows.map((r) => `<tr class="wf-row ${r.a === wireFilter ? 'wf-active' : ''}" data-mkt="${r.a}" title="Filter the stream to ${ASSETS[r.a].tab} headlines">
+      <td>${ASSETS[r.a].tab}${r.demo ? '<span class="radar-dist">*</span>' : ''}</td>
+      <td class="num">${fmtPrice(r.price)}</td>
+      <td class="num ${r.d24 >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(r.d24)}</td>
+    </tr>`).join('');
+    if (!body.dataset.bound) {
+      body.dataset.bound = '1';
+      body.addEventListener('click', (e) => {
+        const tr = e.target.closest('tr[data-mkt]');
+        if (tr && wireData) { wireFilter = wireFilter === tr.dataset.mkt ? null : tr.dataset.mkt; renderWireViews(); }
+      });
+    }
+  }
+
   // Ticker tape: every market's price and 24h change from the radar sweep.
   // Content is rendered twice so the -50% translate loops seamlessly.
   function renderTicker(rows) {
@@ -1720,6 +1739,12 @@
     return { docs, dupes, topicCounts, mkts };
   }
 
+  const relTime = (t) => {
+    if (!t) return '';
+    const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+    return m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
+  };
+
   let wireData = null;   // last analyzeNews result, so filtering never refetches
   let wireFilter = null; // asset key, or null for the full stream
 
@@ -1766,17 +1791,41 @@
       note.hidden = !wireFilter;
       if (wireFilter) note.innerHTML = `Showing <strong>${ASSETS[wireFilter].tab}</strong>-tagged headlines only · <button class="wf-clear" id="wf-clear" type="button">✕ show all</button>`;
     }
-    const docs = wireFilter ? a.docs.filter((d) => d.markets.includes(wireFilter)) : a.docs;
-    list.innerHTML = docs.slice(0, wireFilter ? 14 : 10).map((d) => {
-      const when = String(d.n.publishedDate || d.n.date || '').slice(0, 16).replace('T', ' ');
+    const stamp = (d) => Date.parse(d.n.publishedDate || d.n.date || '') || 0;
+    const toneTag = (d) => (d.tone > 0 ? `<span class="wt wt-pos">+${d.tone}</span>` : d.tone < 0 ? `<span class="wt wt-neg">${d.tone}</span>` : '<span class="wt">0</span>');
+    const mktChips = (d) => d.markets.map((m) => `<button class="wchip wchip-mkt" data-mkt="${m}" type="button" title="Filter the stream to ${ASSETS[m] ? ASSETS[m].tab : m} headlines">${ASSETS[m] ? ASSETS[m].tab : m}</button>`).join('');
+    const rightMeta = (d) => `<span class="wi-right">${d.topics[0] ? esc(d.topics[0]) + ' · ' : ''}${relTime(stamp(d))}</span>`;
+    const docs = (wireFilter ? a.docs.filter((d) => d.markets.includes(wireFilter)) : a.docs)
+      .slice().sort((x, y) => stamp(y) - stamp(x));
+    // lead story: the newest market-tagged headline near the top of the wire
+    const lead = docs.slice(0, 6).find((d) => d.markets.length) || docs[0] || null;
+    const leadBox = $('wire-lead');
+    if (leadBox) {
+      if (lead) {
+        const href = /^https?:\/\//.test(lead.n.url || '') ? esc(lead.n.url) : null;
+        const t = hlTitle(lead.title.slice(0, 200));
+        leadBox.hidden = false;
+        leadBox.innerHTML = `${href ? `<a class="lead-title" href="${href}" target="_blank" rel="noopener">${t}</a>` : `<span class="lead-title">${t}</span>`}` +
+          `<span class="wire-meta">${toneTag(lead)}${mktChips(lead)}<span class="radar-dist">${esc(lead.n.site || lead.n.publisher || '')} · ${relTime(stamp(lead))}</span></span>`;
+      } else { leadBox.hidden = true; leadBox.innerHTML = ''; }
+    }
+    const rows = docs.filter((d) => d !== lead);
+    list.innerHTML = rows.slice(0, wireFilter ? 16 : 12).map((d) => {
       const href = /^https?:\/\//.test(d.n.url || '') ? esc(d.n.url) : null;
       const t = hlTitle(d.title.slice(0, 140));
-      const toneTag = d.tone > 0 ? '<span class="wt wt-pos">+' + d.tone + '</span>' : d.tone < 0 ? `<span class="wt wt-neg">${d.tone}</span>` : '<span class="wt">0</span>';
-      const chips = d.markets.map((m) => `<button class="wchip wchip-mkt" data-mkt="${m}" type="button" title="Filter the stream to ${ASSETS[m] ? ASSETS[m].tab : m} headlines">${ASSETS[m] ? ASSETS[m].tab : m}</button>`).join('') +
-        d.topics.slice(0, 2).map((tp) => `<span class="wchip wchip-topic">${tp}</span>`).join('');
-      return `<li class="wire-item">${href ? `<a href="${href}" target="_blank" rel="noopener">${t}</a>` : t}` +
-        `<span class="wire-meta">${toneTag}${chips}<span class="radar-dist">${esc(d.n.site || d.n.publisher || '')} · ${esc(when)}</span></span></li>`;
+      return `<li class="wire-item"><span class="wi-head">${href ? `<a href="${href}" target="_blank" rel="noopener">${t}</a>` : t}${rightMeta(d)}</span>` +
+        `<span class="wire-meta">${toneTag(d)}${mktChips(d)}<span class="radar-dist">${esc(d.n.site || d.n.publisher || '')}</span></span></li>`;
     }).join('') || `<li class="radar-dist">No ${wireFilter ? ASSETS[wireFilter].tab + '-tagged ' : ''}headlines in the latest batch.</li>`;
+    // most charged: the loudest lexicon tones in the whole batch
+    const hot = $('wire-hot');
+    if (hot) {
+      const loud = a.docs.filter((d) => d.tone !== 0).sort((x, y) => Math.abs(y.tone) - Math.abs(x.tone)).slice(0, 5);
+      hot.innerHTML = loud.map((d) => {
+        const href = /^https?:\/\//.test(d.n.url || '') ? esc(d.n.url) : null;
+        return `<li class="wire-item hot-item"><span class="wi-head">${toneTag(d)} ${href ? `<a href="${href}" target="_blank" rel="noopener">${esc(d.title.slice(0, 90))}</a>` : esc(d.title.slice(0, 90))}<span class="wi-right">${relTime(stamp(d))}</span></span></li>`;
+      }).join('') || '<li class="radar-dist">Nothing charged in this batch.</li>';
+    }
+    renderWireRt();
     const tl = $('topic-list');
     if (tl) {
       const max = a.topicCounts[0]?.[1] || 1;
