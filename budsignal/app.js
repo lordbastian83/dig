@@ -592,7 +592,27 @@
         const td = $('td-key').value.trim();
         if (fmp) localStorage.setItem(FMP_KEY_STORE, fmp); else localStorage.removeItem(FMP_KEY_STORE);
         if (td) localStorage.setItem(TD_KEY_STORE, td); else localStorage.removeItem(TD_KEY_STORE);
+        syncLinkBtn();
         refresh();
+      });
+      // One-time setup link: carries the key in the URL FRAGMENT, which
+      // never leaves the browser (fragments are not sent to servers). The
+      // receiving page stores the key and immediately wipes it from the
+      // address bar — the existing #fmpkey handoff, made discoverable.
+      const linkBtn = $('keys-link');
+      const syncLinkBtn = () => { if (linkBtn) linkBtn.hidden = !localStorage.getItem(FMP_KEY_STORE); };
+      syncLinkBtn();
+      if (linkBtn) linkBtn.addEventListener('click', async () => {
+        const fmp = localStorage.getItem(FMP_KEY_STORE);
+        if (!fmp) return;
+        const td = localStorage.getItem(TD_KEY_STORE);
+        const url = `${location.origin}${location.pathname}#fmpkey=${encodeURIComponent(fmp)}${td ? `&tdkey=${encodeURIComponent(td)}` : ''}`;
+        let copied = false;
+        try { await navigator.clipboard.writeText(url); copied = true; } catch (e) { /* clipboard blocked */ }
+        if (!copied) { window.prompt('Copy this setup link (it contains your key — share with no one):', url); return; }
+        const orig = linkBtn.textContent;
+        linkBtn.textContent = 'Copied — open it once on the other device';
+        setTimeout(() => { linkBtn.textContent = orig; }, 4000);
       });
     }
   }
