@@ -1,0 +1,44 @@
+# BudSignal desk feed — publishes the site's market candles (4h all
+# non-crypto markets, 1h scalp pairs) to the budsignal-data branch using
+# the repo's FMP secret, so visitors need no browser key for live charts.
+name: BudSignal desk feed
+
+on:
+  schedule:
+    - cron: '4 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: budsignal-candles
+  cancel-in-progress: false
+
+jobs:
+  candles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch candles
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          FORCE_H4: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
+        run: |
+          git fetch origin budsignal-data 2>/dev/null || true
+          git show origin/budsignal-data:candles.json > candles.json 2>/dev/null || true
+          CANDLES_FILE=candles.json node budsignal/candles.mjs
+
+      - name: Publish to budsignal-data branch
+        run: |
+          set -e
+          git config user.name 'budsignal-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch origin budsignal-data
+          BLOB=$(git hash-object -w candles.json)
+          { git ls-tree origin/budsignal-data | grep -v -e $'\tcandles.json$' || true;
+            printf '100644 blob %s\tcandles.json\n' "$BLOB"; } | git mktree > /tmp/tree
+          COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "desk feed $(date -u +%FT%TZ)")
+          git push origin "$COMMIT:refs/heads/budsignal-data"

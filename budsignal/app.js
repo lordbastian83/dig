@@ -60,6 +60,25 @@
 
   /* ---------------- data ---------------- */
 
+  // Desk feed: candles the repo's own workflow publishes hourly with the
+  // secret key, so every visitor is live with NO browser key. The browser
+  // key remains an optional booster (forming-candle freshness + lookup).
+  const CANDLES_URL = 'https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/candles.json';
+  let deskFeed = { t: 0, data: null };
+  const unpack = (rows) => rows.map((k) => ({ t: k[0], o: k[1], h: k[2], l: k[3], c: k[4], v: k[5] }));
+  async function loadDeskFeed() {
+    if (deskFeed.data && Date.now() - deskFeed.t < 5 * 60 * 1000) return deskFeed.data;
+    try {
+      const r = await fetch(`${CANDLES_URL}?v=${Math.floor(Date.now() / 300000)}`, { signal: AbortSignal.timeout(9000) });
+      if (r.ok) { deskFeed = { t: Date.now(), data: await r.json() }; return deskFeed.data; }
+    } catch (e) { /* not published yet / offline */ }
+    return deskFeed.data;
+  }
+  const feedAge = (d) => {
+    const m = Math.round((Date.now() - d.updated) / 60000);
+    return m < 90 ? `${m}m` : `${(m / 60).toFixed(1)}h`;
+  };
+
   async function fetchCandles(asset) {
     const cfg = ASSETS[asset];
 
@@ -72,10 +91,14 @@
       if (tdKey) {
         try { return await fetchTwelveData(cfg, tdKey); } catch (e) { /* fall through */ }
       }
+      const feed = await loadDeskFeed();
+      if (feed?.h4?.[asset]?.length) {
+        return { source: `desk feed (live, published ${feedAge(feed)} ago)`, candles: unpack(feed.h4[asset]) };
+      }
       return {
         source: fmpKey || tdKey
           ? 'demo data (data-provider request failed — check your API key and plan; figures are illustrative only)'
-          : 'demo data — add an FMP or Twelve Data API key above to load live prices',
+          : 'demo data — desk feed unreachable and no API key set; figures are illustrative only',
         candles: demoCandles(cfg.demoPrice, cfg.demoSeed),
       };
     }
@@ -1411,9 +1434,16 @@
     if (!$('scalp-desk')) return;
     const key = localStorage.getItem(FMP_KEY_STORE);
     const out = {};
+    const feed = key ? null : await loadDeskFeed();
     for (const a of E.SCALP.ASSETS) {
-      if (!key) { out[a] = { err: 'key' }; continue; }
-      try { out[a] = await fetch1h(ASSETS[a], key); } catch (e) { out[a] = { err: e.message }; }
+      if (key) {
+        try { out[a] = await fetch1h(ASSETS[a], key); continue; } catch (e) { out[a] = { err: e.message }; }
+      } else if (feed?.h1?.[a]?.length) {
+        out[a] = { candles: unpack(feed.h1[a]), source: 'desk feed' };
+        continue;
+      } else if (!out[a]) {
+        out[a] = { err: 'key' };
+      }
     }
     scalpState = out;
     renderScalpDesk();
@@ -1435,7 +1465,7 @@
     box.innerHTML = E.SCALP.ASSETS.map((a) => {
       const st = scalpState[a];
       const name = `<span class="scalp-sym">${ASSETS[a].tab}</span>`;
-      if (st.err === 'key') return `<p class="scalp-row">${name}<span class="radar-dist">add your FMP data key (top of page) for the live 1h feed</span></p>`;
+      if (st.err === 'key') return `<p class="scalp-row">${name}<span class="radar-dist">desk feed not reachable — add your FMP data key (top of page) for the live 1h feed</span></p>`;
       if (st.err) return `<p class="scalp-row">${name}<span class="radar-dist">1h feed unavailable (${esc(String(st.err).slice(0, 40))})</span></p>`;
       const closed = E.closedPrefix(st.candles, now, E.SCALP.CANDLE_MS);
       if (closed.length < 100) return `<p class="scalp-row">${name}<span class="radar-dist">warming up (${closed.length} candles)</span></p>`;
