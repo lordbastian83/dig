@@ -1,0 +1,36 @@
+name: Telegram outbox
+
+# Sends any message file committed under budsignal/outbox/ to the Telegram
+# bot's subscribers (same token and chat ids as the notifier). Lets a
+# session that cannot reach Telegram directly deliver ad-hoc analysis.
+
+on:
+  push:
+    branches: ['master', 'claude/**']
+    paths: ['budsignal/outbox/*.html']
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Restore Telegram chat ids from the notifier
+        uses: actions/cache/restore@v4
+        with:
+          path: .notify-state.json
+          key: budsignal-notify-state-none
+          restore-keys: budsignal-notify-state-
+      - name: Send files changed in this push
+        run: |
+          FILES=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD -- 'budsignal/outbox/*.html' || true)
+          if [ -z "$FILES" ]; then echo "no outbox files in this push"; exit 0; fi
+          node budsignal/telegram-send.mjs $FILES
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
