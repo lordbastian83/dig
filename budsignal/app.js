@@ -1571,26 +1571,47 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   // One shared headline fetch (10-minute cache) feeds both the crude desk
-  // and the market wire, so two panels cost one API call.
-  // Returns: array = headlines, null = no key configured, undefined = fetch failed.
+  // and the market wire. Two sources, merged: the RSS wire (published to
+  // the budsignal-data branch by a scheduled Action every 30 minutes —
+  // free, no key) and FMP general news when a key is set. The browser
+  // cannot read RSS feeds directly (no CORS headers), hence the mirror.
+  // Returns: array = headlines, null = nothing reachable at all.
   let newsCache = { t: 0, items: null };
+  let newsSrcCounts = { rss: 0, fmp: 0 };
+  const RSS_URL = 'https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/wire-rss.json';
   async function fetchGeneralNews() {
-    const key = localStorage.getItem(FMP_KEY_STORE);
-    if (!key) return null;
     if (newsCache.items && Date.now() - newsCache.t < 10 * 60 * 1000) return newsCache.items;
-    const urls = [
-      `https://financialmodelingprep.com/stable/news/general-latest?page=0&limit=60&apikey=${encodeURIComponent(key)}`,
-      `https://financialmodelingprep.com/api/v3/general_news?page=0&apikey=${encodeURIComponent(key)}`,
-    ];
-    for (const u of urls) {
-      try {
-        const r = await fetch(u, { signal: AbortSignal.timeout(9000) });
-        if (!r.ok) continue;
+    const merged = [];
+    const counts = { rss: 0, fmp: 0 };
+    try {
+      const r = await fetch(`${RSS_URL}?v=${Math.floor(Date.now() / 600000)}`, { signal: AbortSignal.timeout(9000) });
+      if (r.ok) {
         const j = await r.json();
-        if (Array.isArray(j) && j.length) { newsCache = { t: Date.now(), items: j }; return j; }
-      } catch (e) { /* try next */ }
+        for (const it of j.items || []) {
+          merged.push({ title: it.title, url: it.url, site: it.site, publishedDate: new Date(it.t).toISOString().slice(0, 19) });
+        }
+        counts.rss = (j.items || []).length;
+      }
+    } catch (e) { /* rss mirror unreachable — fmp may still work */ }
+    const key = localStorage.getItem(FMP_KEY_STORE);
+    if (key) {
+      const urls = [
+        `https://financialmodelingprep.com/stable/news/general-latest?page=0&limit=60&apikey=${encodeURIComponent(key)}`,
+        `https://financialmodelingprep.com/api/v3/general_news?page=0&apikey=${encodeURIComponent(key)}`,
+      ];
+      for (const u of urls) {
+        try {
+          const r = await fetch(u, { signal: AbortSignal.timeout(9000) });
+          if (!r.ok) continue;
+          const j = await r.json();
+          if (Array.isArray(j) && j.length) { counts.fmp = j.length; merged.push(...j); break; }
+        } catch (e) { /* try next */ }
+      }
     }
-    return undefined;
+    if (!merged.length) return null;
+    newsSrcCounts = counts;
+    newsCache = { t: Date.now(), items: merged };
+    return merged;
   }
 
   const newsLine = (n) => {
@@ -1708,10 +1729,9 @@
     renderSentiment();
     const pipe = $('wire-pipe');
     const items = await fetchGeneralNews();
-    if (items === null || !items) {
-      const msg = items === null ? 'Add your FMP data key above to load market headlines.' : 'Headlines unavailable on this data plan.';
-      list.innerHTML = `<li class="radar-dist">${msg}</li>`;
-      if (pipe) pipe.innerHTML = `<span class="dl-item"><span class="dl-tag">INGEST</span>0</span><span class="dl-item radar-dist">${items === null ? 'waiting for a data key' : 'feed unavailable'}</span>`;
+    if (!items) {
+      list.innerHTML = '<li class="radar-dist">Wire offline — the RSS mirror is unreachable and no FMP key is set.</li>';
+      if (pipe) pipe.innerHTML = '<span class="dl-item"><span class="dl-tag">INGEST</span>0</span><span class="dl-item radar-dist">wire offline</span>';
       return;
     }
     const a = analyzeNews(items);
@@ -1722,6 +1742,7 @@
     if (pipe) {
       pipe.innerHTML = [
         ['INGEST', `${items.length} headlines`],
+        ['SOURCES', `${newsSrcCounts.rss} rss · ${newsSrcCounts.fmp} fmp`],
         ['DEDUPE', `${a.docs.length} kept · ${a.dupes} dropped`],
         ['ENTITIES', `${tagged} market-tagged`],
         ['TOPICS', `${a.topicCounts.length} clusters`],
@@ -1847,8 +1868,7 @@
       ` (${hrs < 48 ? 'in ~' + hrs.toFixed(0) + 'h' : 'in ~' + Math.ceil(hrs / 24) + ' days'})` +
       ' — WTI usually spikes around the print. Manage entries and stops accordingly; the direction of the reaction is not predictable.';
     const items = await fetchGeneralNews();
-    if (items === null) { list.innerHTML = '<li class="radar-dist">Add your FMP data key above to load crude headlines.</li>'; return; }
-    if (!items) { list.innerHTML = '<li class="radar-dist">Headlines unavailable on this data plan.</li>'; return; }
+    if (!items) { list.innerHTML = '<li class="radar-dist">Wire offline — the RSS mirror is unreachable and no FMP key is set.</li>'; return; }
     const RE = /\b(oil|crude|opec|eia|barrel|wti|brent|petroleum)\b/i;
     const oil = items.filter((n) => RE.test(`${n.title || ''} ${n.text || ''}`)).slice(0, 8);
     list.innerHTML = oil.length

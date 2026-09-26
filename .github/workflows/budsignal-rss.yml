@@ -1,0 +1,41 @@
+# BudSignal RSS wire — fetches public finance RSS feeds every 30 minutes
+# and publishes wire-rss.json to the budsignal-data branch. The site reads
+# it from raw.githubusercontent (feeds themselves have no CORS headers, so
+# the browser cannot fetch them directly). No API key involved.
+name: BudSignal RSS wire
+
+on:
+  schedule:
+    - cron: '11,41 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: budsignal-rss
+  cancel-in-progress: false
+
+jobs:
+  rss:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch and normalize feeds
+        run: |
+          RSS_FILE=wire-rss.json node budsignal/rss.mjs
+
+      - name: Publish to budsignal-data branch
+        run: |
+          set -e
+          git config user.name 'budsignal-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch origin budsignal-data
+          RSS_BLOB=$(git hash-object -w wire-rss.json)
+          # preserve every other file on the branch
+          { git ls-tree origin/budsignal-data | grep -v -e $'\twire-rss.json$' || true;
+            printf '100644 blob %s\twire-rss.json\n' "$RSS_BLOB"; } | git mktree > /tmp/tree
+          COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "rss wire $(date -u +%FT%TZ)")
+          git push origin "$COMMIT:refs/heads/budsignal-data"
