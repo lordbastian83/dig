@@ -23,9 +23,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # previous publish seeds the og:image cache, so article pages are
+      # fetched once per story, not once per run
+      - name: Restore previous wire
+        run: |
+          git fetch origin budsignal-data
+          git show origin/budsignal-data:wire-rss.json > wire-rss-prev.json || true
+
       - name: Fetch and normalize feeds
         run: |
-          RSS_FILE=wire-rss.json node budsignal/rss.mjs
+          RSS_FILE=wire-rss.json RSS_PREV=wire-rss-prev.json node budsignal/rss.mjs
 
       - name: Publish to budsignal-data branch
         run: |
