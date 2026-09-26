@@ -1935,7 +1935,25 @@
           `<span class="wire-meta">${toneTag(lead)}${mktChips(lead)}<span class="radar-dist">${esc(lead.n.site || lead.n.publisher || '')} · ${relTime(stamp(lead))}</span></span>`;
       } else { leadBox.hidden = true; leadBox.innerHTML = ''; }
     }
-    const rows = docs.filter((d) => d !== lead);
+    // secondary hero cards beside the lead: the next two stories, photo
+    // stories first so the cluster reads like a front page
+    const subBox = $('wire-sub');
+    let subs = [];
+    if (subBox) {
+      const pool = docs.filter((d) => d !== lead);
+      subs = pool.filter((d) => d.n.img || d.n.image).slice(0, 2);
+      if (subs.length < 2) subs = subs.concat(pool.filter((d) => !subs.includes(d)).slice(0, 2 - subs.length));
+      subBox.hidden = subs.length < 2;
+      subBox.innerHTML = subs.length < 2 ? '' : subs.map((d) => {
+        const href = /^https?:\/\//.test(d.n.url || '') ? esc(d.n.url) : null;
+        const t = hlTitle(d.title.slice(0, 110));
+        return `<div class="sub-item">${storyImg(d.n, 'sub-img')}` +
+          `<span class="sub-body">${href ? `<a class="sub-title" href="${href}" target="_blank" rel="noopener">${t}</a>` : `<span class="sub-title">${t}</span>`}` +
+          `<span class="wire-meta">${toneTag(d)}<span class="radar-dist">${esc(d.n.site || d.n.publisher || '')} · ${relTime(stamp(d))}</span></span></span></div>`;
+      }).join('');
+      if (subBox.hidden) subs = [];
+    }
+    const rows = docs.filter((d) => d !== lead && !subs.includes(d));
     list.innerHTML = rows.slice(0, wireFilter || wireTopicFilter ? 16 : 12).map((d) => {
       const href = /^https?:\/\//.test(d.n.url || '') ? esc(d.n.url) : null;
       const t = hlTitle(d.title.slice(0, 140));
