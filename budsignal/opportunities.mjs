@@ -530,7 +530,7 @@ const watchLongs = rank('long', false), watchShorts = rank('short', false);
 /* ---------------- news + TradingView ideas on the finalists ---------------- */
 
 const POS = /\b(upgrades?|upgraded|beats?|raises?|raised|record|buyback|approv\w*|wins?|contract|partnership|surg\w*|jumps?|soars?|outperform\w*|rall\w*)\b/i;
-const NEG = /\b(downgrades?|downgraded|miss(?:es|ed)?|cuts?|lawsuit|probe|investigation|recall\w*|bankrupt\w*|offering|dilut\w*|plung\w*|slump\w*|warns?|warning|delay\w*|fraud|subpoena|layoffs?|halt\w*|sinks?|tumbl\w*)\b/i;
+const NEG = /\b(downgrades?|downgraded|miss(?:es|ed)?|cuts?|insider sell\w*|sells? \$?\d+|lawsuit|probe|investigation|recall\w*|bankrupt\w*|offering|dilut\w*|plung\w*|slump\w*|warns?|warning|delay\w*|fraud|subpoena|layoffs?|halt\w*|sinks?|tumbl\w*)\b/i;
 const strip = (s) => String(s || '').replace(/<!\[CDATA\[|\]\]>/g, '').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').trim();
 
 async function newsFor(sym) {
@@ -550,9 +550,72 @@ async function newsFor(sym) {
       }));
     } catch (e) { /* no news source reachable */ }
   }
-  const recent = items.filter((n) => n.title && Date.now() - Date.parse(n.date) < 4 * 86400000).slice(0, 8);
+  // Google News: the wider web (Reuters, Bloomberg, CNBC, blogs) rather than
+  // only the feeds FMP licenses.
+  try {
+    const r = await fetch(`https://news.google.com/rss/search?q=${encodeURIComponent(`"${sym}" stock`)}&hl=en-US&gl=US&ceid=US:en`, { signal: AbortSignal.timeout(15000), headers: { 'user-agent': 'Mozilla/5.0' } });
+    const xml = await r.text();
+    for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+      const title = strip(m[1].match(/<title>([\s\S]*?)<\/title>/)?.[1]);
+      const source = strip(m[1].match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1]) || 'Google News';
+      items.push({ title: title.replace(/\s+-\s+[^-]+$/, ''), date: strip(m[1].match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]), source });
+    }
+  } catch (e) { /* best effort */ }
+  const seen = new Set();
+  const recent = items
+    .filter((n) => n.title && Date.now() - Date.parse(n.date) < 4 * 86400000)
+    .filter((n) => { const k = n.title.toLowerCase().slice(0, 60); if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
+    .slice(0, 12);
   const sentiment = recent.reduce((s, n) => s + (POS.test(n.title) ? 1 : 0) - (NEG.test(n.title) ? 1 : 0), 0);
   return { items: recent, sentiment };
+}
+
+/* ---------------- social sentiment ---------------- */
+
+// StockTwits: users tag posts Bullish/Bearish, so this is explicit retail
+// sentiment. Reddit: mention counts on r/wallstreetbets + r/stocks in the
+// last 24h (attention, not direction). FMP social sentiment where the plan
+// allows it. All best effort — a blocked endpoint reports as unavailable.
+let redditTopCache = null;
+async function redditTop() {
+  if (redditTopCache) return redditTopCache;
+  const r = await fetch('https://apewisdom.io/api/v1.0/filter/all-stocks/page/1', { signal: AbortSignal.timeout(15000), headers: { 'user-agent': 'Mozilla/5.0' } });
+  if (!r.ok) throw new Error(`ApeWisdom HTTP ${r.status}`);
+  const j = await r.json();
+  redditTopCache = (j.results || []).map((x) => ({ ticker: String(x.ticker).toUpperCase(), rank: +x.rank, mentions: +x.mentions, mentions_24h_ago: +x.mentions_24h_ago, upvotes: +x.upvotes }));
+  return redditTopCache;
+}
+
+async function socialFor(sym) {
+  const out = { bullish: null, bearish: null, posts: 0, redditMentions: null, fmp: null, errors: [] };
+  try {
+    const r = await fetch(`https://api.stocktwits.com/api/2/streams/symbol/${encodeURIComponent(sym)}.json`, { signal: AbortSignal.timeout(15000), headers: { 'user-agent': 'Mozilla/5.0' } });
+    if (!r.ok) throw new Error(`StockTwits HTTP ${r.status}`);
+    const j = await r.json();
+    const msgs = (j.messages || []).filter((m) => Date.now() - Date.parse(m.created_at) < 3 * 86400000);
+    out.posts = msgs.length;
+    out.bullish = msgs.filter((m) => m.entities?.sentiment?.basic === 'Bullish').length;
+    out.bearish = msgs.filter((m) => m.entities?.sentiment?.basic === 'Bearish').length;
+    out.sample = msgs.filter((m) => m.entities?.sentiment?.basic).slice(0, 3).map((m) => `${m.entities.sentiment.basic}: ${String(m.body).replace(/\s+/g, ' ').slice(0, 90)}`);
+  } catch (e) { out.errors.push(e.message); }
+  // Reddit itself returns 403 to cloud runners; ApeWisdom aggregates
+  // r/wallstreetbets + r/stocks mentions per ticker (top 100 by 24h volume).
+  try {
+    const top = await redditTop();
+    const hit = top.find((r) => r.ticker === sym);
+    out.redditMentions = hit ? hit.mentions : 0;
+    out.redditRank = hit ? hit.rank : null;
+    out.redditMentions24hAgo = hit ? hit.mentions_24h_ago : null;
+  } catch (e) { out.errors.push(e.message); }
+  try {
+    const rows = await fmp(`historical-social-sentiment?symbol=${encodeURIComponent(sym)}&page=0`, `historical/social-sentiment?symbol=${encodeURIComponent(sym)}&page=0`);
+    const v = rows[0];
+    if (v) out.fmp = { date: v.date, stocktwitsSentiment: v.stocktwitsSentiment ?? null, twitterSentiment: v.twitterSentiment ?? null, posts: (v.stocktwitsPosts ?? 0) + (v.twitterPosts ?? 0) };
+  } catch (e) { /* not on this plan */ }
+  const voted = (out.bullish ?? 0) + (out.bearish ?? 0);
+  out.bullPct = voted >= 5 ? (out.bullish / voted) * 100 : null;
+  return out;
 }
 
 // Community ideas on TradingView: counts recent Long vs Short labels on the
@@ -574,10 +637,26 @@ async function tvIdeas(sym) {
 
 const finalists = [...longs.slice(0, 5), ...shorts.slice(0, 3)];
 for (const idea of finalists) {
-  const [news, tv] = await Promise.all([newsFor(idea.symbol), tvIdeas(idea.symbol)]);
+  const [news, tv, social] = await Promise.all([newsFor(idea.symbol), tvIdeas(idea.symbol), socialFor(idea.symbol)]);
   idea.news = news;
   idea.tv = tv;
+  idea.social = social;
   const dir = idea.side === 'long' ? 1 : -1;
+  if (social.bullPct != null) {
+    // Retail sentiment is mildly confirming, but a crowd that is almost all
+    // one way is a contrarian warning, not fuel.
+    const bias = (social.bullPct - 50) / 50;
+    if (social.bullPct >= 90 && idea.side === 'long') { idea.score -= 4; idea.why.push(`StockTwits ${social.bullPct.toFixed(0)}% bullish (crowded, contrarian caution)`); }
+    else if (social.bullPct <= 10 && idea.side === 'short') { idea.score -= 4; idea.why.push(`StockTwits ${(100 - social.bullPct).toFixed(0)}% bearish (crowded, contrarian caution)`); }
+    else { idea.score += clamp(dir * bias * 5, -5, 5); idea.why.push(`StockTwits ${social.bullPct.toFixed(0)}% bullish of ${social.bullish + social.bearish} votes`); }
+  }
+  if (social.redditRank != null) {
+    const spike = social.redditMentions24hAgo > 0 ? social.redditMentions / social.redditMentions24hAgo : null;
+    idea.why.push(`Reddit #${social.redditRank} most-discussed (${social.redditMentions} mentions${spike != null ? `, ${spike.toFixed(1)}x yesterday` : ''})`);
+    // A sudden retail pile-in is late money; treat a 3x spike as caution for longs.
+    if (idea.side === 'long' && spike != null && spike >= 3 && social.redditRank <= 10) { idea.score -= 4; idea.why.push('retail mention spike (late-money caution)'); }
+  }
+  if (social.fmp?.twitterSentiment != null) idea.why.push(`social sentiment (FMP) ${(social.fmp.twitterSentiment * 100).toFixed(0)}%`);
   if (news.sentiment) {
     idea.score += clamp(dir * news.sentiment * 3, -12, 9);
     idea.why.push(`news ${news.sentiment > 0 ? 'positive' : 'negative'} (${news.sentiment > 0 ? '+' : ''}${news.sentiment})`);
@@ -587,7 +666,7 @@ for (const idea of finalists) {
     idea.score += clamp(dir * bias * 5, -5, 5);
     idea.why.push(`TradingView ideas ${tv.long} long / ${tv.short} short`);
   }
-  console.log(`finalist ${idea.symbol}: news ${news.items.length} (sent ${news.sentiment}), TV ideas ${tv.error || `${tv.long}L/${tv.short}S`}`);
+  console.log(`finalist ${idea.symbol}: news ${news.items.length} (sent ${news.sentiment}), TV ideas ${tv.error || `${tv.long}L/${tv.short}S`}, StockTwits ${social.bullPct != null ? `${social.bullPct.toFixed(0)}% bull (${social.posts} posts)` : 'n/a'}, Reddit ${social.redditRank != null ? `#${social.redditRank} (${social.redditMentions})` : social.redditMentions === 0 ? 'not top-100' : 'n/a'}${social.errors.length ? ` [${social.errors.join('; ')}]` : ''}`);
 }
 longs.sort((a, b) => b.score - a.score);
 shorts.sort((a, b) => b.score - a.score);
@@ -651,6 +730,16 @@ const saxoPlan = (x) => {
     ? ` (re-anchor to your fill: stop = fill − ${px(x.risk)}, target = fill + ${px(2 * x.risk)})`
     : ` (re-anchor to your fill: stop = fill + ${px(x.risk)}, target = fill − ${px(2 * x.risk)})`) : ''}.`;
 };
+const socialTxt = (so) => {
+  if (!so) return '—';
+  const parts = [];
+  if (so.bullPct != null) parts.push(`StockTwits ${so.bullPct.toFixed(0)}% bullish (${so.bullish}/${so.bullish + so.bearish} votes, ${so.posts} posts in 3d)`);
+  else if (so.posts) parts.push(`StockTwits ${so.posts} posts, too few votes`);
+  if (so.redditRank != null) parts.push(`Reddit #${so.redditRank} most-discussed, ${so.redditMentions} mentions`);
+  else if (so.redditMentions === 0) parts.push('Reddit: not in the top 100 discussed');
+  if (so.fmp?.twitterSentiment != null) parts.push(`FMP social ${(so.fmp.twitterSentiment * 100).toFixed(0)}% positive`);
+  return parts.join(' · ') || `unavailable (${so.errors.join('; ') || 'no data'})`;
+};
 const bestBlock = best ? [
   `## ⭐ Best trade to execute: ${best.side === 'long' ? 'LONG' : 'SHORT'} ${best.symbol}`,
   `- **Setup:** ${best.label}, score ${best.score.toFixed(0)}; setup history ${statTxt(best.stat)}`,
@@ -658,7 +747,9 @@ const bestBlock = best ? [
   `- **Money:** ≈ £${best.costGBP.toFixed(0)} position, £${best.riskGBP.toFixed(1)} at risk, £${(2 * best.riskGBP).toFixed(1)} if the target hits`,
   `- **Why:** ${best.why.slice(1).join('; ') || 'setup + trend'}`,
   `- **ORTEX:** ${flowTxt(best.flow)} · **TradingView ideas:** ${best.tv ? (best.tv.error ? `unavailable (${best.tv.error})` : `${best.tv.long} long / ${best.tv.short} short`) : '—'}`,
-  ...(best.news?.items.length ? ['- **Latest headlines:**', ...best.news.items.slice(0, 4).map((n) => `  - ${n.title} (${n.source})`)] : ['- **Latest headlines:** none in the last 4 days']),
+  `- **Social:** ${socialTxt(best.social)}`,
+  ...(best.social?.sample?.length ? best.social.sample.map((t) => `  - ${t}`) : []),
+  ...(best.news?.items.length ? ['- **Latest headlines:**', ...best.news.items.slice(0, 6).map((n) => `  - ${n.title} (${n.source})`)] : ['- **Latest headlines:** none in the last 4 days']),
   ...(runnersUp.length ? [`- **Runners-up:** ${runnersUp.map((x) => `${x.side === 'long' ? '▲' : '▼'} ${x.symbol} (${x.label}, score ${x.score.toFixed(0)})`).join(', ')}`] : []),
 ] : ['## ⭐ Best trade to execute', '_No trade today — nothing with a measured edge fits the account without earnings or news risk. Staying flat is a position._'];
 
@@ -697,7 +788,7 @@ const md = [
   '|---|---|---|---|---|',
   ...setupRows,
   '',
-  '_Score = setup base + trend strength (ADX) + relative strength vs SPY + volume + regime fit + measured setup expectancy + ORTEX short flow − earnings risk. Entry "stop order" means only enter if price trades through the entry level within 3 sessions. Analysis only — not financial advice._',
+  '_Score = setup base + trend strength (ADX) + relative strength vs SPY + volume + regime fit + measured setup expectancy + ORTEX short flow and scores + news sentiment + TradingView ideas + StockTwits/Reddit sentiment − earnings risk. Entry "stop order" means only enter if price trades through the entry level within 3 sessions. Analysis only — not financial advice._',
   failures.length ? `\n<details><summary>${failures.length} symbols skipped</summary>\n\n${failures.join('\n')}\n</details>` : '',
 ].join('\n');
 
@@ -745,7 +836,8 @@ if (process.env.SEND_TELEGRAM === '1' && process.env.TELEGRAM_BOT_TOKEN) {
     `Why: ${esc(best.why.slice(1).join('; ') || 'setup + trend')}`,
     `Setup history: ${esc(statTxt(best.stat))}`,
     ...(best.flow ? [`ORTEX: ${esc(flowTxt(best.flow))}`] : []),
-    ...(best.news?.items.length ? ['', '<b>Headlines</b>', ...best.news.items.slice(0, 3).map((n) => `• ${esc(n.title)}`)] : []),
+    `Social: ${esc(socialTxt(best.social))}`,
+    ...(best.news?.items.length ? ['', '<b>Headlines</b>', ...best.news.items.slice(0, 4).map((n) => `• ${esc(n.title)} (${esc(n.source)})`)] : []),
     ...(runnersUp.length ? ['', `Runners-up: ${esc(runnersUp.map((x) => `${x.symbol} (${x.side}, ${x.score.toFixed(0)})`).join(', '))}`] : []),
     '', '<i>Check the price before placing: skip it if it has already run past the target or below the stop. Analysis only, not advice.</i>',
   ].join('\n') : [
