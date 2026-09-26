@@ -158,9 +158,29 @@ export function mapPoly(rows) {
 }
 
 async function fetchPoly() {
-  const j = await getJson('https://gamma-api.polymarket.com/markets?closed=false&order=volumeNum&ascending=false&limit=80');
-  if (!Array.isArray(j)) throw new Error('unexpected response');
-  return mapPoly(j);
+  // all-time volume is dominated by long-dated election markets that the
+  // 150-day filter rightly rejects; 24h volume surfaces the live weekly
+  // macro markets (rate decisions, CPI brackets, BTC levels). Query both
+  // orderings, deep, and dedupe on the question.
+  const rows = [];
+  for (const order of ['volume24hr', 'volumeNum']) {
+    for (const offset of [0, 100]) {
+      try {
+        const j = await getJson(`https://gamma-api.polymarket.com/markets?closed=false&order=${order}&ascending=false&limit=100&offset=${offset}`);
+        if (Array.isArray(j)) rows.push(...j);
+      } catch (e) { /* one page failing is fine */ }
+      await sleep(300);
+    }
+  }
+  if (!rows.length) throw new Error('gamma api unavailable');
+  const seen = new Set();
+  const uniq = rows.filter((m) => {
+    const q = String(m.question || m.title || '');
+    if (!q || seen.has(q)) return false;
+    seen.add(q);
+    return true;
+  });
+  return mapPoly(uniq);
 }
 
 /* ---------- main ---------- */
