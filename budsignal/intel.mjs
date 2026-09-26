@@ -66,21 +66,21 @@ async function fetchMacro() {
   throw new Error('calendar unavailable');
 }
 
-/* ---------- Congress trades via ORTEX, aggregated over a macro watchlist ---------- */
+/* ---------- Congress trades via ORTEX (global us_government_trades) ---------- */
 
-const GOV_TICKERS = ['SPY', 'QQQ', 'NVDA', 'MSFT', 'AAPL', 'AMZN', 'META', 'TSLA', 'XOM', 'JPM'];
-
-export function mapGov(rows, ticker) {
+export function mapGov(rows) {
   const out = [];
   for (const g of rows || []) {
-    const t = Date.parse(String(pick(g, 'transactionDate', 'transaction_date', 'date') || ''));
+    const t = Date.parse(String(pick(g, 'transactionDate', 'reportDate', 'date') || ''));
     if (!Number.isFinite(t)) continue;
+    const who = String(pick(g, 'filerName', 'politician', 'name') || 'unknown').slice(0, 40);
+    const party = String(pick(g, 'party') || '').slice(0, 1); // R / D / I
     out.push({
       t,
-      ticker,
-      who: String(pick(g, 'politician', 'representative', 'senator', 'name', 'person') || 'unknown').slice(0, 40),
-      side: String(pick(g, 'transaction', 'type', 'transactionType', 'side') || '?').slice(0, 16),
-      amount: String(pick(g, 'amount', 'range', 'size', 'value') || '').slice(0, 24),
+      ticker: String(pick(g, 'ticker', 'symbol') || '?').slice(0, 8),
+      who: party ? `${who} (${party})` : who,
+      side: String(pick(g, 'transactionType', 'transaction', 'side') || '?').slice(0, 16),
+      amount: String(pick(g, 'usdValue', 'amount', 'range') || '').slice(0, 24),
     });
   }
   return out;
@@ -88,21 +88,11 @@ export function mapGov(rows, ticker) {
 
 async function fetchCongress() {
   if (!ORTEX_KEY) throw new Error('no ORTEX key');
-  const all = [];
-  let ok = 0;
-  for (const tk of GOV_TICKERS) {
-    try {
-      const j = await getJson(
-        `https://api.ortex.com/api/v1/stock/us/${tk}/government_trades?from_date=${day(Date.now() - 60 * 86400000)}`,
-        { 'Ortex-Api-Key': ORTEX_KEY, accept: 'application/json' });
-      const rows = j.rows || j.data || (Array.isArray(j) ? j : []);
-      all.push(...mapGov(rows, tk));
-      ok++;
-    } catch (e) { console.log(`congress ${tk}: ${e.message}`); }
-    await sleep(1200);
-  }
-  if (!ok) throw new Error('all tickers failed');
-  return all.sort((a, b) => b.t - a.t).slice(0, 15);
+  const j = await getJson(
+    `https://api.ortex.com/api/v1/us_government_trades?from_date=${day(Date.now() - 45 * 86400000)}&page_size=50`,
+    { 'Ortex-Api-Key': ORTEX_KEY, accept: 'application/json' });
+  const rows = j.rows || j.data || (Array.isArray(j) ? j : []);
+  return mapGov(rows).sort((a, b) => b.t - a.t).slice(0, 15);
 }
 
 /* ---------- insider trades via FMP ---------- */
@@ -154,7 +144,9 @@ export function mapPoly(rows) {
       const prices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
       if (Array.isArray(prices) && prices.length) yes = Math.round(parseFloat(prices[0]) * 100);
     } catch (e) { /* leave null */ }
-    if (yes == null || !(yes >= 0 && yes <= 100)) continue;
+    if (yes == null || yes < 2 || yes > 98) continue; // degenerate odds are noise
+    const endT = Date.parse(String(pick(m, 'endDate', 'end_date') || ''));
+    if (Number.isFinite(endT) && endT - Date.now() > 150 * 86400000) continue; // 2028 lottery tickets out
     out.push({
       q: q.slice(0, 110),
       yes,
@@ -175,15 +167,15 @@ async function fetchPoly() {
 
 const FIXTURES = {
   macro: [{ date: new Date(Date.now() + 86400000).toISOString(), event: 'CPI YoY', impact: 'High', currency: 'USD' }],
-  gov: [{ transactionDate: '2026-09-20', representative: 'A. Person', transaction: 'Purchase', amount: '$15,001-$50,000' }],
+  gov: [{ transactionDate: '2026-09-20', ticker: 'AAPL', filerName: 'A. Person', party: 'Republican', transactionType: 'Buy', usdValue: '$15,001-$50,000' }],
   insider: [{ transactionDate: '2026-09-24', symbol: 'NVDA', reportingName: 'SOME EXEC', transactionType: 'S-Sale', securitiesTransacted: 1000, price: 190 }],
-  poly: [{ question: 'Will the Fed cut rates in October?', outcomePrices: '["0.62","0.38"]', volumeNum: 1234567 }],
+  poly: [{ question: 'Will the Fed cut rates in October?', outcomePrices: '["0.62","0.38"]', volumeNum: 1234567, endDate: new Date(Date.now() + 30 * 86400000).toISOString() }, { question: 'Will X win the 2028 election?', outcomePrices: '["0.01","0.99"]', volumeNum: 99999999, endDate: '2028-11-07T00:00:00Z' }],
 };
 
 async function main() {
   if (SELF_TEST) {
-    const m = mapMacro(FIXTURES.macro), g = mapGov(FIXTURES.gov, 'SPY'), i = mapInsider(FIXTURES.insider), p = mapPoly(FIXTURES.poly);
-    const ok = m.length === 1 && g.length === 1 && g[0].who === 'A. Person' &&
+    const m = mapMacro(FIXTURES.macro), g = mapGov(FIXTURES.gov), i = mapInsider(FIXTURES.insider), p = mapPoly(FIXTURES.poly);
+    const ok = m.length === 1 && g.length === 1 && g[0].who === 'A. Person (R)' && g[0].amount === '$15,001-$50,000' &&
       i.length === 1 && i[0].side === 'SELL' && i[0].usd === 190000 &&
       p.length === 1 && p[0].yes === 62;
     console.log(JSON.stringify({ m, g, i, p }));
