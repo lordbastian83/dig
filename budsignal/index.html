@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=79">
+<link rel="stylesheet" href="styles.css?v=80">
 </head>
 <body>
 
@@ -177,17 +177,33 @@
 
     <div class="deskline wire-pipe" id="wire-pipe" aria-label="Wire pipeline status"></div>
 
-    <div class="wire-grid">
-      <div class="equity-card stream-card">
-        <h3>Tagged stream</h3>
-        <p class="section-sub corr-sub" id="sent-line">Loading sentiment…</p>
-        <p class="section-sub corr-sub wire-filter-note" id="wire-filter-note" hidden></p>
-        <ul class="news-list wire-stream" id="wire-list"><li class="radar-dist">Loading…</li></ul>
-      </div>
-      <div class="wire-side">
+    <div class="wire-floor">
+      <aside class="wire-col wire-col-mkts">
+        <div class="equity-card">
+          <h3>Realtime markets</h3>
+          <table class="record-table wire-rt"><tbody id="wire-rt"><tr><td class="table-empty">Sweeping…</td></tr></tbody></table>
+        </div>
         <div class="equity-card">
           <h3>Topic clusters</h3>
           <ul class="topic-list" id="topic-list"><li class="radar-dist">Waiting for headlines…</li></ul>
+        </div>
+      </aside>
+
+      <div class="wire-col wire-col-main">
+        <div class="equity-card stream-card">
+          <p class="section-sub corr-sub" id="sent-line">Loading sentiment…</p>
+          <p class="section-sub corr-sub wire-filter-note" id="wire-filter-note" hidden></p>
+          <div class="wire-lead" id="wire-lead"></div>
+          <h3 class="latest-h">Latest news</h3>
+          <ul class="news-list wire-stream" id="wire-list"><li class="radar-dist">Loading…</li></ul>
+        </div>
+      </div>
+
+      <aside class="wire-col wire-col-side">
+        <div class="equity-card">
+          <h3>Most charged</h3>
+          <ul class="news-list wire-hot" id="wire-hot"><li class="radar-dist">Waiting for headlines…</li></ul>
+          <p class="watchlist-note">Strongest lexicon tone in the current batch — loud, not important.</p>
         </div>
         <div class="equity-card">
           <h3>Wire tone by market</h3>
@@ -199,7 +215,7 @@
           </div>
           <p class="watchlist-note">Net keyword-lexicon tone across tagged headlines — a transparent word count, not a model, and never a trade input.</p>
         </div>
-      </div>
+      </aside>
     </div>
   </section>
 
@@ -499,7 +515,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=79"></script>
-<script src="app.js?v=79"></script>
+<script src="engine.js?v=80"></script>
+<script src="app.js?v=80"></script>
 </body>
 </html>
