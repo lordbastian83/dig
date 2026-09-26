@@ -11,7 +11,13 @@
    every feed is fetched and parsed under its own try/catch. */
 
 const RSS_FILE = process.env.RSS_FILE || 'wire-rss.json';
+const RSS_PREV = process.env.RSS_PREV || '';
 const SELF_TEST = process.env.SELF_TEST === '1';
+
+// Article pages fetched per run to resolve og:image for feeds whose RSS
+// carries no picture (CNBC, OilPrice, ForexLive). The previous publish
+// seeds a url→img cache, so each story's page is fetched at most once.
+const OG_BUDGET = 10;
 
 // Curated, stable finance feeds mapped to this desk's markets. Feeds come
 // and go — a feed that errors is logged and skipped, and the workflow's
@@ -72,6 +78,28 @@ export function parseFeed(xml, site) {
   return items;
 }
 
+// og:image / twitter:image out of an article's <head>, either attribute order
+export function ogImage(html) {
+  const h = String(html).slice(0, 120000);
+  const m = h.match(/<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image(?::src)?)["'][^>]*content=["']([^"']+)["']/i)
+    || h.match(/<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["'](?:og:image|twitter:image(?::src)?)["']/i);
+  if (!m) return null;
+  const img = m[1].replace(/&amp;/g, '&').trim();
+  return /^https:\/\//.test(img) ? img.slice(0, 400) : null;
+}
+
+async function fetchOgImage(url) {
+  const r = await fetch(url, {
+    signal: AbortSignal.timeout(8000),
+    headers: {
+      'user-agent': 'Mozilla/5.0 (compatible; BudSignalRSS/1.0; +https://lordbastian83.github.io/dig/)',
+      accept: 'text/html,*/*',
+    },
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return ogImage(await r.text());
+}
+
 async function fetchFeed(site, url) {
   const r = await fetch(url, {
     signal: AbortSignal.timeout(15000),
@@ -117,7 +145,6 @@ async function main() {
     items.push(it);
     if (items.length >= 100) break;
   }
-  const out = { updated: Date.now(), sources: FEEDS.length, items };
   console.log(`feeds: ${counts.join(' · ')}`);
   console.log(`kept ${items.length} of ${all.length} (deduped)`);
   if (SELF_TEST) {
@@ -125,14 +152,52 @@ async function main() {
       console.error('SELF_TEST FAILED', JSON.stringify(items, null, 2));
       process.exit(1);
     }
+    const og = ogImage('<html><head><meta property="og:image" content="https://example.com/og.jpg?w=1200&amp;h=630"/></head>');
+    const ogRev = ogImage('<meta content="https://example.com/tw.png" name="twitter:image">');
+    if (og !== 'https://example.com/og.jpg?w=1200&h=630' || ogRev !== 'https://example.com/tw.png' || ogImage('<p>no meta</p>') !== null) {
+      console.error('SELF_TEST FAILED (ogImage)', { og, ogRev });
+      process.exit(1);
+    }
     console.log('self-test OK');
     return;
   }
+  // fill missing images: previous publish first (free), then up to
+  // OG_BUDGET article-page fetches for stories the cache has never seen.
+  // Every step is best-effort — an image is decoration, never worth a red run.
+  const { readFileSync, writeFileSync } = await import('node:fs');
+  // cache entries: img url, or noimg:1 = page was fetched and had none
+  // (never refetch); an item missed only by the budget carries neither
+  // marker and is retried next run.
+  const prevImg = new Map();
+  if (RSS_PREV) {
+    try {
+      for (const it of JSON.parse(readFileSync(RSS_PREV, 'utf8')).items || []) {
+        if (it.url && (it.img || it.noimg)) prevImg.set(it.url, it.img || null);
+      }
+    } catch (e) { /* first run or unreadable — cache stays empty */ }
+  }
+  let ogFetched = 0, ogHits = 0, cacheHits = 0;
+  for (const it of items) {
+    if (it.img || !it.url) continue;
+    if (prevImg.has(it.url)) {
+      const cached = prevImg.get(it.url);
+      if (cached) { it.img = cached; } else { it.noimg = 1; }
+      cacheHits++;
+      continue;
+    }
+    if (ogFetched >= OG_BUDGET) continue;
+    ogFetched++;
+    try {
+      it.img = await fetchOgImage(it.url);
+      if (it.img) ogHits++; else it.noimg = 1;
+    } catch (e) { it.img = null; /* transient failure: no marker, retry next run */ }
+  }
+  console.log(`images: ${items.filter((i) => i.img).length}/${items.length} (${cacheHits} from cache, ${ogHits}/${ogFetched} og fetches)`);
+  const out = { updated: Date.now(), sources: FEEDS.length, items };
   if (!items.length) {
     console.error('every feed failed — keeping the previous wire file');
     process.exit(1); // workflow shows red; the old JSON stays on the branch
   }
-  const { writeFileSync } = await import('node:fs');
   writeFileSync(RSS_FILE, JSON.stringify(out));
   console.log(`wrote ${RSS_FILE}`);
 }
