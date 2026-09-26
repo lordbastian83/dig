@@ -530,7 +530,7 @@ const watchLongs = rank('long', false), watchShorts = rank('short', false);
 /* ---------------- news + TradingView ideas on the finalists ---------------- */
 
 const POS = /\b(upgrades?|upgraded|beats?|raises?|raised|record|buyback|approv\w*|wins?|contract|partnership|surg\w*|jumps?|soars?|outperform\w*|rall\w*)\b/i;
-const NEG = /\b(downgrades?|downgraded|miss(?:es|ed)?|cuts?|lawsuit|probe|investigation|recall\w*|bankrupt\w*|offering|dilut\w*|plung\w*|slump\w*|warns?|warning|delay\w*|fraud|subpoena|layoffs?|halt\w*|sinks?|tumbl\w*)\b/i;
+const NEG = /\b(downgrades?|downgraded|miss(?:es|ed)?|cuts?|insider sell\w*|sells? \$?\d+|lawsuit|probe|investigation|recall\w*|bankrupt\w*|offering|dilut\w*|plung\w*|slump\w*|warns?|warning|delay\w*|fraud|subpoena|layoffs?|halt\w*|sinks?|tumbl\w*)\b/i;
 const strip = (s) => String(s || '').replace(/<!\[CDATA\[|\]\]>/g, '').replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').trim();
 
 async function newsFor(sym) {
@@ -577,6 +577,16 @@ async function newsFor(sym) {
 // sentiment. Reddit: mention counts on r/wallstreetbets + r/stocks in the
 // last 24h (attention, not direction). FMP social sentiment where the plan
 // allows it. All best effort — a blocked endpoint reports as unavailable.
+let redditTopCache = null;
+async function redditTop() {
+  if (redditTopCache) return redditTopCache;
+  const r = await fetch('https://apewisdom.io/api/v1.0/filter/all-stocks/page/1', { signal: AbortSignal.timeout(15000), headers: { 'user-agent': 'Mozilla/5.0' } });
+  if (!r.ok) throw new Error(`ApeWisdom HTTP ${r.status}`);
+  const j = await r.json();
+  redditTopCache = (j.results || []).map((x) => ({ ticker: String(x.ticker).toUpperCase(), rank: +x.rank, mentions: +x.mentions, mentions_24h_ago: +x.mentions_24h_ago, upvotes: +x.upvotes }));
+  return redditTopCache;
+}
+
 async function socialFor(sym) {
   const out = { bullish: null, bearish: null, posts: 0, redditMentions: null, fmp: null, errors: [] };
   try {
@@ -589,16 +599,14 @@ async function socialFor(sym) {
     out.bearish = msgs.filter((m) => m.entities?.sentiment?.basic === 'Bearish').length;
     out.sample = msgs.filter((m) => m.entities?.sentiment?.basic).slice(0, 3).map((m) => `${m.entities.sentiment.basic}: ${String(m.body).replace(/\s+/g, ' ').slice(0, 90)}`);
   } catch (e) { out.errors.push(e.message); }
+  // Reddit itself returns 403 to cloud runners; ApeWisdom aggregates
+  // r/wallstreetbets + r/stocks mentions per ticker (top 100 by 24h volume).
   try {
-    let n = 0;
-    for (const sub of ['wallstreetbets', 'stocks']) {
-      const r = await fetch(`https://www.reddit.com/r/${sub}/search.json?q=${encodeURIComponent(sym)}&restrict_sr=1&sort=new&t=day&limit=100`, { signal: AbortSignal.timeout(15000), headers: { 'user-agent': 'budsignal-scanner/1.0' } });
-      if (!r.ok) throw new Error(`Reddit HTTP ${r.status}`);
-      const j = await r.json();
-      n += (j.data?.children || []).filter((c) => new RegExp(`\\b\\$?${sym}\\b`).test(`${c.data.title} ${c.data.selftext || ''}`)).length;
-      await sleep(1100);
-    }
-    out.redditMentions = n;
+    const top = await redditTop();
+    const hit = top.find((r) => r.ticker === sym);
+    out.redditMentions = hit ? hit.mentions : 0;
+    out.redditRank = hit ? hit.rank : null;
+    out.redditMentions24hAgo = hit ? hit.mentions_24h_ago : null;
   } catch (e) { out.errors.push(e.message); }
   try {
     const rows = await fmp(`historical-social-sentiment?symbol=${encodeURIComponent(sym)}&page=0`, `historical/social-sentiment?symbol=${encodeURIComponent(sym)}&page=0`);
@@ -642,7 +650,12 @@ for (const idea of finalists) {
     else if (social.bullPct <= 10 && idea.side === 'short') { idea.score -= 4; idea.why.push(`StockTwits ${(100 - social.bullPct).toFixed(0)}% bearish (crowded, contrarian caution)`); }
     else { idea.score += clamp(dir * bias * 5, -5, 5); idea.why.push(`StockTwits ${social.bullPct.toFixed(0)}% bullish of ${social.bullish + social.bearish} votes`); }
   }
-  if (social.redditMentions != null && social.redditMentions >= 5) idea.why.push(`Reddit: ${social.redditMentions} WSB/stocks posts in 24h`);
+  if (social.redditRank != null) {
+    const spike = social.redditMentions24hAgo > 0 ? social.redditMentions / social.redditMentions24hAgo : null;
+    idea.why.push(`Reddit #${social.redditRank} most-discussed (${social.redditMentions} mentions${spike != null ? `, ${spike.toFixed(1)}x yesterday` : ''})`);
+    // A sudden retail pile-in is late money; treat a 3x spike as caution for longs.
+    if (idea.side === 'long' && spike != null && spike >= 3 && social.redditRank <= 10) { idea.score -= 4; idea.why.push('retail mention spike (late-money caution)'); }
+  }
   if (social.fmp?.twitterSentiment != null) idea.why.push(`social sentiment (FMP) ${(social.fmp.twitterSentiment * 100).toFixed(0)}%`);
   if (news.sentiment) {
     idea.score += clamp(dir * news.sentiment * 3, -12, 9);
@@ -653,7 +666,7 @@ for (const idea of finalists) {
     idea.score += clamp(dir * bias * 5, -5, 5);
     idea.why.push(`TradingView ideas ${tv.long} long / ${tv.short} short`);
   }
-  console.log(`finalist ${idea.symbol}: news ${news.items.length} (sent ${news.sentiment}), TV ideas ${tv.error || `${tv.long}L/${tv.short}S`}, StockTwits ${social.bullPct != null ? `${social.bullPct.toFixed(0)}% bull (${social.posts} posts)` : 'n/a'}, Reddit ${social.redditMentions ?? 'n/a'}${social.errors.length ? ` [${social.errors.join('; ')}]` : ''}`);
+  console.log(`finalist ${idea.symbol}: news ${news.items.length} (sent ${news.sentiment}), TV ideas ${tv.error || `${tv.long}L/${tv.short}S`}, StockTwits ${social.bullPct != null ? `${social.bullPct.toFixed(0)}% bull (${social.posts} posts)` : 'n/a'}, Reddit ${social.redditRank != null ? `#${social.redditRank} (${social.redditMentions})` : social.redditMentions === 0 ? 'not top-100' : 'n/a'}${social.errors.length ? ` [${social.errors.join('; ')}]` : ''}`);
 }
 longs.sort((a, b) => b.score - a.score);
 shorts.sort((a, b) => b.score - a.score);
@@ -722,7 +735,8 @@ const socialTxt = (so) => {
   const parts = [];
   if (so.bullPct != null) parts.push(`StockTwits ${so.bullPct.toFixed(0)}% bullish (${so.bullish}/${so.bullish + so.bearish} votes, ${so.posts} posts in 3d)`);
   else if (so.posts) parts.push(`StockTwits ${so.posts} posts, too few votes`);
-  if (so.redditMentions != null) parts.push(`Reddit ${so.redditMentions} posts in 24h`);
+  if (so.redditRank != null) parts.push(`Reddit #${so.redditRank} most-discussed, ${so.redditMentions} mentions`);
+  else if (so.redditMentions === 0) parts.push('Reddit: not in the top 100 discussed');
   if (so.fmp?.twitterSentiment != null) parts.push(`FMP social ${(so.fmp.twitterSentiment * 100).toFixed(0)}% positive`);
   return parts.join(' · ') || `unavailable (${so.errors.join('; ') || 'no data'})`;
 };
