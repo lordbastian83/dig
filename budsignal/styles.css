@@ -1353,3 +1353,26 @@ a.lead-title:hover { color: var(--amber); }
 .intel-cur { flex: none; }
 .record-table.intel-table { min-width: 0; font-size: 11.5px; }
 .intel-table td, .intel-table th { padding: 6px 8px; }
+
+/* ================================================================
+   FULL-BLEED WORKSTATION — 2026-09-26. On a wide monitor the desk
+   uses every pixel, information-terminal style: no centered column,
+   no dead gutters. The 1060px reading column remains only below
+   1200px, where it is actually appropriate.
+   ================================================================ */
+
+@media (min-width: 1200px) {
+  .section { max-width: none; margin: 0; padding: 18px 26px 24px; }
+  .site-footer { max-width: none; margin-top: 24px; padding-left: 26px; padding-right: 26px; }
+  .hero { padding-left: 26px; padding-right: 26px; }
+  .section-sub { max-width: 120ch; margin-bottom: 16px; }
+  .signal-copy, .plan-note { max-width: none; }
+  .section h2 { margin-bottom: 10px; }
+}
+
+/* very wide: let the busiest grids take a third column */
+@media (min-width: 1700px) {
+  .intel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .wire-floor { grid-template-columns: 250px minmax(0, 1fr) 340px; }
+  #radar { grid-template-columns: 1.2fr 1fr; }
+}
