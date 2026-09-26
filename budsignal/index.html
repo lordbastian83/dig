@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=80">
+<link rel="stylesheet" href="styles.css?v=81">
 </head>
 <body>
 
@@ -26,6 +26,7 @@
     <a href="#dashboard">Dashboard</a>
     <a href="#radar">Radar</a>
     <a href="#wire">Wire</a>
+    <a href="#intel">Intel</a>
     <a href="#signal">Current signal</a>
     <a href="#positions">Positions</a>
     <a href="#methodology">How it works</a>
@@ -216,6 +217,40 @@
           <p class="watchlist-note">Net keyword-lexicon tone across tagged headlines — a transparent word count, not a model, and never a trade input.</p>
         </div>
       </aside>
+    </div>
+  </section>
+
+  <!-- ============ Intel desk ============ -->
+  <section id="intel" class="section">
+    <h2><span class="fn-code">INTL</span>Intel desk</h2>
+    <p class="section-sub">Context datasets fetched server-side every six hours. Read the captions: NONE of this feeds the validated streams. Congress and insider flows are US single-stock data with disclosure lags; prediction-market prices are crowd odds, not forecasts. The macro calendar is the one desk-relevant feed — scheduled-volatility timing, the EIA principle generalized.</p>
+    <div class="intel-grid">
+      <div class="equity-card">
+        <h3>Macro calendar — scheduled volatility</h3>
+        <ul class="intel-list" id="intel-macro"><li class="radar-dist">Loading…</li></ul>
+        <p class="watchlist-note">High-impact USD / EUR / GBP releases. The timing is knowable; the direction of the reaction is not. Around a print: no new risk in, stops stay where they are.</p>
+      </div>
+      <div class="equity-card">
+        <h3>Prediction markets</h3>
+        <ul class="intel-list" id="intel-poly"><li class="radar-dist">Loading…</li></ul>
+        <p class="watchlist-note">Macro-relevant Polymarket odds by volume. Crowd prices, not forecasts — and never a trade input here.</p>
+      </div>
+      <div class="equity-card">
+        <h3>Congress trades</h3>
+        <div class="table-wrap"><table class="record-table intel-table">
+          <thead><tr><th>Date</th><th>Ticker</th><th>Politician</th><th>Side</th><th class="num">Amount</th></tr></thead>
+          <tbody id="intel-congress"><tr><td colspan="5" class="table-empty">Loading…</td></tr></tbody>
+        </table></div>
+        <p class="watchlist-note">US-stock disclosures over a megacap/ETF watchlist (ORTEX). Filed with a lag of weeks — curiosity and context, structurally unable to feed a CFD desk.</p>
+      </div>
+      <div class="equity-card">
+        <h3>Insider trades</h3>
+        <div class="table-wrap"><table class="record-table intel-table">
+          <thead><tr><th>Date</th><th>Ticker</th><th>Insider</th><th>Side</th><th class="num">$ value</th></tr></thead>
+          <tbody id="intel-insider"><tr><td colspan="5" class="table-empty">Loading…</td></tr></tbody>
+        </table></div>
+        <p class="watchlist-note">Latest US insider filings (FMP). Same caveat: single-stock, lagged, context only.</p>
+      </div>
     </div>
   </section>
 
@@ -515,7 +550,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=80"></script>
-<script src="app.js?v=80"></script>
+<script src="engine.js?v=81"></script>
+<script src="app.js?v=81"></script>
 </body>
 </html>

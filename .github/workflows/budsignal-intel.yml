@@ -1,0 +1,43 @@
+# BudSignal intel desk — macro calendar, Congress trades, insider trades
+# and macro-relevant prediction markets, fetched server-side every 6 hours
+# and published as intel.json on the budsignal-data branch. All context,
+# never signal inputs; the UI carries the same caveats.
+name: BudSignal intel desk
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: budsignal-intel
+  cancel-in-progress: false
+
+jobs:
+  intel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch intel sources
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          ORTEX_API_KEY: ${{ secrets.ORTEX_API_KEY }}
+        run: |
+          INTEL_FILE=intel.json node budsignal/intel.mjs
+
+      - name: Publish to budsignal-data branch
+        run: |
+          set -e
+          git config user.name 'budsignal-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git fetch origin budsignal-data
+          BLOB=$(git hash-object -w intel.json)
+          { git ls-tree origin/budsignal-data | grep -v -e $'\tintel.json$' || true;
+            printf '100644 blob %s\tintel.json\n' "$BLOB"; } | git mktree > /tmp/tree
+          COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "intel $(date -u +%FT%TZ)")
+          git push origin "$COMMIT:refs/heads/budsignal-data"

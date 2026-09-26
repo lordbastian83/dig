@@ -1554,6 +1554,41 @@
     }));
   }
 
+  /* ---------------- intel desk (published by budsignal-intel.yml) ---------------- */
+
+  const INTEL_URL = 'https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/intel.json';
+  async function renderIntel() {
+    const macroEl = $('intel-macro');
+    if (!macroEl) return;
+    let d = null;
+    try {
+      const r = await fetch(`${INTEL_URL}?v=${Math.floor(Date.now() / 900000)}`, { signal: AbortSignal.timeout(9000) });
+      if (r.ok) d = await r.json();
+    } catch (e) { /* not published yet */ }
+    const empty = (msg) => `<li class="radar-dist">${msg}</li>`;
+    const emptyRow = (n, msg) => `<tr><td colspan="${n}" class="table-empty">${msg}</td></tr>`;
+    if (!d) {
+      macroEl.innerHTML = empty('Intel not published yet — the 6-hour fetcher will populate this.');
+      $('intel-poly').innerHTML = empty('Waiting for the fetcher.');
+      $('intel-congress').innerHTML = emptyRow(5, 'Waiting for the fetcher.');
+      $('intel-insider').innerHTML = emptyRow(5, 'Waiting for the fetcher.');
+      return;
+    }
+    const srcMsg = (k) => (d.errors && d.errors[k] ? `Source unavailable: ${esc(d.errors[k])}` : 'Nothing in the latest fetch.');
+    const inH = (t) => {
+      const h = (t - Date.now()) / 3600000;
+      return h <= 0 ? 'now' : h < 1 ? `in ${Math.round(h * 60)}m` : h < 48 ? `in ${h.toFixed(0)}h` : `in ${(h / 24).toFixed(0)}d`;
+    };
+    macroEl.innerHTML = (d.macro || []).map((ev) =>
+      `<li><span class="intel-when">${esc(fmtTime(ev.t))} UTC</span><span class="wchip intel-cur">${esc(ev.cur)}</span>${esc(ev.name)}<span class="wi-right">${inH(ev.t)}</span></li>`).join('') || empty(srcMsg('macro'));
+    $('intel-poly').innerHTML = (d.polymarket || []).map((m) =>
+      `<li><span class="intel-odds ${m.yes >= 50 ? 'move-pos' : 'move-neg'}">${m.yes}%</span>${esc(m.q)}<span class="wi-right">$${fmtUsd(m.vol)}</span></li>`).join('') || empty(srcMsg('polymarket'));
+    $('intel-congress').innerHTML = (d.congress || []).map((g) =>
+      `<tr><td>${esc(String(new Date(g.t).toISOString()).slice(0, 10))}</td><td>${esc(g.ticker)}</td><td>${esc(g.who)}</td><td class="${/p|buy/i.test(g.side) ? 'move-pos' : 'move-neg'}">${esc(g.side)}</td><td class="num">${esc(g.amount || '—')}</td></tr>`).join('') || emptyRow(5, srcMsg('congress'));
+    $('intel-insider').innerHTML = (d.insider || []).map((g) =>
+      `<tr><td>${esc(String(new Date(g.t).toISOString()).slice(0, 10))}</td><td>${esc(g.ticker)}</td><td>${esc(g.who)}</td><td class="${g.side === 'BUY' ? 'move-pos' : 'move-neg'}">${esc(g.side)}</td><td class="num">${g.usd != null ? '$' + fmtUsd(g.usd) : '—'}</td></tr>`).join('') || emptyRow(5, srcMsg('insider'));
+  }
+
   // Realtime markets rail on the news floor — same sweep the tape uses.
   function renderWireRt() {
     const body = $('wire-rt');
@@ -2446,11 +2481,13 @@
   renderRadar();
   renderOilNews();
   renderWire();
+  renderIntel();
   setInterval(refresh, 5 * 60 * 1000); // re-pull every 5 minutes
   setInterval(loadPerformance, 30 * 60 * 1000); // ledger updates every 4h
   setInterval(renderRadar, 30 * 60 * 1000); // radar sweeps all markets — keep it slow
   setInterval(renderOilNews, 30 * 60 * 1000);
   setInterval(renderWire, 30 * 60 * 1000);
+  setInterval(renderIntel, 30 * 60 * 1000);
 
   // live market lookup: debounced as-you-type, immediate on Enter
   {

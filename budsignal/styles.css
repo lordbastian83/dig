@@ -1335,3 +1335,21 @@ a.lead-title:hover { color: var(--amber); }
 
 .wire-hot li.hot-item { display: block; white-space: normal; padding: 8px 0; }
 .wire-hot .wi-head { gap: 8px; }
+
+/* ---------- intel desk ---------- */
+
+.intel-grid { display: grid; gap: 14px; }
+@media (min-width: 921px) { .intel-grid { grid-template-columns: 1fr 1fr; align-items: start; } }
+.intel-grid > * { min-width: 0; }
+.intel-list { list-style: none; margin: 0; padding: 0; font-family: var(--mono); font-size: 12px; }
+.intel-list li {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid var(--grid);
+  color: var(--text-secondary);
+}
+.intel-list li:last-child { border-bottom: none; }
+.intel-when { flex: none; min-width: 96px; color: var(--text-muted); font-size: 10.5px; }
+.intel-odds { flex: none; min-width: 44px; font-weight: 700; text-align: right; }
+.intel-cur { flex: none; }
+.record-table.intel-table { min-width: 0; font-size: 11.5px; }
+.intel-table td, .intel-table th { padding: 6px 8px; }
