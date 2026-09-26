@@ -1829,6 +1829,15 @@
     const m = Math.max(0, Math.round((Date.now() - t) / 60000));
     return m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
   };
+  const docStamp = (d) => Date.parse(d.n.publishedDate || d.n.date || '') || 0;
+  // every rendered "Xm ago" carries data-t; this keeps them honest between
+  // wire fetches without re-rendering any DOM (no flicker, no animation restart)
+  function tickWireTimes() {
+    document.querySelectorAll('[data-t]').forEach((el) => {
+      const txt = relTime(+el.dataset.t);
+      if (el.textContent !== txt) el.textContent = txt;
+    });
+  }
 
   let wireData = null;        // last analyzeNews result, so filtering never refetches
   let wireFilter = null;      // asset key, or null for the full stream
@@ -1868,6 +1877,22 @@
         ['INDEXED', `${fmtClock(Date.now())} UTC`],
       ].map(([t, v]) => `<span class="dl-item"><span class="dl-tag">${t}</span>${v}</span>`).join('');
     }
+    // headline ticker under the price tape: newest wire, never filtered.
+    // Rendered here (on data change only), NOT in renderWireViews — replacing
+    // the track's HTML restarts the scroll animation with a visible jump, so
+    // a filter click must never touch it.
+    const ntape = $('newstape-track');
+    if (ntape) {
+      const heads = a.docs.slice().sort((x, y) => docStamp(y) - docStamp(x)).slice(0, 14);
+      if (heads.length) {
+        const seg = heads.map((d) =>
+          `<span class="tape-item"><span class="tape-sym">${esc((d.n.site || d.n.publisher || 'WIRE')).toUpperCase()}</span>` +
+          `<span class="tape-head">${esc(d.title.slice(0, 110))}</span>` +
+          `<span class="tape-px" data-t="${docStamp(d)}">${relTime(docStamp(d))}</span></span>`).join('');
+        ntape.innerHTML = seg + seg; // doubled so the -50% translate loops seamlessly
+        ntape.parentElement.hidden = false;
+      }
+    }
     renderWireViews();
   }
 
@@ -1885,7 +1910,7 @@
       note.hidden = !wireFilter;
       if (wireFilter) note.innerHTML = `Showing <strong>${ASSETS[wireFilter].tab}</strong>-tagged headlines only · <button class="wf-clear" id="wf-clear" type="button">✕ show all</button>`;
     }
-    const stamp = (d) => Date.parse(d.n.publishedDate || d.n.date || '') || 0;
+    const stamp = docStamp;
     // category bar: ALL + every live topic cluster, counts included — the
     // active chip filters the stream the same way the market rows do
     const cats = $('wire-cats');
@@ -1902,22 +1927,9 @@
         });
       }
     }
-    // headline ticker under the price tape: the newest wire, never filtered
-    const ntape = $('newstape-track');
-    if (ntape) {
-      const heads = a.docs.slice().sort((x, y) => stamp(y) - stamp(x)).slice(0, 14);
-      if (heads.length) {
-        const seg = heads.map((d) =>
-          `<span class="tape-item"><span class="tape-sym">${esc((d.n.site || d.n.publisher || 'WIRE')).toUpperCase()}</span>` +
-          `<span class="tape-head">${esc(d.title.slice(0, 110))}</span>` +
-          `<span class="tape-px">${relTime(stamp(d))}</span></span>`).join('');
-        ntape.innerHTML = seg + seg; // doubled so the -50% translate loops seamlessly
-        ntape.parentElement.hidden = false;
-      }
-    }
     const toneTag = (d) => (d.tone > 0 ? `<span class="wt wt-pos">+${d.tone}</span>` : d.tone < 0 ? `<span class="wt wt-neg">${d.tone}</span>` : '<span class="wt">0</span>');
     const mktChips = (d) => d.markets.map((m) => `<button class="wchip wchip-mkt" data-mkt="${m}" type="button" title="Filter the stream to ${ASSETS[m] ? ASSETS[m].tab : m} headlines">${ASSETS[m] ? ASSETS[m].tab : m}</button>`).join('');
-    const rightMeta = (d) => `<span class="wi-right">${d.topics[0] ? esc(d.topics[0]) + ' · ' : ''}${relTime(stamp(d))}</span>`;
+    const rightMeta = (d) => `<span class="wi-right">${d.topics[0] ? esc(d.topics[0]) + ' · ' : ''}<span data-t="${stamp(d)}">${relTime(stamp(d))}</span></span>`;
     const docs = a.docs
       .filter((d) => !wireFilter || d.markets.includes(wireFilter))
       .filter((d) => !wireTopicFilter || d.topics.includes(wireTopicFilter))
@@ -1932,7 +1944,7 @@
         leadBox.hidden = false;
         leadBox.innerHTML = storyImg(lead.n, 'lead-img') +
           `${href ? `<a class="lead-title" href="${href}" target="_blank" rel="noopener">${t}</a>` : `<span class="lead-title">${t}</span>`}` +
-          `<span class="wire-meta">${toneTag(lead)}${mktChips(lead)}<span class="radar-dist">${esc(lead.n.site || lead.n.publisher || '')} · ${relTime(stamp(lead))}</span></span>`;
+          `<span class="wire-meta">${toneTag(lead)}${mktChips(lead)}<span class="radar-dist">${esc(lead.n.site || lead.n.publisher || '')} · <span data-t="${stamp(lead)}">${relTime(stamp(lead))}</span></span></span>`;
       } else { leadBox.hidden = true; leadBox.innerHTML = ''; }
     }
     // secondary hero cards beside the lead: the next two stories, photo
@@ -1949,7 +1961,7 @@
         const t = hlTitle(d.title.slice(0, 110));
         return `<div class="sub-item">${storyImg(d.n, 'sub-img')}` +
           `<span class="sub-body">${href ? `<a class="sub-title" href="${href}" target="_blank" rel="noopener">${t}</a>` : `<span class="sub-title">${t}</span>`}` +
-          `<span class="wire-meta">${toneTag(d)}<span class="radar-dist">${esc(d.n.site || d.n.publisher || '')} · ${relTime(stamp(d))}</span></span></span></div>`;
+          `<span class="wire-meta">${toneTag(d)}<span class="radar-dist">${esc(d.n.site || d.n.publisher || '')} · <span data-t="${stamp(d)}">${relTime(stamp(d))}</span></span></span></span></div>`;
       }).join('');
       if (subBox.hidden) subs = [];
     }
@@ -1967,7 +1979,7 @@
       const loud = a.docs.filter((d) => d.tone !== 0).sort((x, y) => Math.abs(y.tone) - Math.abs(x.tone)).slice(0, 5);
       hot.innerHTML = loud.map((d) => {
         const href = /^https?:\/\//.test(d.n.url || '') ? esc(d.n.url) : null;
-        return `<li class="wire-item hot-item"><span class="wi-head">${toneTag(d)} ${href ? `<a href="${href}" target="_blank" rel="noopener">${esc(d.title.slice(0, 90))}</a>` : esc(d.title.slice(0, 90))}<span class="wi-right">${relTime(stamp(d))}</span></span></li>`;
+        return `<li class="wire-item hot-item"><span class="wi-head">${toneTag(d)} ${href ? `<a href="${href}" target="_blank" rel="noopener">${esc(d.title.slice(0, 90))}</a>` : esc(d.title.slice(0, 90))}<span class="wi-right" data-t="${stamp(d)}">${relTime(stamp(d))}</span></span></li>`;
       }).join('') || '<li class="radar-dist">Nothing charged in this batch.</li>';
     }
     renderWireRt();
@@ -2597,6 +2609,7 @@
   setInterval(renderRadar, 30 * 60 * 1000); // radar sweeps all markets — keep it slow
   setInterval(renderOilNews, 30 * 60 * 1000);
   setInterval(renderWire, 30 * 60 * 1000);
+  setInterval(tickWireTimes, 60 * 1000); // "Xm ago" labels stay honest between fetches
   setInterval(renderIntel, 30 * 60 * 1000);
 
   // live market lookup: debounced as-you-type, immediate on Enter

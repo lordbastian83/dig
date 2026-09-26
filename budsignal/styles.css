@@ -1462,3 +1462,10 @@ a.sub-title:hover { color: var(--amber); }
   /* zebra stripes read as a checkerboard across two columns — rules only */
   .wire-stream li.wire-item:nth-child(odd) { background: transparent; }
 }
+
+/* phones: the category bar stays one row and scrolls sideways, portal-style */
+@media (max-width: 700px) {
+  .wire-cats { flex-wrap: nowrap; scrollbar-width: none; }
+  .wire-cats::-webkit-scrollbar { display: none; }
+  .wcat { white-space: nowrap; }
+}
