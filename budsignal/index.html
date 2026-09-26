@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=84">
+<link rel="stylesheet" href="styles.css?v=85">
 </head>
 <body>
 
@@ -23,9 +23,9 @@
   </a>
   <button class="refresh-btn" id="refresh-btn" type="button" title="Refresh prices and signals" aria-label="Refresh data">↻</button>
   <nav class="site-nav">
+    <a href="#wire">News</a>
     <a href="#dashboard">Dashboard</a>
     <a href="#radar">Radar</a>
-    <a href="#wire">Wire</a>
     <a href="#intel">Intel</a>
     <a href="#signal">Current signal</a>
     <a href="#positions">Positions</a>
@@ -39,6 +39,9 @@
 
   <!-- ============ Ticker tape ============ -->
   <div class="tape" aria-hidden="true"><div class="tape-track" id="tape-track"><span class="tape-item"><span class="tape-sym">SCANNING MARKETS</span></span></div></div>
+
+  <!-- headline ticker: latest wire headlines, populated by renderWireViews -->
+  <div class="tape tape-news" aria-hidden="true" hidden><div class="tape-track" id="newstape-track"></div></div>
 
   <!-- live signals from ANY market (the signal card below only shows the selected one) -->
   <div class="live-bar" id="live-bar" hidden></div>
@@ -61,6 +64,57 @@
       </div>
     </div>
     <p class="briefing" id="briefing" hidden></p>
+  </section>
+
+  <!-- ============ News desk — the floor opens on the wire, baha-style ============ -->
+  <section id="wire" class="section">
+    <h2><span class="fn-code">WIRE</span>News desk</h2>
+    <p class="section-sub">The live wire, processed in your browser: deduplicated, entity-tagged, topic-clustered and lexicon-scored — every count below is real and recomputed on each fetch. Context, never a signal input: sentiment-extreme entries were tested as a strategy and failed walk-forward validation, and public headlines are in the price within seconds of the wire.</p>
+
+    <div class="deskline wire-pipe" id="wire-pipe" aria-label="Wire pipeline status"></div>
+
+    <nav class="wire-cats" id="wire-cats" aria-label="News categories"></nav>
+
+    <div class="wire-floor">
+      <aside class="wire-col wire-col-mkts">
+        <div class="equity-card">
+          <h3>Realtime markets</h3>
+          <table class="record-table wire-rt"><tbody id="wire-rt"><tr><td class="table-empty">Sweeping…</td></tr></tbody></table>
+        </div>
+        <div class="equity-card">
+          <h3>Topic clusters</h3>
+          <ul class="topic-list" id="topic-list"><li class="radar-dist">Waiting for headlines…</li></ul>
+        </div>
+      </aside>
+
+      <div class="wire-col wire-col-main">
+        <div class="equity-card stream-card">
+          <p class="section-sub corr-sub" id="sent-line">Loading sentiment…</p>
+          <p class="section-sub corr-sub wire-filter-note" id="wire-filter-note" hidden></p>
+          <div class="wire-lead" id="wire-lead"></div>
+          <h3 class="latest-h">Latest news</h3>
+          <ul class="news-list wire-stream" id="wire-list"><li class="radar-dist">Loading…</li></ul>
+        </div>
+      </div>
+
+      <aside class="wire-col wire-col-side">
+        <div class="equity-card">
+          <h3>Most charged</h3>
+          <ul class="news-list wire-hot" id="wire-hot"><li class="radar-dist">Waiting for headlines…</li></ul>
+          <p class="watchlist-note">Strongest lexicon tone in the current batch — loud, not important.</p>
+        </div>
+        <div class="equity-card">
+          <h3>Wire tone by market</h3>
+          <div class="table-wrap">
+            <table class="record-table wire-mkts">
+              <thead><tr><th>Market</th><th class="num">Tagged</th><th class="num">Net tone</th></tr></thead>
+              <tbody id="wire-mkts"><tr><td colspan="3" class="table-empty">Waiting for headlines…</td></tr></tbody>
+            </table>
+          </div>
+          <p class="watchlist-note">Net keyword-lexicon tone across tagged headlines — a transparent word count, not a model, and never a trade input.</p>
+        </div>
+      </aside>
+    </div>
   </section>
 
   <!-- ============ Dashboard ============ -->
@@ -169,55 +223,6 @@
       </div>
       <div class="lookup-results" id="lookup-results" hidden></div>
       <p class="watchlist-note">View-only quotes — unvalidated markets never get signals or sizing here; new markets audition through the monthly research gate.</p>
-    </div>
-  </section>
-
-  <!-- ============ News desk ============ -->
-  <section id="wire" class="section">
-    <h2><span class="fn-code">WIRE</span>News desk</h2>
-    <p class="section-sub">The live wire, processed in your browser: deduplicated, entity-tagged, topic-clustered and lexicon-scored — every count below is real and recomputed on each fetch. Context, never a signal input: sentiment-extreme entries were tested as a strategy and failed walk-forward validation, and public headlines are in the price within seconds of the wire.</p>
-
-    <div class="deskline wire-pipe" id="wire-pipe" aria-label="Wire pipeline status"></div>
-
-    <div class="wire-floor">
-      <aside class="wire-col wire-col-mkts">
-        <div class="equity-card">
-          <h3>Realtime markets</h3>
-          <table class="record-table wire-rt"><tbody id="wire-rt"><tr><td class="table-empty">Sweeping…</td></tr></tbody></table>
-        </div>
-        <div class="equity-card">
-          <h3>Topic clusters</h3>
-          <ul class="topic-list" id="topic-list"><li class="radar-dist">Waiting for headlines…</li></ul>
-        </div>
-      </aside>
-
-      <div class="wire-col wire-col-main">
-        <div class="equity-card stream-card">
-          <p class="section-sub corr-sub" id="sent-line">Loading sentiment…</p>
-          <p class="section-sub corr-sub wire-filter-note" id="wire-filter-note" hidden></p>
-          <div class="wire-lead" id="wire-lead"></div>
-          <h3 class="latest-h">Latest news</h3>
-          <ul class="news-list wire-stream" id="wire-list"><li class="radar-dist">Loading…</li></ul>
-        </div>
-      </div>
-
-      <aside class="wire-col wire-col-side">
-        <div class="equity-card">
-          <h3>Most charged</h3>
-          <ul class="news-list wire-hot" id="wire-hot"><li class="radar-dist">Waiting for headlines…</li></ul>
-          <p class="watchlist-note">Strongest lexicon tone in the current batch — loud, not important.</p>
-        </div>
-        <div class="equity-card">
-          <h3>Wire tone by market</h3>
-          <div class="table-wrap">
-            <table class="record-table wire-mkts">
-              <thead><tr><th>Market</th><th class="num">Tagged</th><th class="num">Net tone</th></tr></thead>
-              <tbody id="wire-mkts"><tr><td colspan="3" class="table-empty">Waiting for headlines…</td></tr></tbody>
-            </table>
-          </div>
-          <p class="watchlist-note">Net keyword-lexicon tone across tagged headlines — a transparent word count, not a model, and never a trade input.</p>
-        </div>
-      </aside>
     </div>
   </section>
 
@@ -551,7 +556,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=84"></script>
-<script src="app.js?v=84"></script>
+<script src="engine.js?v=85"></script>
+<script src="app.js?v=85"></script>
 </body>
 </html>

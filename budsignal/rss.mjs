@@ -53,11 +53,20 @@ export function parseFeed(xml, site) {
     url = decode(url);
     const when = (b.match(/<(?:pubDate|published|updated|dc:date)[^>]*>([\s\S]*?)<\/(?:pubDate|published|updated|dc:date)>/) || [])[1] || '';
     const t = Date.parse(when.trim());
+    // story image: media RSS extensions first, then enclosure, then the
+    // first <img> in the description — hot-linked by the site, hidden on error
+    let img = (b.match(/<media:(?:content|thumbnail)[^>]*url="([^"]+)"/) || [])[1]
+      || (b.match(/<enclosure[^>]*type="image[^"]*"[^>]*url="([^"]+)"/) || [])[1]
+      || (b.match(/<enclosure[^>]*url="([^"]+\.(?:jpe?g|png|webp)[^"]*)"/i) || [])[1]
+      || (b.match(/<img[^>]*src=["']([^"']+)["']/i) || [])[1] || null;
+    if (img) img = decode(img);
+    if (img && !/^https:\/\//.test(img)) img = null;
     items.push({
       title: title.slice(0, 200),
       url: /^https?:\/\//.test(url) ? url.slice(0, 400) : null,
       site,
       t: Number.isFinite(t) ? t : Date.now(),
+      img: img ? img.slice(0, 400) : null,
     });
   }
   return items;
@@ -77,7 +86,7 @@ async function fetchFeed(site, url) {
 
 const FIXTURE = `<rss><channel>
 <item><title>Gold surges to record as <![CDATA[Fed &amp; markets]]> weigh cuts</title><link>https://example.com/a</link><pubDate>Fri, 26 Sep 2026 10:00:00 GMT</pubDate></item>
-<item><title>Crude falls 2.1% after OPEC signal</title><link>https://example.com/b</link><pubDate>Fri, 26 Sep 2026 09:30:00 GMT</pubDate></item>
+<item><title>Crude falls 2.1% after OPEC signal</title><link>https://example.com/b</link><pubDate>Fri, 26 Sep 2026 09:30:00 GMT</pubDate><media:content url="https://example.com/pic.jpg" /></item>
 <item><title>Gold surges to record as Fed &amp; markets weigh cuts</title><link>https://example.com/dupe</link><pubDate>Fri, 26 Sep 2026 08:00:00 GMT</pubDate></item>
 </channel></rss>`;
 
@@ -112,7 +121,7 @@ async function main() {
   console.log(`feeds: ${counts.join(' · ')}`);
   console.log(`kept ${items.length} of ${all.length} (deduped)`);
   if (SELF_TEST) {
-    if (items.length !== 2 || !items[0].title.includes('Gold surges')) {
+    if (items.length !== 2 || !items[0].title.includes('Gold surges') || items[1].img !== 'https://example.com/pic.jpg') {
       console.error('SELF_TEST FAILED', JSON.stringify(items, null, 2));
       process.exit(1);
     }

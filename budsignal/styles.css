@@ -1385,3 +1385,53 @@ a.lead-title:hover { color: var(--amber); }
   padding: 7px 12px; cursor: pointer;
 }
 #keys-link:hover { background: var(--amber-wash); }
+
+/* ================================================================
+   NEWS-FIRST PORTAL — 2026-09-26. The floor now opens on the wire
+   (baha-style): a second scrolling headline strip under the price
+   tape, a category bar over the news floor, and story photos on the
+   lead and the stream when the feed carries them.
+   ================================================================ */
+
+/* headline ticker: same chassis as the price tape, slower (more content),
+   headline text in primary ink so the two strips read differently */
+.tape-news { border-top: 1px solid var(--border); background: #0d0d0f; }
+.tape-news .tape-track { animation-duration: 240s; }
+.tape-news .tape-px { color: var(--text-muted); font-size: 10.5px; }
+.tape-head { color: var(--text-primary); }
+
+/* category bar: uppercase chips, active in amber — the portal's nav row */
+.wire-cats {
+  display: flex; flex-wrap: wrap; gap: 0;
+  border: 1px solid var(--border); border-bottom: 2px solid var(--amber-dim);
+  background: var(--surface-1);
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+.wcat {
+  flex: none;
+  background: transparent; border: none; border-right: 1px solid var(--border);
+  color: var(--text-secondary); cursor: pointer;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 9px 14px;
+  display: inline-flex; align-items: baseline; gap: 7px;
+}
+.wcat:hover { color: var(--text-primary); background: var(--amber-wash); }
+.wcat-active { color: #0a0a0b; background: var(--amber); }
+.wcat-active:hover { color: #0a0a0b; background: var(--amber); }
+.wcat-n { font-size: 9.5px; opacity: 0.75; font-weight: 400; }
+
+/* story photos: big on the lead, thumbnail on stream rows; both vanish
+   silently (onerror) when a feed's hotlink is dead */
+.lead-img {
+  display: block; width: 100%; max-height: 320px;
+  object-fit: cover; margin-bottom: 12px;
+  border: 1px solid var(--border);
+}
+li.wire-item.wi-has-thumb { display: flex; gap: 10px; align-items: flex-start; }
+.wi-thumb {
+  flex: none; width: 64px; height: 46px; object-fit: cover;
+  border: 1px solid var(--border); margin-top: 2px;
+}
+.wi-body { flex: 1 1 auto; min-width: 0; display: block; }
