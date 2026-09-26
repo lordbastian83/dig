@@ -1435,3 +1435,30 @@ li.wire-item.wi-has-thumb { display: flex; gap: 10px; align-items: flex-start; }
   border: 1px solid var(--border); margin-top: 2px;
 }
 .wi-body { flex: 1 1 auto; min-width: 0; display: block; }
+
+/* hero cluster: big lead left, two secondary photo cards right — the
+   front-page block portals open with */
+.wire-hero { display: grid; gap: 16px; align-items: start; }
+@media (min-width: 921px) {
+  .wire-hero { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .wire-hero .wire-lead { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+  .wire-hero:has(.wire-sub:not([hidden])) { border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 4px; }
+}
+.wire-sub { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.sub-item { display: block; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.017); min-width: 0; }
+.sub-img { display: block; width: 100%; height: 108px; object-fit: cover; border-bottom: 1px solid var(--border); }
+.sub-body { display: block; padding: 10px 12px 12px; }
+.sub-title {
+  display: block;
+  font-family: var(--mono); font-size: 13px; line-height: 1.35; font-weight: 700;
+  color: var(--text-primary); text-decoration: none; margin-bottom: 6px;
+}
+a.sub-title:hover { color: var(--amber); }
+
+/* wide screens: the latest list flows into two columns */
+@media (min-width: 1500px) {
+  .wire-stream { display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; align-items: start; }
+  .wire-stream li.wire-item { border-bottom: 1px solid var(--grid); }
+  /* zebra stripes read as a checkerboard across two columns — rules only */
+  .wire-stream li.wire-item:nth-child(odd) { background: transparent; }
+}
