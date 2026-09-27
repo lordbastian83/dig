@@ -82,3 +82,34 @@ a:focus-visible, button:focus-visible, summary:focus-visible,
 .to-top:hover{ background:var(--gold,#D4AF37); color:#06121F; }
 .to-top svg{ width:18px; height:18px; }
 @media print{ .to-top, .skip-link{ display:none !important; } }
+
+/* ---- Print: turn the dark tool pages into clean, ink-light documents ---- */
+@media print{
+  /* Neutralise the dark palette; keep accent tokens for meaning. */
+  :root{
+    --ink:#fff; --navy:#fff; --panel:#fff; --panel-2:#f6f6f6; --navy-2:#fff; --navy-3:#f4f4f4;
+    --line:#cfcfcf; --border:#cfcfcf; --cloud:#111; --muted:#444; --muted-2:#666;
+    --ink-muted:#555; --orange:#8a6d1e; --gold:#8a6d1e; --gold-deep:#8a6d1e;
+  }
+  html, body{ background:#fff !important; color:#111 !important; }
+  /* Drop chrome and interactive furniture. */
+  .band, .toolbar, .backlink, .diagram-tools, .no-print, .to-top, .skip-link,
+  #print, .band-toggle{ display:none !important; }
+  .hero::after{ display:none !important; }            /* photographic backdrop off */
+  .hero{ padding-top:0 !important; }
+  /* Flatten panels for paper. */
+  .card, .lot, .kpi, .pbox{
+    box-shadow:none !important; background:#fff !important; border:1px solid #d5d5d5 !important;
+    break-inside:avoid;
+  }
+  .wrap{ max-width:none !important; padding:0 !important; }
+  input, select, textarea{
+    background:#fff !important; color:#111 !important; border:1px solid #cfcfcf !important; box-shadow:none !important;
+  }
+  a{ color:#111 !important; text-decoration:none; }
+  h1.title{ color:#111 !important; }
+  h1.title .o, .kicker{ color:#8a6d1e !important; }   /* gold accent stays, but readable */
+  table{ border-collapse:collapse; }
+  th, td{ border-color:#d5d5d5 !important; }
+  @page{ margin:14mm; }
+}
