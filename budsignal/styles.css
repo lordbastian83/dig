@@ -1482,3 +1482,7 @@ a.sub-title:hover { color: var(--amber); }
   font-family: var(--mono); font-size: 11px; line-height: 1.5;
   color: var(--down); padding-top: 4px;
 }
+
+/* market dossier strip under the chart */
+.dossier { margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 9px; }
+.dossier .dl-item:first-child .dl-tag { background: var(--amber); color: #0a0a0b; }

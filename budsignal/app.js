@@ -1041,6 +1041,41 @@
   // now" — assembled entirely from figures already computed on this page.
   // Synthesis, not advice: every clause traces to a panel below it.
   let lastWireTone = null; // {tagged, net} from the news desk
+  // Market dossier: one strip under the chart answering "what is this
+  // desk's actual record on the SELECTED market" — every figure measured
+  // (ledger counts, edge verdicts, wire tags, trigger distances), nothing
+  // predicted. Re-rendered whenever its inputs or the selected asset change.
+  function renderDossier() {
+    const el = $('dossier');
+    if (!el) return;
+    const a = currentAsset;
+    const items = [];
+    if (lastRecs) {
+      const mine = lastRecs.filter((r) => r.asset === a);
+      const closed = mine.filter((r) => r.outcome !== 'open');
+      const ups = closed.filter((r) => (r.movePct || 0) > 0).length;
+      const net = closed.reduce((x, r) => x + (r.movePct || 0), 0);
+      const open = mine.length - closed.length;
+      items.push(['LEDGER', closed.length
+        ? `<span title="Every ${ASSETS[a].tab} signal ever recorded, all streams incl. paper — measured, not curated">${closed.length} closed · ${Math.round((ups / closed.length) * 100)}% up · net <span class="${net >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(net)}</span></span>`
+        : 'no closed signals yet']);
+      if (open) items.push(['OPEN', `${open} position${open > 1 ? 's' : ''} (blotter below)`]);
+    }
+    const edge = edgeStatus?.assets?.[a]?.edge;
+    items.push(['BREAKOUT', edge === true ? '<span class="move-pos">✅ validated — funded</span>'
+      : edge === false ? '<span title="This market kept no net breakout edge out-of-sample">❌ no edge — paper only</span>' : '—']);
+    if (E.SCALP?.ASSETS) {
+      items.push(['SCALP', E.SCALP.ASSETS.includes(a) ? '<span class="move-pos">validated 1h market</span>' : 'not in the validated set']);
+    }
+    const m = wireData?.mkts?.find((x) => x.m === a);
+    items.push(['WIRE', m ? `${m.n} tagged · net tone ${m.net > 0 ? '+' : ''}${m.net}` : 'not tagged in today’s batch']);
+    const sw = lastSweepRows?.find((r) => r.a === a);
+    if (sw?.n4) items.push(['TRIGGER', `4h ${sw.n4.pct.toFixed(1)}% away${sw.nd ? ` · daily ${sw.nd.pct.toFixed(1)}%` : ''}`]);
+    el.hidden = items.length < 2;
+    el.innerHTML = `<span class="dl-item"><span class="dl-tag">${ASSETS[a].tab}</span>dossier</span>` +
+      items.map(([t, v]) => `<span class="dl-item"><span class="dl-tag">${t}</span>${v}</span>`).join('');
+  }
+
   function renderBriefing() {
     const el = $('briefing');
     if (!el) return;
@@ -1109,6 +1144,7 @@
     }
     el.hidden = false;
     el.innerHTML = `<span class="fcast-tag" title="Assembled live from the panels on this page — every clause traces to a number below. Synthesis, not advice or prediction.">BRIEF</span> ${bits.join(' · ')}.`;
+    renderDossier(); // same inputs, same cadence
   }
 
   // Live bar: signals firing on ANY market right now — the signal card only
@@ -2554,6 +2590,7 @@
 
   async function refresh() {
     renderAssetTabs();
+    renderDossier(); // switch the dossier with the chart, before the fetch
     $('chart-title').textContent = `${ASSETS[currentAsset].pair} · 4h candles`;
     const asset = currentAsset;
     const { source, candles } = await fetchCandles(asset);
