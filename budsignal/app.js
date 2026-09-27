@@ -1682,6 +1682,7 @@
   // Returns: array = headlines, null = nothing reachable at all.
   let newsCache = { t: 0, items: null };
   let newsSrcCounts = { rss: 0, fmp: 0 };
+  let wirePublished = 0; // server-side publish stamp of the RSS mirror
   const RSS_URL = 'https://raw.githubusercontent.com/lordbastian83/dig/budsignal-data/wire-rss.json';
   async function fetchGeneralNews() {
     if (newsCache.items && Date.now() - newsCache.t < 10 * 60 * 1000) return newsCache.items;
@@ -1691,6 +1692,7 @@
       const r = await fetch(`${RSS_URL}?v=${Math.floor(Date.now() / 600000)}`, { signal: AbortSignal.timeout(9000) });
       if (r.ok) {
         const j = await r.json();
+        wirePublished = j.updated || 0;
         for (const it of j.items || []) {
           merged.push({ title: it.title, url: it.url, site: it.site, img: it.img || null, publishedDate: new Date(it.t).toISOString().slice(0, 19) });
         }
@@ -1874,6 +1876,9 @@
         ['ENTITIES', `${tagged} market-tagged`],
         ['TOPICS', `${a.topicCounts.length} clusters`],
         ['TONE', 'lexicon word count'],
+        // honest freshness: the mirror's own publish stamp, not our fetch time —
+        // over 90 minutes means the publisher crons are being throttled
+        ...(wirePublished ? [['PUBLISHED', `<span data-t="${wirePublished}">${relTime(wirePublished)}</span>${Date.now() - wirePublished > 90 * 60000 ? ' <span class="move-neg">⚠ stale</span>' : ''}`]] : []),
         ['INDEXED', `${fmtClock(Date.now())} UTC`],
       ].map(([t, v]) => `<span class="dl-item"><span class="dl-tag">${t}</span>${v}</span>`).join('');
     }
