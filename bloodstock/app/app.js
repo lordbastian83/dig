@@ -708,6 +708,49 @@ $('#horse-form').addEventListener('input', (e) => {
   if (e.target.classList && e.target.classList.contains('invalid')) clearFieldError(e.target);
 });
 
+/* Recently scored: a quick-recall chip row so a lot can be reopened and
+   tweaked without retyping it. Kept in this browser, most-recent first. */
+const LS_RECENT = 'bloodstock.recent';
+function loadRecent() { try { return JSON.parse(localStorage.getItem(LS_RECENT)) || []; } catch { return []; } }
+function pushRecent(h) {
+  const key = (h.name || '').trim().toLowerCase();
+  if (!key) return;
+  const next = [h, ...loadRecent().filter((x) => (x.name || '').trim().toLowerCase() !== key)].slice(0, 6);
+  try { localStorage.setItem(LS_RECENT, JSON.stringify(next)); } catch {}
+  renderRecent();
+}
+function fillForm(form, h) {
+  const set = (n, v) => { const el = form.elements[n]; if (el) el.value = v == null ? '' : v; };
+  const check = (n, v) => { const el = form.elements[n]; if (el) el.checked = !!v; };
+  set('name', h.name); set('sire', h.sire); set('rating', h.rating); set('starts', h.starts);
+  set('dam', h.dam); set('vendor', h.vendor); set('lot', h.lot); set('notes', h.notes);
+  if (h.sale && form.elements.sale) form.elements.sale.value = h.sale;
+  if (h.vet && form.elements.vet) form.elements.vet.value = h.vet;
+  check('powerhouse', h.powerhouse); check('blackType', h.blackType); check('awForm', h.awForm);
+}
+function renderRecent() {
+  const box = $('#recent-scored');
+  if (!box) return;
+  const recent = loadRecent();
+  if (!recent.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = '<span class="recent-label">Recently scored</span>'
+    + recent.map((h, i) => `<button type="button" class="recent-chip" data-i="${i}" title="Reload &amp; rescore ${esc(h.name)}">${esc(h.name)}</button>`).join('');
+}
+$('#recent-scored')?.addEventListener('click', (e) => {
+  const chip = e.target.closest('.recent-chip');
+  if (!chip) return;
+  const h = loadRecent()[+chip.dataset.i];
+  if (!h) return;
+  const form = $('#horse-form');
+  fillForm(form, h);
+  form.querySelectorAll('.invalid').forEach(clearFieldError);
+  const r = evaluate(h, loadParams());
+  renderScore(h, r);
+  const rr = $('#score-result'); if (rr && !rr.hidden) rr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  toast(`Reloaded ${h.name || 'lot'} — tweak and rescore.`);
+});
+
 $('#horse-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const problems = validateHorseForm(e.target);
@@ -724,8 +767,12 @@ $('#horse-form').addEventListener('submit', (e) => {
   list.unshift(h);
   saveList(list);
   renderList();
+  pushRecent(h);
   toast(`Scored ${h.name || 'lot'} — added to your watchlist.`);
 });
+
+// Show any recalls saved from earlier visits.
+renderRecent();
 
 $('#demo-btn').addEventListener('click', () => {
   const form = $('#horse-form');
