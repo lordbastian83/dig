@@ -666,8 +666,57 @@ function readForm(form) {
   };
 }
 
+/* Friendly inline validation for the score form — clearer than native
+   bubbles, and it focuses the first problem. */
+function fieldError(form, name, msg) {
+  const inp = form.elements[name];
+  if (!inp) return;
+  inp.classList.add('invalid');
+  inp.setAttribute('aria-invalid', 'true');
+  const label = inp.closest('label') || inp.parentNode;
+  let err = label.querySelector('.field-error');
+  if (!err) {
+    err = document.createElement('span');
+    err.className = 'field-error';
+    label.appendChild(err);
+  }
+  err.textContent = msg;
+}
+function clearFieldError(inp) {
+  inp.classList.remove('invalid');
+  inp.removeAttribute('aria-invalid');
+  const label = inp.closest('label') || inp.parentNode;
+  const err = label && label.querySelector('.field-error');
+  if (err) err.remove();
+}
+function validateHorseForm(form) {
+  ['name', 'rating', 'starts'].forEach((n) => { const el = form.elements[n]; if (el) clearFieldError(el); });
+  const problems = [];
+  const name = (form.elements.name.value || '').trim();
+  if (!name) problems.push(['name', 'Enter a horse name or lot number.']);
+  const rating = form.elements.rating.value.trim();
+  if (rating === '') problems.push(['rating', 'Official rating is required.']);
+  else if (!(Number(rating) >= 0 && Number(rating) <= 130)) problems.push(['rating', 'Rating must be between 0 and 130.']);
+  const starts = form.elements.starts.value.trim();
+  if (starts === '') problems.push(['starts', 'Career starts is required.']);
+  else if (!(Number(starts) >= 0 && Number(starts) <= 50)) problems.push(['starts', 'Starts must be between 0 and 50.']);
+  problems.forEach(([n, m]) => fieldError(form, n, m));
+  return problems;
+}
+// Clear a field's error as soon as the user corrects it.
+$('#horse-form').addEventListener('input', (e) => {
+  if (e.target.classList && e.target.classList.contains('invalid')) clearFieldError(e.target);
+});
+
 $('#horse-form').addEventListener('submit', (e) => {
   e.preventDefault();
+  const problems = validateHorseForm(e.target);
+  if (problems.length) {
+    const first = e.target.elements[problems[0][0]];
+    if (first) first.focus();
+    toast(problems.length === 1 ? problems[0][1] : `Fix ${problems.length} fields to score this lot.`);
+    return;
+  }
   const h = readForm(e.target);
   const r = evaluate(h, loadParams());
   renderScore(h, r);

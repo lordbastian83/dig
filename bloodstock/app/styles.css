@@ -1446,3 +1446,13 @@ a:focus-visible, button:focus-visible, summary:focus-visible,
 .to-top:hover{ background:var(--gold); color:#06121F; }
 .to-top svg{ width:18px; height:18px; }
 @media print{ .to-top, .skip-link{ display:none !important; } }
+
+/* ---- Inline form validation (score form) ---- */
+.field-error{
+  display:block; color:var(--red); font-size:.72rem; font-family:var(--sans);
+  margin-top:.28rem; letter-spacing:.01em;
+}
+input.invalid, select.invalid{
+  border-color:var(--red) !important;
+  box-shadow:0 0 0 3px rgba(239,68,68,.16) !important;
+}
