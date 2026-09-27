@@ -918,7 +918,7 @@ function shareLink(list, kind) {
 }
 if ($('#share-wl')) $('#share-wl').addEventListener('click', () => {
   const list = loadList();
-  if (!list.length) { alert('Add horses to the watchlist first, then Share.'); return; }
+  if (!list.length) { toast('Add horses to the watchlist first, then Share.'); return; }
   shareLink(list, 'wl');
 });
 function clearShareHash() { try { history.replaceState(null, '', location.pathname + location.search); } catch {} }
@@ -954,7 +954,7 @@ window.addEventListener('hashchange', checkShareHash);
 $('#export-pdf').addEventListener('click', () => {
   const P = loadParams();
   const list = loadList();
-  if (!list.length) { alert('Nothing on the watchlist yet.'); return; }
+  if (!list.length) { toast('Nothing on the watchlist yet.'); return; }
   const today = new Date().toISOString().slice(0, 10);
   const rowsHtml = list.map((h) => {
     const r = evaluate(h, P);
@@ -1313,7 +1313,7 @@ $('#import-json').addEventListener('change', async (e) => {
     renderList();
     renderFinds();
   } catch {
-    alert('Could not parse that file — expected a backup JSON from this app.');
+    toast('Could not parse that file — expected a backup JSON from this app.');
   }
   e.target.value = '';
 });
@@ -2297,7 +2297,7 @@ function horseReport(h) {
   const gap = exp ? r.gns - exp.gns : null;
   const today = new Date().toISOString().slice(0, 10);
   const li = (k, v) => v == null || v === '' ? '' : `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`;
-  const w = window.open('', '_blank'); if (!w) { alert('Allow pop-ups to generate the PDF.'); return; }
+  const w = window.open('', '_blank'); if (!w) { toast('Allow pop-ups to generate the PDF.'); return; }
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(h.name)} — Bio-Metric Thoroughbreds</title><style>
     @page{margin:16mm} body{font-family:'Outfit',system-ui,sans-serif;color:#12203A;font-size:12px}
     h1{font-size:24px;margin:0;font-weight:800;letter-spacing:-.03em}
@@ -2346,7 +2346,7 @@ function addToWatchlist(h, btn, doneText) {
   if (!h) return;
   const list = loadList();
   if (list.some((x) => x.name.toLowerCase() === h.name.toLowerCase())) {
-    alert(`${h.name} is already on the watchlist.`); return;
+    toast(`${h.name} is already on the watchlist.`); return;
   }
   list.unshift(h); saveList(list); renderList();
   if (btn) btn.textContent = doneText;
@@ -2436,7 +2436,7 @@ document.addEventListener('click', (e) => {
   // export the current scanner view to CSV
   const exp = $('#scan-export');
   if (exp) exp.addEventListener('click', () => {
-    if (!scanViewFull.length) { alert('Nothing to export — the scanner view is empty.'); return; }
+    if (!scanViewFull.length) { toast('Nothing to export — the scanner view is empty.'); return; }
     const head = ['rank', 'runner', 'sire', 'dam', 'damsire', 'trainer', 'region', 'algo', 'max_bid_gns', 'mkt_est_gns', 'value_delta_gns', 'OR', 'best_RPR', 'dubai_fit', 'score_move'];
     const lines = scanViewFull.map(({ h, r }, i) => {
       const mkt = mktEst(h, r);
@@ -2634,7 +2634,7 @@ function openCompare(horsesIn) {
   const P = loadParams();
   let source, note;
   if (Array.isArray(horsesIn) && horsesIn.length) { source = horsesIn.slice(0, 6); note = 'selected'; }
-  else { source = loadList(); note = 'watchlist'; if (!source.length) { alert('Add horses to your watchlist first, then Compare.'); return; } }
+  else { source = loadList(); note = 'watchlist'; if (!source.length) { toast('Score or add horses to your watchlist first, then Compare.'); return; } }
   const horses = source.slice(0, 6).map((h) => ({ h, r: evaluate(h, P) }));
   // [label, valueFn -> {n, t}, higherIsBetter]
   const M = [
@@ -2744,7 +2744,7 @@ $('#profile-edit').addEventListener('click', () => {
   }));
 $('#pf-save').addEventListener('click', () => {
   const name = ($('#pf-name').value || '').trim();
-  if (!name) { alert('Give the profile a name.'); return; }
+  if (!name) { toast('Give the profile a name.'); return; }
   const prof = {
     name, rmin: +$('#pf-rmin').value || 0, rmax: +$('#pf-rmax').value || 130,
     starts: +$('#pf-starts').value || 50, tier: $('#pf-tier').value,
@@ -2766,11 +2766,11 @@ $('#pf-save').addEventListener('click', () => {
   $('#profile-editor').open = false;
   renderProfileBar();
   renderFinds();
-  alert(`Saved search "${name}". It's now in the dropdown and included in your backup.`);
+  toast(`Saved search "${name}". It's now in the dropdown and included in your backup.`);
 });
 $('#pf-delete').addEventListener('click', () => {
   const active = activeProfile();
-  if (active.builtin) { alert('The default profile cannot be deleted.'); return; }
+  if (active.builtin) { toast('The default profile cannot be deleted.'); return; }
   const custom = loadProfiles().list.filter((p) => !p.builtin && p.name !== active.name);
   saveProfiles(IMPERIAL.name, custom);
   fillEditor(IMPERIAL);
@@ -2893,7 +2893,7 @@ fetch(NEWS_URL)
     if (url === null) return;
     const clean = url.trim();
     if (!clean) { localStorage.removeItem('bloodstock.heroImg'); location.reload(); return; }
-    if (!okImg(clean)) { alert('Please use an https:// image URL.'); return; }
+    if (!okImg(clean)) { toast('Please use an https:// image URL.'); return; }
     localStorage.setItem('bloodstock.heroImg', clean);
     location.reload();
   });
