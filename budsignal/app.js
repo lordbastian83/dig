@@ -894,6 +894,13 @@
   }
 
   const INDEX_PROXIES = ['US30', 'NAS100', 'SPX500'];
+  // Index prices on the free feed are ETF proxies (DIA/QQQ/SPY): % moves,
+  // distances and risk match the index 1:1, but ABSOLUTE dollar levels are
+  // ETF-scale — every panel that prints one must say so, or a reader will
+  // try to place those levels on a CFD quoted in index points.
+  const proxyTag = (a) => INDEX_PROXIES.includes(a)
+    ? `<sup class="proxy-tag" title="Free-feed quote is the ${ASSETS[a].fmp} ETF proxy — % moves match the index; absolute dollar levels are ETF prices, not index points">${ASSETS[a].fmp}</sup>`
+    : '';
   let lastActiveSignal = null;
 
   function renderTradePlan() {
@@ -1183,7 +1190,7 @@
     const body = $('watchlist-body');
     if (!body) return;
     body.innerHTML = list.map((r) => `<tr data-asset="${r.a}" class="${r.a === currentAsset ? 'wl-active' : ''}">
-      <td><span class="${r.trendUp == null ? 'radar-dist' : r.trendUp ? 'move-pos' : 'move-neg'}">${r.trendUp == null ? '·' : r.trendUp ? '▲' : '▼'}</span> ${ASSETS[r.a].tab}${r.demo ? '<span class="radar-dist">*</span>' : ''}</td>
+      <td><span class="${r.trendUp == null ? 'radar-dist' : r.trendUp ? 'move-pos' : 'move-neg'}">${r.trendUp == null ? '·' : r.trendUp ? '▲' : '▼'}</span> ${ASSETS[r.a].tab}${proxyTag(r.a)}${r.demo ? '<span class="radar-dist">*</span>' : ''}</td>
       <td class="num">${fmtPrice(r.price)}</td>
       <td class="num ${r.d24 >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(r.d24)}</td>
       <td class="num">${r.rngPct != null ? `±${r.rngPct.toFixed(1)}%` : '—'}</td>
@@ -1464,7 +1471,7 @@
     if (!scalpState) return;
     box.innerHTML = E.SCALP.ASSETS.map((a) => {
       const st = scalpState[a];
-      const name = `<span class="scalp-sym">${ASSETS[a].tab}</span>`;
+      const name = `<span class="scalp-sym">${ASSETS[a].tab}${proxyTag(a)}</span>`;
       if (st.err === 'key') return `<p class="scalp-row">${name}<span class="radar-dist">desk feed not reachable — add your FMP data key (top of page) for the live 1h feed</span></p>`;
       if (st.err) return `<p class="scalp-row">${name}<span class="radar-dist">1h feed unavailable (${esc(String(st.err).slice(0, 40))})</span></p>`;
       const closed = E.closedPrefix(st.candles, now, E.SCALP.CANDLE_MS);
@@ -1663,7 +1670,7 @@
     const track = $('tape-track');
     if (!track || !rows.length) return;
     const items = rows.map((r) =>
-      `<span class="tape-item"><span class="tape-sym">${ASSETS[r.a].tab}</span>` +
+      `<span class="tape-item"><span class="tape-sym">${ASSETS[r.a].tab}${proxyTag(r.a)}</span>` +
       `<span class="tape-px">${fmtPrice(r.price)}</span>` +
       `<span class="tape-delta ${r.d24 >= 0 ? 'pos' : 'neg'}">${r.d24 >= 0 ? '▲' : '▼'}${fmtPct(r.d24)}</span>` +
       `${r.demo ? '<span class="tape-px" style="opacity:.5">demo</span>' : ''}</span>`).join('');
