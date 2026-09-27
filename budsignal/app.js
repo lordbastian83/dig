@@ -1225,19 +1225,28 @@
   function renderWatchlist(list) {
     const body = $('watchlist-body');
     if (!body) return;
-    body.innerHTML = list.map((r) => `<tr data-asset="${r.a}" class="${r.a === currentAsset ? 'wl-active' : ''}">
+    body.innerHTML = list.map((r) => `<tr data-asset="${r.a}" class="${r.a === currentAsset ? 'wl-active' : ''}" tabindex="0" role="button" aria-pressed="${r.a === currentAsset}" aria-label="Show ${ASSETS[r.a].pair} on the chart">
       <td><span class="${r.trendUp == null ? 'radar-dist' : r.trendUp ? 'move-pos' : 'move-neg'}">${r.trendUp == null ? '·' : r.trendUp ? '▲' : '▼'}</span> ${ASSETS[r.a].tab}${proxyTag(r.a)}${r.demo ? '<span class="radar-dist">*</span>' : ''}</td>
       <td class="num">${fmtPrice(r.price)}</td>
       <td class="num ${r.d24 >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(r.d24)}</td>
       <td class="num">${r.rngPct != null ? `±${r.rngPct.toFixed(1)}%` : '—'}</td>
       <td class="num">${r.n4 ? `<span class="${r.n4.pct < 1 ? 'radar-hot' : ''}">${r.n4.pct.toFixed(1)}%</span>` : '—'}</td>
     </tr>`).join('');
-    body.querySelectorAll('tr[data-asset]').forEach((tr) => tr.addEventListener('click', () => {
+    const pick = (tr) => {
       currentAsset = tr.dataset.asset;
       localStorage.setItem('budsignal-asset', currentAsset);
-      body.querySelectorAll('tr').forEach((x) => x.classList.toggle('wl-active', x === tr));
+      body.querySelectorAll('tr').forEach((x) => {
+        x.classList.toggle('wl-active', x === tr);
+        x.setAttribute('aria-pressed', x === tr);
+      });
       refresh();
-    }));
+    };
+    body.querySelectorAll('tr[data-asset]').forEach((tr) => {
+      tr.addEventListener('click', () => pick(tr));
+      tr.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(tr); }
+      });
+    });
   }
 
   // Pearson correlation of daily returns over the last 60 shared trading
@@ -1277,7 +1286,7 @@
     if (!box) return;
     const rows = [...list].sort((x, y) => (ASSETS[x.a].tab > ASSETS[y.a].tab ? 1 : -1));
     box.innerHTML = rows.map((r) => `
-      <button type="button" class="carto-tile ${r.d24 >= 0 ? 'pos' : 'neg'} ${r.a === currentAsset ? 'active' : ''}" data-asset="${r.a}">
+      <button type="button" class="carto-tile ${r.d24 >= 0 ? 'pos' : 'neg'} ${r.a === currentAsset ? 'active' : ''}" data-asset="${r.a}" aria-pressed="${r.a === currentAsset}" aria-label="Show ${ASSETS[r.a].pair} on the chart (${fmtPct(r.d24)} in 24h)">
         <span class="carto-head"><span class="carto-sym">${ASSETS[r.a].tab}</span><span class="carto-delta">${fmtPct(r.d24)}</span></span>
         <canvas class="carto-spark" width="176" height="44"></canvas>
       </button>`).join('');
@@ -1711,7 +1720,7 @@
   function renderWireRt() {
     const body = $('wire-rt');
     if (!body || !lastSweepRows) return;
-    body.innerHTML = lastSweepRows.map((r) => `<tr class="wf-row ${r.a === wireFilter ? 'wf-active' : ''}" data-mkt="${r.a}" title="Filter the stream to ${ASSETS[r.a].tab} headlines">
+    body.innerHTML = lastSweepRows.map((r) => `<tr class="wf-row ${r.a === wireFilter ? 'wf-active' : ''}" data-mkt="${r.a}" tabindex="0" role="button" aria-pressed="${r.a === wireFilter}" title="Filter the stream to ${ASSETS[r.a].tab} headlines">
       <td>${ASSETS[r.a].tab}${r.demo ? '<span class="radar-dist">*</span>' : ''}</td>
       <td class="num">${fmtPrice(r.price)}</td>
       <td class="num ${r.d24 >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(r.d24)}</td>
@@ -1721,6 +1730,14 @@
       body.addEventListener('click', (e) => {
         const tr = e.target.closest('tr[data-mkt]');
         if (tr && wireData) { wireFilter = wireFilter === tr.dataset.mkt ? null : tr.dataset.mkt; renderWireViews(); }
+      });
+      body.addEventListener('keydown', (e) => {
+        const tr = e.target.closest('tr[data-mkt]');
+        if (tr && wireData && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          wireFilter = wireFilter === tr.dataset.mkt ? null : tr.dataset.mkt;
+          renderWireViews();
+        }
       });
     }
   }
@@ -1989,7 +2006,7 @@
     const cats = $('wire-cats');
     if (cats) {
       const chip = (label, topic, count, active) =>
-        `<button class="wcat${active ? ' wcat-active' : ''}" data-topic="${esc(topic)}" type="button">${esc(label)}${count != null ? `<span class="wcat-n">${count}</span>` : ''}</button>`;
+        `<button class="wcat${active ? ' wcat-active' : ''}" data-topic="${esc(topic)}" type="button" aria-pressed="${active}">${esc(label)}${count != null ? `<span class="wcat-n">${count}</span>` : ''}</button>`;
       cats.innerHTML = chip('All news', '', null, !wireTopicFilter) +
         a.topicCounts.map(([t, c]) => chip(t, t, c, wireTopicFilter === t)).join('');
       if (!cats.dataset.bound) {
@@ -2068,7 +2085,7 @@
       mb.innerHTML = a.mkts.map(({ m, n, net }) => {
         const cls = net > 0 ? 'move-pos' : net < 0 ? 'move-neg' : 'radar-dist';
         const glyph = net > 0 ? '▲' : net < 0 ? '▼' : '·';
-        return `<tr class="wf-row ${m === wireFilter ? 'wf-active' : ''}" data-mkt="${m}" title="Filter the stream to ${ASSETS[m] ? ASSETS[m].tab : m} headlines"><td>${ASSETS[m] ? ASSETS[m].tab : m}</td><td class="num">${n}</td><td class="num ${cls}">${glyph} ${net > 0 ? '+' : ''}${net}</td></tr>`;
+        return `<tr class="wf-row ${m === wireFilter ? 'wf-active' : ''}" data-mkt="${m}" tabindex="0" role="button" aria-pressed="${m === wireFilter}" title="Filter the stream to ${ASSETS[m] ? ASSETS[m].tab : m} headlines"><td>${ASSETS[m] ? ASSETS[m].tab : m}</td><td class="num">${n}</td><td class="num ${cls}">${glyph} ${net > 0 ? '+' : ''}${net}</td></tr>`;
       }).join('') || '<tr><td colspan="3" class="table-empty">No tracked market tagged in this batch.</td></tr>';
     }
     // one delegated binding per element, survives re-renders
@@ -2078,6 +2095,10 @@
       mb.addEventListener('click', (e) => {
         const tr = e.target.closest('tr[data-mkt]');
         if (tr) toggle(tr.dataset.mkt);
+      });
+      mb.addEventListener('keydown', (e) => {
+        const tr = e.target.closest('tr[data-mkt]');
+        if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(tr.dataset.mkt); }
       });
     }
     if (!list.dataset.bound) {

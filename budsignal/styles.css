@@ -1486,3 +1486,15 @@ a.sub-title:hover { color: var(--amber); }
 /* market dossier strip under the chart */
 .dossier { margin-top: 10px; border-top: 1px solid var(--grid); padding-top: 9px; }
 .dossier .dl-item:first-child .dl-tag { background: var(--amber); color: #0a0a0b; }
+
+/* ================================================================
+   KEYBOARD ACCESS — 2026-09-27. Every clickable row and chip is
+   tabbable (tabindex + role=button in the markup); the focus ring is
+   amber and square, matching the chrome. :focus-visible keeps mouse
+   clicks ring-free.
+   ================================================================ */
+:focus-visible { outline: 2px solid var(--amber); outline-offset: -1px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--amber); outline-offset: -1px;
+}
+tr[role="button"]:focus-visible { outline-offset: -2px; }
