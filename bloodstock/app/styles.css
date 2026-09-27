@@ -1474,3 +1474,13 @@ input.invalid, select.invalid{
   max-width:16rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .recent-chip:hover{ color:#fff; border-color:var(--gold-deep); background:var(--gold-wash); }
+
+/* ---- Actionable empty states ---- */
+.empty-cta{
+  display:block; width:-moz-fit-content; width:fit-content; margin:1rem auto 0;
+  font-family:var(--sans); font-size:.8rem; font-weight:600;
+  color:var(--gold); background:var(--gold-wash); border:1px solid var(--gold-deep);
+  border-radius:8px; padding:.5rem 1rem; cursor:pointer;
+  transition:color .15s ease, background .15s ease, border-color .15s ease;
+}
+.empty-cta:hover{ color:#06121F; background:var(--gold); border-color:var(--gold); }

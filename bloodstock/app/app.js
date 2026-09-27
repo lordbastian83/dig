@@ -430,7 +430,7 @@ function renderList() {
   const tbody = $('#watchlist tbody');
   const list = loadList();
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty">Nothing scanned yet — score a lot above.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">Nothing scanned yet.<button type="button" class="empty-cta" data-jump="score">Score your first lot</button></td></tr>';
     return;
   }
   // display order — sorts a copy of the indices, so data-i still points at the
@@ -773,6 +773,22 @@ $('#horse-form').addEventListener('submit', (e) => {
 
 // Show any recalls saved from earlier visits.
 renderRecent();
+
+/* Actionable empty states: a CTA jumps to (and focuses) the relevant
+   control, or triggers it directly (e.g. opens the CSV picker). */
+document.addEventListener('click', (e) => {
+  const cta = e.target.closest('.empty-cta');
+  if (!cta) return;
+  e.preventDefault();
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (cta.dataset.click) { const t = document.querySelector(cta.dataset.click); if (t) t.click(); return; }
+  const el = cta.dataset.jump && document.getElementById(cta.dataset.jump);
+  if (!el) return;
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  const focusEl = cta.dataset.focus ? document.querySelector(cta.dataset.focus)
+                                    : el.querySelector('input,select,button,textarea,[tabindex]');
+  if (focusEl) setTimeout(() => focusEl.focus({ preventScroll: true }), reduce ? 0 : 380);
+});
 
 $('#demo-btn').addEventListener('click', () => {
   const form = $('#horse-form');
