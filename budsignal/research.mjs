@@ -637,6 +637,99 @@ async function main() {
     console.log('pyramiding study evaluated');
   }
 
+  // ---- Trend-quality gate on the daily swing-55 ----
+  // Pre-registered refinement: does taking swing entries ONLY in a trend
+  // regime (price on the right side of EMA200, and/or ADX above a floor,
+  // measured at the signal candle) beat taking them all? A filter cannot
+  // add trades, only drop them — so the honest comparison is avg %/trade
+  // AND the trade count it costs: a higher average on far fewer trades can
+  // still earn less in total, which the n column exposes.
+  {
+    const simOne = (arr, i, side, atr) => {
+      // the live swing exit, one unit: 2xATR stop from entry, 3xATR trail
+      // on daily closes, 24-day window, close-evaluated (matches swingSim
+      // above with no adds)
+      const dir = side === 'long' ? 1 : -1;
+      const entry = arr[i].c;
+      let best = entry;
+      const stop0 = entry - dir * 2 * atr;
+      const end = Math.min(arr.length - 1, i + 24);
+      let exitP = arr[end].c;
+      for (let k = i + 1; k <= end; k++) {
+        const c = arr[k].c;
+        if (dir * (c - best) > 0) best = c;
+        const trail = best - dir * 3 * atr;
+        const s = dir === 1 ? Math.max(stop0, trail) : Math.min(stop0, trail);
+        if (dir * (c - s) <= 0) { exitP = c; break; }
+        exitP = c;
+      }
+      return ((dir * (exitP - entry)) / entry) * 100;
+    };
+    const aligned = (daily, i, ind, side) =>
+      ind.emaTrend[i] != null && (side === 'long' ? daily[i].c > ind.emaTrend[i] : daily[i].c < ind.emaTrend[i]);
+    const gates = [
+      ['no gate (live baseline, re-simulated)', () => true],
+      ['EMA200-aligned (with-trend only)', (d, i, ind, side) => aligned(d, i, ind, side)],
+      ['ADX ≥ 20 (trend regime)', (d, i, ind) => ind.adx[i] != null && ind.adx[i] >= 20],
+      ['ADX ≥ 25 (strong trend)', (d, i, ind) => ind.adx[i] != null && ind.adx[i] >= 25],
+      ['EMA200-aligned AND ADX ≥ 20', (d, i, ind, side) => aligned(d, i, ind, side) && ind.adx[i] != null && ind.adx[i] >= 20],
+    ];
+    const pools = new Map(); // `${gi}|${sideKey}|${period}` -> moves[]
+    const put = (gi, sideKey, period, m) => {
+      const k = `${gi}|${sideKey}|${period}`;
+      if (!pools.has(k)) pools.set(k, []);
+      pools.get(k).push(m);
+    };
+    for (const [asset] of Object.entries(ASSETS)) {
+      const c4 = histories[asset];
+      if (!c4 || c4.length < 800) continue;
+      const daily = E.toDailyCandles(c4);
+      if (daily.length < 400) continue;
+      const ind = E.computeIndicators(daily);
+      const cost = costOf(asset);
+      const splitT = daily[Math.floor(daily.length * 0.7)].t;
+      for (const s of E.computeBreakoutSignals(daily, ind, {})) {
+        const atr = ind.atr[s.i];
+        if (atr == null || s.i >= daily.length - 1) continue;
+        const period = s.t < splitT ? 'train' : 'validate';
+        const m = simOne(daily, s.i, s.side, atr) - cost;
+        for (let gi = 0; gi < gates.length; gi++) {
+          if (!gates[gi][1](daily, s.i, ind, s.side)) continue;
+          put(gi, 'both', period, m);
+          if (s.side === 'long') put(gi, 'long', period, m);
+        }
+      }
+    }
+    lines.push(
+      '## Trend-quality gate on the daily swing-55 (regime filter?)',
+      '',
+      'Pre-registered refinement: entries only when the signal candle sits in a trend regime (EMA200 side and/or an ADX floor), scored under the live swing exit and net of modeled cost. ' +
+      'Adoption rule: a gate becomes an execution rule ONLY if it beats the no-gate baseline in BOTH periods with ≥30 validate trades. ' +
+      'Honest caveat: a filter only removes trades — a better average on far fewer trades can still earn less in total, so weigh n as well as avg.',
+      '',
+      '| Gate | Side | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|---|',
+    );
+    for (const sideKey of ['both', 'long']) {
+      const base = {
+        tr: stats(pools.get(`0|${sideKey}|train`) || []),
+        va: stats(pools.get(`0|${sideKey}|validate`) || []),
+      };
+      for (let gi = 0; gi < gates.length; gi++) {
+        const tr = stats(pools.get(`${gi}|${sideKey}|train`) || []);
+        const va = stats(pools.get(`${gi}|${sideKey}|validate`) || []);
+        const v = gi === 0 ? 'baseline'
+          : !tr || !va || va.n < 30 ? '⚠️ too few trades'
+          : tr.avg > (base.tr?.avg ?? -99) && va.avg > (base.va?.avg ?? -99)
+            ? '✅ beats baseline both periods — adopt as execution rule'
+            : '❌ no improvement';
+        lines.push(`| ${gates[gi][0]} | ${sideKey === 'both' ? 'both' : '▲ longs'} | ${fmtStats(tr)} | ${fmtStats(va)} | ${v} |`);
+      }
+    }
+    lines.push('');
+    console.log('trend-gate study evaluated');
+  }
+
   // ---- WTI deep-dive ----
   // Owner-requested single-market focus. Testing many variants on ONE market
   // is a multiple-comparisons trap, so the bar is stricter than the global
