@@ -1349,10 +1349,14 @@
     body.innerHTML = fills.map((f, idx) => {
       const sig = byKey.get(f.sig);
       const dir = sig ? (sig.side === 'long' ? 1 : -1) : 1;
-      const drag = sig ? ((f.entry - sig.entry) / sig.entry) * dir * 100 : null; // + = paid worse
-      if (drag != null) drags.push(drag);
+      let drag = sig ? ((f.entry - sig.entry) / sig.entry) * dir * 100 : null; // + = paid worse
+      // legacy junk guard: a fill logged in the wrong units (index points vs
+      // ETF proxy) reads as thousands of %; keep the row but never the stat
+      const implausible = drag != null && Math.abs(drag) > 25;
+      if (drag != null && !implausible) drags.push(drag);
+      if (implausible) drag = null;
       let yours = null, gap = null;
-      if (sig && f.exit != null) {
+      if (sig && f.exit != null && !implausible) {
         yours = ((f.exit - f.entry) / f.entry) * dir * 100;
         if (sig.outcome !== 'open') { gap = yours - sig.movePct; gaps.push(gap); }
       }
@@ -1361,7 +1365,7 @@
         <td>${sig ? sigLabel(sig) : '<span class="radar-dist">signal no longer in ledger window</span>'}</td>
         <td class="num">${sig ? '$' + fmtPrice(sig.entry) : '—'}</td>
         <td class="num">$${fmtPrice(f.entry)}${f.risk ? ` <span class="radar-dist">£${fmtUsd(f.risk, 2)}</span>` : ''}</td>
-        <td class="num ${cls(drag, true)}">${drag != null ? (drag >= 0 ? '−' : '+') + Math.abs(drag).toFixed(2) + '%' : '—'}</td>
+        <td class="num ${cls(drag, true)}">${drag != null ? (drag >= 0 ? '−' : '+') + Math.abs(drag).toFixed(2) + '%' : implausible ? '<span class="radar-dist" title="Fill is 25%+ from the signal price — wrong units (index points vs ETF proxy?). Excluded from the averages.">units?</span>' : '—'}</td>
         <td class="num ${cls(yours)}">${yours != null ? fmtPct(yours) : '<span class="radar-dist">open</span>'}</td>
         <td class="num ${sig && sig.outcome !== 'open' ? cls(sig.movePct) : ''}">${sig ? (sig.outcome !== 'open' ? fmtPct(sig.movePct) : '<span class="radar-dist">open</span>') : '—'}</td>
         <td class="num ${cls(gap)}">${gap != null ? fmtPct(gap) : '—'}</td>
@@ -1389,12 +1393,33 @@
     const btn = $('exec-save');
     if (!btn || btn.dataset.bound) return;
     btn.dataset.bound = '1';
+    const warn = (msg) => {
+      const w = $('exec-warn');
+      if (w) { w.hidden = !msg; w.innerHTML = msg || ''; }
+    };
     btn.addEventListener('click', () => {
       const sig = $('exec-sig').value;
       const entry = parseFloat($('exec-entry').value);
       const risk = parseFloat($('exec-risk').value);
       const exitV = parseFloat($('exec-exit').value);
       if (!sig || !(entry > 0)) { $('exec-entry').focus(); return; }
+      // plausibility gate: a real fill sits within a few % of the signal
+      // price. 25%+ away means wrong units — most likely an index-points
+      // fill logged against an ETF-proxy signal — and one such row makes
+      // the running drag average meaningless forever.
+      const rec = (lastRecs || []).find((r) => sigKey(r) === sig);
+      if (rec && rec.entry) {
+        const off = (v) => Math.abs(v / rec.entry - 1) * 100;
+        const bad = [['fill', entry], ...(exitV > 0 ? [['exit', exitV]] : [])].find(([, v]) => off(v) > 25);
+        if (bad) {
+          const proxy = INDEX_PROXIES.includes(rec.asset)
+            ? ` This signal quotes the <strong>${ASSETS[rec.asset].fmp} ETF proxy</strong> — log the ${ASSETS[rec.asset].fmp} price, not your CFD's index points, or convert nothing and skip the log.`
+            : '';
+          warn(`Not logged: your ${bad[0]} $${fmtPrice(bad[1])} is ${off(bad[1]).toFixed(0)}% away from the signal's $${fmtPrice(rec.entry)} — that's a units mix-up, not slippage.${proxy}`);
+          return;
+        }
+      }
+      warn(null);
       const fills = loadFills();
       fills.unshift({ sig, entry, risk: risk > 0 ? risk : null, exit: exitV > 0 ? exitV : null, logged: Date.now() });
       saveFills(fills.slice(0, 200));
