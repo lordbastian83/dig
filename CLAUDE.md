@@ -33,7 +33,10 @@ bloodstock projects below.
 - Signals use closed candles only and must never repaint. Track records are
   computed from the rules, never curated.
 - Jobs are Node 22 `.mjs` scripts run by cron in `.github/workflows/`
-  (`budsignal-*`, `bloodstock-*`, `market-snapshot`, `opportunities`).
+  (`budsignal-*`, `bloodstock-*`, `market-snapshot`, `opportunities`,
+  `telegram-outbox`: any file committed under `budsignal/outbox/*.html` is
+  sent to the Telegram bot's subscribers, for ad-hoc analysis from a session
+  that cannot reach Telegram directly).
 - Data: Binance → Coinbase (crypto); FMP → Twelve Data (gold/indices/FX);
   ORTEX; The Racing API; Tattersalls catalogue scrapes.
 - Secrets live only in Actions secrets: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`,
