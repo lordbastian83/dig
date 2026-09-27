@@ -3,6 +3,8 @@ name: Telegram outbox
 # Sends any message file committed under budsignal/outbox/ to the Telegram
 # bot's subscribers (same token and chat ids as the notifier). Lets a
 # session that cannot reach Telegram directly deliver ad-hoc analysis.
+# Once sent, move the file to budsignal/outbox/sent/ (not watched) so the
+# record can be merged to master without a second delivery.
 
 on:
   push:
