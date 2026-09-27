@@ -6,7 +6,12 @@ name: BudSignal RSS wire
 
 on:
   schedule:
-    - cron: '11,41 * * * *'
+    # every 15 minutes, not because the wire needs it, but because GitHub
+    # drops scheduled events under load: each delivered run is also the
+    # data plane's healer (the kicker step below), so more cron tickets
+    # mean faster recovery for every feed. The run itself is keyless and
+    # takes ~20s.
+    - cron: '11,26,41,56 * * * *'
   workflow_dispatch: {}
 
 permissions:
