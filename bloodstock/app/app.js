@@ -2655,6 +2655,7 @@ function openCompare(horsesIn) {
     <div class="cmp-wrap"><table class="cmp-table"><thead><tr>${thead}</tr></thead><tbody>${body}</tbody></table></div>`;
   $('#compare-modal').hidden = false;
 }
+if ($('#help-open')) $('#help-open').addEventListener('click', () => { const hm = $('#help-modal'); if (hm) hm.hidden = false; });
 if ($('#help-close')) $('#help-close').addEventListener('click', () => { $('#help-modal').hidden = true; });
 if ($('#help-modal')) $('#help-modal').addEventListener('click', (e) => { if (e.target.id === 'help-modal') $('#help-modal').hidden = true; });
 $('#compare-btn').addEventListener('click', () => openCompare());

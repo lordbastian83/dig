@@ -1484,3 +1484,17 @@ input.invalid, select.invalid{
   transition:color .15s ease, background .15s ease, border-color .15s ease;
 }
 .empty-cta:hover{ color:#06121F; background:var(--gold); border-color:var(--gold); }
+
+/* ---- Keyboard shortcuts affordance ---- */
+.help-fab{
+  position:fixed; left:16px; bottom:16px; z-index:30;
+  width:34px; height:34px; border-radius:50%; display:grid; place-items:center;
+  font-family:var(--serif); font-size:1.15rem; line-height:1;
+  background:rgba(14,26,46,.85); color:var(--gold); border:1px solid var(--line);
+  cursor:pointer; opacity:.55; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  box-shadow:0 8px 24px -10px rgba(0,0,0,.7);
+  transition:opacity .2s ease, color .15s ease, border-color .15s ease, background .15s ease;
+}
+.help-fab:hover, .help-fab:focus-visible{ opacity:1; color:#06121F; background:var(--gold); border-color:var(--gold); }
+@media (max-width:640px){ .help-fab{ display:none; } }  /* shortcuts are a desk/keyboard feature */
+@media print{ .help-fab{ display:none !important; } }
