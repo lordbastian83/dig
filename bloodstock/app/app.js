@@ -1007,7 +1007,7 @@ $('#import-csv').addEventListener('change', async (e) => {
   if (!file) return;
   const P = loadParams();
   try {
-    const rows = parseCSV(await file.text());
+    const rows = await readCsvRows(file);
     const bool = (v) => ['true', 'yes', '1', 'y'].includes(String(v || '').toLowerCase());
     const TIER_A = ['dubawi', 'night of thunder', 'too darn hot', 'new bay', 'blue point'];
     const TIER_B_DAMSIRE = ['street cry', 'shamardal', "medaglia d'oro", 'dubai millennium'];
@@ -1028,13 +1028,13 @@ $('#import-csv').addEventListener('change', async (e) => {
       awForm: bool(r.awform), notes: r.notes || '',
       status: 'watch', added: new Date().toISOString().slice(0, 10),
     }));
-    if (!lots.length) { alert('No rows with a name column found — see DATA.md for the format.'); return; }
+    if (!lots.length) { toast('No lots imported — rows need a value in the “name” column (see DATA.md).'); return; }
     saveList([...lots, ...loadList()]);
     renderList();
     const bids = lots.filter((h) => evaluate(h, P).verdict === 'BID').length;
-    alert(`Imported ${lots.length} lots: ${bids} pass the screen (BID), ${lots.length - bids} rejected.`);
-  } catch {
-    alert('Could not parse that CSV — see DATA.md for the expected columns.');
+    toast(`Imported ${lots.length} lot${lots.length === 1 ? '' : 's'} — ${bids} pass the screen, ${lots.length - bids} rejected.`);
+  } catch (err) {
+    toast(err && err.message ? err.message : 'Couldn’t read that CSV — see DATA.md for the expected columns.');
   }
   e.target.value = '';
 });
@@ -1153,13 +1153,14 @@ function renderCatDist(scored) {
 if ($('#cat-csv')) $('#cat-csv').addEventListener('change', async (e) => {
   const file = e.target.files[0]; if (!file) return;
   try {
-    const rows = parseCSV(await file.text());
+    const rows = await readCsvRows(file);
     CATALOGUE = rows.filter((r) => r.name).map(csvRowToLot);
-    if (!CATALOGUE.length) { alert('No rows with a name column — see DATA.md.'); }
+    if (!CATALOGUE.length) { toast('No lots found — rows need a value in the “name” column (see DATA.md).'); return; }
     const sel = $('#cat-sale'); if (sel) sel.value = ''; // showing the import, not a published sale
     renderCatalogue();
     document.getElementById('catalogue-card').scrollIntoView({ behavior: 'smooth' });
-  } catch { alert('Could not parse that CSV — see DATA.md for the columns.'); }
+    toast(`Loaded ${CATALOGUE.length} lot${CATALOGUE.length === 1 ? '' : 's'} — scored and ranked.`);
+  } catch (err) { toast(err && err.message ? err.message : 'Couldn’t read that CSV — see DATA.md for the columns.'); }
   e.target.value = '';
 });
 if ($('#cat-sort')) $('#cat-sort').addEventListener('change', () => { catColSort = null; setSortIndicator('#catalogue-table', null, 0); renderCatalogue(); });
@@ -1277,6 +1278,24 @@ function parseCSV(text) {
   if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
   const head = rows.shift().map((h) => h.trim().toLowerCase());
   return rows.map((r) => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+}
+
+/* Read a CSV file into rows with friendly, specific errors rather than a
+   bare parse failure. Throws an Error whose message is user-facing. */
+async function readCsvRows(file) {
+  let text = '';
+  try { text = (await file.text()).trim(); }
+  catch { throw new Error('Could not read that file — try re-saving it as CSV.'); }
+  if (!text) throw new Error('That file is empty.');
+  if (!text.includes(',') && !text.includes('\n')) {
+    throw new Error('That doesn’t look like a CSV — export the sale with comma-separated columns (see DATA.md).');
+  }
+  let rows;
+  try { rows = parseCSV(text); }
+  catch { throw new Error('Couldn’t parse that CSV — check it has a header row (see DATA.md).'); }
+  if (!rows.length) throw new Error('No data rows — the file needs a header row and at least one lot.');
+  if (!('name' in rows[0])) throw new Error('No “name” column in the header — rename your lot/horse column to “name” (see DATA.md).');
+  return rows;
 }
 
 $('#import-json').addEventListener('change', async (e) => {
