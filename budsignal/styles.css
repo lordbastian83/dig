@@ -1498,3 +1498,21 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--amber); outline-offset: -1px;
 }
 tr[role="button"]:focus-visible { outline-offset: -2px; }
+
+/* ================================================================
+   PHONE BLOTTER — 2026-09-27. At 390px the positions table showed
+   only Market/Stream/Side; the numbers that matter (P&L, R, £) hid
+   behind an undiscoverable sideways scroll. On phones the table drops
+   Entry / Now / Age instead — the full row lives on wider screens.
+   ================================================================ */
+@media (max-width: 700px) {
+  .pos-table { min-width: 0; font-size: 11px; }
+  .pos-table th:nth-child(4), .pos-table td:nth-child(4),
+  .pos-table th:nth-child(5), .pos-table td:nth-child(5),
+  .pos-table th:nth-child(9), .pos-table td:nth-child(9) { display: none; }
+  .pos-table th, .pos-table td { padding: 9px 5px; }
+  /* the stream name may wrap to two lines — cheaper than losing R and £ */
+  .pos-table th:nth-child(2), .pos-table td:nth-child(2) { white-space: normal; }
+}
+/* multi-line notices inside any table must wrap, never clip */
+.record-table .table-empty { white-space: normal; }
