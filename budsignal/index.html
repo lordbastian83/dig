@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=88">
+<link rel="stylesheet" href="styles.css?v=89">
 </head>
 <body>
 
@@ -133,7 +133,7 @@
       <h3>Scalp desk — live 1h stream</h3>
       <div class="scalp-head"><span id="scalp-clock" class="radar-dist">—</span></div>
       <div id="scalp-desk"><p class="radar-dist scalp-wait">Loading 1-hour feeds…</p></div>
-      <p class="watchlist-note">The validated 1h combo only: Gold + NAS100, London/NY session (07:00–16:00 UTC), above-average volatility, 0.5% risk weight — a thin edge (+0.22%/trade in validation) where the filters are mandatory. Signals fire on closed hourly candles; the Telegram bot checks the same stream every hour.</p>
+      <p class="watchlist-note">The validated 1h combo only: Gold + NAS100, London/NY session (07:00–16:00 UTC), above-average volatility, 0.5% risk weight — a thin edge (+0.22%/trade in validation) where the filters are mandatory. Signals fire on closed hourly candles; the Telegram bot checks the same stream every hour. <strong>NAS100 quotes its QQQ ETF proxy here</strong> — trigger/stop dollars are QQQ levels, while the % distance and £ risk carry over 1:1 to a CFD quoted in index points.</p>
     </div>
 
     <div class="key-row" id="key-row" hidden>
@@ -187,7 +187,7 @@
         <thead><tr><th>Sym</th><th class="num">Last</th><th class="num">24h</th><th class="num">±Rng</th><th class="num">Brk</th></tr></thead>
         <tbody id="watchlist-body"><tr><td colspan="5" class="table-empty">Scanning…</td></tr></tbody>
       </table>
-      <p class="watchlist-note">▲▼ trend vs 20-day mean · ±Rng expected daily range from ATR (volatility forecast, not direction) · Brk distance to nearest 4h breakout trigger</p>
+      <p class="watchlist-note">▲▼ trend vs 20-day mean · ±Rng expected daily range from ATR (volatility forecast, not direction) · Brk distance to nearest 4h breakout trigger · superscripts DIA/QQQ/SPY: the free feed quotes those ETF proxies — % figures match the index, absolute prices are ETF-scale</p>
     </aside>
     </div>
   </section>
@@ -556,7 +556,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=88"></script>
-<script src="app.js?v=88"></script>
+<script src="engine.js?v=89"></script>
+<script src="app.js?v=89"></script>
 </body>
 </html>
