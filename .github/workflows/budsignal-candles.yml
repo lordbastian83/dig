@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: budsignal-candles
@@ -42,3 +43,33 @@ jobs:
             printf '100644 blob %s\tcandles.json\n' "$BLOB"; } | git mktree > /tmp/tree
           COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "desk feed $(date -u +%FT%TZ)")
           git push origin "$COMMIT:refs/heads/budsignal-data"
+
+      # See budsignal-rss.yml: one delivered cron heals the whole data plane.
+      - name: Kick overdue sibling feeds
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin budsignal-data 2>/dev/null || true
+          now=$(date +%s)
+          age_s() {
+            git show "origin/budsignal-data:$1" 2>/dev/null | python3 -c '
+          import json, sys
+          try: print(int(json.load(sys.stdin).get("updated", 0) // 1000))
+          except Exception: print(0)'
+          }
+          kick() {
+            echo "::notice::$1 is overdue - dispatching $2"
+            curl -sS -o /dev/null -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/$2/dispatches" \
+              -d '{"ref":"master"}' || true
+          }
+          check() {
+            u=$(age_s "$1")
+            if [ $(( now - u )) -gt "$2" ]; then kick "$1" "$3"; else echo "$1 fresh"; fi
+          }
+          check wire-rss.json 5400 budsignal-rss.yml
+          check performance.json 21600 budsignal-notify.yml
+          check intel.json 27000 budsignal-intel.yml
