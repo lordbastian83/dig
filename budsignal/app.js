@@ -1844,12 +1844,12 @@
   const LEX_NEG = /\b(fall[s]?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower)\b/gi;
   const MKT_TAGS = [
     ['GOLD', /\bgold\b|\bxau\b|bullion/i],
-    ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b/i],
+    ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b|\blng\b|gasoline|diesel|natural gas/i],
     ['BTC', /bitcoin|\bbtc\b|crypto/i],
     ['GBPUSD', /sterling|\bpound\b|\bgbp\b|bank of england|\bboe\b/i],
     ['EURUSD', /\beuro\b|\becb\b|euro ?zone/i],
-    ['NAS100', /nasdaq/i],
-    ['SPX500', /s&p ?500|\bs&p\b|\bspx\b/i],
+    ['NAS100', /nasdaq|big tech|megacap|tech stocks?/i],
+    ['SPX500', /s&p ?500|\bs&p\b|\bspx\b|wall street/i],
     ['US30', /\bdow\b/i],
   ];
   // runs on HTML-ESCAPED titles, so "&" may appear as "&amp;"
@@ -1863,6 +1863,12 @@
     ['FX & dollar', /dollar|currenc|forex|\bfx\b|\byen\b|sterling|\beuro\b/i],
     ['Geopolitics & trade', /tariff[s]?|sanction[s]?|\bwar\b|geopolit|trade (?:deal|talks)|election|china/i],
     ['Deals & IPOs', /merger|acquisition|\bipo\b|buyout|takeover/i],
+    // added 2026-09-30 after measuring the live wire: 46 of 100 headlines
+    // were invisible to every bucket — bonds/yields (the day's biggest
+    // macro story), AI/tech, and plain company news carried most of them
+    ['Bonds & yields', /treasur(?:y|ies)|\byields?\b|\bbonds?\b|gilts?|bunds?/i],
+    ['AI & tech', /\bai\b|artificial intelligence|semiconductor|chipmaker|openai|nvidia|big tech|silicon valley/i],
+    ['Companies & markets', /\bceo\b|layoffs?|wall street|\bstocks?\b|\bshares\b|dividend|buyback|analyst[s]?/i],
   ];
 
   // Tag matched words without ever re-matching inside an inserted tag:
