@@ -45,13 +45,20 @@ jobs:
           set -e
           git config user.name 'budsignal-bot'
           git config user.email 'actions@users.noreply.github.com'
-          git fetch origin budsignal-data
-          RSS_BLOB=$(git hash-object -w wire-rss.json)
-          # preserve every other file on the branch
-          { git ls-tree origin/budsignal-data | grep -v -e $'\twire-rss.json$' || true;
-            printf '100644 blob %s\twire-rss.json\n' "$RSS_BLOB"; } | git mktree > /tmp/tree
-          COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "rss wire $(date -u +%FT%TZ)")
-          git push origin "$COMMIT:refs/heads/budsignal-data"
+          # Several workflows commit distinct files to this branch, and the
+          # sibling kickers make concurrent publishers routine — on a lost
+          # race, re-parent the same blob on the new tip and push again.
+          for attempt in 1 2 3; do
+            git fetch origin budsignal-data
+            RSS_BLOB=$(git hash-object -w wire-rss.json)
+            # preserve every other file on the branch
+            { git ls-tree origin/budsignal-data | grep -v -e $'\twire-rss.json$' || true;
+              printf '100644 blob %s\twire-rss.json\n' "$RSS_BLOB"; } | git mktree > /tmp/tree
+            COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "rss wire $(date -u +%FT%TZ)")
+            git push origin "$COMMIT:refs/heads/budsignal-data" && exit 0
+            sleep $((attempt * 5))
+          done
+          exit 1
 
       # GitHub cron delivery gets throttled for hours at a time (the whole
       # data plane went quiet 01:26-05:08 UTC on 2026-09-27 with zero

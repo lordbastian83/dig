@@ -37,12 +37,18 @@ jobs:
           set -e
           git config user.name 'budsignal-bot'
           git config user.email 'actions@users.noreply.github.com'
-          git fetch origin budsignal-data
-          BLOB=$(git hash-object -w candles.json)
-          { git ls-tree origin/budsignal-data | grep -v -e $'\tcandles.json$' || true;
-            printf '100644 blob %s\tcandles.json\n' "$BLOB"; } | git mktree > /tmp/tree
-          COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "desk feed $(date -u +%FT%TZ)")
-          git push origin "$COMMIT:refs/heads/budsignal-data"
+          # concurrent publishers are routine (sibling kickers) — on a lost
+          # race, re-parent on the new tip and push again
+          for attempt in 1 2 3; do
+            git fetch origin budsignal-data
+            BLOB=$(git hash-object -w candles.json)
+            { git ls-tree origin/budsignal-data | grep -v -e $'\tcandles.json$' || true;
+              printf '100644 blob %s\tcandles.json\n' "$BLOB"; } | git mktree > /tmp/tree
+            COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "desk feed $(date -u +%FT%TZ)")
+            git push origin "$COMMIT:refs/heads/budsignal-data" && exit 0
+            sleep $((attempt * 5))
+          done
+          exit 1
 
       # See budsignal-rss.yml: one delivered cron heals the whole data plane.
       - name: Kick overdue sibling feeds
