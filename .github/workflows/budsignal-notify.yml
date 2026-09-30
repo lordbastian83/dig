@@ -105,12 +105,20 @@ jobs:
           LEDGER_FILE=performance.json METRICS_FILE=market-metrics.json node budsignal/track.mjs
           PERF_BLOB=$(git hash-object -w performance.json)
           METRICS_BLOB=$(git hash-object -w market-metrics.json)
-          # preserve every other file on the branch (research report, ML model)
-          { git ls-tree origin/budsignal-data | grep -v -e $'\tperformance.json$' -e $'\tmarket-metrics.json$' || true;
-            printf '100644 blob %s\tperformance.json\n' "$PERF_BLOB";
-            printf '100644 blob %s\tmarket-metrics.json\n' "$METRICS_BLOB"; } | git mktree > /tmp/tree
-          COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "ledger update $(date -u +%FT%TZ)")
-          git push origin "$COMMIT:refs/heads/budsignal-data"
+          # concurrent publishers are routine (sibling kickers) — on a lost
+          # race, re-parent on the new tip and push again. The ledger blobs
+          # are already written; only the tree parent changes per attempt.
+          for attempt in 1 2 3; do
+            git fetch origin budsignal-data
+            # preserve every other file on the branch (research report, ML model)
+            { git ls-tree origin/budsignal-data | grep -v -e $'\tperformance.json$' -e $'\tmarket-metrics.json$' || true;
+              printf '100644 blob %s\tperformance.json\n' "$PERF_BLOB";
+              printf '100644 blob %s\tmarket-metrics.json\n' "$METRICS_BLOB"; } | git mktree > /tmp/tree
+            COMMIT=$(git commit-tree "$(cat /tmp/tree)" -p "$(git rev-parse origin/budsignal-data)" -m "ledger update $(date -u +%FT%TZ)")
+            git push origin "$COMMIT:refs/heads/budsignal-data" && exit 0
+            sleep $((attempt * 5))
+          done
+          exit 1
 
       # See budsignal-rss.yml: one delivered cron heals the whole data plane.
       - name: Kick overdue sibling feeds
