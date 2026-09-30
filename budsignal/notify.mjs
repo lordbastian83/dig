@@ -212,11 +212,18 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
   const windowEnd = fmtTime(sig.t + (sig.candleMs || E.CFG.CANDLE_MS));
   const maxHold = scalp ? '18 hours' : swing ? (sig.early ? '18 days' : '24 days') : '3 days';
   const trailMult = swing && !sig.early ? 3 : 2;
+  // % distances travel across quote scales — on the ETF-proxy indices they
+  // are the ONLY level numbers that apply directly to a CFD in index points
+  const stopPct = Math.abs(sig.entry - sig.stop) / sig.entry * 100;
+  const targetPct = sig.target != null ? Math.abs(sig.target - sig.entry) / sig.entry * 100 : null;
   const lines = [
     `${arrow} — <b>${cfg.pair}</b>`,
     trail
-      ? `Entry $${fmtPrice(sig.entry)} · Initial stop $${fmtPrice(sig.stop)} · Exit: ${trailMult}×ATR trailing stop (max ${maxHold})`
-      : `Entry $${fmtPrice(sig.entry)} · Stop $${fmtPrice(sig.stop)} · Target $${fmtPrice(sig.target)}`,
+      ? `Entry $${fmtPrice(sig.entry)} · Initial stop $${fmtPrice(sig.stop)} (${stopPct.toFixed(2)}% away) · Exit: ${trailMult}×ATR trailing stop (max ${maxHold})`
+      : `Entry $${fmtPrice(sig.entry)} · Stop $${fmtPrice(sig.stop)} (${stopPct.toFixed(2)}%) · Target $${fmtPrice(sig.target)}${targetPct != null ? ` (${targetPct.toFixed(2)}%)` : ''}`,
+    ...(INDEX_PROXIES.includes(asset)
+      ? [`⚠ Prices above are ${cfg.fmp}-proxy scale — your CFD quotes index points. Place the stop using the % distance, not the dollar level.`]
+      : []),
     (sig.confidence != null ? `Confidence ${sig.confidence}/100 · ` : '') +
       (mlModel && sig.rsiAt != null ? `AI score ${Math.round(E.mlScore(sig, mlModel) * 100)}% · ` : '') +
       `entry window until ${windowEnd} UTC`,
