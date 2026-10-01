@@ -93,4 +93,4 @@ jobs:
           }
           check candles.json 7200 budsignal-candles.yml
           check performance.json 21600 budsignal-notify.yml
-          check intel.json 27000 budsignal-intel.yml
+          check intel.json 23400 budsignal-intel.yml
