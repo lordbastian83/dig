@@ -1,14 +1,14 @@
 # LordBastian Signal Generator — walk-forward research
 
-Generated 2026-10-01T13:43:18.450Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
+Generated 2026-10-02T05:57:51.673Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
 
 A variant only counts as an improvement if it beats its comparator in **both** periods — train-only wins are fitted noise.
 
-Enrichment coverage: funding 4/4 · fng 3161 · econ 845 · usd ok · btc ok
+Enrichment coverage: funding 4/4 · fng 3162 · econ 838 · usd ok · btc ok
 
 ## BTC / USD
 
-6636 candles, 2023-09-22 → 2026-10-01, split at 2025-11-03
+6634 candles, 2023-09-23 → 2026-10-02, split at 2025-11-04
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -18,7 +18,7 @@ Enrichment coverage: funding 4/4 · fng 3161 · econ 845 · usd ok · btc ok
 
 ## XAU / USD · Gold
 
-4648 candles, 2023-09-22 → 2026-10-01, split at 2025-11-05
+4647 candles, 2023-09-24 → 2026-10-02, split at 2025-11-06
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -28,7 +28,7 @@ Enrichment coverage: funding 4/4 · fng 3161 · econ 845 · usd ok · btc ok
 
 ## US30 · Dow (DIA proxy)
 
-1510 candles, 2023-09-22 → 2026-10-01, split at 2025-11-04
+1509 candles, 2023-09-25 → 2026-10-01, split at 2025-11-04
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -38,7 +38,7 @@ Enrichment coverage: funding 4/4 · fng 3161 · econ 845 · usd ok · btc ok
 
 ## NAS100 · Nasdaq (QQQ proxy)
 
-1510 candles, 2023-09-22 → 2026-10-01, split at 2025-11-04
+1509 candles, 2023-09-25 → 2026-10-01, split at 2025-11-04
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -48,7 +48,7 @@ Enrichment coverage: funding 4/4 · fng 3161 · econ 845 · usd ok · btc ok
 
 ## SPX500 · S&P (SPY proxy)
 
-1510 candles, 2023-09-22 → 2026-10-01, split at 2025-11-04
+1509 candles, 2023-09-25 → 2026-10-01, split at 2025-11-04
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -58,7 +58,7 @@ Enrichment coverage: funding 4/4 · fng 3161 · econ 845 · usd ok · btc ok
 
 ## GBP / USD · Cable
 
-4723 candles, 2023-09-22 → 2026-10-01, split at 2025-11-04
+4722 candles, 2023-09-24 → 2026-10-02, split at 2025-11-05
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -68,7 +68,7 @@ Enrichment coverage: funding 4/4 · fng 3161 · econ 845 · usd ok · btc ok
 
 ## EUR / USD
 
-4720 candles, 2023-09-22 → 2026-10-01, split at 2025-11-04
+4719 candles, 2023-09-24 → 2026-10-02, split at 2025-11-04
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -78,7 +78,7 @@ Enrichment coverage: funding 4/4 · fng 3161 · econ 845 · usd ok · btc ok
 
 ## WTI Crude Oil
 
-4597 candles, 2023-10-01 → 2026-10-01, split at 2025-11-09
+4601 candles, 2023-10-01 → 2026-10-02, split at 2025-11-10
 
 | Variant | Train | Validate |
 |---|---|---|
@@ -90,23 +90,23 @@ Enrichment coverage: funding 4/4 · fng 3161 · econ 845 · usd ok · btc ok
 
 | Strategy | Train | Validate | Verdict |
 |---|---|---|---|
-| Donchian-55 breakout, fixed exits | 609 · 40% fav · avg +0.05% · PF 1.12 | 226 · 37% fav · avg +0.12% · PF 1.24 | ✅ positive in BOTH periods |
-| Donchian-55 breakout, trailing exits | 609 · 36% fav · avg +0.01% · PF 1.01 | 225 · 37% fav · avg +0.46% · PF 1.75 | ✅ positive in BOTH periods |
+| Donchian-55 breakout, fixed exits | 609 · 40% fav · avg +0.06% · PF 1.14 | 226 · 37% fav · avg +0.10% · PF 1.21 | ✅ positive in BOTH periods |
+| Donchian-55 breakout, trailing exits | 609 · 36% fav · avg +0.01% · PF 1.02 | 225 · 37% fav · avg +0.45% · PF 1.74 | ✅ positive in BOTH periods |
 | Funding-extreme mean reversion, fixed | 0 signals | 13 · 46% fav · avg -0.25% · PF 0.59 | ❌ no out-of-sample edge |
 | Funding-extreme mean reversion, trailing | 0 signals | 13 · 31% fav · avg -0.50% · PF 0.46 | ❌ no out-of-sample edge |
-| **Breakout trailing, NET of per-market costs** | 609 · 35% fav · avg -0.04% · PF 0.93 | 225 · 36% fav · avg +0.41% · PF 1.64 | ❌ costs eat the edge |
+| **Breakout trailing, NET of per-market costs** | 609 · 35% fav · avg -0.04% · PF 0.94 | 225 · 36% fav · avg +0.40% · PF 1.62 | ❌ costs eat the edge |
 
 ## Breakout + trailing, per market (net of that market's cost)
 
 | Market | Cost | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|---|
-| BTC / USD | 0.10% | 115 · 30% fav · avg -0.18% · PF 0.84 | 47 · 32% fav · avg +0.18% · PF 1.19 | ❌ no net edge |
+| BTC / USD | 0.10% | 115 · 30% fav · avg -0.16% · PF 0.86 | 46 · 30% fav · avg +0.14% · PF 1.14 | ❌ no net edge |
 | XAU / USD · Gold | 0.05% | 106 · 43% fav · avg +0.12% · PF 1.32 | 33 · 58% fav · avg +0.84% · PF 2.87 | ✅ net edge |
 | US30 · Dow (DIA proxy) | 0.02% | 35 · 40% fav · avg +0.28% · PF 1.57 | 14 · 7% fav · avg -0.63% · PF 0.23 | ❌ no net edge |
 | NAS100 · Nasdaq (QQQ proxy) | 0.02% | 37 · 49% fav · avg +0.35% · PF 1.66 | 13 · 38% fav · avg +0.90% · PF 2.54 | ✅ net edge |
 | SPX500 · S&P (SPY proxy) | 0.02% | 42 · 45% fav · avg +0.33% · PF 1.89 | 14 · 29% fav · avg +0.02% · PF 1.03 | ✅ net edge |
 | GBP / USD · Cable | 0.03% | 92 · 34% fav · avg -0.06% · PF 0.71 | 34 · 29% fav · avg -0.02% · PF 0.89 | ❌ no net edge |
-| EUR / USD | 0.03% | 88 · 31% fav · avg -0.03% · PF 0.84 | 33 · 39% fav · avg -0.01% · PF 0.93 | ❌ no net edge |
+| EUR / USD | 0.03% | 88 · 31% fav · avg -0.03% · PF 0.84 | 34 · 41% fav · avg +0.00% · PF 1.02 | ❌ no net edge |
 | WTI Crude Oil | 0.05% | 94 · 24% fav · avg -0.47% · PF 0.52 | 37 · 38% fav · avg +1.43% · PF 2.19 | ❌ no net edge |
 
 Per-market edge status published to edge-status.json — alerts for ❌ markets carry an informational-only warning.
@@ -115,9 +115,9 @@ Per-market edge status published to edge-status.json — alerts for ❌ markets 
 
 | Lookback | All markets: train | validate | Non-crypto only: train | validate |
 |---|---|---|---|---|
-| 20 | 982 · 39% fav · avg +0.05% · PF 1.09 | 405 · 36% fav · avg +0.10% · PF 1.14 | 793 · 39% fav · avg +0.05% · PF 1.11 | 316 · 38% fav · avg +0.24% · PF 1.44 |
-| 55 | 609 · 35% fav · avg -0.04% · PF 0.93 | 225 · 36% fav · avg +0.41% · PF 1.64 | 494 · 36% fav · avg -0.01% · PF 0.98 | 178 · 37% fav · avg +0.47% · PF 1.85 |
-| 100 | 440 · 36% fav · avg -0.00% · PF 1.00 | 176 · 39% fav · avg +0.50% · PF 1.88 | 355 · 37% fav · avg +0.01% · PF 1.02 | 140 · 40% fav · avg +0.56% · PF 2.22 |
+| 20 | 982 · 38% fav · avg +0.05% · PF 1.09 | 405 · 36% fav · avg +0.10% · PF 1.14 | 793 · 38% fav · avg +0.04% · PF 1.10 | 316 · 39% fav · avg +0.24% · PF 1.44 |
+| 55 | 609 · 35% fav · avg -0.04% · PF 0.94 | 225 · 36% fav · avg +0.40% · PF 1.62 | 494 · 36% fav · avg -0.01% · PF 0.98 | 179 · 37% fav · avg +0.46% · PF 1.85 |
+| 100 | 442 · 36% fav · avg +0.00% · PF 1.00 | 175 · 39% fav · avg +0.50% · PF 1.87 | 356 · 37% fav · avg +0.01% · PF 1.02 | 140 · 41% fav · avg +0.57% · PF 2.24 |
 
 ## Candidate markets (4h breakout + trailing, net of own cost)
 
@@ -125,10 +125,10 @@ New markets audition with the exact live rule set — a candidate is added to th
 
 | Candidate | Cost | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|---|
-| XAG / USD · Silver | 0.05% | 94 · 34% fav · avg -0.08% · PF 0.89 | 43 · 40% fav · avg -0.03% · PF 0.98 | ❌ no net edge |
+| XAG / USD · Silver | 0.05% | 94 · 34% fav · avg -0.08% · PF 0.89 | 44 · 39% fav · avg -0.11% · PF 0.93 | ❌ no net edge |
 | USD / JPY | 0.03% | 91 · 43% fav · avg +0.07% · PF 1.30 | 39 · 28% fav · avg -0.04% · PF 0.72 | ❌ no net edge |
-| AUD / USD | 0.03% | 90 · 24% fav · avg -0.17% · PF 0.51 | 39 · 33% fav · avg -0.01% · PF 0.94 | ❌ no net edge |
-| USD / CAD | 0.03% | 87 · 29% fav · avg -0.00% · PF 0.98 | 46 · 52% fav · avg +0.08% · PF 2.01 | ❌ no net edge |
+| AUD / USD | 0.03% | 90 · 24% fav · avg -0.17% · PF 0.51 | 40 · 35% fav · avg +0.00% · PF 1.02 | ❌ no net edge |
+| USD / CAD | 0.03% | 87 · 29% fav · avg -0.00% · PF 0.98 | 47 · 53% fav · avg +0.08% · PF 2.02 | ❌ no net edge |
 | EUR / GBP | 0.03% | 70 · 33% fav · avg -0.05% · PF 0.79 | 37 · 22% fav · avg -0.10% · PF 0.31 | ❌ no net edge |
 | Natural Gas | 0.08% | 104 · 38% fav · avg +0.24% · PF 1.15 | 38 · 26% fav · avg -0.40% · PF 0.79 | ❌ no net edge |
 
@@ -138,8 +138,8 @@ Same strategy, 4× faster timeframe, 7 markets over up to 2 years. The question 
 
 | Variant | Train (gross) | Validate (gross) | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|---|---|
-| 1h breakout, fixed exits | 1263 · 38% fav · avg +0.03% · PF 1.15 | 534 · 34% fav · avg -0.00% · PF 0.98 | 1263 · 35% fav · avg -0.02% · PF 0.90 | 534 · 32% fav · avg -0.05% · PF 0.78 | ❌ not viable net of costs |
-| 1h breakout, trailing exits | 1263 · 39% fav · avg +0.04% · PF 1.18 | 534 · 36% fav · avg +0.00% · PF 1.02 | 1263 · 35% fav · avg -0.01% · PF 0.97 | 534 · 33% fav · avg -0.05% · PF 0.84 | ❌ not viable net of costs |
+| 1h breakout, fixed exits | 1260 · 38% fav · avg +0.03% · PF 1.14 | 534 · 34% fav · avg -0.01% · PF 0.98 | 1260 · 35% fav · avg -0.02% · PF 0.89 | 534 · 32% fav · avg -0.05% · PF 0.78 | ❌ not viable net of costs |
+| 1h breakout, trailing exits | 1260 · 38% fav · avg +0.04% · PF 1.17 | 534 · 36% fav · avg +0.01% · PF 1.03 | 1260 · 35% fav · avg -0.01% · PF 0.97 | 534 · 34% fav · avg -0.04% · PF 0.86 | ❌ not viable net of costs |
 
 ### Scalp rescue filters (1h breakout + trailing, net of costs)
 
@@ -147,11 +147,14 @@ Each filter attacks the reason scalping failed: too-small moves against fixed co
 
 | Filter | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|
-| Session only (07–16 UTC) | 733 · 36% fav · avg +0.01% · PF 1.04 | 325 · 34% fav · avg -0.06% · PF 0.81 | ❌ not viable net of costs |
-| High volatility only (ATR% > trailing avg) | 636 · 36% fav · avg +0.01% · PF 1.03 | 273 · 34% fav · avg -0.06% · PF 0.81 | ❌ not viable net of costs |
-| 4h-edge markets only (GOLD, NAS100, SPX500) | 405 · 39% fav · avg +0.06% · PF 1.23 | 166 · 39% fav · avg +0.05% · PF 1.16 | ✅ survives costs on 1h |
-| All three combined | 125 · 39% fav · avg +0.16% · PF 1.47 | 50 · 44% fav · avg +0.05% · PF 1.15 | ✅ survives costs on 1h |
-| Combo at HALF costs (best-case raw spreads) | 125 · 39% fav · avg +0.17% · PF 1.54 | 50 · 46% fav · avg +0.07% · PF 1.21 | ✅ viable IF costs halve |
+| Session only (07–16 UTC) | 733 · 36% fav · avg +0.01% · PF 1.03 | 324 · 34% fav · avg -0.05% · PF 0.83 | ❌ not viable net of costs |
+| High volatility only (ATR% > trailing avg) | 638 · 35% fav · avg +0.01% · PF 1.02 | 274 · 34% fav · avg -0.06% · PF 0.81 | ❌ not viable net of costs |
+| 4h-edge markets only (GOLD, NAS100, SPX500) | 404 · 39% fav · avg +0.06% · PF 1.23 | 166 · 39% fav · avg +0.05% · PF 1.16 | ✅ survives costs on 1h |
+| All three combined | 125 · 39% fav · avg +0.16% · PF 1.47 | 51 · 43% fav · avg +0.04% · PF 1.12 | ✅ survives costs on 1h |
+| Combo at HALF costs (best-case raw spreads) | 125 · 39% fav · avg +0.17% · PF 1.54 | 51 · 45% fav · avg +0.06% · PF 1.18 | ✅ viable IF costs halve |
+| Combo at 2× modeled costs (widened spreads) | 125 · 39% fav · avg +0.12% · PF 1.34 | 51 · 39% fav · avg +0.01% · PF 1.02 | ✅ edge survives |
+| Combo at 3× modeled costs (widened spreads) | 125 · 35% fav · avg +0.08% · PF 1.22 | 51 · 39% fav · avg -0.02% · PF 0.93 | ❌ edge gone — skip trades when spreads look like this |
+| _Break-even cost multiple (validate)_ | — | — | gross edge ≈ 2.3× the modeled cost |
 
 ## Daily-candle breakout (slower, not faster)
 
@@ -159,8 +162,8 @@ Daily candles aggregated from the same history. Fewer, bigger trades — the dir
 
 | Lookback | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|
-| 20 | 258 · 36% fav · avg -0.01% · PF 0.99 | 101 · 44% fav · avg +1.03% · PF 1.76 | ❌ no net edge on daily |
-| 55 | 158 · 40% fav · avg +0.09% · PF 1.09 | 59 · 41% fav · avg +1.75% · PF 2.81 | ✅ survives costs on daily |
+| 20 | 260 · 36% fav · avg -0.04% · PF 0.97 | 99 · 44% fav · avg +1.11% · PF 1.84 | ❌ no net edge on daily |
+| 55 | 158 · 39% fav · avg +0.05% · PF 1.04 | 57 · 42% fav · avg +1.91% · PF 3.12 | ✅ survives costs on daily |
 
 ## Exit grid — 4h breakout (edge markets: GOLD, NAS100, SPX500)
 
@@ -196,31 +199,31 @@ Daily candles aggregated from the same history. Fewer, bigger trades — the dir
 
 | stop / trail / window | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|
-| **2 / 3 / 24 (live)** | 158 · 39% fav · avg +0.33% · PF 1.24 | 59 · 37% fav · avg +2.27% · PF 2.56 | baseline |
-| 1.5 / 1.5 / 12 | 158 · 40% fav · avg -0.04% · PF 0.96 | 62 · 39% fav · avg +1.24% · PF 2.58 | ❌ not net-positive both periods |
-| 1.5 / 1.5 / 18 | 158 · 40% fav · avg -0.02% · PF 0.98 | 62 · 39% fav · avg +1.33% · PF 2.70 | ❌ not net-positive both periods |
-| 1.5 / 1.5 / 24 | 158 · 40% fav · avg -0.01% · PF 0.99 | 62 · 39% fav · avg +1.24% · PF 2.58 | ❌ not net-positive both periods |
-| 1.5 / 2 / 12 | 158 · 40% fav · avg -0.04% · PF 0.96 | 59 · 41% fav · avg +1.45% · PF 2.46 | ❌ not net-positive both periods |
-| 1.5 / 2 / 18 | 158 · 40% fav · avg +0.09% · PF 1.09 | 59 · 41% fav · avg +1.75% · PF 2.81 | · no improvement |
-| 1.5 / 2 / 24 | 158 · 39% fav · avg +0.17% · PF 1.16 | 59 · 39% fav · avg +1.55% · PF 2.51 | · no improvement |
-| 1.5 / 3 / 12 | 158 · 38% fav · avg -0.07% · PF 0.95 | 59 · 39% fav · avg +1.14% · PF 1.97 | ❌ not net-positive both periods |
-| 1.5 / 3 / 18 | 158 · 34% fav · avg +0.05% · PF 1.04 | 59 · 36% fav · avg +1.46% · PF 2.23 | · no improvement |
-| 1.5 / 3 / 24 | 158 · 32% fav · avg +0.14% · PF 1.11 | 59 · 34% fav · avg +1.17% · PF 1.87 | · no improvement |
-| 2 / 1.5 / 12 | 158 · 40% fav · avg -0.06% · PF 0.93 | 62 · 39% fav · avg +1.24% · PF 2.58 | ❌ not net-positive both periods |
-| 2 / 1.5 / 18 | 158 · 40% fav · avg -0.04% · PF 0.95 | 62 · 39% fav · avg +1.33% · PF 2.70 | ❌ not net-positive both periods |
-| 2 / 1.5 / 24 | 158 · 40% fav · avg -0.03% · PF 0.97 | 62 · 39% fav · avg +1.24% · PF 2.58 | ❌ not net-positive both periods |
-| 2 / 2 / 12 | 158 · 41% fav · avg -0.12% · PF 0.90 | 59 · 42% fav · avg +1.41% · PF 2.37 | ❌ not net-positive both periods |
-| 2 / 2 / 18 | 158 · 41% fav · avg +0.02% · PF 1.01 | 59 · 41% fav · avg +1.67% · PF 2.59 | · no improvement |
-| 2 / 2 / 24 | 158 · 41% fav · avg +0.10% · PF 1.09 | 59 · 39% fav · avg +1.47% · PF 2.33 | · no improvement |
-| 2 / 3 / 12 | 158 · 43% fav · avg -0.07% · PF 0.94 | 59 · 42% fav · avg +1.45% · PF 2.19 | ❌ not net-positive both periods |
-| 2 / 3 / 18 | 158 · 40% fav · avg +0.12% · PF 1.08 | 59 · 39% fav · avg +2.60% · PF 3.04 | · no improvement |
+| **2 / 3 / 24 (live)** | 158 · 39% fav · avg +0.40% · PF 1.29 | 57 · 37% fav · avg +2.20% · PF 2.48 | baseline |
+| 1.5 / 1.5 / 12 | 158 · 39% fav · avg -0.08% · PF 0.90 | 60 · 40% fav · avg +1.34% · PF 2.79 | ❌ not net-positive both periods |
+| 1.5 / 1.5 / 18 | 158 · 39% fav · avg -0.06% · PF 0.93 | 60 · 40% fav · avg +1.44% · PF 2.92 | ❌ not net-positive both periods |
+| 1.5 / 1.5 / 24 | 158 · 39% fav · avg -0.05% · PF 0.95 | 60 · 40% fav · avg +1.34% · PF 2.79 | ❌ not net-positive both periods |
+| 1.5 / 2 / 12 | 158 · 39% fav · avg -0.10% · PF 0.90 | 57 · 42% fav · avg +1.60% · PF 2.73 | ❌ not net-positive both periods |
+| 1.5 / 2 / 18 | 158 · 39% fav · avg +0.05% · PF 1.04 | 57 · 42% fav · avg +1.91% · PF 3.12 | · no improvement |
+| 1.5 / 2 / 24 | 158 · 38% fav · avg +0.12% · PF 1.11 | 57 · 40% fav · avg +1.71% · PF 2.76 | · no improvement |
+| 1.5 / 3 / 12 | 158 · 38% fav · avg -0.05% · PF 0.95 | 57 · 39% fav · avg +1.08% · PF 1.90 | ❌ not net-positive both periods |
+| 1.5 / 3 / 18 | 158 · 34% fav · avg +0.14% · PF 1.11 | 57 · 35% fav · avg +1.27% · PF 2.04 | · no improvement |
+| 1.5 / 3 / 24 | 158 · 32% fav · avg +0.20% · PF 1.16 | 57 · 33% fav · avg +1.05% · PF 1.77 | · no improvement |
+| 2 / 1.5 / 12 | 158 · 39% fav · avg -0.11% · PF 0.88 | 60 · 40% fav · avg +1.34% · PF 2.80 | ❌ not net-positive both periods |
+| 2 / 1.5 / 18 | 158 · 39% fav · avg -0.08% · PF 0.91 | 60 · 40% fav · avg +1.44% · PF 2.92 | ❌ not net-positive both periods |
+| 2 / 1.5 / 24 | 158 · 39% fav · avg -0.07% · PF 0.92 | 60 · 40% fav · avg +1.34% · PF 2.80 | ❌ not net-positive both periods |
+| 2 / 2 / 12 | 158 · 40% fav · avg -0.18% · PF 0.84 | 57 · 44% fav · avg +1.56% · PF 2.62 | ❌ not net-positive both periods |
+| 2 / 2 / 18 | 158 · 40% fav · avg -0.03% · PF 0.98 | 57 · 42% fav · avg +1.83% · PF 2.87 | ❌ not net-positive both periods |
+| 2 / 2 / 24 | 158 · 39% fav · avg +0.05% · PF 1.05 | 57 · 40% fav · avg +1.63% · PF 2.55 | · no improvement |
+| 2 / 3 / 12 | 158 · 43% fav · avg -0.06% · PF 0.95 | 57 · 42% fav · avg +1.41% · PF 2.13 | ❌ not net-positive both periods |
+| 2 / 3 / 18 | 158 · 41% fav · avg +0.20% · PF 1.15 | 57 · 39% fav · avg +2.45% · PF 2.89 | · no improvement |
 
 ## Side split — daily swing-55 (pooled) (live exits)
 
 | Side | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|
-| long | 126 · 40% fav · avg +0.70% · PF 1.59 | 38 · 45% fav · avg +3.95% · PF 4.69 | ✅ carries its weight |
-| short | 32 · 31% fav · avg -1.09% · PF 0.48 | 21 · 24% fav · avg -0.77% · PF 0.64 | ❌ loses net in at least one period |
+| long | 124 · 41% fav · avg +0.72% · PF 1.60 | 38 · 45% fav · avg +3.95% · PF 4.69 | ✅ carries its weight |
+| short | 34 · 32% fav · avg -0.77% · PF 0.61 | 19 · 21% fav · avg -1.30% · PF 0.44 | ❌ loses net in at least one period |
 
 ## Pyramiding the daily swing-55 (add to winners?)
 
@@ -228,14 +231,14 @@ Pre-registered refinement of the validated swing stream: add-on units fill at th
 
 | Variant | Side | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|---|
-| no adds (live baseline, re-simulated) | both | 158 · 44% fav · avg +0.67% · PF 1.42 | 63 · 38% fav · avg +0.92% · PF 1.51 | baseline |
-| add ½ unit at +1×ATR | both | 158 · 43% fav · avg +0.17% · PF 1.09 | 63 · 37% fav · avg +0.28% · PF 1.14 | ❌ no improvement |
-| add 1 unit at +1×ATR | both | 158 · 42% fav · avg -0.08% · PF 0.96 | 63 · 37% fav · avg -0.04% · PF 0.98 | ❌ no improvement |
-| add ½ + ½ at +1 and +2×ATR | both | 158 · 41% fav · avg -0.22% · PF 0.89 | 63 · 37% fav · avg -0.12% · PF 0.94 | ❌ no improvement |
-| no adds (live baseline, re-simulated) | ▲ longs | 126 · 49% fav · avg +1.47% · PF 2.16 | 40 · 43% fav · avg +1.89% · PF 2.51 | baseline |
-| add ½ unit at +1×ATR | ▲ longs | 126 · 48% fav · avg +0.99% · PF 1.72 | 40 · 40% fav · avg +1.24% · PF 1.87 | ❌ no improvement |
-| add 1 unit at +1×ATR | ▲ longs | 126 · 48% fav · avg +0.74% · PF 1.52 | 40 · 40% fav · avg +0.91% · PF 1.60 | ❌ no improvement |
-| add ½ + ½ at +1 and +2×ATR | ▲ longs | 126 · 47% fav · avg +0.63% · PF 1.44 | 40 · 40% fav · avg +0.84% · PF 1.56 | ❌ no improvement |
+| no adds (live baseline, re-simulated) | both | 158 · 43% fav · avg +0.70% · PF 1.44 | 62 · 40% fav · avg +0.83% · PF 1.47 | baseline |
+| add ½ unit at +1×ATR | both | 158 · 42% fav · avg +0.20% · PF 1.11 | 62 · 39% fav · avg +0.20% · PF 1.10 | ❌ no improvement |
+| add 1 unit at +1×ATR | both | 158 · 41% fav · avg -0.06% · PF 0.97 | 62 · 39% fav · avg -0.12% · PF 0.94 | ❌ no improvement |
+| add ½ + ½ at +1 and +2×ATR | both | 158 · 40% fav · avg -0.20% · PF 0.90 | 62 · 39% fav · avg -0.17% · PF 0.92 | ❌ no improvement |
+| no adds (live baseline, re-simulated) | ▲ longs | 124 · 48% fav · avg +1.46% · PF 2.12 | 40 · 45% fav · avg +1.95% · PF 2.63 | baseline |
+| add ½ unit at +1×ATR | ▲ longs | 124 · 48% fav · avg +0.97% · PF 1.69 | 40 · 43% fav · avg +1.30% · PF 1.96 | ❌ no improvement |
+| add 1 unit at +1×ATR | ▲ longs | 124 · 47% fav · avg +0.73% · PF 1.50 | 40 · 43% fav · avg +0.97% · PF 1.67 | ❌ no improvement |
+| add ½ + ½ at +1 and +2×ATR | ▲ longs | 124 · 46% fav · avg +0.61% · PF 1.42 | 40 · 43% fav · avg +0.90% · PF 1.62 | ❌ no improvement |
 
 ## Trend-quality gate on the daily swing-55 (regime filter?)
 
@@ -243,20 +246,32 @@ Pre-registered refinement: entries only when the signal candle sits in a trend r
 
 | Gate | Side | Train (net) | Validate (net) | Verdict |
 |---|---|---|---|---|
-| no gate (live baseline, re-simulated) | both | 158 · 44% fav · avg +0.67% · PF 1.42 | 63 · 38% fav · avg +0.92% · PF 1.51 | baseline |
-| EMA200-aligned (with-trend only) | both | 104 · 43% fav · avg +0.55% · PF 1.37 | 56 · 39% fav · avg +1.12% · PF 1.68 | ❌ no improvement |
-| ADX ≥ 20 (trend regime) | both | 110 · 39% fav · avg +0.01% · PF 1.01 | 47 · 36% fav · avg +1.17% · PF 1.57 | ❌ no improvement |
-| ADX ≥ 25 (strong trend) | both | 78 · 40% fav · avg +0.08% · PF 1.04 | 31 · 39% fav · avg +0.97% · PF 1.46 | ❌ no improvement |
-| EMA200-aligned AND ADX ≥ 20 | both | 70 · 39% fav · avg -0.25% · PF 0.86 | 42 · 38% fav · avg +1.68% · PF 1.92 | ❌ no improvement |
-| no gate (live baseline, re-simulated) | ▲ longs | 126 · 49% fav · avg +1.47% · PF 2.16 | 40 · 43% fav · avg +1.89% · PF 2.51 | baseline |
-| EMA200-aligned (with-trend only) | ▲ longs | 85 · 46% fav · avg +1.05% · PF 1.78 | 36 · 42% fav · avg +1.98% · PF 2.89 | ❌ no improvement |
-| ADX ≥ 20 (trend regime) | ▲ longs | 87 · 41% fav · avg +0.71% · PF 1.45 | 27 · 37% fav · avg +2.55% · PF 2.81 | ⚠️ too few trades |
-| ADX ≥ 25 (strong trend) | ▲ longs | 59 · 42% fav · avg +0.85% · PF 1.56 | 17 · 41% fav · avg +3.27% · PF 3.09 | ⚠️ too few trades |
-| EMA200-aligned AND ADX ≥ 20 | ▲ longs | 56 · 38% fav · avg +0.03% · PF 1.02 | 24 · 38% fav · avg +3.17% · PF 3.97 | ⚠️ too few trades |
+| no gate (live baseline, re-simulated) | both | 158 · 43% fav · avg +0.70% · PF 1.44 | 62 · 40% fav · avg +0.83% · PF 1.47 | baseline |
+| EMA200-aligned (with-trend only) | both | 106 · 43% fav · avg +0.63% · PF 1.42 | 54 · 41% fav · avg +1.04% · PF 1.64 | ❌ no improvement |
+| ADX ≥ 20 (trend regime) | both | 110 · 38% fav · avg +0.06% · PF 1.03 | 46 · 39% fav · avg +1.06% · PF 1.52 | ❌ no improvement |
+| ADX ≥ 25 (strong trend) | both | 77 · 38% fav · avg +0.01% · PF 1.00 | 30 · 43% fav · avg +1.14% · PF 1.56 | ❌ no improvement |
+| EMA200-aligned AND ADX ≥ 20 | both | 72 · 39% fav · avg -0.11% · PF 0.93 | 40 · 40% fav · avg +1.60% · PF 1.88 | ❌ no improvement |
+| no gate (live baseline, re-simulated) | ▲ longs | 124 · 48% fav · avg +1.46% · PF 2.12 | 40 · 45% fav · avg +1.95% · PF 2.63 | baseline |
+| EMA200-aligned (with-trend only) | ▲ longs | 85 · 46% fav · avg +1.05% · PF 1.78 | 36 · 44% fav · avg +2.05% · PF 3.08 | ❌ no improvement |
+| ADX ≥ 20 (trend regime) | ▲ longs | 85 · 40% fav · avg +0.68% · PF 1.42 | 27 · 41% fav · avg +2.64% · PF 3.01 | ⚠️ too few trades |
+| ADX ≥ 25 (strong trend) | ▲ longs | 57 · 40% fav · avg +0.80% · PF 1.51 | 17 · 47% fav · avg +3.42% · PF 3.40 | ⚠️ too few trades |
+| EMA200-aligned AND ADX ≥ 20 | ▲ longs | 56 · 38% fav · avg +0.03% · PF 1.02 | 24 · 42% fav · avg +3.28% · PF 4.38 | ⚠️ too few trades |
+
+## Cost robustness — funded swing-55 longs (fragility report)
+
+How much spread-widening the validated edge absorbs. Pre-registered as a report only: no rule ships from it. Modeled per-market round-trip costs are the baseline (1×); live spreads at news times can run multiples of that.
+
+| Cost assumption | Train (net) | Validate (net) | Verdict |
+|---|---|---|---|
+| 1× modeled cost | 124 · 48% fav · avg +1.46% · PF 2.12 | 40 · 45% fav · avg +1.95% · PF 2.63 | ✅ edge survives |
+| 2× modeled cost | 124 · 48% fav · avg +1.42% · PF 2.08 | 40 · 45% fav · avg +1.91% · PF 2.58 | ✅ edge survives |
+| 3× modeled cost | 124 · 48% fav · avg +1.38% · PF 2.03 | 40 · 43% fav · avg +1.87% · PF 2.52 | ✅ edge survives |
+| 5× modeled cost | 124 · 48% fav · avg +1.30% · PF 1.95 | 40 · 40% fav · avg +1.79% · PF 2.41 | ✅ edge survives |
+| _Break-even cost multiple (validate)_ | — | gross 40 · 45% fav · avg +1.99% · PF 2.70 | edge ≈ 51× the modeled cost |
 
 ## WTI deep-dive
 
-4597 4h candles (2023-10-01 → 2026-10-01), 933 daily. Three-way split (tune / select / confirm); a candidate must be net-positive in ALL segments with ≥15 confirm trades. 14 variants tested — with this many looks at one market, treat even a triple pass as a paper candidate, not a funded stream.
+4601 4h candles (2023-10-01 → 2026-10-02), 934 daily. Three-way split (tune / select / confirm); a candidate must be net-positive in ALL segments with ≥15 confirm trades. 14 variants tested — with this many looks at one market, treat even a triple pass as a paper candidate, not a funded stream.
 
 | Variant | Tune (net) | Select (net) | Confirm (net) | Verdict |
 |---|---|---|---|---|
