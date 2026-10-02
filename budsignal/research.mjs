@@ -415,6 +415,24 @@ async function main() {
       fastRow(`4h-edge markets only (${[...edgeAssets].join(', ') || 'none'})`, fast.edgeOnly),
       fastRow('All three combined', fast.combo),
       `| Combo at HALF costs (best-case raw spreads) | ${fmtStats(stats(halfCost(fast.combo.train)))} | ${fmtStats(stats(halfCost(fast.combo.validate)))} | ${(() => { const tr = stats(halfCost(fast.combo.train)), va = stats(halfCost(fast.combo.validate)); if (!tr || !va || va.n < 15) return '⚠️ too few signals to judge'; return tr.avg > 0 && va.avg > 0 ? '✅ viable IF costs halve' : '❌ fails even at half costs'; })()} |`,
+      // cost ROBUSTNESS, the other direction: live spreads widen at news
+      // times and thin sessions — how many multiples of the modeled cost
+      // does the combo edge absorb before validation goes negative?
+      // Pre-registered as a fragility report: no rule changes from this,
+      // it informs execution discipline only.
+      ...(() => {
+        const at = (rows, k) => rows.map((r) => r.m - r.c * k);
+        const row = (k) => {
+          const tr = stats(at(fast.combo.train, k)), va = stats(at(fast.combo.validate, k));
+          const v = !tr || !va || va.n < 15 ? '⚠️ too few signals to judge'
+            : tr.avg > 0 && va.avg > 0 ? '✅ edge survives' : '❌ edge gone — skip trades when spreads look like this';
+          return `| Combo at ${k}× modeled costs (widened spreads) | ${fmtStats(tr)} | ${fmtStats(va)} | ${v} |`;
+        };
+        const gv = stats(g(fast.combo.validate));
+        const avgC = fast.combo.validate.length ? fast.combo.validate.reduce((a, r) => a + r.c, 0) / fast.combo.validate.length : 0;
+        const be = gv && gv.n >= 15 && gv.avg > 0 && avgC > 0 ? (gv.avg / avgC).toFixed(1) : '—';
+        return [row(2), row(3), `| _Break-even cost multiple (validate)_ | — | — | gross edge ≈ ${be}× the modeled cost |`];
+      })(),
       '',
     );
     console.log('1h scalp-feasibility + rescue filters evaluated');
@@ -728,6 +746,71 @@ async function main() {
     }
     lines.push('');
     console.log('trend-gate study evaluated');
+  }
+
+  // ---- Cost robustness of the funded daily swing-55 ----
+  // Pre-registered as a FRAGILITY report, not an adoption decision: no
+  // rule changes can come from it. Live spreads widen at news times, so
+  // the question is how many multiples of the modeled per-market cost the
+  // validated swing edge absorbs before the validation period goes
+  // negative. Same one-unit live-exit simulator as the trend-gate study.
+  {
+    const simOne = (arr, i, side, atr) => {
+      const dir = side === 'long' ? 1 : -1;
+      const entry = arr[i].c;
+      let best = entry;
+      const stop0 = entry - dir * 2 * atr;
+      const end = Math.min(arr.length - 1, i + 24);
+      let exitP = arr[end].c;
+      for (let k = i + 1; k <= end; k++) {
+        const c = arr[k].c;
+        if (dir * (c - best) > 0) best = c;
+        const trail = best - dir * 3 * atr;
+        const s = dir === 1 ? Math.max(stop0, trail) : Math.min(stop0, trail);
+        if (dir * (c - s) <= 0) { exitP = c; break; }
+        exitP = c;
+      }
+      return ((dir * (exitP - entry)) / entry) * 100;
+    };
+    const rows = { train: [], validate: [] }; // {m: gross %, c: modeled cost}
+    for (const [asset] of Object.entries(ASSETS)) {
+      const c4 = histories[asset];
+      if (!c4 || c4.length < 800) continue;
+      const daily = E.toDailyCandles(c4);
+      if (daily.length < 400) continue;
+      const ind = E.computeIndicators(daily);
+      const c = costOf(asset);
+      const splitT = daily[Math.floor(daily.length * 0.7)].t;
+      for (const s of E.computeBreakoutSignals(daily, ind, {})) {
+        const atr = ind.atr[s.i];
+        if (atr == null || s.i >= daily.length - 1 || s.side !== 'long') continue; // funded = longs
+        rows[s.t < splitT ? 'train' : 'validate'].push({ m: simOne(daily, s.i, s.side, atr), c });
+      }
+    }
+    const at = (rs, k) => rs.map((r) => r.m - r.c * k);
+    lines.push(
+      '## Cost robustness — funded swing-55 longs (fragility report)',
+      '',
+      'How much spread-widening the validated edge absorbs. Pre-registered as a report only: no rule ships from it. ' +
+      'Modeled per-market round-trip costs are the baseline (1×); live spreads at news times can run multiples of that.',
+      '',
+      '| Cost assumption | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|',
+      ...[1, 2, 3, 5].map((k) => {
+        const tr = stats(at(rows.train, k)), va = stats(at(rows.validate, k));
+        const v = !tr || !va || va.n < 15 ? '⚠️ too few trades'
+          : tr.avg > 0 && va.avg > 0 ? '✅ edge survives' : '❌ edge gone';
+        return `| ${k}× modeled cost | ${fmtStats(tr)} | ${fmtStats(va)} | ${v} |`;
+      }),
+      (() => {
+        const gv = stats(rows.validate.map((r) => r.m));
+        const avgC = rows.validate.length ? rows.validate.reduce((a, r) => a + r.c, 0) / rows.validate.length : 0;
+        const ok = gv && gv.n >= 15 && gv.avg > 0 && avgC > 0;
+        return `| _Break-even cost multiple (validate)_ | — | gross ${gv ? fmtStats(gv) : '—'} | edge ≈ ${ok ? (gv.avg / avgC).toFixed(0) : '—'}× the modeled cost |`;
+      })(),
+      '',
+    );
+    console.log('swing cost-robustness evaluated');
   }
 
   // ---- WTI deep-dive ----
