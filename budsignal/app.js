@@ -57,6 +57,14 @@
     return d.toISOString().slice(0, 16).replace('T', ' ');
   };
   const fmtClock = (t) => new Date(t).toISOString().slice(11, 16);
+  // FX / index / commodity CFDs trade Sun ~22:00 UTC to Fri ~22:00 UTC.
+  // In between, every non-crypto panel must say "weekend", not "session
+  // closed" — a terminal claiming Tokyo is open on a Saturday is lying.
+  const isMarketWeekend = (t = Date.now()) => {
+    const d = new Date(t);
+    const day = d.getUTCDay(), h = d.getUTCHours();
+    return day === 6 || (day === 5 && h >= 22) || (day === 0 && h < 22);
+  };
 
   /* ---------------- data ---------------- */
 
@@ -1088,7 +1096,9 @@
       if (ageH > 9) bits.push(`<strong class="move-neg">⚠ LEDGER STALE — last bot write ${ageH < 48 ? ageH.toFixed(0) + 'h' : (ageH / 24).toFixed(1) + 'd'} ago</strong> (positions and P&L below are frozen at that point; check the budsignal-notify workflow)`);
     }
     // sessions
-    {
+    if (isMarketWeekend()) {
+      bits.push('weekend — FX, index and commodity markets closed until the Sunday reopen (~22:00 UTC); BTC trades through');
+    } else {
       const d = new Date();
       const mins = d.getUTCHours() * 60 + d.getUTCMinutes();
       const open = [];
@@ -1530,13 +1540,18 @@
     const box = $('scalp-desk');
     if (!box) return;
     const now = Date.now();
+    const wknd = isMarketWeekend(now);
     const clock = $('scalp-clock');
     if (clock) {
-      const next = (Math.floor(now / 3600000) + 1) * 3600000;
-      const m = Math.floor((next - now) / 60000), sec = Math.floor(((next - now) % 60000) / 1000);
-      const h = new Date(now).getUTCHours();
-      const inSess = h >= E.SCALP.HOUR_FROM && h < E.SCALP.HOUR_TO;
-      clock.innerHTML = `Next 1h close <strong>${m}m ${String(sec).padStart(2, '0')}s</strong> · session ${inSess ? '<strong class="move-pos">OPEN</strong>' : `<strong>closed</strong> (window ${String(E.SCALP.HOUR_FROM).padStart(2, '0')}:00–${E.SCALP.HOUR_TO}:00 UTC)`}`;
+      if (wknd) {
+        clock.innerHTML = `<strong>Weekend — Gold and NAS100 closed.</strong> The 1h stream resumes after the Sunday reopen (~22:00 UTC); next valid window Mon ${String(E.SCALP.HOUR_FROM).padStart(2, '0')}:00–${E.SCALP.HOUR_TO}:00 UTC.`;
+      } else {
+        const next = (Math.floor(now / 3600000) + 1) * 3600000;
+        const m = Math.floor((next - now) / 60000), sec = Math.floor(((next - now) % 60000) / 1000);
+        const h = new Date(now).getUTCHours();
+        const inSess = h >= E.SCALP.HOUR_FROM && h < E.SCALP.HOUR_TO;
+        clock.innerHTML = `Next 1h close <strong>${m}m ${String(sec).padStart(2, '0')}s</strong> · session ${inSess ? '<strong class="move-pos">OPEN</strong>' : `<strong>closed</strong> (window ${String(E.SCALP.HOUR_FROM).padStart(2, '0')}:00–${E.SCALP.HOUR_TO}:00 UTC)`}`;
+      }
     }
     if (!scalpState) return;
     box.innerHTML = E.SCALP.ASSETS.map((a) => {
@@ -1575,7 +1590,7 @@
         const up = r.upPct <= r.downPct;
         status = `<strong class="move-pos">ARMED</strong> — gates open, nearest 1h trigger ${up ? '▲' : '▼'} $${fmtPrice(up ? r.up : r.down)} · ${Math.min(r.upPct, r.downPct).toFixed(2)}% away`;
       } else {
-        status = `<span class="radar-dist">standing down — ${!sessOk ? 'outside the validated session window' : 'volatility below its 200-hour average'}; a breakout now would NOT be a valid scalp</span>`;
+        status = `<span class="radar-dist">standing down — ${wknd ? 'market closed for the weekend' : !sessOk ? 'outside the validated session window' : 'volatility below its 200-hour average'}; a breakout now would NOT be a valid scalp</span>`;
       }
       return `<p class="scalp-row">${name}<span class="num scalp-px">$${fmtPrice(price)}</span>${gates}<span class="scalp-status">${status}</span></p>`;
     }).join('');
@@ -1610,10 +1625,11 @@
       ['NY', 'New York', 12.5 * 60, 21 * 60],
       ['SCALP', 'Scalp window — the 1h stream\'s validated session gate (Gold + NAS100)', E.SCALP.HOUR_FROM * 60, E.SCALP.HOUR_TO * 60],
     ];
+    const wknd = isMarketWeekend();
     box.innerHTML = rows.map(([short, name, a, b]) => {
-      const on = mins >= a && mins < b;
-      return `<span class="dl-sess ${on ? 'on' : ''}" title="${name} · ${hh(a)}–${hh(b)} UTC"><span class="sess-dot"></span>${short}</span>`;
-    }).join('');
+      const on = !wknd && mins >= a && mins < b;
+      return `<span class="dl-sess ${on ? 'on' : ''}" title="${name} · ${hh(a)}–${hh(b)} UTC${wknd ? ' (weekend — markets closed)' : ''}"><span class="sess-dot"></span>${short}</span>`;
+    }).join('') + (wknd ? '<span class="dl-sess" title="FX, index and commodity CFDs reopen around Sun 22:00 UTC">WEEKEND</span>' : '');
   }
 
   // Action queue: the whole platform reduced to "what do I do right now".
