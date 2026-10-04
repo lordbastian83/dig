@@ -1516,3 +1516,8 @@ tr[role="button"]:focus-visible { outline-offset: -2px; }
 }
 /* multi-line notices inside any table must wrap, never clip */
 .record-table .table-empty { white-space: normal; }
+
+/* desk log: truncating body left, un-truncatable live timestamp right */
+.desk-log li { display: flex; align-items: baseline; gap: 10px; }
+.desk-log .log-body { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desk-log .log-when { flex: none; margin-left: auto; font-size: 10px; color: var(--text-muted); letter-spacing: 0.04em; white-space: nowrap; }

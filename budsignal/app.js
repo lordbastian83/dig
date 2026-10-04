@@ -1353,15 +1353,20 @@
     if (!box || !lastRecs) return;
     const tag = (r) => (r.strategy === 'swing' ? (r.early ? 'SWNG20' : 'SWING') : r.strategy === 'breakout' ? 'BRKOUT' : r.strategy === 'scalp' ? 'SCALP' : 'CROSS');
     const rows = [...lastRecs].filter((r) => ASSETS[r.asset]).sort((a, b) => b.t - a.t).slice(0, 14);
-    const sweepAt = lastSweepRows ? `<li><span class="log-tag t-scan">SCAN</span> sweep complete · ${lastSweepRows.length} markets · ${fmtClock(Date.now())} UTC</li>` : '';
+    // body truncates; the WHEN is pinned right so it can never be cut off,
+    // and ticks live via the page-wide data-t pass. Full line in the tooltip.
+    const sweepAt = lastSweepRows
+      ? `<li><span class="log-body"><span class="log-tag t-scan">SCAN</span> sweep complete · ${lastSweepRows.length} markets</span><span class="log-when" data-t="${Date.now()}">${relTime(Date.now())}</span></li>`
+      : '';
     box.innerHTML = sweepAt + rows.map((r) => {
       const open = r.outcome === 'open';
       const pnlCls = r.movePct >= 0 ? 'move-pos' : 'move-neg';
       const status = open ? '<span class="radar-dist">open</span>' : `<span class="${pnlCls}">${fmtPct(r.movePct)}</span>`;
-      return `<li><span class="log-tag ${open ? 't-sig' : 't-close'}">${open ? 'SIG' : 'CLOSE'}</span>` +
+      const full = `${open ? 'SIG' : 'CLOSE'} ${tag(r)} ${ASSETS[r.asset].tab} ${r.side === 'long' ? '▲ long' : '▼ short'} @ $${fmtPrice(r.entry)} · ${open ? 'open' : fmtPct(r.movePct)} · ${fmtTime(r.t)} UTC`;
+      return `<li title="${full}"><span class="log-body"><span class="log-tag ${open ? 't-sig' : 't-close'}">${open ? 'SIG' : 'CLOSE'}</span>` +
         `<span class="log-tag t-strm">${tag(r)}</span> ${ASSETS[r.asset].tab} ` +
         `<span class="${r.side === 'long' ? 'move-pos' : 'move-neg'}">${r.side === 'long' ? '▲' : '▼'}</span> ` +
-        `@ $${fmtPrice(r.entry)} · ${status}<span class="radar-dist"> · ${fmtTime(r.t)}</span></li>`;
+        `@ $${fmtPrice(r.entry)} · ${status}</span><span class="log-when" data-t="${r.t}">${relTime(r.t)}</span></li>`;
     }).join('');
   }
 
