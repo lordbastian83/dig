@@ -101,7 +101,13 @@
       }
       const feed = await loadDeskFeed();
       if (feed?.h4?.[asset]?.length) {
-        return { source: `desk feed (live, published ${feedAge(feed)} ago)`, candles: unpack(feed.h4[asset]) };
+        // publish age says our pipeline ran; the LAST CANDLE's age says how
+        // current the data actually is — upstream intraday feeds lag hours
+        // behind in thin sessions, and the label must not hide that
+        const rows = unpack(feed.h4[asset]);
+        const lastT = rows[rows.length - 1].t;
+        const lag = Date.now() - lastT > 3 * 3600000 ? ` · last candle ${relTime(lastT)}` : '';
+        return { source: `desk feed (published ${feedAge(feed)} ago${lag})`, candles: rows };
       }
       return {
         source: fmpKey || tdKey
@@ -1585,6 +1591,13 @@
       const live = sigs.filter((s) => closed[i].t - s.t < E.SCALP.CANDLE_MS * 1.5 && closed[i].t - s.t >= 0);
       const dot = (ok, label) => `<span class="scalp-gate ${ok ? 'on' : ''}" title="${label} gate ${ok ? 'open' : 'closed'}">${ok ? '●' : '○'} ${label}</span>`;
       const gates = `${dot(sessOk, 'SESSION')}${dot(volOk === true, 'VOL')}`;
+      // wall-clock staleness guard: 'live' above is relative to the LAST
+      // CANDLE, so a stalled upstream feed would otherwise show a £-sized
+      // FIRING (or an ARMED trigger) for hours after it expired
+      const dataLagMs = now - (closed[i].t + E.SCALP.CANDLE_MS);
+      if (!wknd && dataLagMs > 90 * 60000) {
+        return `<p class="scalp-row">${name}<span class="num scalp-px">$${fmtPrice(price)}</span>${gates}<span class="scalp-status"><span class="radar-dist">feed lagging — last closed 1h candle ${relTime(closed[i].t + E.SCALP.CANDLE_MS)}; triggers would be computed on stale data, standing by until the feed catches up</span></span></p>`;
+      }
       let status;
       if (live.length) {
         const s = live[live.length - 1];
