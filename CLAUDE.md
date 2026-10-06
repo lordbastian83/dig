@@ -44,6 +44,14 @@ bloodstock projects below.
   `ANTHROPIC_API_KEY`, `AZURE_STATIC_WEB_APPS_API_TOKEN_BLOODSTOCK`.
   Browser-side keys stay in localStorage. Never commit keys.
 - A failing notifier (e.g. blocked Telegram chat) must never freeze the ledger.
+- Data-plane self-healing (`budsignal-data` branch) — keep these intact:
+  every publisher retries a lost push race (re-fetch, re-parent, push ×3,
+  the branch has concurrent writers); the rss/candles/notify workflows end
+  with a "Kick overdue sibling feeds" step (wire >90m, candles >2h,
+  ledger >6h, intel >6.5h) so ONE delivered cron heals the whole plane —
+  GitHub drops scheduled events under load, sometimes for hours. A
+  thrice-daily Claude-session heartbeat Routine backstops total blackouts
+  by dispatching budsignal-rss.yml when feeds are past threshold.
 
 ## Conventions
 - One PR per change, squash-merged, title prefixed by area
