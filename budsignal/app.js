@@ -1390,7 +1390,32 @@
   const sigKey = (r) => `${r.asset}|${r.t}`;
   const sigLabel = (r) => `${ASSETS[r.asset].tab} ${r.side === 'long' ? '▲' : '▼'} ${r.strategy === 'swing' ? (r.early ? 'swing-20' : 'swing-55') : r.strategy} @ $${fmtPrice(r.entry)} · ${fmtTime(r.t).slice(0, 10)}`;
 
+  // Month-one scoreboard: the ledger's funded record since go-live next to
+  // the user's logged fills — the measured inputs to the go-live fold's
+  // promotion rule (0.5% → 1% only after a month of fills matching the
+  // ledger). Reports, never recommends.
+  const GO_LIVE_T = Date.parse('2026-09-08T00:00:00Z');
+  function renderGoLiveReview() {
+    const el = $('golive-review');
+    if (!el || !lastRecs) return;
+    const funded = lastRecs.filter((r) => r.t >= GO_LIVE_T && ASSETS[r.asset] && E.fundedSide(r) &&
+      (r.strategy === 'swing' || r.strategy === 'scalp' ||
+        (r.strategy === 'breakout' && edgeStatus?.assets?.[r.asset]?.edge === true)));
+    const closed = funded.filter((r) => r.outcome !== 'open');
+    const ups = closed.filter((r) => (r.movePct || 0) > 0).length;
+    const net = closed.reduce((a, r) => a + (r.movePct || 0), 0);
+    const days = Math.floor((Date.now() - GO_LIVE_T) / 86400000);
+    const fills = loadFills().filter((f) => (f.logged || 0) >= GO_LIVE_T);
+    el.innerHTML = [
+      ['LIVE', `day ${days}`],
+      ['FUNDED SIGNALS', `${funded.length} fired · ${closed.length} closed`],
+      ['LEDGER', closed.length ? `${Math.round((ups / closed.length) * 100)}% up · net <span class="${net >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(net)}</span>` : 'no closed funded signals yet'],
+      ['YOUR FILLS', fills.length ? `${fills.length} logged (this browser)` : '<span class="move-neg">none logged — the promotion test has not been run</span>'],
+    ].map(([t, v]) => `<span class="dl-item"><span class="dl-tag">${t}</span>${v}</span>`).join('');
+  }
+
   function renderExec() {
+    renderGoLiveReview();
     const body = $('exec-body');
     if (!body || !lastRecs) return;
     const byKey = new Map(lastRecs.map((r) => [sigKey(r), r]));

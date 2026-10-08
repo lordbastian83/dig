@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="styles.css?v=98">
+<link rel="stylesheet" href="styles.css?v=99">
 </head>
 <body>
 
@@ -332,6 +332,9 @@
           <li>Run <strong>0.5% base risk instead of 1%</strong> (set Risk/trade to 0.5) for the first month. The edge doesn't need full size to prove itself, and the most likely early losses are execution mistakes — wrong lot size, missed stop, late entry — which cost half as much at half size. Move to 1% only after a month of trades that match the ledger.</li>
           <li><strong>Every entry goes in with its stop attached.</strong> Market order + stop order in the same ticket, sized from the plan panel. No stop, no trade.</li>
         </ul>
+        <h4>Month-one scoreboard (live since 8 Sep 2026, measured)</h4>
+        <div class="deskline" id="golive-review">Loading the ledger…</div>
+        <p class="watchlist-note">The promotion rule above is yours to apply, and its test is the Execution desk: a month of YOUR fills matching the ledger. The scoreboard only reports — it never recommends a size.</p>
         <h4>What to expect (honestly)</h4>
         <ul>
           <li>The validated edges are per-trade averages of roughly <strong>+0.2% to +2.3% per trade</strong> depending on stream — not per day. Weeks of nothing, then clusters, is normal behavior for breakout systems.</li>
@@ -558,7 +561,7 @@
   <p class="footer-meta">© 2026 LordBastian Signal Generator · Market data courtesy of public exchange APIs · Recomputed in your browser on every visit</p>
 </footer>
 
-<script src="engine.js?v=98"></script>
-<script src="app.js?v=98"></script>
+<script src="engine.js?v=99"></script>
+<script src="app.js?v=99"></script>
 </body>
 </html>
