@@ -48,7 +48,7 @@ bloodstock projects below.
   every publisher retries a lost push race (re-fetch, re-parent, push ×3,
   the branch has concurrent writers); the rss/candles/notify workflows end
   with a "Kick overdue sibling feeds" step (wire >90m, candles >2h,
-  ledger >6h, intel >6.5h) so ONE delivered cron heals the whole plane —
+  ledger >4.5h, intel >6.5h) so ONE delivered cron heals the whole plane —
   GitHub drops scheduled events under load, sometimes for hours. A
   thrice-daily Claude-session heartbeat Routine backstops total blackouts
   by dispatching budsignal-rss.yml when feeds are past threshold.

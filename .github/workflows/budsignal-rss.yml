@@ -92,5 +92,5 @@ jobs:
             if [ $(( now - u )) -gt "$2" ]; then kick "$1" "$3"; else echo "$1 fresh"; fi
           }
           check candles.json 7200 budsignal-candles.yml
-          check performance.json 21600 budsignal-notify.yml
+          check performance.json 16200 budsignal-notify.yml
           check intel.json 23400 budsignal-intel.yml
