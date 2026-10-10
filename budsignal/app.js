@@ -2084,7 +2084,7 @@
     }
     const toneTag = (d) => (d.tone > 0 ? `<span class="wt wt-pos">+${d.tone}</span>` : d.tone < 0 ? `<span class="wt wt-neg">${d.tone}</span>` : '<span class="wt">0</span>');
     const mktChips = (d) => d.markets.map((m) => `<button class="wchip wchip-mkt" data-mkt="${m}" type="button" title="Filter the stream to ${ASSETS[m] ? ASSETS[m].tab : m} headlines">${ASSETS[m] ? ASSETS[m].tab : m}</button>`).join('');
-    const rightMeta = (d) => `<span class="wi-right">${d.topics[0] ? esc(d.topics[0]) + ' · ' : ''}<span data-t="${stamp(d)}">${relTime(stamp(d))}</span></span>`;
+    const rightMeta = (d) => `<span class="wi-right">${d.topics[0] ? `<span class="wi-topic">${esc(d.topics[0])} · </span>` : ''}<span data-t="${stamp(d)}">${relTime(stamp(d))}</span></span>`;
     const docs = a.docs
       .filter((d) => !wireFilter || d.markets.includes(wireFilter))
       .filter((d) => !wireTopicFilter || d.topics.includes(wireTopicFilter))
