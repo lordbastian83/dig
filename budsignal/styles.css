@@ -1468,6 +1468,10 @@ a.sub-title:hover { color: var(--amber); }
   .wire-cats { flex-wrap: nowrap; scrollbar-width: none; }
   .wire-cats::-webkit-scrollbar { display: none; }
   .wcat { white-space: nowrap; }
+  /* .wi-right never shrinks (nowrap keeps the clock tidy), so a long
+     topic label squeezed a thumbed headline to one word per line at
+     390px — the topic lives in the chips row on phones, the clock stays */
+  .wi-topic { display: none; }
 }
 
 /* ETF-proxy marker on index quotes (watchlist, scalp desk, price tape) */
