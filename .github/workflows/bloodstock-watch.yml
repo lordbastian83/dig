@@ -51,7 +51,7 @@ jobs:
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues" \
-            -d "$(node -e 'console.log(JSON.stringify({title: "🐎 Catalogue watch: sale page changed "+new Date().toISOString().slice(0,10), body: process.argv[1]}))' "$BODY")"
+            -d "$(BODY="$BODY" node -e 'console.log(JSON.stringify({title: "🐎 Catalogue watch: sale page changed "+new Date().toISOString().slice(0,10), body: process.env.BODY}))')"
 
       - name: Persist state to bloodstock-data branch
         run: |
