@@ -47,11 +47,19 @@ jobs:
           BODY="$(cat changes.txt)
 
           A sale page changed — likely a catalogue drop. Next step: run the **Bloodstock catalogue ingest** workflow to scrape and score it, then open the scanner and hit **Rank by value gap**."
-          curl -sf -X POST \
+          # the run summary carries the alert even when the issue POST cannot
+          # (e.g. Issues disabled on the repo), so a red run is still readable
+          { echo "## 🐎 Catalogue watch: sale page changed"; echo; echo "$BODY"; } >> "$GITHUB_STEP_SUMMARY"
+          code=$(curl -s -o /tmp/resp -w '%{http_code}' -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues" \
-            -d "$(BODY="$BODY" node -e 'console.log(JSON.stringify({title: "🐎 Catalogue watch: sale page changed "+new Date().toISOString().slice(0,10), body: process.env.BODY}))')"
+            -d "$(BODY="$BODY" node -e 'console.log(JSON.stringify({title: "🐎 Catalogue watch: sale page changed "+new Date().toISOString().slice(0,10), body: process.env.BODY}))')")
+          if [ "$code" != "201" ]; then
+            echo "::error::Issue POST failed (HTTP $code) - if 410, Issues are disabled: enable them under repo Settings -> General -> Features. Change details are in this run's summary."
+            cat /tmp/resp
+            exit 1
+          fi
 
       - name: Persist state to bloodstock-data branch
         run: |
