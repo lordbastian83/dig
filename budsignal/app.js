@@ -1906,7 +1906,7 @@
     ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b|\blng\b|gasoline|diesel|natural gas/i],
     ['BTC', /bitcoin|\bbtc\b|crypto/i],
     ['GBPUSD', /sterling|\bpound\b|\bgbp\b|bank of england|\bboe\b/i],
-    ['EURUSD', /\beuro\b|\becb\b|euro ?zone/i],
+    ['EURUSD', /\beuro\b|\becb\b|euro ?zone|\beur\/usd\b/i],
     ['NAS100', /nasdaq|big tech|megacap|tech stocks?/i],
     ['SPX500', /s&p ?500|\bs&p\b|\bspx\b|wall street/i],
     ['US30', /\bdow\b/i],
@@ -1914,13 +1914,13 @@
   // runs on HTML-ESCAPED titles, so "&" may appear as "&amp;"
   const MKT_HL = /\bgold\b|\bxau\b|bullion|\boil\b|crude|opec|\bwti\b|brent|petroleum|bitcoin|\bbtc\b|crypto|sterling|\bpound\b|bank of england|\beuro\b|\becb\b|nasdaq|s&(?:amp;)?p ?500|\bs&(?:amp;)?p\b|\bspx\b|\bdow\b|dollar|\bfed\b|fomc/gi;
   const TOPICS = [
-    ['Rates & central banks', /\bfed\b|fomc|rate (?:cut|hike|decision)s?|central bank|\becb\b|\bboe\b|\bboj\b|powell|inflation|\bcpi\b|interest rate/i],
+    ['Rates & central banks', /\bfed\b|fomc|rate (?:cut|hike|decision)s?|central bank|\becb\b|\bboe\b|\bboj\b|\bpboc\b|\brba\b|\brbi\b|\brbnz\b|powell|inflation|\bcpi\b|interest rate|consumer sentiment|unemployment|payrolls/i],
     ['Earnings & guidance', /earnings|guidance|profit|revenue|quarterly|forecast[s]?|outlook/i],
     ['Oil & energy', /\boil\b|crude|opec|\bwti\b|brent|petroleum|energy|natural gas/i],
     ['Metals', /\bgold\b|silver|copper|bullion|platinum/i],
     ['Crypto', /bitcoin|crypto|ethereum|\bbtc\b|stablecoin/i],
-    ['FX & dollar', /dollar|currenc|forex|\bfx\b|\byen\b|sterling|\beuro\b/i],
-    ['Geopolitics & trade', /tariff[s]?|sanction[s]?|\bwar\b|geopolit|trade (?:deal|talks)|election|china/i],
+    ['FX & dollar', /dollar|currenc|forex|\bfx\b|\byen\b|sterling|\beuro\b|\byuan\b|renminbi|\brupee\b|\b[a-z]{3}\/[a-z]{3}\b/i],
+    ['Geopolitics & trade', /tariff[s]?|sanction[s]?|\bwar\b|geopolit|trade (?:deal|talks)|election|chin(?:a|ese)|beijing|houthi|missile|ceasefire|\btruce\b/i],
     ['Deals & IPOs', /merger|acquisition|\bipo\b|buyout|takeover/i],
     // added 2026-09-30 after measuring the live wire: 46 of 100 headlines
     // were invisible to every bucket — bonds/yields (the day's biggest
