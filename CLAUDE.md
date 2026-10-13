@@ -50,8 +50,10 @@ bloodstock projects below.
   with a "Kick overdue sibling feeds" step (wire >90m, candles >2h,
   ledger >4.5h, intel >6.5h) so ONE delivered cron heals the whole plane —
   GitHub drops scheduled events under load, sometimes for hours. A
-  thrice-daily Claude-session heartbeat Routine backstops total blackouts
-  by dispatching budsignal-rss.yml when feeds are past threshold.
+  Claude-session heartbeat Routine backstops total blackouts by
+  dispatching budsignal-rss.yml when feeds are past threshold — every
+  3h (7 firings/day + the daily pass) since 2026-10-13, after four
+  consecutive days of multi-hour blackouts outran the old 3/day cadence.
 
 ## Conventions
 - One PR per change, squash-merged, title prefixed by area
