@@ -724,7 +724,13 @@ a { color: var(--text-primary); }
   #signal > h2, #signal .action-queue { grid-column: 1 / -1; margin-bottom: 0; }
   #signal .trade-plan { margin-top: 0; }
   #signal > * { min-width: 0; }
+}
 
+/* radar | correlation go side-by-side only when BOTH wide tables actually
+   fit (the radar table is min-width 640 + nowrap): below 1500px a half
+   column hid the daily-trigger numbers behind a sideways scroll, so the
+   cards stack full-width instead — same 1500px rule as the wire stream */
+@media (min-width: 1500px) {
   #radar { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
   #radar > h2, #radar > .section-sub { grid-column: 1 / -1; }
   #radar > h2 { margin-bottom: 0; }
@@ -1032,7 +1038,7 @@ a { color: var(--text-primary); }
 
 /* ---------- radar: crude desk fills the left column ---------- */
 
-@media (min-width: 921px) {
+@media (min-width: 1500px) {
   #radar .table-wrap { grid-column: 1; }
   #radar .news-card { grid-column: 1; margin-top: 14px; }
   #radar .corr-card { grid-column: 2; grid-row: 3 / span 2; }
@@ -1051,7 +1057,7 @@ a { color: var(--text-primary); }
 
 /* ---------- market wire + radar column rebalance ---------- */
 
-@media (min-width: 921px) {
+@media (min-width: 1500px) {
   #radar .corr-card { grid-row: 3; }
   #radar .wire-card { grid-column: 2; margin-top: 0; }
 }
