@@ -243,7 +243,7 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
   lines.push(!E.fundedSide(sig)
     ? `❌ <i>Paper only — SHORT signals failed side-split validation on this stream (longs carry the edge). Watch, don't fund.</i>`
     : scalp
-    ? `✅ Qualifies for real money — validated filtered scalp stream (thin edge: ~+0.2%/trade net over 100 validation trades; the session/volatility/market filters are what make it work)`
+    ? `✅ Qualifies for real money — validated filtered scalp stream (thin edge: ~+0.2%/trade net over 100 validation trades; the session/volatility/market filters are what make it work)\n📏 Spread discipline (measured): this edge breaks even at ≈2.3× the modeled cost (51 trades) — if your live spread is about double its normal width (news prints, session opens), skip this one even with every gate green.`
     : swing
       ? (sig.early
         ? `✅ Qualifies for real money — validated early-swing variant (+0.5%/trade net in validation, PF 1.25 — thinner edge than the main daily-55 stream, size accordingly)`
