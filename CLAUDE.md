@@ -47,7 +47,7 @@ bloodstock projects below.
 - Data-plane self-healing (`budsignal-data` branch) — keep these intact:
   every publisher retries a lost push race (re-fetch, re-parent, push ×3,
   the branch has concurrent writers); the rss/candles/notify workflows end
-  with a "Kick overdue sibling feeds" step (wire >90m, candles >2h,
+  with a "Kick overdue sibling feeds" step (wire >75m, candles >2h,
   ledger >4.5h, intel >6.5h) so ONE delivered cron heals the whole plane —
   GitHub drops scheduled events under load, sometimes for hours. A
   Claude-session heartbeat Routine backstops total blackouts by
