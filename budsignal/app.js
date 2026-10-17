@@ -2429,6 +2429,28 @@
     $('ts-rate').textContent = `${perYear.toFixed(0)}/yr`;
     $('ts-span').textContent = `${n} trades over ${(spanDays / 30.44).toFixed(1)} months`;
 
+    // Underwater stretch: drawdown DEPTH says how much, this says how long.
+    // A stretch runs from an equity peak to the trade that first beats it;
+    // the ongoing stretch counts up to the last closed trade.
+    let uwMax = 0, peakT = trades[0].t, peakEq = trades[0].equity;
+    for (const x of trades) {
+      if (x.equity >= peakEq) {
+        uwMax = Math.max(uwMax, x.t - peakT);
+        peakEq = x.equity; peakT = x.t;
+      }
+    }
+    const uwNow = trades[n - 1].equity < peakEq ? trades[n - 1].t - peakT : 0;
+    uwMax = Math.max(uwMax, uwNow);
+    const days = (ms) => Math.round(ms / 86400000);
+    const uwEl = $('ts-uw');
+    if (uwEl) {
+      uwEl.textContent = `${days(uwMax)}d`;
+      const note = $('ts-uw-note');
+      if (note) note.textContent = uwNow > 0
+        ? `longest peak-to-recovery · now ${days(uwNow)}d below the high`
+        : 'longest peak-to-recovery · currently at equity highs';
+    }
+
     drawTearsheetCurve(trades, start);
     drawHistogram(Rs);
     renderMonthly(trades, start);
