@@ -214,10 +214,10 @@
       const hitStop = dir === 1 ? candles[j].l <= stop : candles[j].h >= stop;
       const hitTarget = dir === 1 ? candles[j].h >= target : candles[j].l <= target;
       if (hitStop) {
-        if (beArmed) return { outcome: 'be', exit: stop, movePct: 0 };
-        return { outcome: 'loss', exit: stop, movePct: (dir * (stop - entry) / entry) * 100 };
+        if (beArmed) return { outcome: 'be', exit: stop, movePct: 0, exitT: candles[j].t };
+        return { outcome: 'loss', exit: stop, movePct: (dir * (stop - entry) / entry) * 100, exitT: candles[j].t };
       }
-      if (hitTarget) return { outcome: 'win', exit: target, movePct: (dir * (target - entry) / entry) * 100 };
+      if (hitTarget) return { outcome: 'win', exit: target, movePct: (dir * (target - entry) / entry) * 100, exitT: candles[j].t };
       const excursion = dir === 1 ? candles[j].h - entry : entry - candles[j].l;
       if (!beArmed && excursion >= CFG.BE_TRIGGER_ATR * a) { beArmed = true; stop = entry; }
     }
@@ -227,7 +227,7 @@
       return { outcome: 'open', exit: null, movePct: (dir * (candles[last].c - entry) / entry) * 100 };
     }
     const exit = candles[last].c;
-    return { outcome: 'flat', exit, movePct: (dir * (exit - entry) / entry) * 100 };
+    return { outcome: 'flat', exit, movePct: (dir * (exit - entry) / entry) * 100, exitT: candles[last].t };
   }
 
   // Alternative entry family: Donchian-channel breakout (turtle-style
@@ -272,14 +272,14 @@
     let best = entry;
     for (let j = i + 1; j <= i + evalN && j < candles.length; j++) {
       const hitStop = dir === 1 ? candles[j].l <= stop : candles[j].h >= stop;
-      if (hitStop) return { closed: true, exit: stop, movePct: (dir * (stop - entry) / entry) * 100 };
+      if (hitStop) return { closed: true, exit: stop, movePct: (dir * (stop - entry) / entry) * 100, how: 'stop', exitT: candles[j].t };
       best = dir === 1 ? Math.max(best, candles[j].h) : Math.min(best, candles[j].l);
       const trailed = best - dir * trailAtr * a;
       if (dir === 1 ? trailed > stop : trailed < stop) stop = trailed;
     }
     const last = Math.min(i + evalN, candles.length - 1);
     if (last - i < evalN) return { closed: false, exit: null, movePct: null };
-    return { closed: true, exit: candles[last].c, movePct: (dir * (candles[last].c - entry) / entry) * 100 };
+    return { closed: true, exit: candles[last].c, movePct: (dir * (candles[last].c - entry) / entry) * 100, how: 'time', exitT: candles[last].t };
   }
 
   // The live breakout stream: Donchian entries scored with their trailing
@@ -297,6 +297,7 @@
       s.target = null; // no fixed target — the trailing stop is the exit
       if (tr.closed) {
         s.outcome = 'trail'; s.exit = tr.exit; s.movePct = tr.movePct;
+        s.exitHow = tr.how; s.exitT = tr.exitT;
       } else {
         const last = candles[candles.length - 1];
         s.outcome = 'open'; s.exit = null;
@@ -349,6 +350,7 @@
       s.candleMs = SCALP.CANDLE_MS;
       if (tr.closed) {
         s.outcome = 'trail'; s.exit = tr.exit; s.movePct = tr.movePct;
+        s.exitHow = tr.how; s.exitT = tr.exitT;
       } else {
         const last = candles[candles.length - 1];
         s.outcome = 'open'; s.exit = null;
@@ -402,6 +404,7 @@
       s.candleMs = SWING.CANDLE_MS;
       if (tr.closed) {
         s.outcome = 'trail'; s.exit = tr.exit; s.movePct = tr.movePct;
+        s.exitHow = tr.how; s.exitT = tr.exitT;
       } else {
         const last = daily[daily.length - 1];
         s.outcome = 'open'; s.exit = null;

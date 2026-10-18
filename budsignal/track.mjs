@@ -85,6 +85,11 @@ async function main() {
           fundRate: s.fundRate ?? null, fundPctl: s.fundPctl ?? null, fng: s.fng ?? null,
           eventHrs: s.eventHrs ?? null, ctxTrend: s.ctxTrend ?? null,
           outcome: s.outcome, movePct: Math.round(s.movePct * 100) / 100,
+          // resolution detail (additive, 2026-10-18): when and how a closed
+          // trade exited — 'stop'/'time' for trailing streams, win/loss/be
+          // outcomes carry only the timestamp. Open rows gain them on resolve.
+          ...(s.exitT ? { exitT: s.exitT } : {}),
+          ...(s.exitHow ? { exitHow: s.exitHow } : {}),
           // 'live' must mean recorded as it fired — historical signals pulled
           // in when a market is first added (or on bootstrap) are backfill.
           // The window scales with the signal's candle size, floored at the
@@ -99,6 +104,8 @@ async function main() {
       } else if (existing.outcome === 'open' && s.outcome !== 'open') {
         existing.outcome = s.outcome;
         existing.movePct = Math.round(s.movePct * 100) / 100;
+        if (s.exitT) existing.exitT = s.exitT;
+        if (s.exitHow) existing.exitHow = s.exitHow;
         resolved++;
       }
     }
