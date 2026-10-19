@@ -2567,7 +2567,7 @@
     const rows = years.map((y) => `<tr><td>${y}</td>${MONTHS.map((_, i) => {
       const v = cells.get(`${y}-${String(i + 1).padStart(2, '0')}`);
       return v == null ? '<td class="num radar-dist">·</td>'
-        : `<td class="num ${v >= 0 ? 'move-pos' : 'move-neg'}">${fmtPct(v)}</td>`;
+        : `<td class="num ${v >= 0 ? 'move-pos' : 'move-neg'}">${v >= 0 ? '+' : ''}${v.toFixed(1)}%</td>`;
     }).join('')}</tr>`);
     body.innerHTML = head + rows.join('');
   }
