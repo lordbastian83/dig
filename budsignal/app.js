@@ -1367,8 +1367,12 @@
     box.innerHTML = sweepAt + rows.map((r) => {
       const open = r.outcome === 'open';
       const pnlCls = r.movePct >= 0 ? 'move-pos' : 'move-neg';
-      const status = open ? '<span class="radar-dist">open</span>' : `<span class="${pnlCls}">${fmtPct(r.movePct)}</span>`;
-      const full = `${open ? 'SIG' : 'CLOSE'} ${tag(r)} ${ASSETS[r.asset].tab} ${r.side === 'long' ? '▲ long' : '▼ short'} @ $${fmtPrice(r.entry)} · ${open ? 'open' : fmtPct(r.movePct)} · ${fmtTime(r.t)} UTC`;
+      // resolution detail (recorded since 2026-10-18): how a trailing trade
+      // actually closed — the stop was hit, or the window lapsed at market.
+      const how = !open && r.exitHow ? (r.exitHow === 'time' ? 'window' : 'stop') : '';
+      const status = open ? '<span class="radar-dist">open</span>'
+        : `<span class="${pnlCls}">${fmtPct(r.movePct)}</span>${how ? ` <span class="radar-dist">${how}</span>` : ''}`;
+      const full = `${open ? 'SIG' : 'CLOSE'} ${tag(r)} ${ASSETS[r.asset].tab} ${r.side === 'long' ? '▲ long' : '▼ short'} @ $${fmtPrice(r.entry)} · ${open ? 'open' : fmtPct(r.movePct) + (how ? ` (${how === 'window' ? 'window exit' : 'trail stop'})` : '')} · ${fmtTime(r.t)} UTC`;
       return `<li title="${full}"><span class="log-body"><span class="log-tag ${open ? 't-sig' : 't-close'}">${open ? 'SIG' : 'CLOSE'}</span>` +
         `<span class="log-tag t-strm">${tag(r)}</span> ${ASSETS[r.asset].tab} ` +
         `<span class="${r.side === 'long' ? 'move-pos' : 'move-neg'}">${r.side === 'long' ? '▲' : '▼'}</span> ` +
@@ -2268,7 +2272,7 @@
         s.outcome === 'win' ? '<span class="outcome win">✓ Target hit</span>' :
         s.outcome === 'loss' ? '<span class="outcome loss">✕ Stopped out</span>' :
         s.outcome === 'be' ? '<span class="outcome flat">◇ Breakeven stop</span>' :
-        s.outcome === 'trail' ? `<span class="outcome ${s.movePct >= 0 ? 'win' : 'loss'}">⤳ Trailed out</span>` :
+        s.outcome === 'trail' ? `<span class="outcome ${s.movePct >= 0 ? 'win' : 'loss'}" title="${s.exitHow === 'time' ? 'exit window lapsed — closed at market' : 'the trailing stop was hit'}">${s.exitHow === 'time' ? '⏱ Window exit' : s.exitHow === 'stop' ? '⤳ Trail stop' : '⤳ Trailed out'}</span>` :
         s.outcome === 'open' ? '<span class="outcome flat">● Open</span>' :
         '<span class="outcome flat">◦ Expired at market</span>';
       const moveCls = s.movePct >= 0 ? 'move-pos' : 'move-neg';
