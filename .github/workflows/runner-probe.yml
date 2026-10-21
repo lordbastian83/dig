@@ -1,0 +1,20 @@
+name: Runner probe
+# Temporary diagnostic (2026-10-21): every run on this repo has failed ~4s
+# after start with no logs since ~17:00 UTC 2026-10-20. This probes whether
+# the failure is tied to the ubuntu-latest label or hits pinned images too.
+# Dispatched from the dev branch only; delete after the outage is diagnosed.
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "ubuntu-latest alive at $(date -u)"
+  pinned:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "ubuntu-24.04 alive at $(date -u)"
