@@ -1774,7 +1774,7 @@
     $('intel-poly').innerHTML = (d.polymarket || []).map((m) =>
       `<li><span class="intel-odds ${m.yes >= 50 ? 'move-pos' : 'move-neg'}">${m.yes}%</span>${esc(m.q)}<span class="wi-right">$${fmtUsd(m.vol)}</span></li>`).join('') || empty(srcMsg('polymarket'));
     $('intel-congress').innerHTML = (d.congress || []).map((g) =>
-      `<tr><td>${esc(String(new Date(g.t).toISOString()).slice(0, 10))}</td><td>${esc(g.ticker)}</td><td>${esc(g.who)}</td><td class="${/p|buy/i.test(g.side) ? 'move-pos' : 'move-neg'}">${esc(g.side)}</td><td class="num">${esc(g.amount || '—')}</td></tr>`).join('') || emptyRow(5, srcMsg('congress'));
+      `<tr><td>${esc(String(new Date(g.t).toISOString()).slice(0, 10))}</td><td>${esc(g.ticker)}</td><td>${esc(g.who)}</td><td class="${/p|buy/i.test(g.side) ? 'move-pos' : 'move-neg'}">${esc(g.side)}</td><td class="num">${esc(g.amount || '—').replace(/-/g, '-<wbr>')}</td></tr>`).join('') || emptyRow(5, srcMsg('congress'));
     $('intel-insider').innerHTML = (d.insider || []).map((g) =>
       `<tr><td>${esc(String(new Date(g.t).toISOString()).slice(0, 10))}</td><td>${esc(g.ticker)}</td><td>${esc(g.who)}</td><td class="${g.side === 'BUY' ? 'move-pos' : 'move-neg'}">${esc(g.side)}</td><td class="num">${g.usd != null ? '$' + fmtUsd(g.usd) : '—'}</td></tr>`).join('') || emptyRow(5, srcMsg('insider'));
   }
