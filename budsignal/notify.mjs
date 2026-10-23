@@ -247,7 +247,7 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
     : swing
       ? (sig.early
         ? `✅ Qualifies for real money — validated early-swing variant (+0.5%/trade net in validation, PF 1.25 — thinner edge than the main daily-55 stream, size accordingly)`
-        : `✅ Qualifies for real money — the strongest validated stream (+1.5%/trade net in validation, PF 1.9, pooled across markets)`)
+        : `✅ Qualifies for real money — the strongest validated stream (+1.5%/trade net in validation, PF 1.9, pooled across markets)\n📏 Spread resilience (measured): the daily move dwarfs costs — the validation edge still clears at 5× the modeled cost and breaks even near ≈51× (40 trades). Unlike the scalp stream, a widened spread is not a reason to skip this one.`)
       : bk && edge === true
         ? `✅ Qualifies for real money — this market kept a net edge out-of-sample`
         : `❌ <i>Paper only — ${bk ? 'this market showed no net edge in walk-forward validation' : 'the cross stream has never passed walk-forward validation'}. Watch, don't fund.</i>`);
