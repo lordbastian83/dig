@@ -1015,6 +1015,7 @@
           rngPct: dAtr ? (dAtr / price) * 100 : null,
           spark: closes.slice(-30),
           rets, active,
+          c4: closed, cd: daily, // kept for the blotter's live trailing-stop replay
         };
       } catch (e) { return null; }
     }));
@@ -1200,10 +1201,10 @@
       .sort((a, b) => b.t - a.t);
     const orphans = all.length - open.length;
     const orphanNote = orphans
-      ? `<tr><td colspan="9" class="table-empty">${orphans} stale ledger orphan${orphans > 1 ? 's' : ''} hidden (past their stream's hard exit — record-keeping artifacts, not live positions).</td></tr>`
+      ? `<tr><td colspan="10" class="table-empty">${orphans} stale ledger orphan${orphans > 1 ? 's' : ''} hidden (past their stream's hard exit — record-keeping artifacts, not live positions).</td></tr>`
       : '';
     if (!open.length) {
-      body.innerHTML = '<tr><td colspan="9" class="table-empty">Flat — no open positions in the ledger.</td></tr>' + orphanNote;
+      body.innerHTML = '<tr><td colspan="10" class="table-empty">Flat — no open positions in the ledger.</td></tr>' + orphanNote;
       return;
     }
     body.innerHTML = open.map((r) => {
@@ -1217,6 +1218,17 @@
       const funded = E.fundedSide(r) && (r.strategy === 'swing' || r.strategy === 'scalp' ||
         (r.strategy === 'breakout' && edgeStatus?.assets?.[r.asset]?.edge === true));
       const gbp = R != null && funded ? acctGbp() * 0.01 * E.riskMultiplier(r) * R : null;
+      // live chandelier level, replayed from the row's own entry/stop over
+      // the stream's candles (4h breakout, daily swing). Scalp runs on 1h
+      // candles the sweep doesn't carry; cross exits are target/stop with a
+      // breakeven move, not a chandelier — both honestly show nothing.
+      let stopNow = null;
+      if (sweep && !sweep.demo && (r.strategy === 'breakout' || r.strategy === 'swing')) {
+        const candles = r.strategy === 'breakout' ? sweep.c4 : sweep.cd;
+        const opts = r.strategy === 'swing' && !r.early
+          ? { stopAtr: E.SWING.STOP_ATR, trailAtr: E.SWING.TRAIL_ATR } : {};
+        if (candles?.length) stopNow = E.trailingStopNow(candles, r.t, r.side, r.entry, r.stop, opts);
+      }
       const ageH = (Date.now() - r.t) / 3600000;
       const stream = r.strategy === 'breakout' ? '◆ Breakout' : r.strategy === 'swing' ? (r.early ? '🌊 Early swing' : '🌊 Swing') : r.strategy === 'scalp' ? '⚡ Scalp' : 'Cross';
       const cls = (v) => (v >= 0 ? 'move-pos' : 'move-neg');
@@ -1226,6 +1238,7 @@
         <td><span class="side-badge ${r.side}">${r.side === 'long' ? '▲ LONG' : '▼ SHORT'}</span></td>
         <td class="num">$${fmtPrice(r.entry)}</td>
         <td class="num">${now != null ? '$' + fmtPrice(now) : '<span class="radar-dist">no live feed</span>'}</td>
+        <td class="num"${stopNow ? ` title="chandelier ratcheted from the initial stop $${fmtPrice(r.stop)} over closed candles${stopNow.hit ? ' — a closed candle already traded through it; the ledger resolves this row on its next run' : ''}"` : ''}>${stopNow ? '$' + fmtPrice(stopNow.stop) + (stopNow.hit ? ' <span class="move-neg">hit</span>' : '') : '—'}</td>
         <td class="num ${movePct != null ? cls(movePct) : ''}">${movePct != null ? fmtPct(movePct) : '—'}</td>
         <td class="num ${R != null ? cls(R) : ''}">${R != null ? (R >= 0 ? '+' : '') + R.toFixed(2) + 'R' : '—'}</td>
         <td class="num ${gbp != null ? cls(gbp) : ''}">${gbp != null ? (gbp >= 0 ? '+£' : '−£') + fmtUsd(Math.abs(gbp)) : '—'}</td>

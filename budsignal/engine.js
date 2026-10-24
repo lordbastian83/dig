@@ -282,6 +282,29 @@
     return { closed: true, exit: candles[last].c, movePct: (dir * (candles[last].c - entry) / entry) * 100, how: 'time', exitT: candles[last].t };
   }
 
+  // Where the chandelier sits RIGHT NOW for a still-open trailing position:
+  // the same walk as trailingScore (hit check first, then ratchet) replayed
+  // over the closed candles since entry. The ATR scale is recovered from the
+  // position's own initial stop (stop = entry ∓ stopAtr×ATR at entry), so no
+  // indicator recompute and no index lookup is needed — a ledger row's
+  // entry/stop/t is enough. hit:true means a closed candle already traded
+  // through the stop and the ledger will resolve the row on its next run.
+  // Display-only: outcomes are still scored exclusively by trailingScore.
+  function trailingStopNow(candles, sinceT, side, entry, stop0,
+    { stopAtr = CFG.STOP_ATR, trailAtr = CFG.TRAIL_ATR } = {}) {
+    const dir = side === 'long' ? 1 : -1;
+    const trailDist = Math.abs(entry - stop0) * (trailAtr / stopAtr);
+    let stop = stop0, best = entry;
+    for (const k of candles) {
+      if (k.t <= sinceT) continue;
+      if (dir === 1 ? k.l <= stop : k.h >= stop) return { stop, hit: true };
+      best = dir === 1 ? Math.max(best, k.h) : Math.min(best, k.l);
+      const trailed = best - dir * trailDist;
+      if (dir === 1 ? trailed > stop : trailed < stop) stop = trailed;
+    }
+    return { stop, hit: false };
+  }
+
   // The live breakout stream: Donchian entries scored with their trailing
   // exit (the variant that passed the walk-forward). Outcome 'trail' when
   // the trailing stop (or the 3-day window) closed the trade; 'open' until.
@@ -601,7 +624,7 @@
     CFG, SCALP, SWING, ema, rsi, atr, adx, sma,
     computeIndicators, computeSignals, computeBreakoutSignals, computeBreakoutStream, computeScalpStream, computeSwingStream, toDailyCandles, breakoutRadar, scoreOutcome,
     closedPrefix, closedOf, favorableRate,
-    trailingScore, trailingComparison,
+    trailingScore, trailingStopNow, trailingComparison,
     mlFeatures, mlScore, mlTrain,
     tradePlan, riskMultiplier, fundedSide, nextEiaTime,
   };
