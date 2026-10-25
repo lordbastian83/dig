@@ -1380,12 +1380,16 @@
     box.innerHTML = sweepAt + rows.map((r) => {
       const open = r.outcome === 'open';
       const pnlCls = r.movePct >= 0 ? 'move-pos' : 'move-neg';
-      // resolution detail (recorded since 2026-10-18): how a trailing trade
-      // actually closed — the stop was hit, or the window lapsed at market.
-      const how = !open && r.exitHow ? (r.exitHow === 'time' ? 'window' : 'stop') : '';
+      // resolution detail: trailing rows carry exitHow (recorded since
+      // 2026-10-18); fixed-exit outcomes already encode it — win hit the
+      // target, loss the stop, be the breakeven stop, flat expired at market.
+      // Old trailing rows without exitHow honestly stay unsuffixed.
+      const how = open ? ''
+        : r.exitHow ? (r.exitHow === 'time' ? 'window' : 'stop')
+        : ({ win: 'target', loss: 'stop', be: 'breakeven', flat: 'expiry' }[r.outcome] || '');
       const status = open ? '<span class="radar-dist">open</span>'
         : `<span class="${pnlCls}">${fmtPct(r.movePct)}</span>${how ? ` <span class="radar-dist">${how}</span>` : ''}`;
-      const full = `${open ? 'SIG' : 'CLOSE'} ${tag(r)} ${ASSETS[r.asset].tab} ${r.side === 'long' ? '▲ long' : '▼ short'} @ $${fmtPrice(r.entry)} · ${open ? 'open' : fmtPct(r.movePct) + (how ? ` (${how === 'window' ? 'window exit' : 'trail stop'})` : '')} · ${fmtTime(r.t)} UTC`;
+      const full = `${open ? 'SIG' : 'CLOSE'} ${tag(r)} ${ASSETS[r.asset].tab} ${r.side === 'long' ? '▲ long' : '▼ short'} @ $${fmtPrice(r.entry)} · ${open ? 'open' : fmtPct(r.movePct) + (how ? ` (${{ window: 'window exit', stop: r.exitHow ? 'trail stop' : 'stop hit', target: 'target hit', breakeven: 'breakeven stop', expiry: 'expired at market' }[how]})` : '')} · ${fmtTime(r.t)} UTC`;
       return `<li title="${full}"><span class="log-body"><span class="log-tag ${open ? 't-sig' : 't-close'}">${open ? 'SIG' : 'CLOSE'}</span>` +
         `<span class="log-tag t-strm">${tag(r)}</span> ${ASSETS[r.asset].tab} ` +
         `<span class="${r.side === 'long' ? 'move-pos' : 'move-neg'}">${r.side === 'long' ? '▲' : '▼'}</span> ` +
