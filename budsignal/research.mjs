@@ -813,6 +813,76 @@ async function main() {
     console.log('swing cost-robustness evaluated');
   }
 
+  // ---- Cost robustness of the funded early-swing (20d) longs ----
+  // Same pre-registered FRAGILITY-report rules as the swing-55 block above:
+  // no rule change can come from it. The early-swing variant's edge is the
+  // thinnest of the funded daily streams (+0.5%/trade, PF 1.25 in
+  // validation), so its cost fragility is the open question — the swing-55
+  // numbers above cannot be assumed to transfer. Entries are the live 20-day
+  // Donchian; exits mirror the live early exits (1.5×ATR stop, 2×ATR trail,
+  // 18-day window, close-evaluated), the same one-unit simulator family as
+  // the other daily studies. Its alert only ever gets a measured discipline
+  // line from numbers published here.
+  {
+    const simEarly = (arr, i, side, atr) => {
+      const dir = side === 'long' ? 1 : -1;
+      const entry = arr[i].c;
+      let best = entry;
+      const stop0 = entry - dir * 1.5 * atr;
+      const end = Math.min(arr.length - 1, i + 18);
+      let exitP = arr[end].c;
+      for (let k = i + 1; k <= end; k++) {
+        const c = arr[k].c;
+        if (dir * (c - best) > 0) best = c;
+        const trail = best - dir * 2 * atr;
+        const s = dir === 1 ? Math.max(stop0, trail) : Math.min(stop0, trail);
+        if (dir * (c - s) <= 0) { exitP = c; break; }
+        exitP = c;
+      }
+      return ((dir * (exitP - entry)) / entry) * 100;
+    };
+    const rows = { train: [], validate: [] }; // {m: gross %, c: modeled cost}
+    for (const [asset] of Object.entries(ASSETS)) {
+      const c4 = histories[asset];
+      if (!c4 || c4.length < 800) continue;
+      const daily = E.toDailyCandles(c4);
+      if (daily.length < 400) continue;
+      const ind = E.computeIndicators(daily);
+      const c = costOf(asset);
+      const splitT = daily[Math.floor(daily.length * 0.7)].t;
+      for (const s of E.computeBreakoutSignals(daily, ind, { lookback: 20 })) {
+        const atr = ind.atr[s.i];
+        if (atr == null || s.i >= daily.length - 1 || s.side !== 'long') continue; // funded = longs
+        rows[s.t < splitT ? 'train' : 'validate'].push({ m: simEarly(daily, s.i, s.side, atr), c });
+      }
+    }
+    const at = (rs, k) => rs.map((r) => r.m - r.c * k);
+    lines.push(
+      '## Cost robustness — funded early-swing (20d) longs (fragility report)',
+      '',
+      'The thinnest funded daily edge, under the same spread-widening sweep as the swing-55 block above. ' +
+      'Pre-registered as a report only: no rule ships from it, and the early-swing alert only gains a measured ' +
+      'discipline line from numbers published here.',
+      '',
+      '| Cost assumption | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|',
+      ...[1, 2, 3, 5].map((k) => {
+        const tr = stats(at(rows.train, k)), va = stats(at(rows.validate, k));
+        const v = !tr || !va || va.n < 15 ? '⚠️ too few trades'
+          : tr.avg > 0 && va.avg > 0 ? '✅ edge survives' : '❌ edge gone';
+        return `| ${k}× modeled cost | ${fmtStats(tr)} | ${fmtStats(va)} | ${v} |`;
+      }),
+      (() => {
+        const gv = stats(rows.validate.map((r) => r.m));
+        const avgC = rows.validate.length ? rows.validate.reduce((a, r) => a + r.c, 0) / rows.validate.length : 0;
+        const ok = gv && gv.n >= 15 && gv.avg > 0 && avgC > 0;
+        return `| _Break-even cost multiple (validate)_ | — | gross ${gv ? fmtStats(gv) : '—'} | edge ≈ ${ok ? (gv.avg / avgC).toFixed(0) : '—'}× the modeled cost |`;
+      })(),
+      '',
+    );
+    console.log('early-swing cost-robustness evaluated');
+  }
+
   // ---- WTI deep-dive ----
   // Owner-requested single-market focus. Testing many variants on ONE market
   // is a multiple-comparisons trap, so the bar is stricter than the global
