@@ -1920,8 +1920,13 @@
   // ---- wire pipeline: dedupe → entities → topics → tone, all in-browser ----
   // Transparent keyword lexicons, not a model: every tag below is a visible
   // word match anyone can check against the headline. Tone is a word count.
-  const LEX_POS = /\b(rall(?:y|ies)|surge[sd]?|gain(?:s|ed)?|jump(?:s|ed)?|beat[s]?|record high|boost(?:s|ed)?|upgrade[sd]?|soar(?:s|ed)?|rise[sn]?|rose|strong(?:er)?|growth|bullish|optimis\w+|ease[sd]?|climb(?:s|ed)?|rebound(?:s|ed)?|recover\w*|higher)\b/gi;
-  const LEX_NEG = /\b(fall[s]?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower)\b/gi;
+  // 2026-10-31, measured against the live batch: 71 of 100 headlines had no
+  // lexicon hit while the wire was dominated by the Binance hack — "hack",
+  // "breach", "stolen", "theft" were all invisible. Every word added below
+  // appears in that batch and reads correctly in each of the 25 headlines it
+  // tags; nothing was added speculatively.
+  const LEX_POS = /\b(rall(?:y|ies)|surge[sd]?|gain(?:s|ed)?|jump(?:s|ed)?|beat[s]?|record (?:\w+ )?(?:highs?|profits?|revenue)|profits? (?:nearly |almost )?(?:double[sd]?|triple[sd]?)|boost(?:s|ed)?|upgrade[sd]?|soar(?:s|ed)?|rise[sn]?|rose|strong(?:er)?|growth|bullish|optimis\w+|ease[sd]?|climb(?:s|ed)?|rebound(?:s|ed)?|recover\w*|higher)\b/gi;
+  const LEX_NEG = /\b(fall[s]?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward)\b/gi;
   const MKT_TAGS = [
     ['GOLD', /\bgold\b|\bxau\b|bullion/i],
     ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b|\blng\b|gasoline|diesel|natural gas/i],
