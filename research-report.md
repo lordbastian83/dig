@@ -1,14 +1,14 @@
 # LordBastian Signal Generator — walk-forward research
 
-Generated 2026-11-01T07:36:34.436Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
+Generated 2026-11-01T13:40:53.332Z · 3y of 4h candles via FMP · train = first 70% of each market's history, validate = last 30% (out-of-sample).
 
 A variant only counts as an improvement if it beats its comparator in **both** periods — train-only wins are fitted noise.
 
-Enrichment coverage: funding 4/4 · fng 3192 · econ 936 · usd ok · btc ok
+Enrichment coverage: funding 4/4 · fng 3192 · econ 935 · usd ok · btc ok
 
 ## BTC / USD
 
-6631 candles, 2023-10-23 → 2026-11-01, split at 2025-12-04
+6633 candles, 2023-10-23 → 2026-11-01, split at 2025-12-04
 
 | Variant | Train | Validate |
 |---|---|---|
