@@ -246,8 +246,8 @@ function composeMessage(asset, sig, mlModel, plan, edge) {
     ? `✅ Qualifies for real money — validated filtered scalp stream (thin edge: ~+0.2%/trade net over 100 validation trades; the session/volatility/market filters are what make it work)\n📏 Spread discipline (measured): this edge breaks even at ≈2.3× the modeled cost (51 trades) — if your live spread is about double its normal width (news prints, session opens), skip this one even with every gate green.`
     : swing
       ? (sig.early
-        ? `✅ Qualifies for real money — validated early-swing variant (+0.5%/trade net in validation, PF 1.25 — thinner edge than the main daily-55 stream, size accordingly)`
-        : `✅ Qualifies for real money — the strongest validated stream (+1.5%/trade net in validation, PF 1.9, pooled across markets)\n📏 Spread resilience (measured): the daily move dwarfs costs — the validation edge still clears at 5× the modeled cost and breaks even near ≈51× (40 trades). Unlike the scalp stream, a widened spread is not a reason to skip this one.`)
+        ? `✅ Qualifies for real money — validated early-swing variant (+0.5%/trade net in validation, PF 1.25 — thinner edge than the main daily-55 stream, size accordingly)\n📏 Spread resilience (measured): thinner than the daily-55 stream but still a daily-move edge — it clears 5× the modeled cost in validation and breaks even near ≈29× (59 trades). A widened spread alone is not a reason to skip; the thinner per-trade edge is the reason to size smaller.`
+        : `✅ Qualifies for real money — the strongest validated stream (+1.5%/trade net in validation, PF 1.9, pooled across markets)\n📏 Spread resilience (measured): the daily move dwarfs costs — the validation edge still clears at 5× the modeled cost and breaks even near ≈46× (40 trades). Unlike the scalp stream, a widened spread is not a reason to skip this one.`)
       : bk && edge === true
         ? `✅ Qualifies for real money — this market kept a net edge out-of-sample`
         : `❌ <i>Paper only — ${bk ? 'this market showed no net edge in walk-forward validation' : 'the cross stream has never passed walk-forward validation'}. Watch, don't fund.</i>`);
