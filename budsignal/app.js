@@ -936,8 +936,8 @@
       ? '<p class="plan-verdict no">❌ Paper only — SHORT signals failed side-split validation on this stream (longs carry the edge). Watch it, don\'t fund it.</p>'
       : swing
       ? (s.early
-        ? '<p class="plan-verdict ok">✅ Qualifies for real money — validated early-swing variant (+0.5%/trade net in validation, PF 1.25 — thinner edge than the main daily-55 stream).</p>'
-        : '<p class="plan-verdict ok">✅ Qualifies for real money — the daily swing stream is the strongest validated edge (+1.5%/trade net in validation, PF 1.9).</p>')
+        ? '<p class="plan-verdict ok">✅ Qualifies for real money — validated early-swing variant (funded longs: +1.17%/trade net in validation, PF 1.74 — thinner edge than the main daily-55 stream).</p>'
+        : '<p class="plan-verdict ok">✅ Qualifies for real money — the daily swing stream is the strongest validated edge (funded longs: +1.75%/trade net in validation, PF 2.26).</p>')
       : bk && es?.edge === true
       ? '<p class="plan-verdict ok">✅ Qualifies for real money — breakout signal on a market that kept a net edge out-of-sample.</p>'
       : bk
