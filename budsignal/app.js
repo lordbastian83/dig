@@ -2656,6 +2656,10 @@
       ['⚡ Scalp entries (1h)', (r) => r.strategy === 'scalp'],
       ['▲ Longs', (r) => r.side === 'long'],
       ['▼ Shorts', (r) => r.side === 'short'],
+      // exitHow is recorded since 18 Oct 2026 — older trailing closures
+      // honestly stay out of these two rows rather than being guessed.
+      ['⤳ Closed on trail stop (tracked since 18 Oct)', (r) => r.exitHow === 'stop'],
+      ['⏱ Closed on window expiry (tracked since 18 Oct)', (r) => r.exitHow === 'time'],
       ['Confidence below 70', (r) => r.confidence < 70],
       ['Confidence 70–84', (r) => r.confidence >= 70 && r.confidence < 85],
       ['Confidence 85+', (r) => r.confidence >= 85],
