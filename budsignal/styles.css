@@ -1534,3 +1534,43 @@ tr[role="button"]:focus-visible { outline-offset: -2px; }
 .desk-log li { display: flex; align-items: baseline; gap: 10px; }
 .desk-log .log-body { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .desk-log .log-when { flex: none; margin-left: auto; font-size: 10px; color: var(--text-muted); letter-spacing: 0.04em; white-space: nowrap; }
+
+/* ================================================================
+   VAULT MONEY RESKIN — 2026-11-03. On-brand with the Vault Brand
+   Guidelines v0.1 (bloodstock/app/styles.css is the house reference):
+   deep-navy desk and charcoal-navy panels on slate hairlines, Vault
+   gold #DCB64A as the identity accent (gold-deep for dim chrome),
+   brand green #2CC1A0 for positives, blue for live data. Tokens flip
+   wholesale, so every tag, tab, title bar, tape symbol and chip
+   re-skins with them; the carbon square chrome and keylines carry
+   over via the same tokens.
+   ================================================================ */
+:root {
+  --page:           #0B0E17;
+  --surface-1:      #0F1523;
+  --surface-2:      #1B2436;
+  --text-primary:   #E8EDF6;
+  --text-secondary: #A9B6CC;
+  --text-muted:     #64748B;
+  --grid:           #1A2335;
+  --baseline:       #26334D;
+  --border:         #243149;
+  --up:             #2CC1A0;
+  --down:           #EF4444;
+  --ema20:          #38BDF8;
+  --ema50:          #8F9BB0;
+  --up-wash:        rgba(44, 193, 160, 0.12);
+  --down-wash:      rgba(239, 68, 68, 0.12);
+  --accent:         #38BDF8;
+  --accent-wash:    rgba(56, 189, 248, 0.12);
+  --amber:          #DCB64A;
+  --amber-dim:      #A8862B;
+  --amber-wash:     rgba(220, 182, 74, 0.10);
+}
+
+/* the carbon-era true-black hardcodes go navy with the desk */
+@media (min-width: 921px) {
+  .site-header { background: #0D1420; }
+}
+.tape, .tape-news { background: #0D1420; }
+.wcat-active { color: #0B0E17; }
