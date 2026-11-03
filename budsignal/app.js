@@ -38,11 +38,13 @@
   if (!ASSETS[currentAsset]) currentAsset = 'BTC';
 
   const COLORS = {
-    up: '#2fd66b', down: '#ff5449',
-    ema20: '#57a6ff', ema50: '#8f8f98',
-    line: '#ffb000', lineWash: 'rgba(255, 176, 0, 0.10)',
-    grid: '#1e1e22', baseline: '#2e2e34',
-    muted: '#716c60', ink: '#f2efe6', surface: '#121214',
+    // Vault Money reskin — must stay in lockstep with the token block at
+    // the end of styles.css (canvas charts cannot read CSS variables here).
+    up: '#2cc1a0', down: '#ef4444',
+    ema20: '#38bdf8', ema50: '#8f9bb0',
+    line: '#dcb64a', lineWash: 'rgba(220, 182, 74, 0.10)',
+    grid: '#1a2335', baseline: '#26334d',
+    muted: '#64748b', ink: '#e8edf6', surface: '#0f1523',
   };
 
   const $ = (id) => document.getElementById(id);
