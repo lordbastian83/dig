@@ -1927,8 +1927,14 @@
   // "breach", "stolen", "theft" were all invisible. Every word added below
   // appears in that batch and reads correctly in each of the 25 headlines it
   // tags; nothing was added speculatively.
-  const LEX_POS = /\b(rall(?:y|ies)|surge[sd]?|gain(?:s|ed)?|jump(?:s|ed)?|beat[s]?|record (?:\w+ )?(?:highs?|profits?|revenue)|profits? (?:nearly |almost )?(?:double[sd]?|triple[sd]?)|boost(?:s|ed)?|upgrade[sd]?|soar(?:s|ed)?|rise[sn]?|rose|strong(?:er)?|growth|bullish|optimis\w+|ease[sd]?|climb(?:s|ed)?|rebound(?:s|ed)?|recover\w*|higher)\b/gi;
-  const LEX_NEG = /\b(fall[s]?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward)\b/gi;
+  // 2026-11-04, measured against that day's live batch (election/risk-off
+  // wire, 71 of 100 headlines lexicon-silent): added sinks/sank, rattle,
+  // disaster, falters, falling (fall/fell never matched the participle),
+  // slips, crunch, freefall, crushed, retreat, depress-; positive side
+  // gained pops, boom(ing) and rising (rise/rose never matched it). Every
+  // word was read in its headline before being added.
+  const LEX_POS = /\b(rall(?:y|ies)|surge[sd]?|gain(?:s|ed)?|jump(?:s|ed)?|beat[s]?|record (?:\w+ )?(?:highs?|profits?|revenue)|profits? (?:nearly |almost )?(?:double[sd]?|triple[sd]?)|boost(?:s|ed)?|upgrade[sd]?|soar(?:s|ed)?|rise[sn]?|rising|rose|strong(?:er)?|growth|bullish|optimis\w+|ease[sd]?|climb(?:s|ed)?|rebound(?:s|ed)?|recover\w*|higher|pops|boom(?:s|ing)?)\b/gi;
+  const LEX_NEG = /\b(fall(?:s|ing)?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward|sink(?:s|ing)?|sank|rattle[sd]?|disaster[s]?|falter(?:s|ed|ing)?|slip(?:s|ped|ping)?|crunch|freefall|crushed|retreat(?:s|ed)?|depress\w*)\b/gi;
   const MKT_TAGS = [
     ['GOLD', /\bgold\b|\bxau\b|bullion/i],
     ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b|\blng\b|gasoline|diesel|natural gas/i],
