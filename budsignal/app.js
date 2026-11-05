@@ -1244,7 +1244,7 @@
         <td class="num ${movePct != null ? cls(movePct) : ''}">${movePct != null ? fmtPct(movePct) : '—'}</td>
         <td class="num ${R != null ? cls(R) : ''}">${R != null ? (R >= 0 ? '+' : '') + R.toFixed(2) + 'R' : '—'}</td>
         <td class="num ${gbp != null ? cls(gbp) : ''}">${gbp != null ? (gbp >= 0 ? '+£' : '−£') + fmtUsd(Math.abs(gbp)) : '—'}</td>
-        <td class="num">${ageH < 48 ? ageH.toFixed(0) + 'h' : (ageH / 24).toFixed(1) + 'd'}</td>
+        <td class="num${ageH > maxHoldH(r) ? ' move-neg' : ''}" title="time in trade vs this stream's hard-exit window${ageH > maxHoldH(r) ? ' — past the window; the stream closes this at its next scheduled run' : ''}">${ageH < 48 ? ageH.toFixed(0) + 'h' : (ageH / 24).toFixed(1) + 'd'} <span class="radar-dist">/ ${maxHoldH(r) >= 48 ? maxHoldH(r) / 24 + 'd' : maxHoldH(r) + 'h'}</span></td>
       </tr>`;
     }).join('') + orphanNote;
   }
