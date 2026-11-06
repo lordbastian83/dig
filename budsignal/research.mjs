@@ -748,6 +748,99 @@ async function main() {
     console.log('trend-gate study evaluated');
   }
 
+  // ---- Volume-confirmation gate on the daily swing-55 ----
+  // Pre-registered (2026-11-06): the live ledger buckets split closed
+  // trades by volConfirm and the two halves look different, but ledger
+  // buckets are a peek, not a test. This asks the walk-forward question
+  // with the LIVE definition (signal-candle volume above its SMA, the
+  // same test engine.js uses for the confidence score), under the live
+  // swing exit, net of modeled cost. Same adoption rule as the trend
+  // gate: a variant ships ONLY if it beats the no-gate baseline in BOTH
+  // periods with >=30 validate trades. The inverse row is a diagnostic
+  // only — "below average volume" can never ship as a rule from here.
+  {
+    const simOne = (arr, i, side, atr) => {
+      const dir = side === 'long' ? 1 : -1;
+      const entry = arr[i].c;
+      let best = entry;
+      const stop0 = entry - dir * 2 * atr;
+      const end = Math.min(arr.length - 1, i + 24);
+      let exitP = arr[end].c;
+      for (let k = i + 1; k <= end; k++) {
+        const c = arr[k].c;
+        if (dir * (c - best) > 0) best = c;
+        const trail = best - dir * 3 * atr;
+        const s = dir === 1 ? Math.max(stop0, trail) : Math.min(stop0, trail);
+        if (dir * (c - s) <= 0) { exitP = c; break; }
+        exitP = c;
+      }
+      return ((dir * (exitP - entry)) / entry) * 100;
+    };
+    const ratio = (d, i, ind) => (ind.volSma[i] ? d[i].v / ind.volSma[i] : null);
+    const gates = [
+      ['no gate (live baseline, re-simulated)', () => true],
+      ['volume confirmed (candle vol > SMA — live definition)', (d, i, ind) => { const r = ratio(d, i, ind); return r != null && r > 1; }],
+      ['strong volume (ratio ≥ 1.5)', (d, i, ind) => { const r = ratio(d, i, ind); return r != null && r >= 1.5; }],
+      ['below-average volume (diagnostic only, never a rule)', (d, i, ind) => { const r = ratio(d, i, ind); return r != null && r <= 1; }],
+    ];
+    const pools = new Map();
+    const put = (gi, sideKey, period, m) => {
+      const k = `${gi}|${sideKey}|${period}`;
+      if (!pools.has(k)) pools.set(k, []);
+      pools.get(k).push(m);
+    };
+    for (const [asset] of Object.entries(ASSETS)) {
+      const c4 = histories[asset];
+      if (!c4 || c4.length < 800) continue;
+      const daily = E.toDailyCandles(c4);
+      if (daily.length < 400) continue;
+      const ind = E.computeIndicators(daily);
+      const cost = costOf(asset);
+      const splitT = daily[Math.floor(daily.length * 0.7)].t;
+      for (const s of E.computeBreakoutSignals(daily, ind, {})) {
+        const atr = ind.atr[s.i];
+        if (atr == null || s.i >= daily.length - 1) continue;
+        const period = s.t < splitT ? 'train' : 'validate';
+        const m = simOne(daily, s.i, s.side, atr) - cost;
+        for (let gi = 0; gi < gates.length; gi++) {
+          if (!gates[gi][1](daily, s.i, ind)) continue;
+          put(gi, 'both', period, m);
+          if (s.side === 'long') put(gi, 'long', period, m);
+        }
+      }
+    }
+    lines.push(
+      '## Volume-confirmation gate on the daily swing-55',
+      '',
+      'Pre-registered: the ledger buckets split live trades by volume confirmation, but buckets are a peek, not a test. ' +
+      'This scores the walk-forward question with the live definition (signal-candle volume above its SMA), under the live swing exit, net of modeled cost. ' +
+      'Adoption rule: a gate becomes an execution rule ONLY if it beats the no-gate baseline in BOTH periods with ≥30 validate trades. ' +
+      'The below-average row is a diagnostic only. A filter only removes trades — weigh n as well as avg.',
+      '',
+      '| Gate | Side | Train (net) | Validate (net) | Verdict |',
+      '|---|---|---|---|---|',
+    );
+    for (const sideKey of ['both', 'long']) {
+      const base = {
+        tr: stats(pools.get(`0|${sideKey}|train`) || []),
+        va: stats(pools.get(`0|${sideKey}|validate`) || []),
+      };
+      for (let gi = 0; gi < gates.length; gi++) {
+        const tr = stats(pools.get(`${gi}|${sideKey}|train`) || []);
+        const va = stats(pools.get(`${gi}|${sideKey}|validate`) || []);
+        const v = gi === 0 ? 'baseline'
+          : gi === 3 ? 'diagnostic'
+          : !tr || !va || va.n < 30 ? '⚠️ too few trades'
+          : tr.avg > (base.tr?.avg ?? -99) && va.avg > (base.va?.avg ?? -99)
+            ? '✅ beats baseline both periods — adopt as execution rule'
+            : '❌ no improvement';
+        lines.push(`| ${gates[gi][0]} | ${sideKey === 'both' ? 'both' : '▲ longs'} | ${fmtStats(tr)} | ${fmtStats(va)} | ${v} |`);
+      }
+    }
+    lines.push('');
+    console.log('volume-gate study evaluated');
+  }
+
   // ---- Cost robustness of the funded daily swing-55 ----
   // Pre-registered as a FRAGILITY report, not an adoption decision: no
   // rule changes can come from it. Live spreads widen at news times, so
