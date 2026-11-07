@@ -2680,6 +2680,17 @@
       .map(([label, fn]) => row(label, segmentStats(recs.filter(fn))))
       .join('');
 
+    // The scalp card quotes the walk-forward validation; this appends the
+    // LIVE ledger's own count beside it, computed from the same records
+    // the buckets use — one source, so the two surfaces can never drift.
+    const sl = $('scalp-live-note');
+    if (sl) {
+      const s = segmentStats(recs.filter((r) => r.strategy === 'scalp'));
+      sl.innerHTML = s.n
+        ? ` <strong>Live ledger so far (not validation):</strong> ${s.n} closed · ${s.favPct.toFixed(0)}% favorable · avg ${fmtPct(s.avg)}/trade — a small sample of a razor-thin edge; judge it against the buckets in Performance, not on its own.`
+        : '';
+    }
+
     lastRecs = recs;
     lastPerfStamp = data.updated || null;
     renderPaperAccount(recs);
