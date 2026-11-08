@@ -1391,9 +1391,12 @@
         : ({ win: 'target', loss: 'stop', be: 'breakeven', flat: 'expiry' }[r.outcome] || '');
       const status = open ? '<span class="radar-dist">open</span>'
         : `<span class="${pnlCls}">${fmtPct(r.movePct)}</span>${how ? ` <span class="radar-dist">${how}</span>` : ''}`;
-      const full = `${open ? 'SIG' : 'CLOSE'} ${tag(r)} ${ASSETS[r.asset].tab} ${r.side === 'long' ? '▲ long' : '▼ short'} @ $${fmtPrice(r.entry)} · ${open ? 'open' : fmtPct(r.movePct) + (how ? ` (${{ window: 'window exit', stop: r.exitHow ? 'trail stop' : 'stop hit', target: 'target hit', breakeven: 'breakeven stop', expiry: 'expired at market' }[how]})` : '')} · ${fmtTime(r.t)} UTC`;
+      // same funded test the blotter uses, so the two can never disagree
+      const funded = E.fundedSide(r) && (r.strategy === 'swing' || r.strategy === 'scalp' ||
+        (r.strategy === 'breakout' && edgeStatus?.assets?.[r.asset]?.edge === true));
+      const full = `${open ? 'SIG' : 'CLOSE'} ${tag(r)}${funded ? '' : ' (paper — not a funded stream/side)'} ${ASSETS[r.asset].tab} ${r.side === 'long' ? '▲ long' : '▼ short'} @ $${fmtPrice(r.entry)} · ${open ? 'open' : fmtPct(r.movePct) + (how ? ` (${{ window: 'window exit', stop: r.exitHow ? 'trail stop' : 'stop hit', target: 'target hit', breakeven: 'breakeven stop', expiry: 'expired at market' }[how]})` : '')} · ${fmtTime(r.t)} UTC`;
       return `<li title="${full}"><span class="log-body"><span class="log-tag ${open ? 't-sig' : 't-close'}">${open ? 'SIG' : 'CLOSE'}</span>` +
-        `<span class="log-tag t-strm">${tag(r)}</span> ${ASSETS[r.asset].tab} ` +
+        `<span class="log-tag t-strm">${tag(r)}</span>${funded ? '' : ' <span class="radar-dist">paper</span>'} ${ASSETS[r.asset].tab} ` +
         `<span class="${r.side === 'long' ? 'move-pos' : 'move-neg'}">${r.side === 'long' ? '▲' : '▼'}</span> ` +
         `@ $${fmtPrice(r.entry)} · ${status}</span><span class="log-when" data-t="${r.t}">${relTime(r.t)}</span></li>`;
     }).join('');
