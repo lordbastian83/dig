@@ -1,8 +1,8 @@
 /* BudSignal intel desk — server-side fetcher for context datasets the
    browser cannot or should not fetch itself: the macro calendar (FMP),
-   US Congress trades (ORTEX), insider trades (FMP) and macro-relevant
-   prediction markets (Polymarket's public Gamma API). Publishes
-   intel.json to the budsignal-data branch on a 6-hour schedule.
+   US Congress trades (ORTEX, FMP fallback), insider trades (FMP) and
+   macro-relevant prediction markets (Polymarket's public Gamma API).
+   Publishes intel.json to the budsignal-data branch on a 6-hour schedule.
 
    Every source is isolated: one dead source is recorded in the output's
    errors map and skipped, never fatal (the Telegram-freeze lesson).
@@ -16,7 +16,7 @@
 
    Environment:
      FMP_API_KEY    macro calendar + insider trades
-     ORTEX_API_KEY  congress trades
+     ORTEX_API_KEY  congress trades (primary; FMP is the fallback)
      INTEL_FILE     output path (default intel.json)
      SELF_TEST=1    offline: run mappers on fixtures, write nothing */
 
@@ -86,13 +86,61 @@ export function mapGov(rows) {
   return out;
 }
 
+/* FMP's senate/house disclosure rows use a different shape from ORTEX:
+   firstName/lastName (senate) or representative (house), type and a
+   dollar-range amount. Normalized to the same output as mapGov. */
+export function mapCongressFmp(rows) {
+  const out = [];
+  for (const r of rows || []) {
+    const t = Date.parse(String(pick(r, 'transactionDate', 'disclosureDate', 'dateRecieved') || ''));
+    if (!Number.isFinite(t)) continue;
+    const who = String(pick(r, 'representative') ||
+      `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'unknown').slice(0, 40);
+    out.push({
+      t,
+      ticker: String(pick(r, 'symbol', 'ticker') || '?').slice(0, 8),
+      who,
+      side: String(pick(r, 'type', 'transactionType') || '?').slice(0, 16),
+      amount: String(pick(r, 'amount') || '').slice(0, 24),
+    });
+  }
+  return out;
+}
+
 async function fetchCongress() {
-  if (!ORTEX_KEY) throw new Error('no ORTEX key');
-  const j = await getJson(
-    `https://api.ortex.com/api/v1/us_government_trades?from_date=${day(Date.now() - 45 * 86400000)}&page_size=50`,
-    { 'Ortex-Api-Key': ORTEX_KEY, accept: 'application/json' });
-  const rows = j.rows || j.data || (Array.isArray(j) ? j : []);
-  return mapGov(rows).sort((a, b) => b.t - a.t).slice(0, 15);
+  const errs = [];
+  if (ORTEX_KEY) {
+    try {
+      const j = await getJson(
+        `https://api.ortex.com/api/v1/us_government_trades?from_date=${day(Date.now() - 45 * 86400000)}&page_size=50`,
+        { 'Ortex-Api-Key': ORTEX_KEY, accept: 'application/json' });
+      const rows = j.rows || j.data || (Array.isArray(j) ? j : []);
+      const mapped = mapGov(rows).sort((a, b) => b.t - a.t).slice(0, 15);
+      if (mapped.length) return mapped;
+      errs.push('ORTEX empty');
+    } catch (e) { errs.push(`ORTEX ${e.message}`); }
+  } else errs.push('no ORTEX key');
+  // 2026-11-14: the ORTEX feed had returned HTTP 403 on almost every run
+  // since 2026-10-21 (the panel was dark for over three weeks). FMP serves
+  // the same disclosures and its key is already in use for macro/insider,
+  // so it backstops here — same one-dead-source-is-never-fatal rule.
+  if (FMP_KEY) {
+    const rows = [];
+    const tryPaths = async (paths) => {
+      for (const path of paths) {
+        try {
+          const j = await getJson(`https://financialmodelingprep.com/${path}&apikey=${encodeURIComponent(FMP_KEY)}`);
+          if (Array.isArray(j) && j.length) rows.push(...j);
+        } catch (e) { /* try the next endpoint shape */ }
+      }
+    };
+    await tryPaths(['stable/senate-latest?page=0&limit=100', 'stable/house-latest?page=0&limit=100']);
+    if (!rows.length) await tryPaths(['api/v4/senate-trading-rss-feed?page=0', 'api/v4/senate-disclosure-rss-feed?page=0']);
+    const mapped = mapCongressFmp(rows).sort((a, b) => b.t - a.t).slice(0, 15);
+    if (mapped.length) return mapped;
+    errs.push('FMP empty/unavailable');
+  } else errs.push('no FMP key');
+  throw new Error(errs.join('; '));
 }
 
 /* ---------- insider trades via FMP ---------- */
@@ -188,6 +236,10 @@ async function fetchPoly() {
 const FIXTURES = {
   macro: [{ date: new Date(Date.now() + 86400000).toISOString(), event: 'CPI YoY', impact: 'High', currency: 'USD' }],
   gov: [{ transactionDate: '2026-09-20', ticker: 'AAPL', filerName: 'A. Person', party: 'Republican', transactionType: 'Buy', usdValue: '$15,001-$50,000' }],
+  govFmp: [
+    { transactionDate: '2026-10-02', symbol: 'MSFT', firstName: 'Jane', lastName: 'Senator', type: 'Purchase', amount: '$15,001 - $50,000' },
+    { transactionDate: '2026-10-01', symbol: 'NVDA', representative: 'John Rep', type: 'Sale (Partial)', amount: '$1,001 - $15,000' },
+  ],
   insider: [{ transactionDate: '2026-09-24', symbol: 'NVDA', reportingName: 'SOME EXEC', transactionType: 'S-Sale', securitiesTransacted: 1000, price: 190 }],
   poly: [{ question: 'Will the Fed cut rates in October?', outcomePrices: '["0.62","0.38"]', volumeNum: 1234567, endDate: new Date(Date.now() + 30 * 86400000).toISOString() }, { question: 'Will X win the 2028 election?', outcomePrices: '["0.01","0.99"]', volumeNum: 99999999, endDate: '2028-11-07T00:00:00Z' }],
 };
@@ -195,10 +247,12 @@ const FIXTURES = {
 async function main() {
   if (SELF_TEST) {
     const m = mapMacro(FIXTURES.macro), g = mapGov(FIXTURES.gov), i = mapInsider(FIXTURES.insider), p = mapPoly(FIXTURES.poly);
+    const f = mapCongressFmp(FIXTURES.govFmp);
     const ok = m.length === 1 && g.length === 1 && g[0].who === 'A. Person (R)' && g[0].amount === '$15,001-$50,000' &&
+      f.length === 2 && f[0].who === 'Jane Senator' && f[0].side === 'Purchase' && f[1].who === 'John Rep' && f[1].ticker === 'NVDA' &&
       i.length === 1 && i[0].side === 'SELL' && i[0].usd === 190000 &&
       p.length === 1 && p[0].yes === 62;
-    console.log(JSON.stringify({ m, g, i, p }));
+    console.log(JSON.stringify({ m, g, f, i, p }));
     if (!ok) { console.error('SELF_TEST FAILED'); process.exit(1); }
     console.log('self-test OK');
     return;
