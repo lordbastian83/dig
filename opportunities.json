@@ -1,127 +1,139 @@
 {
-  "generated_at": "2026-11-13T21:24:03.348Z",
+  "generated_at": "2026-11-16T07:04:44.914Z",
   "regime": "risk-off",
   "account_gbp": 1000,
   "risk_pct": 1,
-  "gbpusd": 1.32164,
-  "best": null,
-  "universe_size": 259,
-  "ortex_symbols": 10,
-  "watch": [
-    {
-      "key": "near_breakout_long",
-      "side": "long",
-      "entryType": "stop",
-      "trigger": 1462.2156387703417,
-      "stop": 1395.7464756600914,
-      "target": 1595.1539649908423,
-      "risk": 66.46916311025029,
-      "hi20": 1460,
-      "lo20": 1239.1,
-      "volRatio": 0.6193192827122194,
-      "symbol": "LLY",
-      "label": "Coiling under 20-day high",
-      "score": 31.899598310367644,
-      "why": [
-        "Coiling under 20-day high",
-        "outperforming SPY by 16.0% over 20d"
-      ],
-      "stat": {
-        "n": 187,
-        "winRate": 44.38502673796791,
-        "expR": -0.20251004224080885,
-        "scope": "risk-off"
-      },
-      "daysToEarn": null,
-      "flow": {
-        "symbol": "LLY",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
-      "shares": 0,
-      "costGBP": 0,
-      "riskGBP": 0,
-      "edge": false,
-      "close": 1443.5
+  "gbpusd": 1.31972,
+  "best": {
+    "key": "near_breakout_long",
+    "side": "long",
+    "entryType": "stop",
+    "trigger": 286.4207338599664,
+    "stop": 276.1987180609738,
+    "target": 306.86476545795153,
+    "risk": 10.222015798992572,
+    "hi20": 286.08,
+    "lo20": 251.5,
+    "volRatio": 0.8418918335537744,
+    "symbol": "JNJ",
+    "label": "Coiling under 20-day high",
+    "score": 46.71498759935229,
+    "why": [
+      "Coiling under 20-day high",
+      "outperforming SPY by 13.0% over 20d",
+      "StockTwits 88% bullish of 16 votes",
+      "news positive (+1)",
+      "TradingView ideas 13 long / 3 short"
+    ],
+    "stat": {
+      "n": 174,
+      "winRate": 44.827586206896555,
+      "expR": 0.09219237065319398,
+      "scope": "risk-off"
     },
-    {
-      "key": "near_breakout_long",
-      "side": "long",
-      "entryType": "stop",
-      "trigger": 107.01593422718864,
-      "stop": 101.4379074115295,
-      "target": 118.17198785850692,
-      "risk": 5.578026815659143,
-      "hi20": 106.83,
-      "lo20": 90.96,
-      "volRatio": 0.5568274603352492,
-      "symbol": "BBY",
-      "label": "Coiling under 20-day high",
-      "score": 25.30598921185829,
-      "why": [
-        "Coiling under 20-day high",
-        "outperforming SPY by 13.5% over 20d"
-      ],
-      "stat": {
-        "n": 187,
-        "winRate": 44.38502673796791,
-        "expR": -0.20251004224080885,
-        "scope": "risk-off"
-      },
-      "daysToEarn": 11,
-      "flow": {
-        "symbol": "BBY",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
-      "shares": 2,
-      "costGBP": 161.9441515498754,
-      "riskGBP": 8.441068393297938,
-      "edge": false,
-      "close": 104.07
-    },
-    {
-      "key": "near_breakout_long",
-      "side": "long",
-      "entryType": "stop",
-      "trigger": 286.4207338599664,
-      "stop": 276.1987180609738,
-      "target": 306.86476545795153,
-      "risk": 10.222015798992572,
-      "hi20": 286.08,
-      "lo20": 251.5,
-      "volRatio": 0.8203391144208805,
+    "daysToEarn": null,
+    "flow": {
       "symbol": "JNJ",
-      "label": "Coiling under 20-day high",
-      "score": 25.051891083592174,
-      "why": [
-        "Coiling under 20-day high",
-        "outperforming SPY by 13.0% over 20d"
-      ],
-      "stat": {
-        "n": 187,
-        "winRate": 44.38502673796791,
-        "expR": -0.20251004224080885,
-        "scope": "risk-off"
-      },
-      "daysToEarn": null,
-      "flow": {
-        "symbol": "JNJ",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
-      "shares": 1,
-      "costGBP": 216.71615103959203,
-      "riskGBP": 7.734342028837333,
-      "edge": false,
-      "close": 285.75
+      "siError": "HTTP 403",
+      "ctbError": "HTTP 403",
+      "scoreError": "HTTP 403",
+      "shortScoreError": "HTTP 403"
     },
+    "shares": 1,
+    "costGBP": 217.03144141178916,
+    "riskGBP": 7.745594367739045,
+    "edge": true,
+    "news": {
+      "items": [
+        {
+          "title": "4 Durable Dividend Stocks Retirees Can Count On for Passive Income",
+          "date": "2026-11-15 10:00:50",
+          "source": "247wallst.com"
+        },
+        {
+          "title": "5 Dividend Stocks to Buy and Hold Forever",
+          "date": "Sat, 14 Nov 2026 21:15:00 GMT",
+          "source": "The Motley Fool"
+        },
+        {
+          "title": "Johnson & Johnson (JNJ) Shares Surge 0.8% -- What GF Score of 79 Tells Investors",
+          "date": "Sat, 14 Nov 2026 08:10:48 GMT",
+          "source": "GuruFocus"
+        },
+        {
+          "title": "Johnson & Johnson $JNJ Shares Newly Purchased by AlpenGlobal Capital LLC",
+          "date": "2026-11-14 04:41:48",
+          "source": "defenseworld.net"
+        },
+        {
+          "title": "4 Healthcare Dividend Stocks for Retirees. One Yields Over 4%",
+          "date": "2026-11-13 15:47:11",
+          "source": "247wallst.com"
+        },
+        {
+          "title": "4 Dividend Kings That Kept Raising Payouts Through Recessions and High Interest Rates",
+          "date": "2026-11-13 11:17:20",
+          "source": "247wallst.com"
+        },
+        {
+          "title": "I Bonds Pay 5.51%. Here’s What Dividend Investors Should Know",
+          "date": "2026-11-13 09:47:29",
+          "source": "247wallst.com"
+        },
+        {
+          "title": "5 Dividend Aristocrats and Kings to Consider if the Stock Market Sells Off",
+          "date": "2026-11-13 08:11:02",
+          "source": "247wallst.com"
+        },
+        {
+          "title": "How Much Does a 69-Year-Old Need Invested in Dividend Stocks to Collect $3,000 a Month?",
+          "date": "2026-11-13 07:32:22",
+          "source": "247wallst.com"
+        },
+        {
+          "title": "2,825 Johnson & Johnson $JNJ Shares Sold by Barr E S & Co.",
+          "date": "2026-11-13 03:57:41",
+          "source": "defenseworld.net"
+        },
+        {
+          "title": "Why Did AAPL, COST, JNJ Stocks Hit 52-Week Highs Today?",
+          "date": "Fri, 13 Nov 2026 02:32:00 GMT",
+          "source": "Yahoo Finance"
+        },
+        {
+          "title": "The Big 3: JNJ, LLY, AAPL",
+          "date": "2026-11-12 13:00:02",
+          "source": "youtube.com"
+        }
+      ],
+      "sentiment": 1
+    },
+    "tv": {
+      "long": 13,
+      "short": 3
+    },
+    "social": {
+      "bullish": 14,
+      "bearish": 2,
+      "posts": 30,
+      "redditMentions": 0,
+      "fmp": null,
+      "errors": [],
+      "sample": [
+        "Bullish: $MNKD 👀 $JNJ 👀 $GSK 👀 #combinationtherapy #blockbusterpotential #nintedanib #technosphe",
+        "Bullish: @cmeola1066 1:1 share buyout with $JNJ oh what a fucking Christmas it would be!",
+        "Bullish: $JNJ just acquire SLS already you wuzz."
+      ],
+      "redditRank": null,
+      "redditMentions24hAgo": null,
+      "bullPct": 87.5
+    },
+    "close": 285.75,
+    "plan": "Buy Stop order, 1 shares at 286.42, good for 3 sessions (cancel if not filled); attach Stop-Loss 276.20 and Take-Profit 306.86."
+  },
+  "universe_size": 233,
+  "ortex_symbols": 5,
+  "watch": [
     {
       "key": "pullback_long",
       "side": "long",
@@ -132,17 +144,17 @@
       "risk": 29.75519336732046,
       "hi20": 280.8,
       "lo20": 179.53,
-      "volRatio": 0.5165342115695875,
+      "volRatio": 0.520901320100413,
       "symbol": "MRNA",
       "label": "Pullback in uptrend",
-      "score": 18.72465400300464,
+      "score": 12.472139208264636,
       "why": [
         "Pullback in uptrend"
       ],
       "stat": {
-        "n": 200,
-        "winRate": 26,
-        "expR": -0.3427104727027511,
+        "n": 183,
+        "winRate": 27.322404371584703,
+        "expR": -0.4990233425712512,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -156,122 +168,60 @@
       "key": "pullback_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 112.89365887756492,
-      "stop": 105.11174306019585,
-      "target": 128.45749051230305,
-      "risk": 7.781915817369068,
+      "trigger": 112.89377330613635,
+      "stop": 105.11077534591014,
+      "target": 128.45976922658878,
+      "risk": 7.782997960226211,
       "hi20": 122.08,
       "lo20": 94.54,
-      "volRatio": 0.8999828311210436,
+      "volRatio": 0.9921474147885317,
       "symbol": "UAL",
       "label": "Pullback in uptrend",
-      "score": 17.205050526467,
+      "score": 10.950925719119738,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 14.9% over 20d"
       ],
       "stat": {
-        "n": 200,
-        "winRate": 26,
-        "expR": -0.3427104727027511,
+        "n": 183,
+        "winRate": 27.322404371584703,
+        "expR": -0.4990233425712512,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 1,
-      "costGBP": 85.4193720510615,
-      "riskGBP": 5.888075283261,
+      "costGBP": 85.54373147799257,
+      "riskGBP": 5.8974615526219285,
       "edge": false,
       "close": 109.31
-    },
-    {
-      "key": "near_breakout_long",
-      "side": "long",
-      "entryType": "stop",
-      "trigger": 91.65286854671982,
-      "stop": 87.06681214512541,
-      "target": 100.82498134990863,
-      "risk": 4.586056401594405,
-      "hi20": 91.5,
-      "lo20": 81.53,
-      "volRatio": 1.2008075001293739,
-      "symbol": "VIK",
-      "label": "Coiling under 20-day high",
-      "score": 15.704699161000036,
-      "why": [
-        "Coiling under 20-day high",
-        "outperforming SPY by 8.9% over 20d",
-        "earnings 2026-11-17 (binary risk)"
-      ],
-      "stat": {
-        "n": 187,
-        "winRate": 44.38502673796791,
-        "expR": -0.20251004224080885,
-        "scope": "risk-off"
-      },
-      "daysToEarn": 4,
-      "shares": 2,
-      "costGBP": 138.69566379153147,
-      "riskGBP": 6.939947945876948,
-      "edge": false,
-      "close": 89.87
-    },
-    {
-      "key": "near_breakout_long",
-      "side": "long",
-      "entryType": "stop",
-      "trigger": 359.7808729324374,
-      "stop": 347.4546849593159,
-      "target": 384.43324887868033,
-      "risk": 12.326187973121478,
-      "hi20": 359.37,
-      "lo20": 325.33,
-      "volRatio": 0.8090637169289514,
-      "symbol": "AAPL",
-      "label": "Coiling under 20-day high",
-      "score": 12.186653050059158,
-      "why": [
-        "Coiling under 20-day high"
-      ],
-      "stat": {
-        "n": 187,
-        "winRate": 44.38502673796791,
-        "expR": -0.20251004224080885,
-        "scope": "risk-off"
-      },
-      "daysToEarn": null,
-      "shares": 1,
-      "costGBP": 272.2230508553293,
-      "riskGBP": 9.326433804304862,
-      "edge": false,
-      "close": 356.27
     },
     {
       "key": "pullback_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 87.59538216971896,
-      "stop": 83.44171944079766,
-      "target": 95.90270762756157,
-      "risk": 4.153662728921304,
+      "trigger": 87.59537502686182,
+      "stop": 83.44224801222623,
+      "target": 95.90162905613299,
+      "risk": 4.1531270146355865,
       "hi20": 93.7,
       "lo20": 74.59,
-      "volRatio": 0.3809004061498209,
+      "volRatio": 0.3814702929553773,
       "symbol": "GM",
       "label": "Pullback in uptrend",
-      "score": 11.942616091796445,
+      "score": 5.691804949163366,
       "why": [
         "Pullback in uptrend"
       ],
       "stat": {
-        "n": 200,
-        "winRate": 26,
-        "expR": -0.3427104727027511,
+        "n": 183,
+        "winRate": 27.322404371584703,
+        "expR": -0.4990233425712512,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 3,
-      "costGBP": 198.8333786122975,
-      "riskGBP": 9.428428457646495,
+      "costGBP": 199.1226359232151,
+      "riskGBP": 9.440927654280271,
       "edge": false,
       "close": 86
     },
@@ -285,23 +235,23 @@
       "risk": 10.617372549169716,
       "hi20": 212.91,
       "lo20": 185.78,
-      "volRatio": 0.8052634756941485,
+      "volRatio": 0.8062825655421653,
       "symbol": "WDAY",
       "label": "Pullback in uptrend",
-      "score": 6.6009988611600505,
+      "score": 0.3484840664200455,
       "why": [
         "Pullback in uptrend"
       ],
       "stat": {
-        "n": 200,
-        "winRate": 26,
-        "expR": -0.3427104727027511,
+        "n": 183,
+        "winRate": 27.322404371584703,
+        "expR": -0.4990233425712512,
         "scope": "risk-off"
       },
       "daysToEarn": 11,
       "shares": 1,
-      "costGBP": 148.90708889510174,
-      "riskGBP": 8.033483058298566,
+      "costGBP": 149.12372697793643,
+      "riskGBP": 8.045170603741488,
       "edge": false,
       "close": 196.45
     },
@@ -315,25 +265,147 @@
       "risk": 1.0647012482305698,
       "hi20": 31.44,
       "lo20": 28.54,
-      "volRatio": 0.6026554517183053,
+      "volRatio": 0.6072000936343882,
       "symbol": "PFE",
       "label": "Pullback in uptrend",
-      "score": 2.9862295334621116,
+      "score": -3.2662852612778934,
       "why": [
         "Pullback in uptrend"
       ],
       "stat": {
-        "n": 200,
-        "winRate": 26,
-        "expR": -0.3427104727027511,
+        "n": 183,
+        "winRate": 27.322404371584703,
+        "expR": -0.4990233425712512,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 12,
-      "costGBP": 263.34732014748107,
-      "riskGBP": 9.667091627649615,
+      "costGBP": 263.7304520653751,
+      "riskGBP": 9.68115583515203,
       "edge": false,
       "close": 28.89
+    },
+    {
+      "key": "pullback_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 410.46416776119537,
+      "stop": 382.4015856715425,
+      "target": 466.58933194050115,
+      "risk": 28.062582089652892,
+      "hi20": 433.72,
+      "lo20": 354.72,
+      "volRatio": 0.6290370857028151,
+      "symbol": "ADI",
+      "label": "Pullback in uptrend",
+      "score": -3.841328525674008,
+      "why": [
+        "Pullback in uptrend"
+      ],
+      "stat": {
+        "n": 183,
+        "winRate": 27.322404371584703,
+        "expR": -0.4990233425712512,
+        "scope": "risk-off"
+      },
+      "daysToEarn": 11,
+      "shares": 0,
+      "costGBP": 0,
+      "riskGBP": 0,
+      "edge": false,
+      "close": 397.97
+    },
+    {
+      "key": "pullback_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 526.7243606328152,
+      "stop": 503.89731317167525,
+      "target": 572.3784555550951,
+      "risk": 22.827047461139955,
+      "hi20": 559.15,
+      "lo20": 504.96,
+      "volRatio": 1.0006165909882778,
+      "symbol": "MSFT",
+      "label": "Pullback in uptrend",
+      "score": -6.060134532964501,
+      "why": [
+        "Pullback in uptrend"
+      ],
+      "stat": {
+        "n": 183,
+        "winRate": 27.322404371584703,
+        "expR": -0.4990233425712512,
+        "scope": "risk-off"
+      },
+      "daysToEarn": null,
+      "shares": 0,
+      "costGBP": 0,
+      "riskGBP": 0,
+      "edge": false,
+      "close": 523.88
+    },
+    {
+      "key": "pullback_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 17.9193875420093,
+      "stop": 17.215321891311827,
+      "target": 19.327518843404246,
+      "risk": 0.7040656506974727,
+      "hi20": 19.32,
+      "lo20": 17.05,
+      "volRatio": 1.2571802446214306,
+      "symbol": "BEKE",
+      "label": "Pullback in uptrend",
+      "score": -13.62992780480172,
+      "why": [
+        "Pullback in uptrend",
+        "earnings 2026-11-16 (binary risk)"
+      ],
+      "stat": {
+        "n": 183,
+        "winRate": 27.322404371584703,
+        "expR": -0.4990233425712512,
+        "scope": "risk-off"
+      },
+      "daysToEarn": 3,
+      "shares": 18,
+      "costGBP": 244.40712860013292,
+      "riskGBP": 9.602932222406654,
+      "edge": false,
+      "close": 17.86
+    },
+    {
+      "key": "pullback_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 238.88752942105776,
+      "stop": 228.57282284172626,
+      "target": 259.51694257972076,
+      "risk": 10.3147065793315,
+      "hi20": 249.3,
+      "lo20": 225.3,
+      "volRatio": 0.8436070054386738,
+      "symbol": "ROST",
+      "label": "Pullback in uptrend",
+      "score": -18.213233283402868,
+      "why": [
+        "Pullback in uptrend",
+        "earnings 2026-11-19 (binary risk)"
+      ],
+      "stat": {
+        "n": 183,
+        "winRate": 27.322404371584703,
+        "expR": -0.4990233425712512,
+        "scope": "risk-off"
+      },
+      "daysToEarn": 6,
+      "shares": 1,
+      "costGBP": 181.0137979427892,
+      "riskGBP": 7.815829554247491,
+      "edge": false,
+      "close": 231.68
     },
     {
       "key": "rally_short",
@@ -345,32 +417,25 @@
       "risk": 1.3290584890546473,
       "hi20": 15.41,
       "lo20": 11.21,
-      "volRatio": 1.7917405763418262,
+      "volRatio": 1.7969633617361267,
       "symbol": "NU",
       "label": "Bear-market rally into resistance",
-      "score": 34.14035537097827,
+      "score": 34.9781594406833,
       "why": [
         "Bear-market rally into resistance",
         "underperforming SPY by 8.0% over 20d",
         "volume 1.8x average"
       ],
       "stat": {
-        "n": 280,
-        "winRate": 27.500000000000004,
-        "expR": -0.5085721365186564,
+        "n": 256,
+        "winRate": 27.734375,
+        "expR": -0.47905489825737435,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "NU",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 9,
-      "costGBP": 82.30730582758056,
-      "riskGBP": 9.050517842598458,
+      "costGBP": 82.42705094562753,
+      "riskGBP": 9.06368502522643,
       "edge": false,
       "close": 13.22
     },
@@ -384,7 +449,7 @@
       "risk": 0.22254772999732086,
       "hi20": 3.55,
       "lo20": 3.02,
-      "volRatio": 1.8509393905002192,
+      "volRatio": 1.9338470110269828,
       "symbol": "NIO",
       "label": "20-day breakdown",
       "score": 33.99429712110635,
@@ -394,22 +459,15 @@
         "volume 1.9x average"
       ],
       "stat": {
-        "n": 144,
-        "winRate": 18.055555555555554,
-        "expR": -0.7251691710451422,
+        "n": 139,
+        "winRate": 20.863309352517987,
+        "expR": -0.6599142071385511,
         "scope": "risk-off"
       },
       "daysToEarn": 11,
-      "flow": {
-        "symbol": "NIO",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 59,
-      "costGBP": 129.46036742229353,
-      "riskGBP": 9.934865825672599,
+      "costGBP": 129.64871336344072,
+      "riskGBP": 9.949319605554157,
       "edge": false,
       "close": 2.9
     },
@@ -423,7 +481,7 @@
       "risk": 2.293338371472771,
       "hi20": 52.89,
       "lo20": 44.11,
-      "volRatio": 0.8992709539539733,
+      "volRatio": 0.9170972221248089,
       "symbol": "SLV",
       "label": "Sagging onto 20-day low",
       "score": 30.935977398397682,
@@ -432,15 +490,15 @@
         "underperforming SPY by 13.2% over 20d"
       ],
       "stat": {
-        "n": 157,
-        "winRate": 29.936305732484076,
-        "expR": -5.181826189869045,
+        "n": 153,
+        "winRate": 32.02614379084967,
+        "expR": -5.272955279902897,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 5,
-      "costGBP": 166.58679893018362,
-      "riskGBP": 8.676108363369643,
+      "costGBP": 166.82915841094163,
+      "riskGBP": 8.688730834846677,
       "edge": false,
       "close": 44.13
     },
@@ -454,7 +512,7 @@
       "risk": 7.755071721517496,
       "hi20": 104.4,
       "lo20": 75.51,
-      "volRatio": 0.9534921570306143,
+      "volRatio": 0.9773995744485952,
       "symbol": "HOOD",
       "label": "Sagging onto 20-day low",
       "score": 30.720115336491773,
@@ -463,22 +521,15 @@
         "underperforming SPY by 20.1% over 20d"
       ],
       "stat": {
-        "n": 157,
-        "winRate": 29.936305732484076,
-        "expR": -5.181826189869045,
+        "n": 153,
+        "winRate": 32.02614379084967,
+        "expR": -5.272955279902897,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "HOOD",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 1,
-      "costGBP": 56.93796919681816,
-      "riskGBP": 5.867764082138477,
+      "costGBP": 57.020805632469575,
+      "riskGBP": 5.8763008225362166,
       "edge": false,
       "close": 77.86
     },
@@ -492,7 +543,7 @@
       "risk": 3.9415925265633973,
       "hi20": 37.45,
       "lo20": 25.7,
-      "volRatio": 0.9313693177312065,
+      "volRatio": 0.9478462663667581,
       "symbol": "SMCI",
       "label": "Sagging onto 20-day low",
       "score": 28.363901718170027,
@@ -501,24 +552,17 @@
         "underperforming SPY by 13.9% over 20d"
       ],
       "stat": {
-        "n": 157,
-        "winRate": 29.936305732484076,
-        "expR": -5.181826189869045,
+        "n": 153,
+        "winRate": 32.02614379084967,
+        "expR": -5.272955279902897,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "SMCI",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 3,
-      "costGBP": 58.0383771279196,
-      "riskGBP": 8.947048802767918,
+      "costGBP": 58.12281449651719,
+      "riskGBP": 8.960065453043216,
       "edge": false,
-      "close": 26.865
+      "close": 26.87
     },
     {
       "key": "near_breakdown_short",
@@ -530,7 +574,7 @@
       "risk": 2.8998036348842575,
       "hi20": 71.9,
       "lo20": 61.39,
-      "volRatio": 0.7803458991432316,
+      "volRatio": 0.7945948015259927,
       "symbol": "NFLX",
       "label": "Sagging onto 20-day low",
       "score": 25.817399429750232,
@@ -539,22 +583,15 @@
         "underperforming SPY by 10.7% over 20d"
       ],
       "stat": {
-        "n": 157,
-        "winRate": 29.936305732484076,
-        "expR": -5.181826189869045,
+        "n": 153,
+        "winRate": 32.02614379084967,
+        "expR": -5.272955279902897,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "NFLX",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 4,
-      "costGBP": 185.50691528354832,
-      "riskGBP": 8.776379755105044,
+      "costGBP": 185.77680077239776,
+      "riskGBP": 8.78914810682344,
       "edge": false,
       "close": 62.15
     },
@@ -568,56 +605,56 @@
       "risk": 0.49603107829144166,
       "hi20": 4.2,
       "lo20": 2.85,
-      "volRatio": 1.505524070941906,
+      "volRatio": 1.5446735638530895,
       "symbol": "LCID",
       "label": "Sagging onto 20-day low",
-      "score": 23.64379329398291,
+      "score": 23.40417668056439,
       "why": [
         "Sagging onto 20-day low",
         "volume 1.5x average"
       ],
       "stat": {
-        "n": 157,
-        "winRate": 29.936305732484076,
-        "expR": -5.181826189869045,
+        "n": 153,
+        "winRate": 32.02614379084967,
+        "expR": -5.272955279902897,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 26,
-      "costGBP": 55.74143215914628,
-      "riskGBP": 9.758185311868196,
+      "costGBP": 55.82252780803056,
+      "riskGBP": 9.772382047386932,
       "edge": false,
-      "close": 2.955
+      "close": 2.96
     },
     {
       "key": "near_breakdown_short",
       "side": "short",
       "entryType": "stop",
-      "trigger": 53.00165062034775,
-      "stop": 55.95213200991518,
-      "target": 47.100687841212896,
-      "risk": 2.950481389567429,
+      "trigger": 53.0012577632049,
+      "stop": 55.96352486705804,
+      "target": 47.07672355549861,
+      "risk": 2.9622671038531436,
       "hi20": 61.03,
       "lo20": 53.1,
-      "volRatio": 0.4912932225882054,
+      "volRatio": 0.4914259737467337,
       "symbol": "SQM",
       "label": "Sagging onto 20-day low",
-      "score": 22.618620362382124,
+      "score": 22.647581535950273,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 9.8% over 20d",
         "earnings 2026-11-17 (binary risk)"
       ],
       "stat": {
-        "n": 157,
-        "winRate": 29.936305732484076,
-        "expR": -5.181826189869045,
+        "n": 153,
+        "winRate": 32.02614379084967,
+        "expR": -5.272955279902897,
         "scope": "risk-off"
       },
       "daysToEarn": 4,
       "shares": 4,
-      "costGBP": 160.4117630227528,
-      "riskGBP": 8.92975814765724,
+      "costGBP": 160.64394799868123,
+      "riskGBP": 8.978471505631934,
       "edge": false,
       "close": 53.61
     },
@@ -625,29 +662,29 @@
       "key": "rally_short",
       "side": "short",
       "entryType": "stop",
-      "trigger": 10.04727695178197,
-      "stop": 10.62650556813412,
-      "target": 8.888819719077674,
-      "risk": 0.5792286163521485,
+      "trigger": 10.042269808924829,
+      "stop": 10.622034139562691,
+      "target": 8.882741147649103,
+      "risk": 0.5797643306378628,
       "hi20": 10.76,
       "lo20": 8.94,
-      "volRatio": 0.7753469797066873,
+      "volRatio": 0.7788462284055157,
       "symbol": "UNG",
       "label": "Bear-market rally into resistance",
-      "score": 18.094646944209728,
+      "score": 18.91991601084241,
       "why": [
         "Bear-market rally into resistance"
       ],
       "stat": {
-        "n": 280,
-        "winRate": 27.500000000000004,
-        "expR": -0.5085721365186564,
+        "n": 256,
+        "winRate": 27.734375,
+        "expR": -0.47905489825737435,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 22,
-      "costGBP": 167.246824353987,
-      "riskGBP": 9.641831027925356,
+      "costGBP": 167.40667398868413,
+      "riskGBP": 9.6647889507115,
       "edge": false,
       "close": 10.15
     },
@@ -661,7 +698,7 @@
       "risk": 5.051308342935954,
       "hi20": 148.57,
       "lo20": 134.69,
-      "volRatio": 1.5596855823771025,
+      "volRatio": 1.560628729507925,
       "symbol": "TJX",
       "label": "20-day breakdown",
       "score": 16.78428635760315,
@@ -672,161 +709,708 @@
         "earnings 2026-11-18 (binary risk)"
       ],
       "stat": {
-        "n": 144,
-        "winRate": 18.055555555555554,
-        "expR": -0.7251691710451422,
+        "n": 139,
+        "winRate": 20.863309352517987,
+        "expR": -0.6599142071385511,
         "scope": "risk-off"
       },
       "daysToEarn": 5,
       "shares": 2,
-      "costGBP": 203.33827668654098,
-      "riskGBP": 7.644000397893457,
+      "costGBP": 203.63410420392205,
+      "riskGBP": 7.655121302906608,
       "edge": false,
       "close": 134.37
     }
   ],
-  "longs": [],
+  "longs": [
+    {
+      "key": "near_breakout_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 286.4207338599664,
+      "stop": 276.1987180609738,
+      "target": 306.86476545795153,
+      "risk": 10.222015798992572,
+      "hi20": 286.08,
+      "lo20": 251.5,
+      "volRatio": 0.8418918335537744,
+      "symbol": "JNJ",
+      "label": "Coiling under 20-day high",
+      "score": 46.71498759935229,
+      "why": [
+        "Coiling under 20-day high",
+        "outperforming SPY by 13.0% over 20d",
+        "StockTwits 88% bullish of 16 votes",
+        "news positive (+1)",
+        "TradingView ideas 13 long / 3 short"
+      ],
+      "stat": {
+        "n": 174,
+        "winRate": 44.827586206896555,
+        "expR": 0.09219237065319398,
+        "scope": "risk-off"
+      },
+      "daysToEarn": null,
+      "flow": {
+        "symbol": "JNJ",
+        "siError": "HTTP 403",
+        "ctbError": "HTTP 403",
+        "scoreError": "HTTP 403",
+        "shortScoreError": "HTTP 403"
+      },
+      "shares": 1,
+      "costGBP": 217.03144141178916,
+      "riskGBP": 7.745594367739045,
+      "edge": true,
+      "news": {
+        "items": [
+          {
+            "title": "4 Durable Dividend Stocks Retirees Can Count On for Passive Income",
+            "date": "2026-11-15 10:00:50",
+            "source": "247wallst.com"
+          },
+          {
+            "title": "5 Dividend Stocks to Buy and Hold Forever",
+            "date": "Sat, 14 Nov 2026 21:15:00 GMT",
+            "source": "The Motley Fool"
+          },
+          {
+            "title": "Johnson & Johnson (JNJ) Shares Surge 0.8% -- What GF Score of 79 Tells Investors",
+            "date": "Sat, 14 Nov 2026 08:10:48 GMT",
+            "source": "GuruFocus"
+          },
+          {
+            "title": "Johnson & Johnson $JNJ Shares Newly Purchased by AlpenGlobal Capital LLC",
+            "date": "2026-11-14 04:41:48",
+            "source": "defenseworld.net"
+          },
+          {
+            "title": "4 Healthcare Dividend Stocks for Retirees. One Yields Over 4%",
+            "date": "2026-11-13 15:47:11",
+            "source": "247wallst.com"
+          },
+          {
+            "title": "4 Dividend Kings That Kept Raising Payouts Through Recessions and High Interest Rates",
+            "date": "2026-11-13 11:17:20",
+            "source": "247wallst.com"
+          },
+          {
+            "title": "I Bonds Pay 5.51%. Here’s What Dividend Investors Should Know",
+            "date": "2026-11-13 09:47:29",
+            "source": "247wallst.com"
+          },
+          {
+            "title": "5 Dividend Aristocrats and Kings to Consider if the Stock Market Sells Off",
+            "date": "2026-11-13 08:11:02",
+            "source": "247wallst.com"
+          },
+          {
+            "title": "How Much Does a 69-Year-Old Need Invested in Dividend Stocks to Collect $3,000 a Month?",
+            "date": "2026-11-13 07:32:22",
+            "source": "247wallst.com"
+          },
+          {
+            "title": "2,825 Johnson & Johnson $JNJ Shares Sold by Barr E S & Co.",
+            "date": "2026-11-13 03:57:41",
+            "source": "defenseworld.net"
+          },
+          {
+            "title": "Why Did AAPL, COST, JNJ Stocks Hit 52-Week Highs Today?",
+            "date": "Fri, 13 Nov 2026 02:32:00 GMT",
+            "source": "Yahoo Finance"
+          },
+          {
+            "title": "The Big 3: JNJ, LLY, AAPL",
+            "date": "2026-11-12 13:00:02",
+            "source": "youtube.com"
+          }
+        ],
+        "sentiment": 1
+      },
+      "tv": {
+        "long": 13,
+        "short": 3
+      },
+      "social": {
+        "bullish": 14,
+        "bearish": 2,
+        "posts": 30,
+        "redditMentions": 0,
+        "fmp": null,
+        "errors": [],
+        "sample": [
+          "Bullish: $MNKD 👀 $JNJ 👀 $GSK 👀 #combinationtherapy #blockbusterpotential #nintedanib #technosphe",
+          "Bullish: @cmeola1066 1:1 share buyout with $JNJ oh what a fucking Christmas it would be!",
+          "Bullish: $JNJ just acquire SLS already you wuzz."
+        ],
+        "redditRank": null,
+        "redditMentions24hAgo": null,
+        "bullPct": 87.5
+      },
+      "close": 285.75,
+      "rsi": 65.62728022496181,
+      "rs20": 12.976718603671944,
+      "atrPct": 2.3848389149005738,
+      "earnings": null
+    },
+    {
+      "key": "near_breakout_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 1462.2156387703417,
+      "stop": 1395.7464756600914,
+      "target": 1595.1539649908423,
+      "risk": 66.46916311025029,
+      "hi20": 1460,
+      "lo20": 1239.1,
+      "volRatio": 0.6940272423700676,
+      "symbol": "LLY",
+      "label": "Coiling under 20-day high",
+      "score": 44.74651835553952,
+      "why": [
+        "Coiling under 20-day high",
+        "outperforming SPY by 16.0% over 20d",
+        "StockTwits 100% bullish (crowded, contrarian caution)",
+        "news positive (+1)",
+        "TradingView ideas 12 long / 5 short"
+      ],
+      "stat": {
+        "n": 174,
+        "winRate": 44.827586206896555,
+        "expR": 0.09219237065319398,
+        "scope": "risk-off"
+      },
+      "daysToEarn": null,
+      "flow": {
+        "symbol": "LLY",
+        "siError": "HTTP 403",
+        "ctbError": "HTTP 403",
+        "scoreError": "HTTP 403",
+        "shortScoreError": "HTTP 403"
+      },
+      "shares": 0,
+      "costGBP": 0,
+      "riskGBP": 0,
+      "edge": true,
+      "news": {
+        "items": [
+          {
+            "title": "Lilly’s Zepbound shows promise in teen obesity trial (LLY:NYSE)",
+            "date": "Sun, 15 Nov 2026 23:38:03 GMT",
+            "source": "Seeking Alpha"
+          },
+          {
+            "title": "SA Asks: What are the most attractive Big Pharma stocks right now? (LLY:NYSE)",
+            "date": "Sun, 15 Nov 2026 19:56:32 GMT",
+            "source": "Seeking Alpha"
+          },
+          {
+            "title": "Prediction: $10,000 Equally Split Between Eli Lilly and Novo Nordisk Will Be Worth This Much by the End of 2027",
+            "date": "2026-11-15 18:30:01",
+            "source": "fool.com"
+          },
+          {
+            "title": "Danske Bank A S Sells 71,588 Shares of Eli Lilly and Company $LLY",
+            "date": "2026-11-15 11:27:52",
+            "source": "defenseworld.net"
+          },
+          {
+            "title": "2,565 Shares in Eli Lilly and Company $LLY Bought by California First Leasing Corp",
+            "date": "2026-11-15 11:27:51",
+            "source": "defenseworld.net"
+          },
+          {
+            "title": "Top 50 High-Quality Dividend Growth Stocks For November 2026",
+            "date": "2026-11-14 11:12:13",
+            "source": "seekingalpha.com"
+          },
+          {
+            "title": "Bernicke Wealth Management Ltd. Makes New $5 Million Investment in Eli Lilly and Company $LLY",
+            "date": "2026-11-14 07:23:06",
+            "source": "defenseworld.net"
+          },
+          {
+            "title": "What Is The Market Seeing In Eli Lilly Stock?",
+            "date": "Sat, 14 Nov 2026 00:32:28 GMT",
+            "source": "Trefis"
+          },
+          {
+            "title": "Here’s How Much You Would Have Made Owning Eli Lilly Stock In The Last 5 Years",
+            "date": "Fri, 13 Nov 2026 14:15:13 GMT",
+            "source": "Benzinga"
+          },
+          {
+            "title": "HIMS Partners With Lilly to Offer FDA-Approved Weight-Loss Drugs",
+            "date": "2026-11-13 12:16:13",
+            "source": "zacks.com"
+          },
+          {
+            "title": "4 Key Stocks to Watch Across Diabetes and Obesity This Awareness Day",
+            "date": "2026-11-13 10:16:17",
+            "source": "zacks.com"
+          },
+          {
+            "title": "Mapping the Market: Eli Lilly shares ready to rally again",
+            "date": "2026-11-13 06:10:14",
+            "source": "reuters.com"
+          }
+        ],
+        "sentiment": 1
+      },
+      "tv": {
+        "long": 12,
+        "short": 5
+      },
+      "social": {
+        "bullish": 15,
+        "bearish": 0,
+        "posts": 30,
+        "redditMentions": 0,
+        "fmp": null,
+        "errors": [],
+        "sample": [
+          "Bullish: $VANI $VKTX $MDXH $LLY Squeeze em",
+          "Bullish: $NMRA you want good value biotech? Here it is. Potential best in class NLRP3 inhibitorNMRA",
+          "Bullish: $LLY $NVO $SNY Ask away."
+        ],
+        "redditRank": null,
+        "redditMentions24hAgo": null,
+        "bullPct": 100
+      },
+      "close": 1443.5,
+      "rsi": 69.7225855745396,
+      "rs20": 15.99761840424846,
+      "atrPct": 3.0698147147096297,
+      "earnings": null
+    },
+    {
+      "key": "near_breakout_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 107.01614851290292,
+      "stop": 101.4316931258152,
+      "target": 118.18505928707835,
+      "risk": 5.584455387087715,
+      "hi20": 106.83,
+      "lo20": 90.96,
+      "volRatio": 0.5574926267803264,
+      "symbol": "BBY",
+      "label": "Coiling under 20-day high",
+      "score": 40.07717192638379,
+      "why": [
+        "Coiling under 20-day high",
+        "outperforming SPY by 13.5% over 20d",
+        "TradingView ideas 12 long / 3 short"
+      ],
+      "stat": {
+        "n": 174,
+        "winRate": 44.827586206896555,
+        "expR": 0.09219237065319398,
+        "scope": "risk-off"
+      },
+      "daysToEarn": 11,
+      "flow": {
+        "symbol": "BBY",
+        "siError": "HTTP 403",
+        "ctbError": "HTTP 403",
+        "scoreError": "HTTP 403",
+        "shortScoreError": "HTTP 403"
+      },
+      "shares": 2,
+      "costGBP": 162.180081400453,
+      "riskGBP": 8.463091242214583,
+      "edge": true,
+      "news": {
+        "items": [
+          {
+            "title": "Best Buy Co., Inc. $BBY Shares Newly Purchased by CenterBook Partners LP",
+            "date": "2026-11-13 03:57:23",
+            "source": "defenseworld.net"
+          }
+        ],
+        "sentiment": 0
+      },
+      "tv": {
+        "long": 12,
+        "short": 3
+      },
+      "social": {
+        "bullish": 3,
+        "bearish": 0,
+        "posts": 3,
+        "redditMentions": 0,
+        "fmp": null,
+        "errors": [],
+        "sample": [
+          "Bullish: $HD $L $BBY $MNST $ZVIA - sugar free soda (stevia) Zevia soda might be available in single",
+          "Bullish: $BBY Stock ticker PAIN - Vector Science and Therapeutics, is a super solid buy!!!",
+          "Bullish: $BBY Stock ticker PAIN - Vector Science and Therapeutics, super solid investment/buy!"
+        ],
+        "redditRank": null,
+        "redditMentions24hAgo": null,
+        "bullPct": null
+      },
+      "close": 104.07,
+      "rsi": 61.02702289474347,
+      "rs20": 13.513656305977173,
+      "atrPct": 3.57737124825452,
+      "earnings": {
+        "symbol": "BBY",
+        "date": "2026-11-24",
+        "eps": 1.49,
+        "rev": 9883008000
+      }
+    },
+    {
+      "key": "near_breakout_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 91.65286854671982,
+      "stop": 87.06681214512541,
+      "target": 100.82498134990863,
+      "risk": 4.586056401594405,
+      "hi20": 91.5,
+      "lo20": 81.53,
+      "volRatio": 1.2010599901626835,
+      "symbol": "VIK",
+      "label": "Coiling under 20-day high",
+      "score": 29.992795676760153,
+      "why": [
+        "Coiling under 20-day high",
+        "outperforming SPY by 8.9% over 20d",
+        "earnings 2026-11-17 (binary risk)",
+        "TradingView ideas 3 long / 1 short"
+      ],
+      "stat": {
+        "n": 174,
+        "winRate": 44.827586206896555,
+        "expR": 0.09219237065319398,
+        "scope": "risk-off"
+      },
+      "daysToEarn": 4,
+      "shares": 2,
+      "costGBP": 138.8974457410963,
+      "riskGBP": 6.950044557321863,
+      "edge": true,
+      "news": {
+        "items": [
+          {
+            "title": "Aberdeen Group plc Makes New $121.70 Million Investment in Viking Holdings Ltd. $VIK",
+            "date": "2026-11-15 09:49:50",
+            "source": "defenseworld.net"
+          },
+          {
+            "title": "Viking Holdings Ltd (VIK) Stock Price, News, Quote & History",
+            "date": "Fri, 13 Nov 2026 19:30:46 GMT",
+            "source": "Yahoo! Finance Canada"
+          },
+          {
+            "title": "Viking Holdings Ltd (VIK) stock price, news, quote and history",
+            "date": "Thu, 12 Nov 2026 13:18:37 GMT",
+            "source": "Yahoo Finance Singapore"
+          },
+          {
+            "title": "Stay Ahead of the Game With Viking (VIK) Q3 Earnings: Wall Street's Insights on Key Metrics",
+            "date": "2026-11-12 10:16:14",
+            "source": "zacks.com"
+          }
+        ],
+        "sentiment": 0
+      },
+      "tv": {
+        "long": 3,
+        "short": 1
+      },
+      "social": {
+        "bullish": 1,
+        "bearish": 0,
+        "posts": 1,
+        "redditMentions": 0,
+        "fmp": null,
+        "errors": [],
+        "sample": [
+          "Bullish: $VIK flying back to 100+"
+        ],
+        "redditRank": null,
+        "redditMentions24hAgo": null,
+        "bullPct": null
+      },
+      "close": 89.87,
+      "rsi": 57.73493043295689,
+      "rs20": 8.895404553911812,
+      "atrPct": 3.401992805603951,
+      "earnings": {
+        "symbol": "VIK",
+        "date": "2026-11-17",
+        "eps": 1.27,
+        "rev": 2206025000
+      }
+    },
+    {
+      "key": "near_breakout_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 359.7808729324374,
+      "stop": 347.4546849593159,
+      "target": 384.43324887868033,
+      "risk": 12.326187973121478,
+      "hi20": 359.37,
+      "lo20": 325.33,
+      "volRatio": 0.8303877347152563,
+      "symbol": "AAPL",
+      "label": "Coiling under 20-day high",
+      "score": 14.919194010263716,
+      "why": [
+        "Coiling under 20-day high",
+        "StockTwits 44% bullish of 9 votes",
+        "Reddit #28 most-discussed (12 mentions, 0.8x yesterday)",
+        "news negative (-2)",
+        "TradingView ideas 4 long / 12 short"
+      ],
+      "stat": {
+        "n": 174,
+        "winRate": 44.827586206896555,
+        "expR": 0.09219237065319398,
+        "scope": "risk-off"
+      },
+      "daysToEarn": null,
+      "shares": 1,
+      "costGBP": 272.6190956660787,
+      "riskGBP": 9.34000240438993,
+      "edge": true,
+      "news": {
+        "items": [
+          {
+            "title": "Why Did AAPL, ZETA, FROG Stocks Jump To 52-Week Highs Last Week?c",
+            "date": "Mon, 16 Nov 2026 02:41:00 GMT",
+            "source": "Yahoo Finance"
+          },
+          {
+            "title": "Michael Burry's Puts on the Nasdaq-100 Run to April 2027. I'm Not Following Him.",
+            "date": "2026-11-15 23:27:02",
+            "source": "fool.com"
+          },
+          {
+            "title": "Apple launches new app to study how people use AI for health",
+            "date": "2026-11-15 20:30:00",
+            "source": "techcrunch.com"
+          },
+          {
+            "title": "Apple Inc. $AAPL Stock Bought by Norris Perne & French LLP MI",
+            "date": "Sun, 15 Nov 2026 16:30:42 GMT",
+            "source": "MarketBeat"
+          },
+          {
+            "title": "Apple Inc. $AAPL Stock: Yardley Wealth Management LLC Boosts Position",
+            "date": "Sun, 15 Nov 2026 16:30:40 GMT",
+            "source": "MarketBeat"
+          },
+          {
+            "title": "Apple Inc. $AAPL Stock Position Boosted by BG Investment Services LLC",
+            "date": "Sun, 15 Nov 2026 15:10:16 GMT",
+            "source": "MarketBeat"
+          },
+          {
+            "title": "Apple Inc. $AAPL Stock Sold by Guardian Investment Management",
+            "date": "Sun, 15 Nov 2026 15:10:15 GMT",
+            "source": "MarketBeat"
+          },
+          {
+            "title": "Apple (NASDAQ:AAPL) SVP Sells $842,912.64 in Stock",
+            "date": "2026-11-15 12:19:48",
+            "source": "defenseworld.net"
+          },
+          {
+            "title": "‘Bond King’ Jeffrey Gundlach Is \"Not Interested in Buying Stocks.\" His Warning Points to 10 Years of Losses",
+            "date": "2026-11-15 12:12:51",
+            "source": "247wallst.com"
+          },
+          {
+            "title": "Apple (NASDAQ:AAPL) Stock: Insider Jennifer Newstead Sells 2,399 Shares",
+            "date": "2026-11-15 11:31:23",
+            "source": "defenseworld.net"
+          },
+          {
+            "title": "Want to Invest in Top Growth Stocks Like Amazon, Apple, and Microsoft but Avoid Nvidia? Consider This Low-Cost Vanguard ETF That's Up 24.8% This Year.",
+            "date": "2026-11-15 06:30:02",
+            "source": "fool.com"
+          },
+          {
+            "title": "Apple: The Business Got Better, The Stock Got Much More Expensive (NASDAQ:AAPL)",
+            "date": "Sat, 14 Nov 2026 14:12:56 GMT",
+            "source": "Seeking Alpha"
+          }
+        ],
+        "sentiment": -2
+      },
+      "tv": {
+        "long": 4,
+        "short": 12
+      },
+      "social": {
+        "bullish": 4,
+        "bearish": 5,
+        "posts": 30,
+        "redditMentions": 12,
+        "fmp": null,
+        "errors": [],
+        "sample": [
+          "Bullish: $NVDA p/e = 10 $AAPL p/e = 40 Which stock would u feel safer owning in 2027? NVDA: Every d",
+          "Bearish: $AAPL $NVDA $SNDK $SPY $QQQ Japan market selling off ! Huge correction coming !",
+          "Bearish: $AAPL"
+        ],
+        "redditRank": 28,
+        "redditMentions24hAgo": 15,
+        "bullPct": 44.44444444444444
+      },
+      "close": 356.27,
+      "rsi": 60.641017403675455,
+      "rs20": 4.893137749331855,
+      "atrPct": 2.3065255701427723,
+      "earnings": null
+    }
+  ],
   "shorts": [],
   "setup_stats": {
     "near_breakout_long|all": {
-      "n": 1893,
-      "wins": 689,
-      "sumR": -3920.6955345939637
+      "n": 1744,
+      "wins": 644,
+      "sumR": -4237.255004884706
     },
     "near_breakout_long|risk-on": {
-      "n": 1706,
-      "wins": 606,
-      "sumR": -3882.8261566949327
+      "n": 1570,
+      "wins": 566,
+      "sumR": -4253.296477378362
     },
     "pullback_long|all": {
-      "n": 2156,
-      "wins": 775,
-      "sumR": -42.59052034625145
+      "n": 1961,
+      "wins": 711,
+      "sumR": -64.01810934295779
     },
     "pullback_long|risk-on": {
-      "n": 1956,
-      "wins": 723,
-      "sumR": 25.951574194298693
+      "n": 1778,
+      "wins": 661,
+      "sumR": 27.303162347581004
     },
     "near_breakdown_short|all": {
-      "n": 968,
-      "wins": 329,
-      "sumR": -856.4412749278105
+      "n": 924,
+      "wins": 323,
+      "sumR": -802.8260730294904
     },
     "near_breakdown_short|risk-on": {
-      "n": 811,
-      "wins": 282,
-      "sumR": -42.89456311837063
+      "n": 771,
+      "wins": 274,
+      "sumR": 3.9360847956528078
     },
     "breakdown_short|all": {
-      "n": 759,
-      "wins": 227,
-      "sumR": -198.361172701031
+      "n": 725,
+      "wins": 222,
+      "sumR": -180.12107794309117
     },
     "breakdown_short|risk-off": {
-      "n": 144,
-      "wins": 26,
-      "sumR": -104.42436063050047
+      "n": 139,
+      "wins": 29,
+      "sumR": -91.7280747922586
     },
     "rally_short|all": {
-      "n": 1332,
-      "wins": 404,
-      "sumR": -384.2859977594335
+      "n": 1250,
+      "wins": 389,
+      "sumR": -334.98825629522065
     },
     "rally_short|risk-off": {
-      "n": 280,
-      "wins": 77,
-      "sumR": -142.4001982252238
+      "n": 256,
+      "wins": 71,
+      "sumR": -122.63805395388783
     },
     "near_breakdown_short|risk-off": {
-      "n": 157,
-      "wins": 47,
-      "sumR": -813.54671180944
+      "n": 153,
+      "wins": 49,
+      "sumR": -806.7621578251433
     },
     "breakout_long|all": {
-      "n": 1482,
-      "wins": 590,
-      "sumR": 63.092228378451736
+      "n": 1363,
+      "wins": 546,
+      "sumR": 48.80977088768036
     },
     "breakout_long|risk-on": {
-      "n": 1370,
-      "wins": 535,
-      "sumR": 36.000432597944446
+      "n": 1261,
+      "wins": 495,
+      "sumR": 13.562428293873328
     },
     "breakdown_short|risk-on": {
-      "n": 615,
-      "wins": 201,
-      "sumR": -93.93681207053056
+      "n": 586,
+      "wins": 193,
+      "sumR": -88.3930031508325
     },
     "rally_short|risk-on": {
-      "n": 1052,
-      "wins": 327,
-      "sumR": -241.88579953420938
+      "n": 994,
+      "wins": 318,
+      "sumR": -212.35020234133265
     },
     "overbought_short|all": {
-      "n": 79,
+      "n": 78,
       "wins": 28,
-      "sumR": 17.76499999897267
+      "sumR": 24.932555571494177
     },
     "overbought_short|risk-on": {
-      "n": 70,
+      "n": 69,
       "wins": 27,
-      "sumR": 37.79157273602215
+      "sumR": 44.95912830814938
     },
     "oversold_long|all": {
-      "n": 107,
+      "n": 99,
       "wins": 35,
-      "sumR": -91308.25642253594
-    },
-    "oversold_long|risk-off": {
-      "n": 24,
-      "wins": 9,
-      "sumR": -13.512340598547356
+      "sumR": -1017.414050808117
     },
     "oversold_long|risk-on": {
-      "n": 83,
-      "wins": 26,
-      "sumR": -91294.74408193739
+      "n": 79,
+      "wins": 27,
+      "sumR": -1041.624199712077
     },
     "pullback_long|risk-off": {
-      "n": 200,
-      "wins": 52,
-      "sumR": -68.54209454055022
+      "n": 183,
+      "wins": 50,
+      "sumR": -91.32127169053896
     },
     "near_breakout_long|risk-off": {
-      "n": 187,
-      "wins": 83,
-      "sumR": -37.86937789903126
+      "n": 174,
+      "wins": 78,
+      "sumR": 16.041472493655753
     },
     "breakout_long|risk-off": {
-      "n": 112,
-      "wins": 55,
-      "sumR": 27.091795780507248
+      "n": 102,
+      "wins": 51,
+      "sumR": 35.247342593806955
+    },
+    "oversold_long|risk-off": {
+      "n": 20,
+      "wins": 8,
+      "sumR": 24.210148903960025
     },
     "overbought_short|risk-off": {
       "n": 9,
       "wins": 1,
-      "sumR": -20.026572737049484
+      "sumR": -20.026572736655204
     }
   },
   "econ": [
     {
-      "date": "2026-11-13 13:30:00",
-      "event": "Producer Price Index MoM (Oct)",
-      "estimate": 0.4,
-      "previous": 1.4
-    },
-    {
       "date": "2026-11-16 13:30:00",
       "event": "NY Empire State Manufacturing Index (Nov)",
-      "estimate": 10,
+      "estimate": 17.6,
       "previous": 25.5
     },
     {
       "date": "2026-11-17 13:30:00",
-      "event": "Retail Sales Ex Gas/Autos MoM (Oct)",
-      "estimate": 0.3,
-      "previous": 0.2
+      "event": "Retail Sales Control Group MoM (Oct)",
+      "estimate": 0.1,
+      "previous": 0.1
+    },
+    {
+      "date": "2026-11-17 13:30:00",
+      "event": "Retail Sales MoM (Oct)",
+      "estimate": 0.2,
+      "previous": 0.8
     },
     {
       "date": "2026-11-17 13:30:00",
@@ -836,33 +1420,27 @@
     },
     {
       "date": "2026-11-17 13:30:00",
+      "event": "Retail Sales Ex Gas/Autos MoM (Oct)",
+      "estimate": 0.3,
+      "previous": 0.2
+    },
+    {
+      "date": "2026-11-17 13:30:00",
       "event": "Retail Sales YoY (Oct)",
       "estimate": 6.5,
       "previous": 6.3
-    },
-    {
-      "date": "2026-11-17 13:30:00",
-      "event": "Retail Sales MoM (Oct)",
-      "estimate": 0,
-      "previous": 0.8
-    },
-    {
-      "date": "2026-11-17 13:30:00",
-      "event": "Retail Sales Control Group MoM (Oct)",
-      "estimate": 0.1,
-      "previous": 0.1
-    },
-    {
-      "date": "2026-11-18 13:30:00",
-      "event": "Housing Starts (Oct)",
-      "estimate": 1.23,
-      "previous": 1.221
     },
     {
       "date": "2026-11-18 13:30:00",
       "event": "Building Permits (Oct)",
       "estimate": 1.38,
       "previous": 1.398
+    },
+    {
+      "date": "2026-11-18 13:30:00",
+      "event": "Housing Starts (Oct)",
+      "estimate": 1.23,
+      "previous": 1.221
     },
     {
       "date": "2026-11-18 19:00:00",
@@ -887,6 +1465,18 @@
       "event": "Initial Jobless Claims (Nov/14)",
       "estimate": 200,
       "previous": 200
+    },
+    {
+      "date": "2026-11-23 14:45:00",
+      "event": "S&P Global Services PMI (Nov)",
+      "estimate": null,
+      "previous": 56.1
+    },
+    {
+      "date": "2026-11-23 14:45:00",
+      "event": "S&P Global Manufacturing PMI (Nov)",
+      "estimate": null,
+      "previous": 54.9
     }
   ],
   "holdings": [
@@ -898,14 +1488,14 @@
       "ret20": 11.683848797250862,
       "rs20": 12.847294588276082,
       "rsi": 54.222639583210714,
-      "atr": 0.20877608403491074,
-      "atrPct": 6.423879508766485,
+      "atr": 0.2091332268920536,
+      "atrPct": 6.434868519755496,
       "adx": 17.294787846675355,
       "e20": 3.1853291195315467,
-      "e50": 2.976379542982393,
-      "e200": 2.4590386663611192,
-      "avgVol20": 23200487.8,
-      "dollarVol": 75401585.35000001,
+      "e50": 2.976379542982392,
+      "e200": 2.4589063288746154,
+      "avgVol20": 23200489.9,
+      "dollarVol": 75401592.175,
       "trend": "up",
       "earnings": null,
       "flow": {
@@ -928,10 +1518,10 @@
       "atrPct": 3.970472678842514,
       "adx": 15.445173005107636,
       "e20": 1.3432739365280988,
-      "e50": 1.3225167524664982,
-      "e200": 1.4155568914925618,
-      "avgVol20": 1239333.35,
-      "dollarVol": 1697886.6895000003,
+      "e50": 1.322516752466502,
+      "e200": 1.4155682295357603,
+      "avgVol20": 1239334,
+      "dollarVol": 1697887.58,
       "trend": "mixed",
       "earnings": null,
       "flow": {
