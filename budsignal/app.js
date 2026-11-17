@@ -2489,13 +2489,16 @@
     }
     const uwNow = trades[n - 1].equity < peakEq ? trades[n - 1].t - peakT : 0;
     uwMax = Math.max(uwMax, uwNow);
+    // Depth of the ongoing stretch: how far equity sits below its peak right
+    // now (max-DD says the worst it has ever been, not where it is today).
+    const ddNow = peakEq > 0 ? ((peakEq - trades[n - 1].equity) / peakEq) * 100 : 0;
     const days = (ms) => Math.round(ms / 86400000);
     const uwEl = $('ts-uw');
     if (uwEl) {
       uwEl.textContent = `${days(uwMax)}d`;
       const note = $('ts-uw-note');
       if (note) note.textContent = uwNow > 0
-        ? `longest peak-to-recovery · now ${days(uwNow)}d below the high`
+        ? `longest peak-to-recovery · now ${days(uwNow)}d and −${ddNow.toFixed(1)}% below the high`
         : 'longest peak-to-recovery · currently at equity highs';
     }
 
