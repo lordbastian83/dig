@@ -1209,6 +1209,7 @@
       body.innerHTML = '<tr><td colspan="10" class="table-empty">Flat — no open positions in the ledger.</td></tr>' + orphanNote;
       return;
     }
+    let fundedN = 0, fundedGbp = 0, fundedUnmarked = 0;
     body.innerHTML = open.map((r) => {
       const dir = r.side === 'long' ? 1 : -1;
       const sweep = px.get(r.asset);
@@ -1220,6 +1221,9 @@
       const funded = E.fundedSide(r) && (r.strategy === 'swing' || r.strategy === 'scalp' ||
         (r.strategy === 'breakout' && edgeStatus?.assets?.[r.asset]?.edge === true));
       const gbp = R != null && funded ? acctGbp() * 0.01 * E.riskMultiplier(r) * R : null;
+      // rounded to the pound BEFORE summing, so the total always equals the
+      // sum of the £ cells as they are displayed
+      if (funded) { fundedN++; if (gbp != null) fundedGbp += Math.round(gbp); else fundedUnmarked++; }
       // live chandelier level, replayed from the row's own entry/stop over
       // the stream's candles (4h breakout, daily swing). Scalp runs on 1h
       // candles the sweep doesn't carry; cross exits are target/stop with a
@@ -1246,7 +1250,17 @@
         <td class="num ${gbp != null ? cls(gbp) : ''}">${gbp != null ? (gbp >= 0 ? '+£' : '−£') + fmtUsd(Math.abs(gbp)) : '—'}</td>
         <td class="num${ageH > maxHoldH(r) ? ' move-neg' : ''}" title="time in trade vs this stream's hard-exit window${ageH > maxHoldH(r) ? ' — past the window; the stream closes this at its next scheduled run' : ''}">${ageH < 48 ? ageH.toFixed(0) + 'h' : (ageH / 24).toFixed(1) + 'd'} <span class="radar-dist">/ ${maxHoldH(r) >= 48 ? maxHoldH(r) / 24 + 'd' : maxHoldH(r) + 'h'}</span></td>
       </tr>`;
-    }).join('') + orphanNote;
+    }).join('') + (() => {
+      // Open funded P&L: the sum of the £ cells shown above — nothing is
+      // recomputed, so this line can never disagree with the rows. Paper
+      // rows never earn or lose real money and are never counted; a funded
+      // row without a live mark cannot be summed honestly and is named.
+      if (!fundedN) return '';
+      const marked = fundedN - fundedUnmarked;
+      return `<tr><td colspan="10" class="table-empty">Open funded P&amp;L: ${marked
+        ? `<span class="${fundedGbp >= 0 ? 'move-pos' : 'move-neg'}">${fundedGbp >= 0 ? '+£' : '−£'}${fmtUsd(Math.abs(fundedGbp))}</span> at current marks across ${marked} funded position${marked > 1 ? 's' : ''}`
+        : 'no live marks right now'}${fundedUnmarked ? ` · ${fundedUnmarked} funded position${fundedUnmarked > 1 ? 's' : ''} without a live feed excluded` : ''} · paper rows never counted.</td></tr>`;
+    })() + orphanNote;
   }
 
   // Watchlist: trend vs 20-day mean, last, 24h change, expected daily range
