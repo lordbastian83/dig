@@ -1952,17 +1952,22 @@
   // word was read in its headline before being added.
   // 2026-11-15: + milestone(s), success/successful(ly) — read in that day's
   // SpaceX Starship-catch headlines ("huge milestone", "successfully catches").
-  const LEX_POS = /\b(rall(?:y|ies)|surge[sd]?|gain(?:s|ed)?|jump(?:s|ed)?|beat[s]?|record (?:\w+ )?(?:highs?|profits?|revenue)|profits? (?:nearly |almost )?(?:double[sd]?|triple[sd]?)|boost(?:s|ed)?|upgrade[sd]?|soar(?:s|ed)?|rise[sn]?|rising|rose|strong(?:er)?|growth|bullish|optimis\w+|ease[sd]?|climb(?:s|ed)?|rebound(?:s|ed)?|recover\w*|higher|pops|boom(?:s|ing)?|milestone[s]?|success(?:ful|fully)?)\b/gi;
+  const LEX_POS = /\b(rall(?:y|ies)|surge[sd]?|gain(?:s|ed)?|jump(?:s|ed)?|beat[s]?|record (?:\w+ )?(?:highs?|profits?|revenue)|profits? (?:nearly |almost )?(?:double[sd]?|triple[sd]?)|boost(?:s|ed)?|upgrade[sd]?|soar(?:s|ed)?|rise[sn]?|rising|rose|strong(?:er)?|growth|bullish|optimis\w+|ease[sd]?|climb(?:s|ed)?|rebound(?:s|ed)?|recover\w*|higher|pops|boom(?:s|ing)?|milestone[s]?|success(?:ful|fully)?|enthusiasm)\b/gi;
   // 2026-11-09: the Nvidia probe story dominated the batch and was
   // lexicon-silent — added scandal, probe/probing, investigat-, setback,
   // shutdown, threat(s/en-). All 8 tagged headlines were read in context.
+  // 2026-11-19: the Gulf/Iran war escalation dominated the wire for a second
+  // day (oil near $92) and was lexicon-silent — the list had sanctions and
+  // strikes but not attack(s) or war itself. Added attack-, war(s),
+  // headwinds, bleak, losing; + enthusiasm on the positive side. Every
+  // added word was read in a headline of that day's live batch.
   // 2026-11-15: the Huang-ousted-from-Nvidia story dominated the batch and
   // was lexicon-silent — added oust(s/ed/ing), turmoil, outage(s), slash-,
   // dip(s/ped) (verb forms only: bare "dip" would tag "buy the dip"),
   // stumble-, disappoint-, outflow(s); "crushed" widened to crush(ed/ing)
   // ("the spike is 'crushing folks'"). Every added word was read in a
   // headline of that day's live batch.
-  const LEX_NEG = /\b(fall(?:s|ing)?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward|sink(?:s|ing)?|sank|rattle[sd]?|disaster[s]?|falter(?:s|ed|ing)?|slip(?:s|ped|ping)?|crunch|freefall|crush(?:ed|ing)|retreat(?:s|ed)?|depress\w*|scandal[s]?|probe[sd]?|probing|investigat\w*|setback[s]?|shutdown[s]?|threat(?:s|en|ens|ened|ening)?|oust(?:s|ed|ing)?|turmoil|outage[s]?|slash(?:es|ed|ing)?|dip(?:s|ped)|stumble[sd]?|disappoint(?:s|ed|ing|ment)?|outflow[s]?)\b/gi;
+  const LEX_NEG = /\b(fall(?:s|ing)?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward|sink(?:s|ing)?|sank|rattle[sd]?|disaster[s]?|falter(?:s|ed|ing)?|slip(?:s|ped|ping)?|crunch|freefall|crush(?:ed|ing)|retreat(?:s|ed)?|depress\w*|scandal[s]?|probe[sd]?|probing|investigat\w*|setback[s]?|shutdown[s]?|threat(?:s|en|ens|ened|ening)?|oust(?:s|ed|ing)?|turmoil|outage[s]?|slash(?:es|ed|ing)?|dip(?:s|ped)|stumble[sd]?|disappoint(?:s|ed|ing|ment)?|outflow[s]?|attack(?:s|ed|ing)?|war[s]?|headwind[s]?|bleak|losing)\b/gi;
   const MKT_TAGS = [
     ['GOLD', /\bgold\b|\bxau\b|bullion/i],
     ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b|\blng\b|gasoline|diesel|natural gas/i],
