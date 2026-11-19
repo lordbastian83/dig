@@ -1,9 +1,11 @@
 name: Bloodstock catalogue watch
 
-# Daily check of sale-house pages; opens a GitHub issue when one changes
-# (catalogue drop / lots published) — GitHub emails you natively, no bot.
-# State (page hashes) is committed to the bloodstock-data branch so each
-# change alerts exactly once.
+# Daily check of sale-house pages. When one changes (catalogue drop / lots
+# published) the change goes in the run summary and, where Issues are enabled,
+# a GitHub issue (GitHub emails you natively, no bot). Issues are disabled on
+# this repo today, so the issue step warns and moves on rather than failing.
+# State (page hashes) is committed to the bloodstock-data branch whenever it
+# changed — even if the alert step failed — so each change alerts exactly once.
 
 on:
   schedule:
@@ -25,9 +27,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Restore watch state from bloodstock-data branch
+        id: restore
         run: |
           git fetch origin bloodstock-data --depth 1 || true
           git show origin/bloodstock-data:watch-state.json > watch-state.json 2>/dev/null || echo '{}' > watch-state.json
+          # what we started from, so "Persist state" can tell whether the watcher actually changed anything
+          cp watch-state.json "$RUNNER_TEMP/watch-state.restored.json"
 
       - uses: actions/setup-node@v4
         with:
@@ -39,8 +44,12 @@ jobs:
           STATE_FILE: watch-state.json
           CHANGES_FILE: changes.txt
 
+      # The alert is best-effort and must never block "Persist state": Issues are disabled on this repo, so the
+      # POST has answered 410 every day since 13 Nov, the step failed, Persist was skipped, and the same change
+      # re-alerted (and failed) the next morning. The change itself is always written to the run summary first.
       - name: Open issue on change
         if: hashFiles('changes.txt') != ''
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -55,14 +64,31 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues" \
             -d "$(BODY="$BODY" node -e 'console.log(JSON.stringify({title: "🐎 Catalogue watch: sale page changed "+new Date().toISOString().slice(0,10), body: process.env.BODY}))')")
-          if [ "$code" != "201" ]; then
-            echo "::error::Issue POST failed (HTTP $code) - if 410, Issues are disabled: enable them under repo Settings -> General -> Features. Change details are in this run's summary."
-            cat /tmp/resp
-            exit 1
-          fi
+          case "$code" in
+            201)
+              echo "issue opened" ;;
+            410|403)
+              # Issues disabled (410) or not permitted (403): expected on this repo, not a failure.
+              { echo; echo "> No issue opened: the Issues API answered HTTP $code (Issues disabled on this repo, or not permitted). This summary is the alert."; } >> "$GITHUB_STEP_SUMMARY"
+              echo "::warning::No issue opened (HTTP $code: Issues disabled or not permitted). The change is in this run's summary; state is still saved."
+              exit 0 ;;
+            *)
+              # anything else (5xx, network) is worth a look, but continue-on-error keeps it from blocking Persist
+              { echo; echo "> Issue POST failed (HTTP ${code:-none}). The change is above; state is still saved."; } >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::Issue POST failed (HTTP ${code:-none}). Change details are in this run's summary."
+              cat /tmp/resp 2>/dev/null || true
+              exit 1 ;;
+          esac
 
+      # always(): saved even when the alert step (or anything before it) failed, so a change alerts once, not daily.
+      # Only when the state really changed, and only from a state that was actually restored, so a crashed watcher
+      # (it writes the file last) or a broken restore never pushes a blank or stale state over the good one.
       - name: Persist state to bloodstock-data branch
+        if: ${{ always() && steps.restore.outcome == 'success' && hashFiles('watch-state.json') != '' }}
         run: |
+          if cmp -s watch-state.json "$RUNNER_TEMP/watch-state.restored.json"; then
+            echo "watch state unchanged: nothing to persist"; exit 0
+          fi
           git config user.name 'bloodstock-watch[bot]'
           git config user.email 'actions@users.noreply.github.com'
           git fetch origin bloodstock-data:refs/remotes/origin/bloodstock-data || true
