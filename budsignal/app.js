@@ -1956,6 +1956,10 @@
   // 2026-11-09: the Nvidia probe story dominated the batch and was
   // lexicon-silent — added scandal, probe/probing, investigat-, setback,
   // shutdown, threat(s/en-). All 8 tagged headlines were read in context.
+  // 2026-11-22: Bitcoin's drop below $57,000 (a two-year low) led the wire
+  // and its verb was silent — added tank(s/ed/ing) (with a lookbehind so
+  // "think tank(s)" never matches), correction(s), drain(s/ed/ing). Every
+  // added word was read in a headline of that day's live batch.
   // 2026-11-19: the Gulf/Iran war escalation dominated the wire for a second
   // day (oil near $92) and was lexicon-silent — the list had sanctions and
   // strikes but not attack(s) or war itself. Added attack-, war(s),
@@ -1967,7 +1971,7 @@
   // stumble-, disappoint-, outflow(s); "crushed" widened to crush(ed/ing)
   // ("the spike is 'crushing folks'"). Every added word was read in a
   // headline of that day's live batch.
-  const LEX_NEG = /\b(fall(?:s|ing)?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward|sink(?:s|ing)?|sank|rattle[sd]?|disaster[s]?|falter(?:s|ed|ing)?|slip(?:s|ped|ping)?|crunch|freefall|crush(?:ed|ing)|retreat(?:s|ed)?|depress\w*|scandal[s]?|probe[sd]?|probing|investigat\w*|setback[s]?|shutdown[s]?|threat(?:s|en|ens|ened|ening)?|oust(?:s|ed|ing)?|turmoil|outage[s]?|slash(?:es|ed|ing)?|dip(?:s|ped)|stumble[sd]?|disappoint(?:s|ed|ing|ment)?|outflow[s]?|attack(?:s|ed|ing)?|war[s]?|headwind[s]?|bleak|losing)\b/gi;
+  const LEX_NEG = /\b(fall(?:s|ing)?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward|sink(?:s|ing)?|sank|rattle[sd]?|disaster[s]?|falter(?:s|ed|ing)?|slip(?:s|ped|ping)?|crunch|freefall|crush(?:ed|ing)|retreat(?:s|ed)?|depress\w*|scandal[s]?|probe[sd]?|probing|investigat\w*|setback[s]?|shutdown[s]?|threat(?:s|en|ens|ened|ening)?|oust(?:s|ed|ing)?|turmoil|outage[s]?|slash(?:es|ed|ing)?|dip(?:s|ped)|stumble[sd]?|disappoint(?:s|ed|ing|ment)?|outflow[s]?|attack(?:s|ed|ing)?|war[s]?|headwind[s]?|bleak|losing|(?<!think[ -])tank(?:s|ed|ing)|correction[s]?|drain(?:s|ed|ing)?)\b/gi;
   const MKT_TAGS = [
     ['GOLD', /\bgold\b|\bxau\b|bullion/i],
     ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b|\blng\b|gasoline|diesel|natural gas/i],
