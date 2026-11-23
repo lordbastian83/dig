@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-11-20T21:23:43.523Z",
+  "generated_at": "2026-11-23T06:59:58.578Z",
   "regime": "risk-off",
   "account_gbp": 1000,
   "risk_pct": 1,
-  "gbpusd": 1.30768,
+  "gbpusd": 1.31294,
   "best": null,
-  "universe_size": 186,
-  "ortex_symbols": 10,
+  "universe_size": 187,
+  "ortex_symbols": 5,
   "watch": [
     {
       "key": "pullback_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 307.23693357925157,
-      "stop": 288.7169151353862,
-      "target": 344.2769704669823,
-      "risk": 18.520018443865354,
+      "trigger": 307.4973621506801,
+      "stop": 288.9452008496719,
+      "target": 344.6016847526965,
+      "risk": 18.552161301008198,
       "hi20": 342.32,
       "lo20": 274.2,
-      "volRatio": 0.7022012558364793,
+      "volRatio": 1.291731054956216,
       "symbol": "RCL",
       "label": "Pullback in uptrend",
       "score": 22,
       "why": [
         "Pullback in uptrend",
-        "outperforming SPY by 16.4% over 20d"
+        "outperforming SPY by 16.5% over 20d"
       ],
       "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -37,36 +37,36 @@
       "costGBP": 0,
       "riskGBP": 0,
       "edge": false,
-      "close": 296.61
+      "close": 296.48
     },
     {
       "key": "pullback_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 95.57060141390885,
-      "stop": 88.75748232613948,
-      "target": 109.19683958944758,
-      "risk": 6.8131190877693655,
+      "trigger": 95.57071569962312,
+      "stop": 88.6760537547109,
+      "target": 109.36003958944755,
+      "risk": 6.894661944912215,
       "hi20": 98.16,
       "lo20": 81.6,
-      "volRatio": 0.9556314669092045,
+      "volRatio": 0.9556859290007419,
       "symbol": "PVH",
       "label": "Pullback in uptrend",
       "score": 22,
       "why": [
         "Pullback in uptrend",
-        "outperforming SPY by 15.2% over 20d"
+        "outperforming SPY by 15.3% over 20d"
       ],
       "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
         "scope": "risk-off"
       },
-      "daysToEarn": 12,
+      "daysToEarn": 13,
       "shares": 1,
-      "costGBP": 73.08408893147318,
-      "riskGBP": 5.210081279647441,
+      "costGBP": 72.79138094629086,
+      "riskGBP": 5.251315326604579,
       "edge": false,
       "close": 90.14
     },
@@ -74,13 +74,13 @@
       "key": "pullback_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 1372.8985363341587,
-      "stop": 1309.2583112722534,
-      "target": 1500.1789864579694,
-      "risk": 63.64022506190531,
+      "trigger": 1372.898550619873,
+      "stop": 1309.2572541293964,
+      "target": 1500.1811436008263,
+      "risk": 63.641296490476634,
       "hi20": 1475.25,
       "lo20": 1257.62,
-      "volRatio": 1.1244648299019873,
+      "volRatio": 1.1402179692742898,
       "symbol": "LLY",
       "label": "Pullback in uptrend",
       "score": 21.259881209817728,
@@ -89,9 +89,9 @@
         "outperforming SPY by 15.0% over 20d"
       ],
       "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -99,7 +99,7 @@
       "costGBP": 0,
       "riskGBP": 0,
       "edge": false,
-      "close": 1348.31
+      "close": 1347.11
     },
     {
       "key": "pullback_long",
@@ -111,18 +111,18 @@
       "risk": 21.13147746929019,
       "hi20": 681.99,
       "lo20": 605,
-      "volRatio": 1.1273662488254164,
+      "volRatio": 1.139342554798097,
       "symbol": "MA",
       "label": "Pullback in uptrend",
-      "score": 20.649154299652224,
+      "score": 20.771527551227948,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 9.6% over 20d"
       ],
       "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -136,63 +136,63 @@
       "key": "pullback_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 106.66219567065635,
-      "stop": 101.99752037143003,
-      "target": 115.99154626910898,
-      "risk": 4.664675299226317,
-      "hi20": 111.5,
-      "lo20": 100.43,
-      "volRatio": 1.3553888087359147,
-      "symbol": "SBUX",
-      "label": "Pullback in uptrend",
-      "score": 20.33692237108199,
-      "why": [
-        "Pullback in uptrend",
-        "outperforming SPY by 11.5% over 20d"
-      ],
-      "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
-        "scope": "risk-off"
-      },
-      "daysToEarn": null,
-      "shares": 2,
-      "costGBP": 163.1319522676134,
-      "riskGBP": 7.134276427300743,
-      "edge": false,
-      "close": 103.13
-    },
-    {
-      "key": "pullback_long",
-      "side": "long",
-      "entryType": "stop",
-      "trigger": 46.328865714546566,
-      "stop": 43.376678568167904,
-      "target": 52.23324000730389,
-      "risk": 2.9521871463786624,
+      "trigger": 46.313844285975144,
+      "stop": 43.376946425310756,
+      "target": 52.18764000730392,
+      "risk": 2.936897860664388,
       "hi20": 47.59,
       "lo20": 40.22,
-      "volRatio": 0.9616157793258865,
+      "volRatio": 0.9628327750844594,
       "symbol": "LUV",
       "label": "Pullback in uptrend",
       "score": 20.3175124705541,
       "why": [
         "Pullback in uptrend",
-        "outperforming SPY by 14.7% over 20d"
+        "outperforming SPY by 14.8% over 20d"
       ],
       "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 4,
-      "costGBP": 141.71315830951477,
-      "riskGBP": 9.030304497671182,
+      "costGBP": 141.0996520358132,
+      "riskGBP": 8.947546302692851,
       "edge": false,
       "close": 44.08
+    },
+    {
+      "key": "pullback_long",
+      "side": "long",
+      "entryType": "stop",
+      "trigger": 106.66238138494207,
+      "stop": 101.9002326882242,
+      "target": 116.18667877837781,
+      "risk": 4.7621486967178726,
+      "hi20": 111.5,
+      "lo20": 100.43,
+      "volRatio": 1.3564502195725787,
+      "symbol": "SBUX",
+      "label": "Pullback in uptrend",
+      "score": 20.296685312142955,
+      "why": [
+        "Pullback in uptrend",
+        "outperforming SPY by 11.5% over 20d"
+      ],
+      "stat": {
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
+        "scope": "risk-off"
+      },
+      "daysToEarn": null,
+      "shares": 2,
+      "costGBP": 162.4786835421909,
+      "riskGBP": 7.254175661824413,
+      "edge": false,
+      "close": 103.13
     },
     {
       "key": "pullback_long",
@@ -204,25 +204,25 @@
       "risk": 10.054285097701381,
       "hi20": 302.93,
       "lo20": 279.88,
-      "volRatio": 1.6922084170930118,
+      "volRatio": 1.711281017391637,
       "symbol": "ABBV",
       "label": "Pullback in uptrend",
-      "score": 20.074172010306782,
+      "score": 20.1965452618825,
       "why": [
         "Pullback in uptrend",
-        "outperforming SPY by 9.3% over 20d",
+        "outperforming SPY by 9.4% over 20d",
         "volume 1.7x average"
       ],
       "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 1,
-      "costGBP": 222.04519235182616,
-      "riskGBP": 7.688643320767605,
+      "costGBP": 221.1556180287264,
+      "riskGBP": 7.657840493626046,
       "edge": false,
       "close": 286.2
     },
@@ -230,24 +230,24 @@
       "key": "pullback_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 637.2605538962566,
-      "stop": 608.7190116770055,
-      "target": 694.3436383347589,
-      "risk": 28.54154221925114,
+      "trigger": 637.3112110391138,
+      "stop": 608.5348620110772,
+      "target": 694.8639090951871,
+      "risk": 28.776349028036634,
       "hi20": 674.04,
       "lo20": 610.82,
-      "volRatio": 1.2115969649100655,
+      "volRatio": 1.2245414254530789,
       "symbol": "ULTA",
       "label": "Pullback in uptrend",
-      "score": 18.63093205488476,
+      "score": 18.75330530646047,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 7.8% over 20d"
       ],
       "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
         "scope": "risk-off"
       },
       "daysToEarn": 13,
@@ -267,25 +267,25 @@
       "risk": 10.055263547285676,
       "hi20": 290.25,
       "lo20": 262.4,
-      "volRatio": 1.5792989785447675,
+      "volRatio": 1.5809930064870943,
       "symbol": "JNJ",
       "label": "Pullback in uptrend",
       "score": 18.44700062921472,
       "why": [
         "Pullback in uptrend",
-        "outperforming SPY by 11.7% over 20d",
+        "outperforming SPY by 11.8% over 20d",
         "volume 1.6x average"
       ],
       "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 1,
-      "costGBP": 208.4868394260297,
-      "riskGBP": 7.689391553962496,
+      "costGBP": 207.65158360673792,
+      "riskGBP": 7.658585729192253,
       "edge": false,
       "close": 270.47
     },
@@ -299,18 +299,18 @@
       "risk": 13.412046305700244,
       "hi20": 442.23,
       "lo20": 394,
-      "volRatio": 1.168002358692956,
+      "volRatio": 1.1784834494871952,
       "symbol": "V",
       "label": "Pullback in uptrend",
-      "score": 17.18192353792837,
+      "score": 17.098374059557017,
       "why": [
         "Pullback in uptrend",
-        "outperforming SPY by 7.8% over 20d"
+        "outperforming SPY by 7.7% over 20d"
       ],
       "stat": {
-        "n": 152,
-        "winRate": 21.052631578947366,
-        "expR": -0.506675479665279,
+        "n": 154,
+        "winRate": 20.12987012987013,
+        "expR": -0.5265096607744348,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -318,7 +318,7 @@
       "costGBP": 0,
       "riskGBP": 0,
       "edge": false,
-      "close": 402.43
+      "close": 401.87
     },
     {
       "key": "breakdown_short",
@@ -330,19 +330,19 @@
       "risk": 16.058847072568454,
       "hi20": 219.99,
       "lo20": 145.71,
-      "volRatio": 2.337966055776898,
+      "volRatio": 2.4363920895488,
       "symbol": "NVDA",
       "label": "20-day breakdown",
-      "score": 44.063162933876356,
+      "score": 44,
       "why": [
         "20-day breakdown",
         "underperforming SPY by 31.3% over 20d",
-        "volume 2.3x average"
+        "volume 2.4x average"
       ],
       "stat": {
         "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -364,24 +364,24 @@
       "side": "short",
       "entryType": "market",
       "trigger": 101.97,
-      "stop": 115.53321361879148,
-      "target": 74.84357276241704,
-      "risk": 13.56321361879148,
+      "stop": 115.53535647593434,
+      "target": 74.83928704813133,
+      "risk": 13.565356475934337,
       "hi20": 169.84,
       "lo20": 108.8,
-      "volRatio": 1.5202176832810892,
+      "volRatio": 1.6079559390408287,
       "symbol": "COIN",
       "label": "20-day breakdown",
-      "score": 44.063162933876356,
+      "score": 44,
       "why": [
         "20-day breakdown",
         "underperforming SPY by 28.8% over 20d",
-        "volume 1.5x average"
+        "volume 1.6x average"
       ],
       "stat": {
         "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -408,25 +408,25 @@
       "risk": 2.490552251218311,
       "hi20": 49.25,
       "lo20": 39.59,
-      "volRatio": 2.3508078781453463,
+      "volRatio": 2.3900104419087613,
       "symbol": "SLV",
       "label": "20-day breakdown",
-      "score": 44.063162933876356,
+      "score": 44,
       "why": [
         "20-day breakdown",
-        "underperforming SPY by 15.0% over 20d",
+        "underperforming SPY by 14.9% over 20d",
         "volume 2.4x average"
       ],
       "stat": {
         "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 5,
-      "costGBP": 141.3572127737673,
-      "riskGBP": 9.522789410323288,
+      "costGBP": 140.79089676603652,
+      "riskGBP": 9.484638487738628,
       "edge": false,
       "close": 36.97
     },
@@ -434,64 +434,25 @@
       "key": "breakdown_short",
       "side": "short",
       "entryType": "market",
-      "trigger": 41.2,
-      "stop": 48.41186947025615,
-      "target": 26.77626105948771,
-      "risk": 7.211869470256147,
-      "hi20": 72.53,
-      "lo20": 48.81,
-      "volRatio": 2.672245441357577,
-      "symbol": "TQQQ",
-      "label": "20-day breakdown",
-      "score": 44.063162933876356,
-      "why": [
-        "20-day breakdown",
-        "underperforming SPY by 28.7% over 20d",
-        "volume 2.7x average"
-      ],
-      "stat": {
-        "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
-        "scope": "risk-off"
-      },
-      "daysToEarn": null,
-      "flow": {
-        "symbol": "TQQQ",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
-      "shares": 1,
-      "costGBP": 31.506178881683596,
-      "riskGBP": 5.515010912651526,
-      "edge": false,
-      "close": 41.2
-    },
-    {
-      "key": "breakdown_short",
-      "side": "short",
-      "entryType": "market",
-      "trigger": 30.875,
-      "stop": 48.861007601886655,
-      "target": -5.09701520377331,
-      "risk": 17.986007601886655,
+      "trigger": 30.88,
+      "stop": 48.86600760188665,
+      "target": -5.092015203773304,
+      "risk": 17.98600760188665,
       "hi20": 108.6,
       "lo20": 40.59,
-      "volRatio": 2.4864779020022856,
+      "volRatio": 2.6059665825470355,
       "symbol": "SOXL",
       "label": "20-day breakdown",
-      "score": 44.063162933876356,
+      "score": 44,
       "why": [
         "20-day breakdown",
-        "underperforming SPY by 53.9% over 20d",
-        "volume 2.5x average"
+        "underperforming SPY by 53.8% over 20d",
+        "volume 2.6x average"
       ],
       "stat": {
         "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -506,7 +467,39 @@
       "costGBP": 0,
       "riskGBP": 0,
       "edge": false,
-      "close": 30.875
+      "close": 30.88
+    },
+    {
+      "key": "breakdown_short",
+      "side": "short",
+      "entryType": "market",
+      "trigger": 41.2,
+      "stop": 48.41186947025615,
+      "target": 26.77626105948771,
+      "risk": 7.211869470256147,
+      "hi20": 72.53,
+      "lo20": 48.81,
+      "volRatio": 2.7560468726774126,
+      "symbol": "TQQQ",
+      "label": "20-day breakdown",
+      "score": 44,
+      "why": [
+        "20-day breakdown",
+        "underperforming SPY by 28.6% over 20d",
+        "volume 2.8x average"
+      ],
+      "stat": {
+        "n": 124,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
+        "scope": "risk-off"
+      },
+      "daysToEarn": null,
+      "shares": 1,
+      "costGBP": 31.37995643365272,
+      "riskGBP": 5.492916256840486,
+      "edge": false,
+      "close": 41.2
     },
     {
       "key": "breakdown_short",
@@ -518,32 +511,25 @@
       "risk": 0.23613579779611005,
       "hi20": 3.44,
       "lo20": 2.66,
-      "volRatio": 1.931141058669692,
+      "volRatio": 2.0112812749435576,
       "symbol": "NIO",
       "label": "20-day breakdown",
-      "score": 43.68253419967907,
+      "score": 43.619371265802705,
       "why": [
         "20-day breakdown",
-        "underperforming SPY by 16.4% over 20d",
-        "volume 1.9x average"
+        "underperforming SPY by 16.3% over 20d",
+        "volume 2.0x average"
       ],
       "stat": {
         "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
         "scope": "risk-off"
       },
       "daysToEarn": 11,
-      "flow": {
-        "symbol": "NIO",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 55,
-      "costGBP": 103.04508748317632,
-      "riskGBP": 9.93168732318767,
+      "costGBP": 102.63226042317243,
+      "riskGBP": 9.891898242711818,
       "edge": false,
       "close": 2.45
     },
@@ -551,74 +537,60 @@
       "key": "breakdown_short",
       "side": "short",
       "entryType": "market",
-      "trigger": 77.95,
-      "stop": 90.9807115363649,
-      "target": 51.88857692727022,
+      "trigger": 77.8,
+      "stop": 90.83071153636489,
+      "target": 51.738576927270216,
       "risk": 13.03071153636489,
       "hi20": 152.21,
       "lo20": 86.02,
-      "volRatio": 1.907506399388963,
+      "volRatio": 1.9624835081720955,
       "symbol": "MSTR",
       "label": "20-day breakdown",
-      "score": 41.37411384124668,
+      "score": 41.31095090737033,
       "why": [
         "20-day breakdown",
         "underperforming SPY by 37.5% over 20d",
-        "volume 1.9x average"
+        "volume 2.0x average"
       ],
       "stat": {
         "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "MSTR",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 1,
-      "costGBP": 59.6093845589135,
-      "riskGBP": 9.964755549037143,
+      "costGBP": 59.25632549849955,
+      "riskGBP": 9.924833988121994,
       "edge": false,
-      "close": 77.95
+      "close": 77.8
     },
     {
       "key": "breakdown_short",
       "side": "short",
       "entryType": "market",
       "trigger": 152.2,
-      "stop": 176.53638119830737,
-      "target": 103.52723760338523,
-      "risk": 24.33638119830738,
+      "stop": 176.5374526268788,
+      "target": 103.52509474624236,
+      "risk": 24.337452626878814,
       "hi20": 237.88,
       "lo20": 163.13,
-      "volRatio": 1.7778832314016326,
+      "volRatio": 1.8181974589017755,
       "symbol": "ARM",
       "label": "20-day breakdown",
-      "score": 38.71944231581794,
+      "score": 38.65657375670651,
       "why": [
         "20-day breakdown",
-        "underperforming SPY by 18.5% over 20d",
+        "underperforming SPY by 18.4% over 20d",
         "volume 1.8x average"
       ],
       "stat": {
         "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "ARM",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 0,
       "costGBP": 0,
       "riskGBP": 0,
@@ -635,31 +607,24 @@
       "risk": 7.853074189993322,
       "hi20": 95.68,
       "lo20": 51.51,
-      "volRatio": 1.391843050371979,
+      "volRatio": 1.4209284408617766,
       "symbol": "INTC",
       "label": "20-day breakdown",
-      "score": 38.063162933876356,
+      "score": 38,
       "why": [
         "20-day breakdown",
-        "underperforming SPY by 31.9% over 20d"
+        "underperforming SPY by 31.8% over 20d"
       ],
       "stat": {
         "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "INTC",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 1,
-      "costGBP": 39.21448672458094,
-      "riskGBP": 6.005348548569468,
+      "costGBP": 39.057382667905614,
+      "riskGBP": 5.981289464860025,
       "edge": false,
       "close": 51.28
     },
@@ -673,18 +638,18 @@
       "risk": 43.41278954854914,
       "hi20": 732.73,
       "lo20": 535.53,
-      "volRatio": 1.2656476402945043,
+      "volRatio": 1.2922054126706974,
       "symbol": "CAT",
       "label": "20-day breakdown",
-      "score": 38.063162933876356,
+      "score": 38,
       "why": [
         "20-day breakdown",
         "underperforming SPY by 16.5% over 20d"
       ],
       "stat": {
         "n": 124,
-        "winRate": 23.387096774193548,
-        "expR": -0.498420926653091,
+        "winRate": 20.967741935483872,
+        "expR": -0.5363708057901962,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -699,186 +664,138 @@
   "shorts": [],
   "setup_stats": {
     "pullback_long|all": {
-      "n": 1576,
-      "wins": 581,
-      "sumR": 2.6737939988561568
+      "n": 1598,
+      "wins": 590,
+      "sumR": 1.2005158502508704
     },
     "pullback_long|risk-on": {
-      "n": 1424,
-      "wins": 549,
-      "sumR": 79.68846690797847
+      "n": 1444,
+      "wins": 559,
+      "sumR": 82.28300360951376
     },
     "near_breakout_long|all": {
-      "n": 1511,
-      "wins": 584,
-      "sumR": 5629.0078399522135
+      "n": 1519,
+      "wins": 579,
+      "sumR": 5600.874994541094
     },
     "near_breakout_long|risk-on": {
-      "n": 1377,
-      "wins": 521,
-      "sumR": 5606.276743662517
+      "n": 1387,
+      "wins": 516,
+      "sumR": 5576.1438982514255
     },
     "breakout_long|all": {
       "n": 1164,
-      "wins": 464,
-      "sumR": 14.966998361859714
+      "wins": 458,
+      "sumR": -74.38709472316394
     },
     "breakout_long|risk-on": {
-      "n": 1091,
-      "wins": 424,
-      "sumR": -12.6886882201587
+      "n": 1093,
+      "wins": 419,
+      "sumR": -102.33272930474273
     },
     "rally_short|all": {
-      "n": 1010,
-      "wins": 315,
-      "sumR": -213.5349670165115
+      "n": 986,
+      "wins": 302,
+      "sumR": -222.62012688410522
     },
     "rally_short|risk-off": {
-      "n": 241,
-      "wins": 69,
-      "sumR": -91.76181696500747
-    },
-    "oversold_long|all": {
-      "n": 70,
-      "wins": 24,
-      "sumR": -1649.2095054685383
-    },
-    "oversold_long|risk-on": {
-      "n": 49,
-      "wins": 18,
-      "sumR": -1659.623736977044
-    },
-    "pullback_long|risk-off": {
-      "n": 152,
-      "wins": 32,
-      "sumR": -77.01467290912241
-    },
-    "rally_short|risk-on": {
-      "n": 769,
-      "wins": 246,
-      "sumR": -121.7731500515038
-    },
-    "near_breakout_long|risk-off": {
-      "n": 134,
-      "wins": 63,
-      "sumR": 22.73109628969832
+      "n": 245,
+      "wins": 70,
+      "sumR": -91.32965757577068
     },
     "near_breakdown_short|all": {
-      "n": 750,
-      "wins": 257,
-      "sumR": -8.189344808722215
+      "n": 722,
+      "wins": 249,
+      "sumR": -0.3180829777205796
     },
-    "near_breakdown_short|risk-off": {
-      "n": 139,
-      "wins": 46,
-      "sumR": -27.162417226407165
+    "near_breakdown_short|risk-on": {
+      "n": 582,
+      "wins": 205,
+      "sumR": 31.57727360087566
     },
     "breakdown_short|all": {
-      "n": 604,
-      "wins": 184,
-      "sumR": -129.1867924916224
+      "n": 588,
+      "wins": 173,
+      "sumR": -138.42238474356017
     },
     "breakdown_short|risk-off": {
       "n": 124,
-      "wins": 29,
-      "sumR": -61.804194904983284
+      "wins": 26,
+      "sumR": -66.50997991798434
     },
-    "oversold_long|risk-off": {
-      "n": 21,
-      "wins": 6,
-      "sumR": 10.414231508505726
-    },
-    "near_breakdown_short|risk-on": {
-      "n": 611,
-      "wins": 211,
-      "sumR": 18.97307241768496
+    "near_breakdown_short|risk-off": {
+      "n": 140,
+      "wins": 44,
+      "sumR": -31.895356578596235
     },
     "breakdown_short|risk-on": {
-      "n": 480,
-      "wins": 155,
-      "sumR": -67.38259758663918
+      "n": 464,
+      "wins": 147,
+      "sumR": -71.91240482557592
+    },
+    "rally_short|risk-on": {
+      "n": 741,
+      "wins": 232,
+      "sumR": -131.29046930833454
     },
     "overbought_short|all": {
-      "n": 64,
-      "wins": 24,
-      "sumR": 32.52578296536575
+      "n": 59,
+      "wins": 23,
+      "sumR": 36.12221784017643
     },
     "overbought_short|risk-on": {
-      "n": 56,
-      "wins": 21,
-      "sumR": 31.514547605700635
+      "n": 55,
+      "wins": 20,
+      "sumR": 29.514547539877235
+    },
+    "pullback_long|risk-off": {
+      "n": 154,
+      "wins": 31,
+      "sumR": -81.08248775926296
+    },
+    "oversold_long|all": {
+      "n": 75,
+      "wins": 25,
+      "sumR": -1628.2972112955783
+    },
+    "oversold_long|risk-on": {
+      "n": 52,
+      "wins": 18,
+      "sumR": -1663.7686879677144
+    },
+    "near_breakout_long|risk-off": {
+      "n": 132,
+      "wins": 63,
+      "sumR": 24.73109628966985
     },
     "breakout_long|risk-off": {
-      "n": 73,
-      "wins": 40,
-      "sumR": 27.655686582018223
+      "n": 71,
+      "wins": 39,
+      "sumR": 27.945634581578755
+    },
+    "oversold_long|risk-off": {
+      "n": 23,
+      "wins": 7,
+      "sumR": 35.47147667213625
     },
     "overbought_short|risk-off": {
-      "n": 8,
+      "n": 4,
       "wins": 3,
-      "sumR": 1.01123535966512
+      "sumR": 6.607670300299185
     }
   },
   "econ": [
     {
-      "date": "2026-11-20 15:00:00",
-      "event": "Michigan Consumer Sentiment (Nov)",
-      "estimate": 51.5,
-      "previous": 48
-    },
-    {
       "date": "2026-11-23 14:45:00",
       "event": "S&P Global Services PMI (Nov)",
-      "estimate": null,
+      "estimate": 55.6,
       "previous": 56.1
     },
     {
       "date": "2026-11-23 14:45:00",
       "event": "S&P Global Manufacturing PMI (Nov)",
-      "estimate": null,
+      "estimate": 54.5,
       "previous": 54.9
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Durable Goods Orders Ex Defense MoM (Oct)",
-      "estimate": 0.8,
-      "previous": 2.3
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Core PCE Price Index YoY (Oct)",
-      "estimate": 3.2,
-      "previous": 3.1
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Jobless Claims 4-Week Average (Nov/21)",
-      "estimate": 196,
-      "previous": 197.75
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Continuing Jobless Claims (Nov/14)",
-      "estimate": 1711,
-      "previous": 1763
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Initial Jobless Claims (Nov/21)",
-      "estimate": 200,
-      "previous": 203
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Personal Spending MoM (Oct)",
-      "estimate": 0.4,
-      "previous": 0.5
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Personal Income MoM (Oct)",
-      "estimate": 0.3,
-      "previous": 0.2
     },
     {
       "date": "2026-11-25 13:30:00",
@@ -888,9 +805,51 @@
     },
     {
       "date": "2026-11-25 13:30:00",
+      "event": "Personal Income MoM (Oct)",
+      "estimate": 0.3,
+      "previous": 0.2
+    },
+    {
+      "date": "2026-11-25 13:30:00",
+      "event": "Jobless Claims 4-Week Average (Nov/21)",
+      "estimate": 196,
+      "previous": 197.75
+    },
+    {
+      "date": "2026-11-25 13:30:00",
+      "event": "Personal Spending MoM (Oct)",
+      "estimate": 0.4,
+      "previous": 0.5
+    },
+    {
+      "date": "2026-11-25 13:30:00",
+      "event": "Initial Jobless Claims (Nov/21)",
+      "estimate": 200,
+      "previous": 203
+    },
+    {
+      "date": "2026-11-25 13:30:00",
       "event": "Core PCE Price Index MoM (Oct)",
       "estimate": 0.3,
       "previous": 0.3
+    },
+    {
+      "date": "2026-11-25 13:30:00",
+      "event": "Core PCE Price Index YoY (Oct)",
+      "estimate": 3.2,
+      "previous": 3.1
+    },
+    {
+      "date": "2026-11-25 13:30:00",
+      "event": "Durable Goods Orders Ex Defense MoM (Oct)",
+      "estimate": 0.8,
+      "previous": 2.3
+    },
+    {
+      "date": "2026-11-25 13:30:00",
+      "event": "Continuing Jobless Claims (Nov/14)",
+      "estimate": 1711,
+      "previous": 1763
     },
     {
       "date": "2026-11-25 13:30:00",
@@ -900,15 +859,15 @@
     },
     {
       "date": "2026-11-25 15:00:00",
-      "event": "New Home Sales MoM (Oct)",
-      "estimate": -3.8,
-      "previous": -0.6
-    },
-    {
-      "date": "2026-11-25 15:00:00",
       "event": "New Home Sales (Oct)",
       "estimate": 0.67,
       "previous": 0.676
+    },
+    {
+      "date": "2026-11-25 15:00:00",
+      "event": "New Home Sales MoM (Oct)",
+      "estimate": -3.8,
+      "previous": -0.6
     },
     {
       "date": "2026-11-27 13:30:00",
@@ -924,16 +883,16 @@
       "close": 2.57,
       "chg1d": -7.885304659498216,
       "ret20": -11.379310344827587,
-      "rs20": -2.2289491463592164,
+      "rs20": -2.147366978642074,
       "rsi": 33.97895080128765,
-      "atr": 0.22208345706482277,
-      "atrPct": 8.641379652327736,
-      "adx": 16.536526273146595,
+      "atr": 0.22315488563625135,
+      "atrPct": 8.683069480009781,
+      "adx": 16.566427880649165,
       "e20": 3.081467752032318,
-      "e50": 2.9701949907499867,
-      "e200": 2.482811474004514,
-      "avgVol20": 23696807.9,
-      "dollarVol": 60900796.302999996,
+      "e50": 2.970194990749991,
+      "e200": 2.4827069594544056,
+      "avgVol20": 23696810.15,
+      "dollarVol": 60900802.085499994,
       "trend": "mixed",
       "earnings": null,
       "flow": {
@@ -947,19 +906,19 @@
     {
       "symbol": "SNDL",
       "date": "2026-11-20",
-      "close": 1.185,
-      "chg1d": -4.435483870967738,
-      "ret20": -8.139534883720934,
-      "rs20": 1.0108263147474368,
-      "rsi": 33.65766597917249,
-      "atr": 0.06017732447628405,
-      "atrPct": 5.078255230066164,
-      "adx": 17.361392377694756,
-      "e20": 1.3186062296116792,
-      "e50": 1.3158400963807921,
-      "e200": 1.4093617327456933,
+      "close": 1.17,
+      "chg1d": -5.645161290322587,
+      "ret20": -9.302325581395355,
+      "rs20": -0.07038221520984145,
+      "rsi": 32.538453842242774,
+      "atr": 0.061963038761998344,
+      "atrPct": 5.2959862189742175,
+      "adx": 17.614743816737743,
+      "e20": 1.3171776581831078,
+      "e50": 1.3152518610866775,
+      "e200": 1.4092206760637027,
       "avgVol20": 1189462.3,
-      "dollarVol": 1409512.8255,
+      "dollarVol": 1391670.891,
       "trend": "down",
       "earnings": null,
       "flow": {
@@ -973,7 +932,6 @@
   ],
   "skipped": [
     "ANT: 2 bars",
-    "MUZ: 116 bars",
     "FDXF: 125 bars",
     "SUNC: 228 bars"
   ]
