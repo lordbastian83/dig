@@ -3,35 +3,35 @@
 ## ⭐ Best trade to execute
 _No trade today — nothing with a measured edge fits the account without earnings or news risk. Staying flat is a position._
 
-Universe 187 symbols (core + today's movers + upcoming large-cap earnings). Market regime: **risk-off** (SPY not above its 200-day with 20 > 50 EMA). Sizing: £1000 account, 1% risk (£10) per trade, GBPUSD 1.3129, no leverage.
+Universe 187 symbols (core + today's movers + upcoming large-cap earnings). Market regime: **risk-off** (SPY not above its 200-day with 20 > 50 EMA). Sizing: £1000 account, 1% risk (£10) per trade, GBPUSD 1.3075, no leverage.
 ORTEX short data + stock/short scores on 5 symbols (~23 credits).
 
 ## Macro
 - **S&P 500 (SPY)** 689.81 (-3.64%), trend mixed, RSI 25, 20d -9.2%
 - **Nasdaq 100 (QQQ)** 608.45 (-5.67%), trend mixed, RSI 27, 20d -13.6%
-- **FTSE 100** 10346.34 (-1.02%), trend mixed, RSI 33, 20d -3.2%
-- **Euro Stoxx 50** 5968.30 (+0.95%), trend mixed, RSI 37, 20d -2.2%
-- **Brent** 92.41 (-0.17%), trend mixed, RSI 38, 20d -20.2%
+- **FTSE 100** 10406.92 (+0.59%), trend mixed, RSI 37, 20d -3.3%
+- **Euro Stoxx 50** 5986.10 (+1.25%), trend mixed, RSI 39, 20d -1.9%
+- **Brent** 91.04 (-1.65%), trend mixed, RSI 36, 20d -21.4%
 - **WTI proxy (USO)** 139.63 (+1.12%), trend mixed, RSI 39, 20d -17.6%
-- **Gold** 3622.50 (+3.05%), trend down, RSI 31, 20d -10.3%
+- **Gold** 3620.70 (+3.00%), trend down, RSI 31, 20d -10.3%
 - **20y Treasuries (TLT)** 81.45 (+1.37%), trend mixed, RSI 58, 20d +0.1%
 
 **High-impact US data, next 7 days**
-- 2026-11-23 14:45:00 S&P Global Services PMI (Nov) (est 55.6, prev 56.1)
 - 2026-11-23 14:45:00 S&P Global Manufacturing PMI (Nov) (est 54.5, prev 54.9)
-- 2026-11-25 13:30:00 Durable Goods Orders MoM (Oct) (est 0.5, prev 1.9)
-- 2026-11-25 13:30:00 Personal Income MoM (Oct) (est 0.3, prev 0.2)
-- 2026-11-25 13:30:00 Jobless Claims 4-Week Average (Nov/21) (est 196, prev 197.75)
-- 2026-11-25 13:30:00 Personal Spending MoM (Oct) (est 0.4, prev 0.5)
-- 2026-11-25 13:30:00 Initial Jobless Claims (Nov/21) (est 200, prev 203)
-- 2026-11-25 13:30:00 Core PCE Price Index MoM (Oct) (est 0.3, prev 0.3)
+- 2026-11-23 14:45:00 S&P Global Services PMI (Nov) (est 55.6, prev 56.1)
 - 2026-11-25 13:30:00 Core PCE Price Index YoY (Oct) (est 3.2, prev 3.1)
-- 2026-11-25 13:30:00 Durable Goods Orders Ex Defense MoM (Oct) (est 0.8, prev 2.3)
-- 2026-11-25 13:30:00 Continuing Jobless Claims (Nov/14) (est 1711, prev 1763)
+- 2026-11-25 13:30:00 Initial Jobless Claims (Nov/21) (est 200, prev 203)
+- 2026-11-25 13:30:00 Personal Income MoM (Oct) (est 0.4, prev 0.2)
 - 2026-11-25 13:30:00 Durable Goods Orders Ex Transp MoM (Oct) (est 0.5, prev 0.5)
-- 2026-11-25 15:00:00 New Home Sales (Oct) (est 0.67, prev 0.676)
+- 2026-11-25 13:30:00 Durable Goods Orders Ex Defense MoM (Oct) (est 0.8, prev 2.3)
+- 2026-11-25 13:30:00 Jobless Claims 4-Week Average (Nov/21) (est 196, prev 197.75)
+- 2026-11-25 13:30:00 Durable Goods Orders MoM (Oct) (est 0.4, prev 1.9)
+- 2026-11-25 13:30:00 Personal Spending MoM (Oct) (est 0.4, prev 0.5)
+- 2026-11-25 13:30:00 Core PCE Price Index MoM (Oct) (est 0.3, prev 0.3)
+- 2026-11-25 13:30:00 Continuing Jobless Claims (Nov/14) (est 1711, prev 1763)
+- 2026-11-25 15:00:00 New Home Sales (Oct) (est 0.65, prev 0.676)
 - 2026-11-25 15:00:00 New Home Sales MoM (Oct) (est -3.8, prev -0.6)
-- 2026-11-27 13:30:00 Goods Trade Balance (Oct) (est -133.1, prev -135.1)
+- 2026-11-27 13:30:00 Goods Trade Balance (Oct) (est -131, prev -135.1)
 
 ## Actionable longs (setup expectancy >= +0.05R over 100+ trades)
 _None today — no long setup with a measured edge fired._
@@ -95,7 +95,7 @@ _None today — short setups have not shown an edge on this universe in the curr
 | Pullback in uptrend | long | 37% / +0.00R (1598) | 39% / +0.06R (1444) | 20% / -0.53R (154) |
 | Oversold in long-term uptrend | long | 33% / -21.71R (75) | 35% / -32.00R (52) | 30% / +1.54R (23) |
 | 20-day breakdown | short | 29% / -0.24R (588) | 32% / -0.15R (464) | 21% / -0.54R (124) |
-| Sagging onto 20-day low | short | 34% / -0.00R (722) | 35% / +0.05R (582) | 31% / -0.23R (140) |
+| Sagging onto 20-day low | short | 34% / -0.07R (722) | 35% / -0.03R (582) | 31% / -0.23R (140) |
 | Bear-market rally into resistance | short | 31% / -0.23R (986) | 31% / -0.18R (741) | 29% / -0.37R (245) |
 | Overbought in long-term downtrend | short | 39% / +0.61R (59) | 36% / +0.54R (55) | 75% / +1.65R (4) |
 
