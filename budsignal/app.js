@@ -2697,6 +2697,11 @@
       .join('') || '<tr><td colspan="5" class="table-empty">No closed signals yet.</td></tr>';
 
     const segments = [
+      // provenance first: the live rows are the bot's backfill-free track
+      // record since going live — the honest answer to "is the record as
+      // it actually fired keeping up with the backfilled history?"
+      ['📡 Recorded live, as it fired', (r) => r.recorded === 'live'],
+      ['📼 Backfilled from history on first run', (r) => r.recorded === 'backfill'],
       ['Cross entries', (r) => !r.strategy || r.strategy === 'cross'],
       ['◆ Breakout entries', (r) => r.strategy === 'breakout'],
       ['🌊 Swing entries (daily-55)', (r) => r.strategy === 'swing' && !r.early],
