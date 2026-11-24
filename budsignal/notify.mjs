@@ -131,6 +131,10 @@ function composeDigest(records) {
     return { n: c.length, fav, favPct: (fav / c.length) * 100, avg: c.reduce((a, r) => a + r.movePct, 0) / c.length, pf: gl > 0 ? gw / gl : Infinity };
   };
   const all = stats(records);
+  // the same split the site's Performance buckets show (2026-11-24): the
+  // backfill-free record as the bot actually fired, so the digest can
+  // never read stronger than the live truth
+  const live = stats(records.filter((r) => r.recorded === 'live'));
   const perAsset = {};
   for (const r of closed) (perAsset[r.asset] = perAsset[r.asset] || []).push(r);
   const ranked = Object.entries(perAsset)
@@ -142,6 +146,7 @@ function composeDigest(records) {
     '📊 <b>LordBastian signals — weekly digest</b>',
     `This week: ${week.length} signal(s) fired.`,
     all ? `All-time ledger: ${all.n} closed · ${all.favPct.toFixed(0)}% favorable · avg ${all.avg >= 0 ? '+' : ''}${all.avg.toFixed(2)}% · profit factor ${pf}` : 'No closed signals in the ledger yet.',
+    live ? `Live-only (as it fired, no backfill): ${live.n} closed · ${live.favPct.toFixed(0)}% favorable · avg ${live.avg >= 0 ? '+' : ''}${live.avg.toFixed(2)}%` : '',
     ranked.length ? `Best market: ${ranked[0].a} (avg ${ranked[0].avg >= 0 ? '+' : ''}${ranked[0].avg.toFixed(2)}%) · Worst: ${ranked[ranked.length - 1].a} (avg ${ranked[ranked.length - 1].avg >= 0 ? '+' : ''}${ranked[ranked.length - 1].avg.toFixed(2)}%)` : '',
     '<i>Full breakdowns: the Performance section on the site.</i>',
   ].filter(Boolean).join('\n');
