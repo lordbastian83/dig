@@ -1952,7 +1952,10 @@
   // word was read in its headline before being added.
   // 2026-11-15: + milestone(s), success/successful(ly) — read in that day's
   // SpaceX Starship-catch headlines ("huge milestone", "successfully catches").
-  const LEX_POS = /\b(rall(?:y|ies)|surge[sd]?|gain(?:s|ed)?|jump(?:s|ed)?|beat[s]?|record (?:\w+ )?(?:highs?|profits?|revenue)|profits? (?:nearly |almost )?(?:double[sd]?|triple[sd]?)|boost(?:s|ed)?|upgrade[sd]?|soar(?:s|ed)?|rise[sn]?|rising|rose|strong(?:er)?|growth|bullish|optimis\w+|ease[sd]?|climb(?:s|ed)?|rebound(?:s|ed)?|recover\w*|higher|pops|boom(?:s|ing)?|milestone[s]?|success(?:ful|fully)?|enthusiasm)\b/gi;
+  // 2026-11-25: + secures (plural-verb form only, like "pops": bare "secure"
+  // would tag "secure messaging") — read in "American Bitcoin secures
+  // $150 million loan" in that day's live batch.
+  const LEX_POS = /\b(rall(?:y|ies)|surge[sd]?|gain(?:s|ed)?|jump(?:s|ed)?|beat[s]?|record (?:\w+ )?(?:highs?|profits?|revenue)|profits? (?:nearly |almost )?(?:double[sd]?|triple[sd]?)|boost(?:s|ed)?|upgrade[sd]?|soar(?:s|ed)?|rise[sn]?|rising|rose|strong(?:er)?|growth|bullish|optimis\w+|ease[sd]?|climb(?:s|ed)?|rebound(?:s|ed)?|recover\w*|higher|pops|boom(?:s|ing)?|milestone[s]?|success(?:ful|fully)?|enthusiasm|secures)\b/gi;
   // 2026-11-09: the Nvidia probe story dominated the batch and was
   // lexicon-silent — added scandal, probe/probing, investigat-, setback,
   // shutdown, threat(s/en-). All 8 tagged headlines were read in context.
@@ -1971,7 +1974,14 @@
   // stumble-, disappoint-, outflow(s); "crushed" widened to crush(ed/ing)
   // ("the spike is 'crushing folks'"). Every added word was read in a
   // headline of that day's live batch.
-  const LEX_NEG = /\b(fall(?:s|ing)?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward|sink(?:s|ing)?|sank|rattle[sd]?|disaster[s]?|falter(?:s|ed|ing)?|slip(?:s|ped|ping)?|crunch|freefall|crush(?:ed|ing)|retreat(?:s|ed)?|depress\w*|scandal[s]?|probe[sd]?|probing|investigat\w*|setback[s]?|shutdown[s]?|threat(?:s|en|ens|ened|ening)?|oust(?:s|ed|ing)?|turmoil|outage[s]?|slash(?:es|ed|ing)?|dip(?:s|ped)|stumble[sd]?|disappoint(?:s|ed|ing|ment)?|outflow[s]?|attack(?:s|ed|ing)?|war[s]?|headwind[s]?|bleak|losing|(?<!think[ -])tank(?:s|ed|ing)|correction[s]?|drain(?:s|ed|ing)?)\b/gi;
+  // 2026-11-25: the Anthropic below-IPO-price story and the Huawei fraud
+  // verdict led the wire and were lexicon-silent — added fraud(s),
+  // convict(s/ed/ion), scrutiny, the price phrase breaks/broke/closes
+  // below ("fell/drops below" was already caught by fell/drops),
+  // pull(s/ed/ing) the plug. "charged" was considered and rejected (EV
+  // charging, fee charges). Every added word was read in a headline of
+  // that day's live batch.
+  const LEX_NEG = /\b(fall(?:s|ing)?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward|sink(?:s|ing)?|sank|rattle[sd]?|disaster[s]?|falter(?:s|ed|ing)?|slip(?:s|ped|ping)?|crunch|freefall|crush(?:ed|ing)|retreat(?:s|ed)?|depress\w*|scandal[s]?|probe[sd]?|probing|investigat\w*|setback[s]?|shutdown[s]?|threat(?:s|en|ens|ened|ening)?|oust(?:s|ed|ing)?|turmoil|outage[s]?|slash(?:es|ed|ing)?|dip(?:s|ped)|stumble[sd]?|disappoint(?:s|ed|ing|ment)?|outflow[s]?|attack(?:s|ed|ing)?|war[s]?|headwind[s]?|bleak|losing|(?<!think[ -])tank(?:s|ed|ing)|correction[s]?|drain(?:s|ed|ing)?|fraud[s]?|convict(?:s|ed|ion|ions)?|scrutiny|(?:break(?:s)?|broke|close[sd]?) below|pull(?:s|ed|ing)? the plug)\b/gi;
   const MKT_TAGS = [
     ['GOLD', /\bgold\b|\bxau\b|bullion/i],
     ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b|\blng\b|gasoline|diesel|natural gas/i],
