@@ -1,55 +1,55 @@
 # Opportunity scan — 2026-11-26
 
 ## ⭐ Best trade to execute: LONG WMT
-- **Setup:** Coiling under 20-day high, score 61; setup history 49% / +0.25R (n=131)
+- **Setup:** Coiling under 20-day high, score 55; setup history 49% / +0.25R (n=131)
 - **Plan:** Buy Stop order, 3 shares at 132.57, good for 3 sessions (cancel if not filled); attach Stop-Loss 128.21 and Take-Profit 141.28.
 - **Money:** ≈ £303 position, £10.0 at risk, £19.9 if the target hits
-- **Why:** outperforming SPY by 18.3% over 20d; StockTwits 33% bullish of 12 votes; Reddit #34 most-discussed (22 mentions, 0.7x yesterday); news positive (+3); TradingView ideas 14 long / 2 short
+- **Why:** outperforming SPY by 18.3% over 20d; StockTwits 36% bullish of 11 votes; Reddit #57 most-discussed (5 mentions, 0.2x yesterday); news positive (+1); TradingView ideas 14 long / 2 short
 - **ORTEX:** — · **TradingView ideas:** 14 long / 2 short
-- **Social:** StockTwits 33% bullish (4/12 votes, 30 posts in 3d) · Reddit #34 most-discussed, 22 mentions
+- **Social:** StockTwits 36% bullish (4/11 votes, 30 posts in 3d) · Reddit #57 most-discussed, 5 mentions
   - Bearish: $AMZN $WMT Very trashy companies. Worth $150 max! Why are they such overpriced at these le
   - Bearish: $WMT ...juat like $AAPL China tariff don&#39;t have any effect here as well
   - Bearish: $WMT attempting a put debit spread here for Jan 15 expiration. We will see what happens. P
 - **Latest headlines:**
-  - Walmart won't resort to 'gimmicks' to get Black Friday shoppers in early (businessinsider.com)
-  - Walmart Quivers As Trump Doubles Down On Tariffs; Its Dow Peers Shrug (investors.com)
-  - Meta's AI shopping push could lift Instagram ad revenue, Jefferies says (proactiveinvestors.com)
-  - Walmart+ Members Spend 4 Times As Much As Non-Members. The Retailer's New $120 Bundle Could Unlock More Growth. (fool.com)
-  - Walmart Stock (WMT) Flattens as Key E-Commerce CEO Quits (TipRanks)
-  - Walmart (WMT) Stock Price Prediction: Post-earnings strength meets stretched momentum (Blockchain News)
-- **Runners-up:** ▲ GME (Coiling under 20-day high, score 51), ▲ PVH (Coiling under 20-day high, score 51)
+  - 3 Dividend Stocks That Could Benefit From the Black Friday Shopping Rush (247wallst.com)
+  - Why Reddit Is Crushing Amazon and Walmart for Holiday Gift Traffic (benzinga.com)
+  - These 3 retail stocks are best positioned to benefit from Thanksgiving in 2026 (invezz.com)
+  - Meta Platforms Just Partnered With Walmart. Here's Why Investors Should Pay Attention (fool.com)
+  - How to Play Walmart Stock a Week After Its Q3 Earnings Release (zacks.com)
+  - Walmart Is Winning Thanksgiving. Is Target Losing the Holiday Shopping Battle? (benzinga.com)
+- **Runners-up:** ▲ PVH (Coiling under 20-day high, score 51), ▲ GME (Coiling under 20-day high, score 44)
 
-Universe 171 symbols (core + today's movers + upcoming large-cap earnings). Market regime: **risk-off** (SPY not above its 200-day with 20 > 50 EMA). Sizing: £1000 account, 1% risk (£10) per trade, GBPUSD 1.3106, no leverage.
-ORTEX short data + stock/short scores on 5 symbols (~23 credits).
+Universe 171 symbols (core + today's movers + upcoming large-cap earnings). Market regime: **risk-off** (SPY not above its 200-day with 20 > 50 EMA). Sizing: £1000 account, 1% risk (£10) per trade, GBPUSD 1.3108, no leverage.
+ORTEX short data + stock/short scores on 10 symbols (~45 credits).
 
 ## Macro
 - **S&P 500 (SPY)** 716.70 (-0.29%), trend mixed, RSI 40, 20d -7.2%
 - **Nasdaq 100 (QQQ)** 633.93 (-0.65%), trend mixed, RSI 39, 20d -12.6%
-- **FTSE 100** 10578.76 (+1.46%), trend mixed, RSI 47, 20d -1.3%
-- **Euro Stoxx 50** 6004.69 (+1.87%), trend mixed, RSI 42, 20d -3.3%
-- **Brent** 91.10 (-3.71%), trend mixed, RSI 40, 20d -17.8%
+- **FTSE 100** 10609.30 (+1.75%), trend mixed, RSI 48, 20d -1.1%
+- **Euro Stoxx 50** 6014.74 (+2.04%), trend mixed, RSI 43, 20d -3.1%
+- **Brent** 91.73 (-3.04%), trend mixed, RSI 41, 20d -17.2%
 - **WTI proxy (USO)** 139.89 (+3.29%), trend mixed, RSI 43, 20d -16.0%
-- **Gold** 3596.30 (+1.71%), trend down, RSI 34, 20d -10.8%
+- **Gold** 3593.40 (+1.63%), trend down, RSI 34, 20d -10.9%
 - **20y Treasuries (TLT)** 82.24 (+0.92%), trend mixed, RSI 63, 20d +1.5%
 
 **High-impact US data, next 7 days**
 - 2026-11-27 13:30:00 Goods Trade Balance (Oct) (est -133, prev -135.1)
-- 2026-12-01 15:00:00 ISM Manufacturing PMI (Nov) (est 55, prev 55.5)
+- 2026-12-01 15:00:00 ISM Manufacturing PMI (Nov) (est 55.2, prev 55.5)
 - 2026-12-01 15:00:00 JOLTs Job Openings (Oct) (est 7.3, prev 7.523)
 - 2026-12-02 13:15:00 ADP Employment Change (Nov) (est 75, prev 86)
 - 2026-12-03 13:30:00 Jobless Claims 4-Week Average (Nov/28)
 - 2026-12-03 13:30:00 Initial Jobless Claims (Nov/28)
 - 2026-12-03 13:30:00 Continuing Jobless Claims (Nov/21)
-- 2026-12-03 15:00:00 ISM Services PMI (Nov)
 - 2026-12-03 15:00:00 ISM Services Prices (Nov)
+- 2026-12-03 15:00:00 ISM Services PMI (Nov)
 
 ## Actionable longs (setup expectancy >= +0.05R over 100+ trades)
 | # | Symbol | Setup | Score | Close | Entry | Stop | Target | Shares | Cost £ | Risk £ | Setup history (win / exp) | ORTEX (SI 3w Δ, borrow, scores) | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | **WMT** | Coiling under 20-day high (stop order) | 61 | 131.94 | 132.57 | 128.21 | 141.28 | 3 | 303 | 10.0 | 49% / +0.25R (n=131) | — | outperforming SPY by 18.3% over 20d; StockTwits 33% bullish of 12 votes; Reddit #34 most-discussed (22 mentions, 0.7x yesterday); news positive (+3); TradingView ideas 14 long / 2 short |
-| 2 | **GME** | Coiling under 20-day high (stop order) | 51 | 26.97 | 27.79 | 26.25 | 30.88 | 8 | 170 | 9.4 | 49% / +0.25R (n=131) | — | outperforming SPY by 22.8% over 20d; StockTwits 87% bullish of 15 votes; Reddit #70 most-discussed (10 mentions, 0.3x yesterday); news positive (+1); TradingView ideas 13 long / 3 short |
-| 3 | **PVH** | Coiling under 20-day high (stop order) | 51 | 96.94 | 98.34 | 92.85 | 109.33 | 2 | 150 | 8.4 | 49% / +0.25R (n=131) | — | outperforming SPY by 20.9% over 20d; TradingView ideas 12 long / 6 short |
-| 4 | **AAPL** | Coiling under 20-day high (stop order) | 32 | 355.58 | 361.26 | 348.41 | 386.95 | 1 | 276 | 9.8 | 49% / +0.25R (n=131) | — | outperforming SPY by 10.6% over 20d; StockTwits 73% bullish of 11 votes; Reddit #10 most-discussed (64 mentions, 0.6x yesterday); news negative (-1); TradingView ideas 5 long / 12 short |
+| 1 | **WMT** | Coiling under 20-day high (stop order) | 55 | 131.94 | 132.57 | 128.21 | 141.28 | 3 | 303 | 10.0 | 49% / +0.25R (n=131) | — | outperforming SPY by 18.3% over 20d; StockTwits 36% bullish of 11 votes; Reddit #57 most-discussed (5 mentions, 0.2x yesterday); news positive (+1); TradingView ideas 14 long / 2 short |
+| 2 | **PVH** | Coiling under 20-day high (stop order) | 51 | 96.94 | 98.34 | 92.85 | 109.33 | 2 | 150 | 8.4 | 49% / +0.25R (n=131) | — | outperforming SPY by 20.9% over 20d; TradingView ideas 12 long / 6 short |
+| 3 | **GME** | Coiling under 20-day high (stop order) | 44 | 26.97 | 27.79 | 26.25 | 30.88 | 8 | 170 | 9.4 | 49% / +0.25R (n=131) | — | outperforming SPY by 22.8% over 20d; StockTwits 93% bullish (crowded, contrarian caution); Reddit #34 most-discussed (10 mentions, 0.6x yesterday); news positive (+1); TradingView ideas 13 long / 3 short |
+| 4 | **AAPL** | Coiling under 20-day high (stop order) | 35 | 355.58 | 361.26 | 348.41 | 386.95 | 1 | 276 | 9.8 | 49% / +0.25R (n=131) | — | outperforming SPY by 10.6% over 20d; StockTwits 70% bullish of 10 votes; Reddit #10 most-discussed (22 mentions, 0.3x yesterday); TradingView ideas 5 long / 11 short |
 
 ## Actionable shorts (setup expectancy >= +0.05R over 100+ trades)
 _None today — short setups have not shown an edge on this universe in the current regime._
@@ -61,8 +61,8 @@ _None today — short setups have not shown an edge on this universe in the curr
 - ▲ **DAL** Pullback in uptrend, score 17, trigger 83.44 — history 24% / -0.35R (n=151); outperforming SPY by 10.4% over 20d
 - ▲ **CCL** Pullback in uptrend, score 16, trigger 28.32 — history 24% / -0.35R (n=151); outperforming SPY by 7.0% over 20d
 - ▼ **SOXL** Sagging onto 20-day low, score 56, trigger 29.23 — history 36% / -0.10R (n=135); underperforming SPY by 63.0% over 20d; volume 2.1x average
-- ▼ **COIN** Sagging onto 20-day low, score 50, trigger 101.26 — history 36% / -0.10R (n=135); underperforming SPY by 28.9% over 20d
 - ▼ **INTC** Sagging onto 20-day low, score 50, trigger 50.82 — history 36% / -0.10R (n=135); underperforming SPY by 35.8% over 20d
+- ▼ **COIN** Sagging onto 20-day low, score 50, trigger 101.26 — history 36% / -0.10R (n=135); underperforming SPY by 28.9% over 20d
 - ▼ **SMCI** Sagging onto 20-day low, score 48, trigger 21.34 — history 36% / -0.10R (n=135); underperforming SPY by 27.7% over 20d
 - ▼ **ARM** Sagging onto 20-day low, score 45, trigger 149.49 — history 36% / -0.10R (n=135); underperforming SPY by 24.3% over 20d
 
@@ -72,8 +72,8 @@ _None today — short setups have not shown an edge on this universe in the curr
 
 ## Large-cap earnings, next 14 days
 - 2026-11-26 **VNRGF** — 74.53, trend up (EPS est 1.74)
-- 2026-11-26 **SMEBF** — 0.640, trend up (EPS est 0.01584)
-- 2026-11-26 **TNABF** — 2.920, trend down (EPS est 0.0516)
+- 2026-11-26 **SMEBF** — 0.640, trend up (EPS est 0.01526)
+- 2026-11-26 **TNABF** — 2.920, trend down (EPS est 0.04647)
 - 2026-11-26 **CHCJY** — 20.34, trend mixed (EPS est 0.867)
 - 2026-11-27 **MPNGF** — 7.870, trend down (EPS est 0.04262)
 - 2026-11-27 **MPNGY** — 16.00, trend down (EPS est 0.08193)
