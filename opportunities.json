@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-11-25T21:24:45.904Z",
+  "generated_at": "2026-11-26T06:55:15.754Z",
   "regime": "risk-off",
   "account_gbp": 1000,
   "risk_pct": 1,
-  "gbpusd": 1.31169,
+  "gbpusd": 1.30993,
   "best": {
     "key": "near_breakout_long",
     "side": "long",
     "entryType": "stop",
-    "trigger": 132.565201103832,
-    "stop": 128.2091679888717,
-    "target": 141.2772673337526,
-    "risk": 4.356033114960297,
+    "trigger": 132.565183603832,
+    "stop": 128.20967548887168,
+    "target": 141.27619983375263,
+    "risk": 4.355508114960315,
     "hi20": 132.42,
     "lo20": 118.11,
-    "volRatio": 0.9460146129889587,
+    "volRatio": 0.961235203883971,
     "symbol": "WMT",
     "label": "Coiling under 20-day high",
-    "score": 60.49874238536728,
+    "score": 61.00051910760698,
     "why": [
       "Coiling under 20-day high",
-      "outperforming SPY by 18.2% over 20d",
-      "StockTwits 36% bullish of 11 votes",
-      "Reddit #27 most-discussed (31 mentions, 1.5x yesterday)",
+      "outperforming SPY by 18.3% over 20d",
+      "StockTwits 33% bullish of 12 votes",
+      "Reddit #33 most-discussed (27 mentions, 0.9x yesterday)",
       "news positive (+4)",
       "TradingView ideas 14 long / 2 short"
     ],
     "stat": {
-      "n": 135,
-      "winRate": 48.888888888888886,
-      "expR": 0.22780946872509109,
+      "n": 131,
+      "winRate": 48.854961832061065,
+      "expR": 0.24792964435684114,
       "scope": "risk-off"
     },
     "daysToEarn": null,
@@ -41,15 +41,25 @@
       "shortScoreError": "HTTP 403"
     },
     "shares": 3,
-    "costGBP": 303.19328752334474,
-    "riskGBP": 9.962795588043587,
+    "costGBP": 303.6006128659516,
+    "riskGBP": 9.974979078943871,
     "edge": true,
     "news": {
       "items": [
         {
+          "title": "Walmart Quivers As Trump Doubles Down On Tariffs; Its Dow Peers Shrug",
+          "date": "2026-11-25 16:24:31",
+          "source": "investors.com"
+        },
+        {
           "title": "Meta's AI shopping push could lift Instagram ad revenue, Jefferies says",
           "date": "2026-11-25 15:03:18",
           "source": "proactiveinvestors.com"
+        },
+        {
+          "title": "Walmart Inc. (WMT) Stock Forecasts",
+          "date": "Wed, 25 Nov 2026 15:00:49 GMT",
+          "source": "Yahoo! Finance Canada"
         },
         {
           "title": "Walmart+ Members Spend 4 Times As Much As Non-Members. The Retailer's New $120 Bundle Could Unlock More Growth.",
@@ -70,11 +80,6 @@
           "title": "Rep. Harriet M. Hageman Sells Shares of Walmart Inc. (NASDAQ:WMT)",
           "date": "2026-11-25 02:34:42",
           "source": "defenseworld.net"
-        },
-        {
-          "title": "Why Did The Walmart (WMT) President Sell Shares?",
-          "date": "Wed, 25 Nov 2026 02:10:45 GMT",
-          "source": "Simply Wall St"
         },
         {
           "title": "Walmart (NASDAQ:WMT) Stock Price Up 2.1% Following Analyst Upgrade",
@@ -100,11 +105,6 @@
           "title": "Holiday Meal Price Wars: What Walmart, Target, and Kroger Risk to Win Shoppers",
           "date": "2026-11-24 11:25:54",
           "source": "marketbeat.com"
-        },
-        {
-          "title": "Walmart Inc. 2027 Q3 - Results - Earnings Call Presentation (NASDAQ:WMT) 2026-11-24",
-          "date": "Tue, 24 Nov 2026 11:03:06 GMT",
-          "source": "Seeking Alpha"
         }
       ],
       "sentiment": 4
@@ -115,25 +115,25 @@
     },
     "social": {
       "bullish": 4,
-      "bearish": 7,
+      "bearish": 8,
       "posts": 30,
-      "redditMentions": 31,
+      "redditMentions": 27,
       "fmp": null,
       "errors": [],
       "sample": [
+        "Bearish: $AMZN $WMT Very trashy companies. Worth $150 max! Why are they such overpriced at these le",
         "Bearish: $WMT ...juat like $AAPL China tariff don&#39;t have any effect here as well",
-        "Bearish: $WMT attempting a put debit spread here for Jan 15 expiration. We will see what happens. P",
-        "Bullish: $WMT money is being rotating to technology is going down get out"
+        "Bearish: $WMT attempting a put debit spread here for Jan 15 expiration. We will see what happens. P"
       ],
-      "redditRank": 27,
-      "redditMentions24hAgo": 21,
-      "bullPct": 36.36363636363637
+      "redditRank": 33,
+      "redditMentions24hAgo": 29,
+      "bullPct": 33.33333333333333
     },
-    "close": 131.89,
+    "close": 131.94,
     "plan": "Buy Stop order, 3 shares at 132.57, good for 3 sessions (cancel if not filled); attach Stop-Loss 128.21 and Take-Profit 141.28."
   },
-  "universe_size": 174,
-  "ortex_symbols": 10,
+  "universe_size": 170,
+  "ortex_symbols": 5,
   "watch": [
     {
       "key": "breakout_long",
@@ -145,19 +145,19 @@
       "risk": 4.81107979650524,
       "hi20": 123.37,
       "lo20": 108.75,
-      "volRatio": 1.5020780908126954,
+      "volRatio": 1.594837722472537,
       "symbol": "DIS",
       "label": "20-day breakout",
-      "score": 64.91694187478616,
+      "score": 51.57123063940556,
       "why": [
         "20-day breakout",
         "outperforming SPY by 22.4% over 20d",
-        "volume 1.5x average"
+        "volume 1.6x average"
       ],
       "stat": {
         "n": 76,
-        "winRate": 53.94736842105263,
-        "expR": 0.3729235468696542,
+        "winRate": 50,
+        "expR": 0.039280765985139125,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -169,8 +169,8 @@
         "shortScoreError": "HTTP 403"
       },
       "shares": 2,
-      "costGBP": 191.50866439478838,
-      "riskGBP": 7.335696386349274,
+      "costGBP": 191.7659722275236,
+      "riskGBP": 7.345552505103692,
       "edge": false,
       "close": 125.6
     },
@@ -178,32 +178,32 @@
       "key": "pullback_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 56.72565820427872,
-      "stop": 55.076772446515896,
-      "target": 60.023429719804376,
-      "risk": 1.6488857577628266,
+      "trigger": 56.73067248999301,
+      "stop": 55.07159387508732,
+      "target": 60.04882971980439,
+      "risk": 1.6590786149056882,
       "hi20": 60.04,
       "lo20": 54.43,
-      "volRatio": 0.9133778921214633,
+      "volRatio": 0.9215010736498381,
       "symbol": "XLF",
       "label": "Pullback in uptrend",
-      "score": 17.116003103632522,
+      "score": 17.891155603210542,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 7.9% over 20d"
       ],
       "stat": {
-        "n": 149,
-        "winRate": 22.14765100671141,
-        "expR": -0.4259594763043964,
+        "n": 147,
+        "winRate": 23.12925170068027,
+        "expR": -0.40713841970145365,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 7,
-      "costGBP": 302.72366750524213,
-      "riskGBP": 8.799487915848855,
+      "costGBP": 303.15719727767976,
+      "riskGBP": 8.86577931976504,
       "edge": false,
-      "close": 56.5
+      "close": 56.51
     },
     {
       "key": "pullback_long",
@@ -215,18 +215,18 @@
       "risk": 27.264533221601653,
       "hi20": 280.8,
       "lo20": 189.98,
-      "volRatio": 0.6820948997499214,
+      "volRatio": 0.6895506300821619,
       "symbol": "MRNA",
       "label": "Pullback in uptrend",
-      "score": 16.705960596545076,
+      "score": 17.458802860662786,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 10.3% over 20d"
       ],
       "stat": {
-        "n": 149,
-        "winRate": 22.14765100671141,
-        "expR": -0.4259594763043964,
+        "n": 147,
+        "winRate": 23.12925170068027,
+        "expR": -0.40713841970145365,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -246,24 +246,24 @@
       "risk": 4.848190248841476,
       "hi20": 92.52,
       "lo20": 78.66,
-      "volRatio": 0.8624149260554049,
+      "volRatio": 0.8631846851665439,
       "symbol": "DAL",
       "label": "Pullback in uptrend",
-      "score": 13.710894439403326,
+      "score": 14.463736703521036,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 10.4% over 20d"
       ],
       "stat": {
-        "n": 149,
-        "winRate": 22.14765100671141,
-        "expR": -0.4259594763043964,
+        "n": 147,
+        "winRate": 23.12925170068027,
+        "expR": -0.40713841970145365,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 2,
-      "costGBP": 127.23226148960687,
-      "riskGBP": 7.392280567575382,
+      "costGBP": 127.40320862435583,
+      "riskGBP": 7.402212711887621,
       "edge": false,
       "close": 82.95
     },
@@ -277,24 +277,24 @@
       "risk": 1.7831129100429237,
       "hi20": 31.57,
       "lo20": 26.49,
-      "volRatio": 0.8130626550863306,
+      "volRatio": 0.8131714275602218,
       "symbol": "CCL",
       "label": "Pullback in uptrend",
-      "score": 12.766082731091089,
+      "score": 13.518924995208799,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 7.0% over 20d"
       ],
       "stat": {
-        "n": 149,
-        "winRate": 22.14765100671141,
-        "expR": -0.4259594763043964,
+        "n": 147,
+        "winRate": 23.12925170068027,
+        "expR": -0.40713841970145365,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 7,
-      "costGBP": 151.15341572445016,
-      "riskGBP": 9.515808133248303,
+      "costGBP": 151.35650292122787,
+      "riskGBP": 9.528593413617877,
       "edge": false,
       "close": 28
     },
@@ -308,24 +308,24 @@
       "risk": 10.610774321022404,
       "hi20": 197.87,
       "lo20": 164.1,
-      "volRatio": 0.750662089811727,
+      "volRatio": 0.7510473383783561,
       "symbol": "ABNB",
       "label": "Pullback in uptrend",
-      "score": 11.266986685444046,
+      "score": 12.019828949561756,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 10.9% over 20d"
       ],
       "stat": {
-        "n": 149,
-        "winRate": 22.14765100671141,
-        "expR": -0.4259594763043964,
+        "n": 147,
+        "winRate": 23.12925170068027,
+        "expR": -0.40713841970145365,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 1,
-      "costGBP": 133.36538270368322,
-      "riskGBP": 8.089391793047445,
+      "costGBP": 133.5445701973344,
+      "riskGBP": 8.100260564322067,
       "edge": false,
       "close": 172.15
     },
@@ -333,30 +333,30 @@
       "key": "pullback_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 280.0143716424363,
-      "stop": 269.9364984597152,
-      "target": 300.17011800787844,
-      "risk": 10.077873182721078,
+      "trigger": 280.01437878529345,
+      "stop": 269.93596988828665,
+      "target": 300.17119657930704,
+      "risk": 10.078408897006796,
       "hi20": 290.25,
       "lo20": 264.2,
-      "volRatio": 0.9958838757715377,
+      "volRatio": 1.0262023667210187,
       "symbol": "JNJ",
       "label": "Pullback in uptrend",
-      "score": 10.401193312677322,
+      "score": 11.154035576795032,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 8.3% over 20d"
       ],
       "stat": {
-        "n": 149,
-        "winRate": 22.14765100671141,
-        "expR": -0.4259594763043964,
+        "n": 147,
+        "winRate": 23.12925170068027,
+        "expR": -0.40713841970145365,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 1,
-      "costGBP": 213.4760283622169,
-      "riskGBP": 7.6831211511264685,
+      "costGBP": 213.7628566299676,
+      "riskGBP": 7.693853028029586,
       "edge": false,
       "close": 273.94
     },
@@ -370,10 +370,10 @@
       "risk": 1.6566489431324385,
       "hi20": 26.1,
       "lo20": 22.66,
-      "volRatio": 1.6112103359204448,
+      "volRatio": 1.6117006363405315,
       "symbol": "M",
       "label": "Pullback in uptrend",
-      "score": 4.163346638704098,
+      "score": 4.916188902821808,
       "why": [
         "Pullback in uptrend",
         "outperforming SPY by 8.8% over 20d",
@@ -381,15 +381,15 @@
         "earnings 2026-12-02 (binary risk)"
       ],
       "stat": {
-        "n": 149,
-        "winRate": 22.14765100671141,
-        "expR": -0.4259594763043964,
+        "n": 147,
+        "winRate": 23.12925170068027,
+        "expR": -0.40713841970145365,
         "scope": "risk-off"
       },
       "daysToEarn": 7,
       "shares": 7,
-      "costGBP": 131.98592698581655,
-      "riskGBP": 8.840917138902537,
+      "costGBP": 132.1632610658781,
+      "riskGBP": 8.85279564703997,
       "edge": false,
       "close": 24.12
     },
@@ -403,7 +403,7 @@
       "risk": 26.500431449529742,
       "hi20": 447,
       "lo20": 348.27,
-      "volRatio": 0.833317345359422,
+      "volRatio": 0.8350287763953292,
       "symbol": "MPC",
       "label": "Oversold in long-term uptrend",
       "score": -13.066315989147249,
@@ -411,9 +411,9 @@
         "Oversold in long-term uptrend"
       ],
       "stat": {
-        "n": 78,
-        "winRate": 28.205128205128204,
-        "expR": -21.157207061518665,
+        "n": 76,
+        "winRate": 23.684210526315788,
+        "expR": -7.497401863786107,
         "scope": "all"
       },
       "daysToEarn": null,
@@ -433,19 +433,19 @@
       "risk": 17.84614930807033,
       "hi20": 108.6,
       "lo20": 29.82,
-      "volRatio": 1.9932186057013366,
+      "volRatio": 2.0115715197552424,
       "symbol": "SOXL",
       "label": "Sagging onto 20-day low",
-      "score": 55.08044553106242,
+      "score": 55.79159889053671,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 63.0% over 20d",
         "volume 2.0x average"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -466,37 +466,30 @@
       "key": "near_breakdown_short",
       "side": "short",
       "entryType": "stop",
-      "trigger": 50.82311541550759,
-      "stop": 59.12965295027993,
-      "target": 34.210040345962895,
-      "risk": 8.306537534772346,
+      "trigger": 50.82381184407902,
+      "stop": 59.10945652170851,
+      "target": 34.252522488820034,
+      "risk": 8.285644677629492,
       "hi20": 95.68,
       "lo20": 51.1,
-      "volRatio": 0.7952814715172023,
+      "volRatio": 0.8057762218952923,
       "symbol": "INTC",
       "label": "Sagging onto 20-day low",
-      "score": 49.08044553106242,
+      "score": 49.79159889053671,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 35.8% over 20d"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "INTC",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 1,
-      "costGBP": 38.746285643336144,
-      "riskGBP": 6.3326986824419995,
+      "costGBP": 38.79887615680152,
+      "riskGBP": 6.325257592107587,
       "edge": false,
       "close": 54.47
     },
@@ -510,28 +503,21 @@
       "risk": 13.426746784849769,
       "hi20": 163.6,
       "lo20": 101.71,
-      "volRatio": 1.0287677165314575,
+      "volRatio": 1.0332485515425087,
       "symbol": "COIN",
       "label": "Sagging onto 20-day low",
-      "score": 49.08044553106242,
+      "score": 49.79159889053671,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 28.9% over 20d"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "COIN",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 0,
       "costGBP": 0,
       "riskGBP": 0,
@@ -548,31 +534,24 @@
       "risk": 3.8274705987464444,
       "hi20": 36.4,
       "lo20": 21.47,
-      "volRatio": 0.8790773640724122,
+      "volRatio": 0.8818051602360204,
       "symbol": "SMCI",
       "label": "Sagging onto 20-day low",
-      "score": 46.772347843591035,
+      "score": 47.48350120306532,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 27.7% over 20d"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "SMCI",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 3,
-      "costGBP": 48.812793373529836,
-      "riskGBP": 8.753906636659067,
+      "costGBP": 48.87837742484358,
+      "riskGBP": 8.765668238943556,
       "edge": false,
       "close": 23.31
     },
@@ -580,34 +559,27 @@
       "key": "near_breakdown_short",
       "side": "short",
       "entryType": "stop",
-      "trigger": 149.48893302452316,
-      "stop": 175.9209422888281,
-      "target": 96.62491449591332,
-      "risk": 26.432009264304924,
+      "trigger": 149.4891044530946,
+      "stop": 175.91597086025666,
+      "target": 96.63537163877047,
+      "risk": 26.426866407162066,
       "hi20": 237.88,
       "lo20": 150.37,
-      "volRatio": 1.2449728716391075,
+      "volRatio": 1.2465622739525115,
       "symbol": "ARM",
       "label": "Sagging onto 20-day low",
-      "score": 44.13704311097396,
+      "score": 44.847074837118974,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 24.3% over 20d"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": null,
-      "flow": {
-        "symbol": "ARM",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 0,
       "costGBP": 0,
       "riskGBP": 0,
@@ -624,24 +596,24 @@
       "risk": 7.745902323917363,
       "hi20": 68.26,
       "lo20": 43.89,
-      "volRatio": 1.0365338392352983,
+      "volRatio": 1.0402075039726788,
       "symbol": "RKLB",
       "label": "Sagging onto 20-day low",
-      "score": 41.51472891431196,
+      "score": 42.22588227378625,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 12.6% over 20d"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 1,
-      "costGBP": 33.26380719214862,
-      "riskGBP": 5.905284269848336,
+      "costGBP": 33.30849988615378,
+      "riskGBP": 5.9132185108497115,
       "edge": false,
       "close": 47.02
     },
@@ -655,24 +627,24 @@
       "risk": 0.45564178613077155,
       "hi20": 4.2,
       "lo20": 2.49,
-      "volRatio": 0.6436630382302633,
+      "volRatio": 0.6527472248316061,
       "symbol": "LCID",
       "label": "Sagging onto 20-day low",
-      "score": 39.18240875710465,
+      "score": 39.89356211657894,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 17.7% over 20d"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 28,
-      "costGBP": 52.82859085069232,
-      "riskGBP": 9.726360658129286,
+      "costGBP": 52.899570460211315,
+      "riskGBP": 9.739428833343464,
       "edge": false,
       "close": 2.56
     },
@@ -686,18 +658,18 @@
       "risk": 17.77499930376223,
       "hi20": 326.4,
       "lo20": 264.22,
-      "volRatio": 0.8684221985838324,
+      "volRatio": 0.8762432253735989,
       "symbol": "GOOGL",
       "label": "Sagging onto 20-day low",
-      "score": 38.1703779949047,
+      "score": 38.881531354378986,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 8.7% over 20d"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -717,24 +689,24 @@
       "risk": 12.776927775707975,
       "hi20": 148.48,
       "lo20": 100.25,
-      "volRatio": 0.8741106319161009,
+      "volRatio": 0.8944436142729899,
       "symbol": "ORCL",
       "label": "Sagging onto 20-day low",
-      "score": 36.22903747277792,
+      "score": 36.940190832252206,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 20.9% over 20d"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 1,
-      "costGBP": 76.1034256626767,
-      "riskGBP": 9.740813588353936,
+      "costGBP": 76.20567695027704,
+      "riskGBP": 9.753901182283004,
       "edge": false,
       "close": 103.88
     },
@@ -748,18 +720,18 @@
       "risk": 31.193435369093095,
       "hi20": 491.39,
       "lo20": 394.77,
-      "volRatio": 1.0155371165015552,
+      "volRatio": 1.0161821200270087,
       "symbol": "SNPS",
       "label": "Sagging onto 20-day low",
-      "score": 36.02442414258316,
+      "score": 36.73557750205745,
       "why": [
         "Sagging onto 20-day low",
         "underperforming SPY by 8.7% over 20d"
       ],
       "stat": {
-        "n": 138,
-        "winRate": 36.231884057971016,
-        "expR": -0.12298886172343951,
+        "n": 135,
+        "winRate": 36.2962962962963,
+        "expR": -0.10521002773658215,
         "scope": "risk-off"
       },
       "daysToEarn": 13,
@@ -775,28 +747,28 @@
       "key": "near_breakout_long",
       "side": "long",
       "entryType": "stop",
-      "trigger": 132.565201103832,
-      "stop": 128.2091679888717,
-      "target": 141.2772673337526,
-      "risk": 4.356033114960297,
+      "trigger": 132.565183603832,
+      "stop": 128.20967548887168,
+      "target": 141.27619983375263,
+      "risk": 4.355508114960315,
       "hi20": 132.42,
       "lo20": 118.11,
-      "volRatio": 0.9460146129889587,
+      "volRatio": 0.961235203883971,
       "symbol": "WMT",
       "label": "Coiling under 20-day high",
-      "score": 60.49874238536728,
+      "score": 61.00051910760698,
       "why": [
         "Coiling under 20-day high",
-        "outperforming SPY by 18.2% over 20d",
-        "StockTwits 36% bullish of 11 votes",
-        "Reddit #27 most-discussed (31 mentions, 1.5x yesterday)",
+        "outperforming SPY by 18.3% over 20d",
+        "StockTwits 33% bullish of 12 votes",
+        "Reddit #33 most-discussed (27 mentions, 0.9x yesterday)",
         "news positive (+4)",
         "TradingView ideas 14 long / 2 short"
       ],
       "stat": {
-        "n": 135,
-        "winRate": 48.888888888888886,
-        "expR": 0.22780946872509109,
+        "n": 131,
+        "winRate": 48.854961832061065,
+        "expR": 0.24792964435684114,
         "scope": "risk-off"
       },
       "daysToEarn": null,
@@ -808,15 +780,25 @@
         "shortScoreError": "HTTP 403"
       },
       "shares": 3,
-      "costGBP": 303.19328752334474,
-      "riskGBP": 9.962795588043587,
+      "costGBP": 303.6006128659516,
+      "riskGBP": 9.974979078943871,
       "edge": true,
       "news": {
         "items": [
           {
+            "title": "Walmart Quivers As Trump Doubles Down On Tariffs; Its Dow Peers Shrug",
+            "date": "2026-11-25 16:24:31",
+            "source": "investors.com"
+          },
+          {
             "title": "Meta's AI shopping push could lift Instagram ad revenue, Jefferies says",
             "date": "2026-11-25 15:03:18",
             "source": "proactiveinvestors.com"
+          },
+          {
+            "title": "Walmart Inc. (WMT) Stock Forecasts",
+            "date": "Wed, 25 Nov 2026 15:00:49 GMT",
+            "source": "Yahoo! Finance Canada"
           },
           {
             "title": "Walmart+ Members Spend 4 Times As Much As Non-Members. The Retailer's New $120 Bundle Could Unlock More Growth.",
@@ -837,11 +819,6 @@
             "title": "Rep. Harriet M. Hageman Sells Shares of Walmart Inc. (NASDAQ:WMT)",
             "date": "2026-11-25 02:34:42",
             "source": "defenseworld.net"
-          },
-          {
-            "title": "Why Did The Walmart (WMT) President Sell Shares?",
-            "date": "Wed, 25 Nov 2026 02:10:45 GMT",
-            "source": "Simply Wall St"
           },
           {
             "title": "Walmart (NASDAQ:WMT) Stock Price Up 2.1% Following Analyst Upgrade",
@@ -867,11 +844,6 @@
             "title": "Holiday Meal Price Wars: What Walmart, Target, and Kroger Risk to Win Shoppers",
             "date": "2026-11-24 11:25:54",
             "source": "marketbeat.com"
-          },
-          {
-            "title": "Walmart Inc. 2027 Q3 - Results - Earnings Call Presentation (NASDAQ:WMT) 2026-11-24",
-            "date": "Tue, 24 Nov 2026 11:03:06 GMT",
-            "source": "Seeking Alpha"
           }
         ],
         "sentiment": 4
@@ -882,24 +854,24 @@
       },
       "social": {
         "bullish": 4,
-        "bearish": 7,
+        "bearish": 8,
         "posts": 30,
-        "redditMentions": 31,
+        "redditMentions": 27,
         "fmp": null,
         "errors": [],
         "sample": [
+          "Bearish: $AMZN $WMT Very trashy companies. Worth $150 max! Why are they such overpriced at these le",
           "Bearish: $WMT ...juat like $AAPL China tariff don&#39;t have any effect here as well",
-          "Bearish: $WMT attempting a put debit spread here for Jan 15 expiration. We will see what happens. P",
-          "Bullish: $WMT money is being rotating to technology is going down get out"
+          "Bearish: $WMT attempting a put debit spread here for Jan 15 expiration. We will see what happens. P"
         ],
-        "redditRank": 27,
-        "redditMentions24hAgo": 21,
-        "bullPct": 36.36363636363637
+        "redditRank": 33,
+        "redditMentions24hAgo": 29,
+        "bullPct": 33.33333333333333
       },
-      "close": 131.89,
-      "rsi": 70.00870150799011,
-      "rs20": 18.247037071870952,
-      "atrPct": 2.201851601061645,
+      "close": 131.94,
+      "rsi": 70.19248074945162,
+      "rs20": 18.28913524481025,
+      "atrPct": 2.2007519149918173,
       "earnings": null
     },
     {
@@ -912,45 +884,55 @@
       "risk": 1.545452205602679,
       "hi20": 27.74,
       "lo20": 23.07,
-      "volRatio": 0.9565255881687983,
+      "volRatio": 0.9582814934820026,
       "symbol": "GME",
       "label": "Coiling under 20-day high",
-      "score": 52.67510316216909,
+      "score": 51.36879907632798,
       "why": [
         "Coiling under 20-day high",
         "outperforming SPY by 22.8% over 20d",
-        "StockTwits 78% bullish of 18 votes",
-        "Reddit #49 most-discussed (18 mentions, 0.4x yesterday)",
-        "news positive (+2)",
+        "StockTwits 87% bullish of 15 votes",
+        "Reddit #56 most-discussed (13 mentions, 0.3x yesterday)",
+        "news positive (+1)",
         "TradingView ideas 13 long / 3 short"
       ],
       "stat": {
-        "n": 135,
-        "winRate": 48.888888888888886,
-        "expR": 0.22780946872509109,
+        "n": 131,
+        "winRate": 48.854961832061065,
+        "expR": 0.24792964435684114,
         "scope": "risk-off"
       },
       "daysToEarn": 13,
       "shares": 8,
-      "costGBP": 169.50050742794463,
-      "riskGBP": 9.425716171367801,
+      "costGBP": 169.72824546972794,
+      "riskGBP": 9.438380405686893,
       "edge": true,
       "news": {
         "items": [
+          {
+            "title": "GameStop Corporation (GME) Stock Forecasts",
+            "date": "Wed, 25 Nov 2026 22:58:30 GMT",
+            "source": "Yahoo Finance"
+          },
+          {
+            "title": "GameStop (GME) Dips More Than Broader Market: What You Should Know",
+            "date": "2026-11-25 18:45:53",
+            "source": "zacks.com"
+          },
           {
             "title": "Does GameStop (GME) Stock Look Cheap For Its Cash Flow?",
             "date": "Wed, 25 Nov 2026 15:12:32 GMT",
             "source": "Yahoo Finance"
           },
           {
+            "title": "GameStop Stock (GME) Has 4 Reasons to Rally Beyond Its Meme-Stock Fame",
+            "date": "Wed, 25 Nov 2026 13:25:51 GMT",
+            "source": "The Globe and Mail"
+          },
+          {
             "title": "GameStop's (NYSE: GME) Meme-Stock Stigma Is Masking A Real Business Transformation, Needham Says In New 'Buy' Call",
             "date": "Wed, 25 Nov 2026 11:45:00 GMT",
             "source": "Foreign Policy Journal"
-          },
-          {
-            "title": "GameStop Stock (GME) Has 4 Reasons to Rally Beyond Its Meme-Stock Fame",
-            "date": "Tue, 24 Nov 2026 21:24:00 GMT",
-            "source": "Yahoo Finance"
           },
           {
             "title": "GME Stock Alert: GameStop Just Scored a New 'Buy' Rating",
@@ -986,39 +968,29 @@
             "title": "GameStop Stock Hovers Near Flatline: What's Going On?",
             "date": "2026-11-24 11:09:08",
             "source": "benzinga.com"
-          },
-          {
-            "title": "GameStop Gains 2% as Trump Buys Shares and Analysts Favor GME",
-            "date": "Mon, 23 Nov 2026 15:12:25 GMT",
-            "source": "cwibc.co.id"
-          },
-          {
-            "title": "GameStop (NYSE: GME) Collectibles Revenue Surges 57% As Wall Street Bets On A Reinvented Business Model",
-            "date": "Mon, 23 Nov 2026 13:27:00 GMT",
-            "source": "Foreign Policy Journal"
           }
         ],
-        "sentiment": 2
+        "sentiment": 1
       },
       "tv": {
         "long": 13,
         "short": 3
       },
       "social": {
-        "bullish": 14,
-        "bearish": 4,
+        "bullish": 13,
+        "bearish": 2,
         "posts": 30,
-        "redditMentions": 18,
+        "redditMentions": 13,
         "fmp": null,
         "errors": [],
         "sample": [
-          "Bullish: $GME Gamestop Board of Directors 5 more years of holding to go! 🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣",
-          "Bullish: $GME 🤣🤣🤣🤣🤣🤣🤣🤣",
-          "Bullish: $GME less than two weeks until earnings. Even though we aren’t green, we’ve shown strength"
+          "Bullish: $GME *Retail traders must be yearning for market manipulation outside standard trading hou",
+          "Bullish: $GME Fuck the US Markets and Fuck the SEC. Fuck Blackrock Fuck Kenny Fuck darkpools Fuck t",
+          "Bullish: $GME 🍊 only a matter of time $45 here AMC and HIVE squeeze as well keep adding pusses fly"
         ],
-        "redditRank": 49,
+        "redditRank": 56,
         "redditMentions24hAgo": 41,
-        "bullPct": 77.77777777777779
+        "bullPct": 86.66666666666667
       },
       "close": 26.97,
       "rsi": 60.932416437744536,
@@ -1044,32 +1016,35 @@
       "volRatio": 0.7527247757814851,
       "symbol": "PVH",
       "label": "Coiling under 20-day high",
-      "score": 50.337899856270816,
+      "score": 51.142706881540825,
       "why": [
         "Coiling under 20-day high",
         "outperforming SPY by 20.9% over 20d",
         "TradingView ideas 12 long / 6 short"
       ],
       "stat": {
-        "n": 135,
-        "winRate": 48.888888888888886,
-        "expR": 0.22780946872509109,
+        "n": 131,
+        "winRate": 48.854961832061065,
+        "expR": 0.24792964435684114,
         "scope": "risk-off"
       },
       "daysToEarn": 8,
-      "flow": {
-        "symbol": "PVH",
-        "siError": "HTTP 403",
-        "ctbError": "HTTP 403",
-        "scoreError": "HTTP 403",
-        "shortScoreError": "HTTP 403"
-      },
       "shares": 2,
-      "costGBP": 149.94687126872603,
-      "riskGBP": 8.320828270595301,
+      "costGBP": 150.1483373725888,
+      "riskGBP": 8.332007996043414,
       "edge": true,
       "news": {
         "items": [
+          {
+            "title": "PVH (PVH) Projected to Announce Earnings on Thursday",
+            "date": "Thu, 26 Nov 2026 06:20:17 GMT",
+            "source": "MarketBeat"
+          },
+          {
+            "title": "PVH Corp. (PVH) Stock Price, News, Quote & History",
+            "date": "Wed, 25 Nov 2026 05:57:44 GMT",
+            "source": "Yahoo! Finance Canada"
+          },
           {
             "title": "PVH Corp. (PVH) Stock forecasts",
             "date": "Mon, 23 Nov 2026 13:31:32 GMT",
@@ -1115,31 +1090,51 @@
       "risk": 12.845412762524177,
       "hi20": 360.83,
       "lo20": 325.33,
-      "volRatio": 1.0427883687034636,
+      "volRatio": 1.0725015908303732,
       "symbol": "AAPL",
       "label": "Coiling under 20-day high",
-      "score": 30.72022188625854,
+      "score": 29.858362244861883,
       "why": [
         "Coiling under 20-day high",
         "outperforming SPY by 10.6% over 20d",
-        "StockTwits 67% bullish of 15 votes",
-        "Reddit #9 most-discussed (85 mentions, 1.1x yesterday)",
+        "StockTwits 50% bullish of 12 votes",
+        "Reddit #10 most-discussed (78 mentions, 0.8x yesterday)",
         "news negative (-1)",
         "TradingView ideas 5 long / 12 short"
       ],
       "stat": {
-        "n": 135,
-        "winRate": 48.888888888888886,
-        "expR": 0.22780946872509109,
+        "n": 131,
+        "winRate": 48.854961832061065,
+        "expR": 0.24792964435684114,
         "scope": "risk-off"
       },
       "daysToEarn": null,
       "shares": 1,
-      "costGBP": 275.4142979098853,
-      "riskGBP": 9.793024847733975,
+      "costGBP": 275.78433994596463,
+      "riskGBP": 9.80618259183634,
       "edge": true,
       "news": {
         "items": [
+          {
+            "title": "(AAPL) Advanced Trading Insights (AAPL:CA)",
+            "date": "Thu, 26 Nov 2026 03:03:17 GMT",
+            "source": "Stock Traders Daily"
+          },
+          {
+            "title": "Apple pulls MiniMax AI chatbot from App Store over child safety concerns",
+            "date": "2026-11-26 00:13:44",
+            "source": "reuters.com"
+          },
+          {
+            "title": "Apple (NASDAQ:AAPL) SVP Sells 2,398 Shares of Stock",
+            "date": "Thu, 26 Nov 2026 00:13:13 GMT",
+            "source": "MarketBeat"
+          },
+          {
+            "title": "Under a trading plan, Apple (AAPL) general counsel Jennifer Newstead sold 2,398 shares.",
+            "date": "Wed, 25 Nov 2026 23:30:48 GMT",
+            "source": "Stock Titan"
+          },
           {
             "title": "Apple: Great Company, Terrible Price (NASDAQ:AAPL)",
             "date": "Wed, 25 Nov 2026 18:49:47 GMT",
@@ -1179,26 +1174,6 @@
             "title": "Apple Inc. $AAPL Stock: Greenleaf Trust Reduces Stake",
             "date": "Wed, 25 Nov 2026 09:30:25 GMT",
             "source": "MarketBeat"
-          },
-          {
-            "title": "Apple Inc. $AAPL Stock Holdings Cut by MeadowBrook Investment Advisors LLC",
-            "date": "Wed, 25 Nov 2026 09:30:25 GMT",
-            "source": "MarketBeat"
-          },
-          {
-            "title": "Warren Buffett and Greg Abel Collect Billions From These Untouchable Berkshire Hathaway Dividend Stocks",
-            "date": "2026-11-25 09:19:14",
-            "source": "247wallst.com"
-          },
-          {
-            "title": "Apple: $136 Billion Of Free Cash Flow Without The AI CapEx Bill",
-            "date": "2026-11-25 08:30:00",
-            "source": "seekingalpha.com"
-          },
-          {
-            "title": "Apple Inc. $AAPL Stock Acquired by Dala Group LLC",
-            "date": "Wed, 25 Nov 2026 08:16:18 GMT",
-            "source": "MarketBeat"
           }
         ],
         "sentiment": -1
@@ -1208,20 +1183,20 @@
         "short": 12
       },
       "social": {
-        "bullish": 10,
-        "bearish": 5,
+        "bullish": 6,
+        "bearish": 6,
         "posts": 30,
-        "redditMentions": 85,
+        "redditMentions": 78,
         "fmp": null,
         "errors": [],
         "sample": [
-          "Bullish: TODAY’S RECAP 🔥 🟢 $SPY 716C +243% 🟢 $AAPL 345P +130% 🟢 $QQQ 610P +85% AMAZING DAY, LIN",
-          "Bullish: $SPY $QQQ $AAPL $TSLA You&#39;re either LONG or you&#39;re WRONG!",
-          "Bullish: $SPY $QQQ $TSLA $AAPL Michael Burry bottom a generational bottom! https://ng.investing.com"
+          "Bearish: $MSFT $AAPL Very big stock crash. Be careful folks!",
+          "Bullish: $AAPL BULLISH Watch on Apple TV . Chris Pratt Teaches Courage in Apple TV&#39;s Way of the",
+          "Bearish: $AAPL they bot themselves...to 5t...."
         ],
-        "redditRank": 9,
-        "redditMentions24hAgo": 77,
-        "bullPct": 66.66666666666666
+        "redditRank": 10,
+        "redditMentions24hAgo": 97,
+        "bullPct": 50
       },
       "close": 355.58,
       "rsi": 57.896859639398954,
@@ -1232,206 +1207,128 @@
   ],
   "shorts": [],
   "setup_stats": {
-    "near_breakout_long|all": {
-      "n": 1449,
-      "wins": 554,
-      "sumR": 5606.7312673772885
-    },
-    "near_breakout_long|risk-on": {
-      "n": 1314,
-      "wins": 488,
-      "sumR": 5575.976989099403
-    },
     "pullback_long|all": {
-      "n": 1507,
-      "wins": 554,
-      "sumR": 11.282387323436435
+      "n": 1471,
+      "wins": 539,
+      "sumR": 4.861391322146091
     },
     "pullback_long|risk-on": {
-      "n": 1358,
-      "wins": 521,
-      "sumR": 74.75034929279138
+      "n": 1324,
+      "wins": 505,
+      "sumR": 64.71073901825979
     },
-    "near_breakdown_short|all": {
-      "n": 706,
-      "wins": 251,
-      "sumR": 14.999747082848955
+    "near_breakout_long|all": {
+      "n": 1420,
+      "wins": 534,
+      "sumR": 5559.696338460717
     },
-    "near_breakdown_short|risk-on": {
-      "n": 568,
-      "wins": 201,
-      "sumR": 31.97221000068364
-    },
-    "breakdown_short|all": {
-      "n": 565,
-      "wins": 173,
-      "sumR": -123.76171461779104
-    },
-    "breakdown_short|risk-off": {
-      "n": 127,
-      "wins": 27,
-      "sumR": -74.32632660398448
-    },
-    "rally_short|all": {
-      "n": 919,
-      "wins": 295,
-      "sumR": -220.62238328802601
-    },
-    "rally_short|risk-off": {
-      "n": 223,
-      "wins": 68,
-      "sumR": -118.5743063706901
-    },
-    "near_breakdown_short|risk-off": {
-      "n": 138,
-      "wins": 50,
-      "sumR": -16.97246291783465
+    "near_breakout_long|risk-on": {
+      "n": 1289,
+      "wins": 470,
+      "sumR": 5527.2175550499705
     },
     "breakout_long|all": {
-      "n": 1116,
-      "wins": 446,
-      "sumR": -64.68539379781281
+      "n": 1073,
+      "wins": 424,
+      "sumR": -13.18305223096921
     },
     "breakout_long|risk-on": {
-      "n": 1040,
-      "wins": 405,
-      "sumR": -93.02758335990653
+      "n": 997,
+      "wins": 386,
+      "sumR": -16.168390445839876
+    },
+    "rally_short|all": {
+      "n": 910,
+      "wins": 283,
+      "sumR": -249.53826268949499
+    },
+    "rally_short|risk-off": {
+      "n": 216,
+      "wins": 63,
+      "sumR": -105.12149511262473
+    },
+    "breakdown_short|all": {
+      "n": 535,
+      "wins": 159,
+      "sumR": -115.56847711847415
+    },
+    "breakdown_short|risk-off": {
+      "n": 124,
+      "wins": 26,
+      "sumR": -58.39137636671848
+    },
+    "near_breakdown_short|all": {
+      "n": 679,
+      "wins": 239,
+      "sumR": -59.15299083323615
+    },
+    "near_breakdown_short|risk-on": {
+      "n": 544,
+      "wins": 190,
+      "sumR": -44.94963708879754
+    },
+    "near_breakdown_short|risk-off": {
+      "n": 135,
+      "wins": 49,
+      "sumR": -14.20335374443859
     },
     "breakdown_short|risk-on": {
-      "n": 438,
-      "wins": 146,
-      "sumR": -49.435388013806566
+      "n": 411,
+      "wins": 133,
+      "sumR": -57.177100751755745
     },
     "rally_short|risk-on": {
-      "n": 696,
-      "wins": 227,
-      "sumR": -102.04807691733586
+      "n": 694,
+      "wins": 220,
+      "sumR": -144.41676757687054
     },
     "overbought_short|all": {
-      "n": 63,
-      "wins": 22,
-      "sumR": -51.21121149681372
+      "n": 59,
+      "wins": 21,
+      "sumR": -51.12452470364487
     },
     "overbought_short|risk-on": {
-      "n": 57,
+      "n": 54,
       "wins": 19,
-      "sumR": -55.8188817971129
+      "sumR": -52.19794228959571
     },
     "pullback_long|risk-off": {
-      "n": 149,
-      "wins": 33,
-      "sumR": -63.467961969355066
+      "n": 147,
+      "wins": 34,
+      "sumR": -59.84934769611368
     },
     "oversold_long|all": {
-      "n": 78,
-      "wins": 22,
-      "sumR": -1650.2621507984559
+      "n": 76,
+      "wins": 18,
+      "sumR": -569.8025416477441
     },
     "oversold_long|risk-on": {
-      "n": 56,
-      "wins": 17,
-      "sumR": -1680.5483011520587
+      "n": 55,
+      "wins": 13,
+      "sumR": -604.184438237417
     },
     "near_breakout_long|risk-off": {
-      "n": 135,
-      "wins": 66,
-      "sumR": 30.7542782778873
-    },
-    "oversold_long|risk-off": {
-      "n": 22,
-      "wins": 5,
-      "sumR": 30.286150353603006
+      "n": 131,
+      "wins": 64,
+      "sumR": 32.47878341074619
     },
     "breakout_long|risk-off": {
       "n": 76,
-      "wins": 41,
-      "sumR": 28.34218956209372
+      "wins": 38,
+      "sumR": 2.9853382148705734
+    },
+    "oversold_long|risk-off": {
+      "n": 21,
+      "wins": 5,
+      "sumR": 34.38189658967282
     },
     "overbought_short|risk-off": {
-      "n": 6,
-      "wins": 3,
-      "sumR": 4.607670300299185
+      "n": 5,
+      "wins": 2,
+      "sumR": 1.0734175859508355
     }
   },
   "econ": [
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "GDP Growth Rate QoQ (Q3)",
-      "estimate": 3.5,
-      "previous": 2.2
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Durable Goods Orders MoM (Oct)",
-      "estimate": 0.6,
-      "previous": 2
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Personal Spending MoM (Oct)",
-      "estimate": 0.4,
-      "previous": 0.6
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Jobless Claims 4-Week Average (Nov/21)",
-      "estimate": 196,
-      "previous": 197.5
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Core PCE Price Index MoM (Oct)",
-      "estimate": 0.3,
-      "previous": 0.3
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Personal Income MoM (Oct)",
-      "estimate": 0.4,
-      "previous": 0.3
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Initial Jobless Claims (Nov/21)",
-      "estimate": 200,
-      "previous": 202
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Durable Goods Orders Ex Transp MoM (Oct)",
-      "estimate": 0.5,
-      "previous": 0.5
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Core PCE Price Index YoY (Oct)",
-      "estimate": 3.2,
-      "previous": 3.1
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Durable Goods Orders Ex Defense MoM (Oct)",
-      "estimate": 0.8,
-      "previous": 2.4
-    },
-    {
-      "date": "2026-11-25 13:30:00",
-      "event": "Continuing Jobless Claims (Nov/14)",
-      "estimate": 1720,
-      "previous": 1792
-    },
-    {
-      "date": "2026-11-25 15:00:00",
-      "event": "New Home Sales (Oct)",
-      "estimate": 0.65,
-      "previous": 0.614
-    },
-    {
-      "date": "2026-11-25 15:00:00",
-      "event": "New Home Sales MoM (Oct)",
-      "estimate": -3.8,
-      "previous": -9.7
-    },
     {
       "date": "2026-11-27 13:30:00",
       "event": "Goods Trade Balance (Oct)",
@@ -1453,8 +1350,38 @@
     {
       "date": "2026-12-02 13:15:00",
       "event": "ADP Employment Change (Nov)",
-      "estimate": null,
+      "estimate": 75,
       "previous": 86
+    },
+    {
+      "date": "2026-12-03 13:30:00",
+      "event": "Continuing Jobless Claims (Nov/21)",
+      "estimate": null,
+      "previous": null
+    },
+    {
+      "date": "2026-12-03 13:30:00",
+      "event": "Initial Jobless Claims (Nov/28)",
+      "estimate": null,
+      "previous": null
+    },
+    {
+      "date": "2026-12-03 13:30:00",
+      "event": "Jobless Claims 4-Week Average (Nov/28)",
+      "estimate": null,
+      "previous": null
+    },
+    {
+      "date": "2026-12-03 15:00:00",
+      "event": "ISM Services Prices (Nov)",
+      "estimate": null,
+      "previous": 73
+    },
+    {
+      "date": "2026-12-03 15:00:00",
+      "event": "ISM Services PMI (Nov)",
+      "estimate": null,
+      "previous": 54.5
     }
   ],
   "holdings": [
@@ -1470,8 +1397,8 @@
       "atrPct": 7.602554922922676,
       "adx": 16.083816004005843,
       "e20": 3.0651147080433723,
-      "e50": 2.9748491188663957,
-      "e200": 2.498176614768006,
+      "e50": 2.9748491188664072,
+      "e200": 2.498136430762604,
       "avgVol20": 24452304.45,
       "dollarVol": 78491897.2845,
       "trend": "up",
@@ -1496,8 +1423,8 @@
       "atrPct": 5.379197810075844,
       "adx": 19.766612311525353,
       "e20": 1.3021856773002851,
-      "e50": 1.3087476627012737,
-      "e200": 1.4047203405585382,
+      "e50": 1.3087476627012755,
+      "e200": 1.4047220811305303,
       "avgVol20": 1236493.85,
       "dollarVol": 1619806.9435000003,
       "trend": "mixed",
