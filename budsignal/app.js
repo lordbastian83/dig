@@ -2417,25 +2417,32 @@
   const PAPER_COSTS = { BTC: 0.10, ETH: 0.10, SOL: 0.10, XRP: 0.10, GOLD: 0.05, OIL: 0.05, US30: 0.02, NAS100: 0.02, SPX500: 0.02, GBPUSD: 0.03, EURUSD: 0.03 };
   function renderPaperAccount(recs) {
     const start = acctGbp();
-    const closed = recs.filter((r) => r.outcome !== 'open' && r.entry && r.stop)
-      .sort((a, b) => a.t - b.t);
-    let equity = start, peak = start, maxDD = 0, best = null, worst = null;
-    const trades = []; // per-trade series feeding the quant tearsheet
-    for (const r of closed) {
-      const stopPct = Math.abs(r.entry - r.stop) / r.entry * 100;
-      if (!stopPct) continue;
-      const netMove = r.movePct - (PAPER_COSTS[r.asset] ?? 0.05);
-      const R = netMove / stopPct;           // outcome in risk units
-      const fret = 0.01 * E.riskMultiplier(r) * R; // fractional account return, 1% base edge-weighted
-      const pnl = equity * fret;
-      equity += pnl;
-      peak = Math.max(peak, equity);
-      const dd = (peak - equity) / peak * 100;
-      maxDD = Math.max(maxDD, dd);
-      trades.push({ t: r.t, R, fret, equity, dd });
-      if (best == null || pnl > best) best = pnl;
-      if (worst == null || pnl < worst) worst = pnl;
-    }
+    // One compounding routine serves both the full-ledger account and the
+    // live-only re-run below (2026-11-27), so the as-it-fired line is the
+    // same arithmetic over a filtered row set and can never drift from it.
+    const run = (rows) => {
+      const closed = rows.filter((r) => r.outcome !== 'open' && r.entry && r.stop)
+        .sort((a, b) => a.t - b.t);
+      let equity = start, peak = start, maxDD = 0, best = null, worst = null;
+      const trades = []; // per-trade series feeding the quant tearsheet
+      for (const r of closed) {
+        const stopPct = Math.abs(r.entry - r.stop) / r.entry * 100;
+        if (!stopPct) continue;
+        const netMove = r.movePct - (PAPER_COSTS[r.asset] ?? 0.05);
+        const R = netMove / stopPct;           // outcome in risk units
+        const fret = 0.01 * E.riskMultiplier(r) * R; // fractional account return, 1% base edge-weighted
+        const pnl = equity * fret;
+        equity += pnl;
+        peak = Math.max(peak, equity);
+        const dd = (peak - equity) / peak * 100;
+        maxDD = Math.max(maxDD, dd);
+        trades.push({ t: r.t, R, fret, equity, dd });
+        if (best == null || pnl > best) best = pnl;
+        if (worst == null || pnl < worst) worst = pnl;
+      }
+      return { closed, trades, equity, maxDD, best, worst };
+    };
+    const { closed, trades, equity, maxDD, best, worst } = run(recs);
     const ret = (equity / start - 1) * 100;
     const tp = $('term-paper');
     if (tp) {
@@ -2453,6 +2460,20 @@
     $('paper-dd').textContent = `−${maxDD.toFixed(1)}%`;
     $('paper-best').textContent = best != null ? `+£${fmtUsd(Math.max(best, 0))}` : '—';
     $('paper-worst').textContent = worst != null ? `worst −£${fmtUsd(Math.abs(Math.min(worst, 0)))}` : '—';
+    // The as-it-fired re-run: same arithmetic, only rows recorded live
+    // (no backfill), so the pooled tiles above can never read stronger
+    // than the record the bot actually produced while running.
+    const liveNote = $('paper-live-note');
+    if (liveNote) {
+      const live = run(recs.filter((r) => r.recorded === 'live'));
+      if (live.trades.length >= 5) {
+        const lret = (live.equity / start - 1) * 100;
+        liveNote.hidden = false;
+        liveNote.innerHTML = `As it fired — the same account over only the ${live.trades.length} trades recorded live, none backfilled: <span class="${lret >= 0 ? 'move-pos' : 'move-neg'}">£${fmtUsd(live.equity)} (${fmtPct(lret)})</span> · max drawdown −${live.maxDD.toFixed(1)}%. The tiles above pool backfilled history replayed on first run.`;
+      } else {
+        liveNote.hidden = true;
+      }
+    }
   }
 
   /* ---------------- quant tearsheet ---------------- */
