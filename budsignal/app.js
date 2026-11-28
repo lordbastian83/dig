@@ -1974,6 +1974,14 @@
   // stumble-, disappoint-, outflow(s); "crushed" widened to crush(ed/ing)
   // ("the spike is 'crushing folks'"). Every added word was read in a
   // headline of that day's live batch.
+  // 2026-11-28: the Norse Atlantic bankruptcy, SAP's 10,000 job cuts and
+  // the EU budget deadlock led the wire and were lexicon-silent — added
+  // bankrupt(cy/cies), fail(s/ed/ing/ure/ures), deadlock(s/ed),
+  // death cross (the chart pattern, as a phrase so plain "death" never
+  // tags obituaries), and widened cut(s) to catch "cutting" with a
+  // lookahead sparing "cutting edge"/"cutting-edge". "seize control" was
+  // considered and rejected (direction depends on who seizes what).
+  // Every added word was read in a headline of that day's live batch.
   // 2026-11-25: the Anthropic below-IPO-price story and the Huawei fraud
   // verdict led the wire and were lexicon-silent — added fraud(s),
   // convict(s/ed/ion), scrutiny, the price phrase breaks/broke/closes
@@ -1981,7 +1989,7 @@
   // pull(s/ed/ing) the plug. "charged" was considered and rejected (EV
   // charging, fee charges). Every added word was read in a headline of
   // that day's live batch.
-  const LEX_NEG = /\b(fall(?:s|ing)?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward|sink(?:s|ing)?|sank|rattle[sd]?|disaster[s]?|falter(?:s|ed|ing)?|slip(?:s|ped|ping)?|crunch|freefall|crush(?:ed|ing)|retreat(?:s|ed)?|depress\w*|scandal[s]?|probe[sd]?|probing|investigat\w*|setback[s]?|shutdown[s]?|threat(?:s|en|ens|ened|ening)?|oust(?:s|ed|ing)?|turmoil|outage[s]?|slash(?:es|ed|ing)?|dip(?:s|ped)|stumble[sd]?|disappoint(?:s|ed|ing|ment)?|outflow[s]?|attack(?:s|ed|ing)?|war[s]?|headwind[s]?|bleak|losing|(?<!think[ -])tank(?:s|ed|ing)|correction[s]?|drain(?:s|ed|ing)?|fraud[s]?|convict(?:s|ed|ion|ions)?|scrutiny|(?:break(?:s)?|broke|close[sd]?) below|pull(?:s|ed|ing)? the plug)\b/gi;
+  const LEX_NEG = /\b(fall(?:s|ing)?|fell|drop(?:s|ped)?|slump(?:s|ed)?|plunge[sd]?|miss(?:es|ed)?|cut[s]?|downgrade[sd]?|fear[s]?|weak\w*|recession|crash\w*|bearish|tumble[sd]?|warn(?:s|ing|ings)?|strike[s]?|sanction[s]?|sell-?off|slide[s]?|slid|loss(?:es)?|decline[sd]?|worr\w+|crisis|lower|hack(?:s|ed|er|ers)?|breach(?:es|ed)?|stolen|theft|worst|despair|concern(?:s|ed)?|shrink(?:s|ing)?|shrank|resign(?:s|ed|ation)?|downward|sink(?:s|ing)?|sank|rattle[sd]?|disaster[s]?|falter(?:s|ed|ing)?|slip(?:s|ped|ping)?|crunch|freefall|crush(?:ed|ing)|retreat(?:s|ed)?|depress\w*|scandal[s]?|probe[sd]?|probing|investigat\w*|setback[s]?|shutdown[s]?|threat(?:s|en|ens|ened|ening)?|oust(?:s|ed|ing)?|turmoil|outage[s]?|slash(?:es|ed|ing)?|dip(?:s|ped)|stumble[sd]?|disappoint(?:s|ed|ing|ment)?|outflow[s]?|attack(?:s|ed|ing)?|war[s]?|headwind[s]?|bleak|losing|(?<!think[ -])tank(?:s|ed|ing)|correction[s]?|drain(?:s|ed|ing)?|fraud[s]?|convict(?:s|ed|ion|ions)?|scrutiny|(?:break(?:s)?|broke|close[sd]?) below|pull(?:s|ed|ing)? the plug|bankrupt(?:cy|cies)?|fail(?:s|ed|ing|ure|ures)?|deadlock(?:s|ed)?|death cross|cutting(?![ -]edge))\b/gi;
   const MKT_TAGS = [
     ['GOLD', /\bgold\b|\bxau\b|bullion/i],
     ['OIL', /\boil\b|crude|opec|\bwti\b|brent|petroleum|\beia\b|\blng\b|gasoline|diesel|natural gas/i],
